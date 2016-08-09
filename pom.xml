@@ -24,7 +24,7 @@
     <distributionManagement>
         <repository>
             <id>bintray-leangen</id>
-            <url>https://api.bintray.com/maven/leangen/maven/GraphQL-SPQR/</url>
+            <url>https://api.bintray.com/maven/leangen/maven/spqr/</url>
         </repository>
     </distributionManagement>
     <issueManagement>
@@ -164,6 +164,10 @@
         <developer>
             <name>Bojan Tomic</name>
             <email>veggen@gmail.com</email>
+        </developer>
+        <developer>
+            <name>Milos Stojiljkovic</name>
+            <email>smilosh@gmail.com</email>
         </developer>
     </developers>
 </project>
