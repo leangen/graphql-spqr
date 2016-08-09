@@ -1,1 +1,1 @@
-# GraphQL-SPQR
+leangen platform project
