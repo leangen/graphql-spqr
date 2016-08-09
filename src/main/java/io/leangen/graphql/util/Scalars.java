@@ -1,15 +1,15 @@
 package io.leangen.graphql.util;
 
+import graphql.language.IntValue;
+import graphql.language.StringValue;
+import graphql.schema.Coercing;
+import graphql.schema.GraphQLScalarType;
+
 import java.net.URI;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.UUID;
-
-import graphql.language.IntValue;
-import graphql.language.StringValue;
-import graphql.schema.Coercing;
-import graphql.schema.GraphQLScalarType;
 
 /**
  * Created by bojan.tomic on 6/11/16.
