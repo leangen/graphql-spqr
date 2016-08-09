@@ -1,0 +1,43 @@
+# IDEA
+
+/.idea
+.idea_modules/
+*.iml
+/lib
+
+# OSX
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+
+ehthumbs.db
+Thumbs.db
+
+# Build directories
+
+**/target
+target
+out/
+overlays/
+/data/
+/statics/themes/themes/default/css/
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Gradle
+.gradle
+out
+build
+generated
+
+# ??
+*.log
