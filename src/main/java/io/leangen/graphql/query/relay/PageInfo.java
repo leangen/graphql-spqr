@@ -5,9 +5,11 @@ package io.leangen.graphql.query.relay;
  */
 public interface PageInfo<N> {
 
-	String getStartCursor();
-	String getEndCursor();
+    String getStartCursor();
 
-	boolean isHasNextPage();
-	boolean isHasPreviousPage();
+    String getEndCursor();
+
+    boolean isHasNextPage();
+
+    boolean isHasPreviousPage();
 }

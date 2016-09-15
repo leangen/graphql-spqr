@@ -9,15 +9,15 @@ import java.lang.reflect.Method;
  */
 public class SingletonMethodInvoker extends MethodInvoker {
 
-	private Object target;
+    private Object target;
 
-	public SingletonMethodInvoker(Object target, Method resolverMethod,  AnnotatedType enclosingType) {
-		super(resolverMethod, enclosingType);
-		this.target = target;
-	}
+    public SingletonMethodInvoker(Object target, Method resolverMethod, AnnotatedType enclosingType) {
+        super(resolverMethod, enclosingType);
+        this.target = target;
+    }
 
-	@Override
-	public Object execute(Object target, Object[] arguments) throws InvocationTargetException, IllegalAccessException {
-		return ((Method) delegate).invoke(this.target, arguments);
-	}
+    @Override
+    public Object execute(Object target, Object[] arguments) throws InvocationTargetException, IllegalAccessException {
+        return ((Method) delegate).invoke(this.target, arguments);
+    }
 }

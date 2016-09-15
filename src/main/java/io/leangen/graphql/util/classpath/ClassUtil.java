@@ -51,9 +51,8 @@ import java.io.File;
 /**
  * Miscellaneous class-related utility methods.
  *
- * @version <tt>$Revision$</tt>
- *
  * @author Copyright &copy; 2006 Brian M. Clapper
+ * @version <tt>$Revision$</tt>
  */
 public class ClassUtil {
     /*----------------------------------------------------------------------*\
@@ -85,19 +84,18 @@ public class ClassUtil {
      * Determine whether a file is a jar file, zip file or directory (i.e.,
      * represents places that can be searched for classes).
      *
-     * @param file  the file to check
-     *
+     * @param file the file to check
      * @return <tt>true</tt> if the file represents a place that can be
-     *         searched for classes, <tt>false</tt> if not
+     * searched for classes, <tt>false</tt> if not
      */
-    public static boolean fileCanContainClasses (File file) {
-        boolean can      = false;
-        String  fileName = file.getPath();
+    public static boolean fileCanContainClasses(File file) {
+        boolean can = false;
+        String fileName = file.getPath();
 
         if (file.exists()) {
-            can = ((fileName.toLowerCase().endsWith (".jar")) ||
-                   (fileName.toLowerCase().endsWith (".zip")) ||
-                   (file.isDirectory()));
+            can = ((fileName.toLowerCase().endsWith(".jar")) ||
+                    (fileName.toLowerCase().endsWith(".zip")) ||
+                    (file.isDirectory()));
         }
 
         return can;
@@ -107,16 +105,15 @@ public class ClassUtil {
      * Strip the package name from a fully-qualified class name and return
      * just the short class name.
      *
-     * @param fullClassName  the full class name
-     *
+     * @param fullClassName the full class name
      * @return the short name
      */
-    public static String getShortClassName (String fullClassName) {
+    public static String getShortClassName(String fullClassName) {
         String shortClassName = fullClassName;
-        int i = shortClassName.lastIndexOf ('.');
+        int i = shortClassName.lastIndexOf('.');
 
-        if ( (i != -1) && (++i < shortClassName.length()) )
-            shortClassName = shortClassName.substring (i);
+        if ((i != -1) && (++i < shortClassName.length()))
+            shortClassName = shortClassName.substring(i);
 
         return shortClassName;
     }
@@ -125,11 +122,10 @@ public class ClassUtil {
      * Strip the package name from a fully-qualified class name and return
      * just the short class name.
      *
-     * @param cls  the <tt>Class</tt> object whose name is to be trimmed
-     *
+     * @param cls the <tt>Class</tt> object whose name is to be trimmed
      * @return the short name
      */
-    public static String getShortClassName (Class cls) {
-        return getShortClassName (cls.getName());
+    public static String getShortClassName(Class cls) {
+        return getShortClassName(cls.getName());
     }
 }

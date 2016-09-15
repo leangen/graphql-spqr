@@ -46,6 +46,8 @@
 
 package io.leangen.graphql.util.classpath;
 
+import org.objectweb.asm.*;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -54,39 +56,31 @@ import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-
 /**
  * <p>Holds information about a loaded class in a way that doesn't rely on
  * the underlying API used to load the class information.</p>
- *
+ * <p>
  * <p>This class relies on the ASM byte-code manipulation library. If that
  * library is not available, this package will not work. See
  * <a href="http://asm.objectweb.org"><i>asm.objectweb.org</i></a> for
  * details on ASM.</p>
  *
- * @version <tt>$Revision$</tt>
- *
  * @author Copyright &copy; 2006 Brian M. Clapper
+ * @version <tt>$Revision$</tt>
  */
-public class ClassInfo extends ClassVisitor
-{
+public class ClassInfo extends ClassVisitor {
     static int ASM_CR_ACCEPT_CRITERIA = 0;
 
     /*----------------------------------------------------------------------*\
                             Private Data Items
     \*----------------------------------------------------------------------*/
 
-    private int             modifier = 0;
-    private String          className = null;
-    private String          superClassName = null;
-    private String[]        implementedInterfaces = null;
-    private File            locationFound = null;
-    private Set<FieldInfo>  fields = new HashSet<>();
+    private int modifier = 0;
+    private String className = null;
+    private String superClassName = null;
+    private String[] implementedInterfaces = null;
+    private File locationFound = null;
+    private Set<FieldInfo> fields = new HashSet<>();
     private Set<MethodInfo> methods = new HashSet<>();
 
     /*----------------------------------------------------------------------*\
@@ -96,8 +90,7 @@ public class ClassInfo extends ClassVisitor
     /**
      * Create a <tt>ClassInfo</tt> object from a file.
      *
-     * @param classFile  the abstract path to the class file to load
-     *
+     * @param classFile the abstract path to the class file to load
      * @throws ClassReadingException load error
      */
     public ClassInfo(File classFile) throws ClassReadingException {
@@ -105,7 +98,7 @@ public class ClassInfo extends ClassVisitor
         try {
             ClassReader cr = new ClassReader(new FileInputStream(classFile));
             cr.accept(this, ASM_CR_ACCEPT_CRITERIA);
-         } catch (IOException ex) {
+        } catch (IOException ex) {
             throw new ClassReadingException("Unable to load class file \"{0}\"", ex);
         }
     }
@@ -113,16 +106,15 @@ public class ClassInfo extends ClassVisitor
     /**
      * Create a <tt>ClassInfo</tt> object from an <tt>InputStream</tt>.
      *
-     * @param is  the open <tt>InputStream</tt> containing the class bytes
-     *
+     * @param is the open <tt>InputStream</tt> containing the class bytes
      * @throws ClassReadingException load error
      */
     public ClassInfo(InputStream is) throws ClassReadingException {
-	    super(Opcodes.ASM5);
-	    try {
+        super(Opcodes.ASM5);
+        try {
             ClassReader cr = new ClassReader(is);
             cr.accept(this, ASM_CR_ACCEPT_CRITERIA);
-         } catch (IOException ex) {
+        } catch (IOException ex) {
             throw new ClassReadingException("Unable to load class from open  input stream", ex);
         }
     }
@@ -138,8 +130,8 @@ public class ClassInfo extends ClassVisitor
      * @param location       File (jar, zip) or directory where class was found
      */
     ClassInfo(String name, String superClassName, String[] interfaces, int asmAccessMask, File location) {
-	    super(Opcodes.ASM5);
-	    setClassFields(name, superClassName, interfaces, asmAccessMask, location);
+        super(Opcodes.ASM5);
+        setClassFields(name, superClassName, interfaces, asmAccessMask, location);
     }
 
     /*----------------------------------------------------------------------*\
@@ -161,7 +153,6 @@ public class ClassInfo extends ClassVisitor
      * ancestor classes, use {@link ClassFinder#findAllSuperClasses}.
      *
      * @return the super class name, or null
-     *
      * @see ClassFinder#findAllSuperClasses
      */
     public String getSuperClassName() {
@@ -174,8 +165,7 @@ public class ClassInfo extends ClassVisitor
      * {@link ClassFinder#findAllInterfaces}.
      *
      * @return an array of the names of all directly implemented interfaces,
-     *         or null if there are none
-     *
+     * or null if there are none
      * @see ClassFinder#findAllInterfaces
      */
     public String[] getInterfaces() {
@@ -229,32 +219,32 @@ public class ClassInfo extends ClassVisitor
         StringBuilder buf = new StringBuilder();
 
         if ((modifier & Modifier.PUBLIC) != 0)
-            buf.append ("public ");
+            buf.append("public ");
 
         if ((modifier & Modifier.ABSTRACT) != 0)
-            buf.append ("abstract ");
+            buf.append("abstract ");
 
         if ((modifier & Modifier.INTERFACE) != 0)
-            buf.append ("interface ");
+            buf.append("interface ");
         else
-            buf.append ("class ");
+            buf.append("class ");
 
-        buf.append (className);
+        buf.append(className);
 
         String sep = " ";
         if (implementedInterfaces.length > 0) {
-            buf.append (" implements");
+            buf.append(" implements");
             for (String intf : implementedInterfaces) {
-                buf.append (sep);
-                buf.append (intf);
+                buf.append(sep);
+                buf.append(intf);
             }
         }
 
         if ((superClassName != null) &&
-            (! superClassName.equals ("java.lang.Object"))) {
-            buf.append (sep);
-            buf.append ("extends ");
-            buf.append (superClassName);
+                (!superClassName.equals("java.lang.Object"))) {
+            buf.append(sep);
+            buf.append("extends ");
+            buf.append(superClassName);
         }
 
         return (buf.toString());
@@ -267,20 +257,20 @@ public class ClassInfo extends ClassVisitor
     /**
      * "Visit" a class. Required by ASM <tt>ClassVisitor</tt> interface.
      *
-     * @param version     class version
-     * @param access      class access modifiers, etc.
-     * @param name        internal class name
-     * @param signature   class signature (not used here)
-     * @param superName   internal super class name
-     * @param interfaces  internal names of all directly implemented
-     *                    interfaces
+     * @param version    class version
+     * @param access     class access modifiers, etc.
+     * @param name       internal class name
+     * @param signature  class signature (not used here)
+     * @param superName  internal super class name
+     * @param interfaces internal names of all directly implemented
+     *                   interfaces
      */
     @Override
-    public void visit(int      version,
-                      int      access,
-                      String   name,
-                      String   signature,
-                      String   superName,
+    public void visit(int version,
+                      int access,
+                      String name,
+                      String signature,
+                      String superName,
                       String[] interfaces) {
         setClassFields(name, superName, interfaces, access, null);
     }
@@ -293,7 +283,6 @@ public class ClassInfo extends ClassVisitor
      * @param description field description
      * @param signature   field signature
      * @param value       field value, if any
-     *
      * @return null.
      */
     @Override
@@ -303,10 +292,10 @@ public class ClassInfo extends ClassVisitor
                                    String signature,
                                    Object value) {
         fields.add(new FieldInfo(access,
-                                 name,
-                                 description,
-                                 signature,
-                                 value));
+                name,
+                description,
+                signature,
+                value));
         return null;
     }
 
@@ -318,7 +307,6 @@ public class ClassInfo extends ClassVisitor
      * @param description field description
      * @param signature   field signature
      * @param exceptions  list of exception names the method throws
-     *
      * @return null.
      */
     @Override
@@ -328,10 +316,10 @@ public class ClassInfo extends ClassVisitor
                                      String signature,
                                      String[] exceptions) {
         methods.add(new MethodInfo(access,
-                                   name,
-                                   description,
-                                   signature,
-                                   exceptions));
+                name,
+                description,
+                signature,
+                exceptions));
         return null;
     }
 
@@ -343,7 +331,6 @@ public class ClassInfo extends ClassVisitor
      * Translate an internal class/interface name to an external one.
      *
      * @param internalName the internal JVM name, from the ASM API
-     *
      * @return the external name
      */
     private String translateInternalClassName(String internalName) {
@@ -360,16 +347,16 @@ public class ClassInfo extends ClassVisitor
      * @param asmAccessMask  ASM API's access mask for the class
      * @param location       File (jar, zip) or directory where class was found
      */
-    private void setClassFields(String   name,
-                                String   superClassName,
+    private void setClassFields(String name,
+                                String superClassName,
                                 String[] interfaces,
-                                int      asmAccessMask,
-                                File     location) {
+                                int asmAccessMask,
+                                File location) {
         this.className = translateInternalClassName(name);
         this.locationFound = location;
 
         if ((superClassName != null) &&
-             (! superClassName.equals ("java/lang/Object"))) {
+                (!superClassName.equals("java/lang/Object"))) {
             this.superClassName = translateInternalClassName(superClassName);
         }
 
@@ -377,7 +364,7 @@ public class ClassInfo extends ClassVisitor
             this.implementedInterfaces = new String[interfaces.length];
             for (int i = 0; i < interfaces.length; i++) {
                 this.implementedInterfaces[i] =
-                    translateInternalClassName(interfaces[i]);
+                        translateInternalClassName(interfaces[i]);
             }
         }
 
@@ -388,7 +375,6 @@ public class ClassInfo extends ClassVisitor
      * Convert an ASM access mask to a reflection Modifier mask.
      *
      * @param asmAccessMask the ASM access mask
-     *
      * @return the Modifier mask
      */
     private int convertAccessMaskToModifierMask(int asmAccessMask) {

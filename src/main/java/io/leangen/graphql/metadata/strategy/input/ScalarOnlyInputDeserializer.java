@@ -7,11 +7,11 @@ import java.lang.reflect.Type;
  */
 public class ScalarOnlyInputDeserializer implements InputDeserializer {
 
-	@Override
-	public <T> T deserialize(Object graphQlInput, Type type) {
-		if (graphQlInput.getClass() == type) {
-			return (T)graphQlInput;
-		}
-		throw new IllegalArgumentException("Deserialization failed");
-	}
+    @Override
+    public <T> T deserialize(Object graphQlInput, Type type) {
+        if (graphQlInput.getClass() == type) {
+            return (T) graphQlInput;
+        }
+        throw new IllegalArgumentException("Deserialization failed");
+    }
 }

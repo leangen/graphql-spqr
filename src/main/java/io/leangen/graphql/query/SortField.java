@@ -5,23 +5,23 @@ package io.leangen.graphql.query;
  */
 public class SortField {
 
-	public enum Direction {
-		ASC, DESC
-	}
+    public enum Direction {
+        ASC, DESC
+    }
 
-	private String name;
-	private Direction direction;
+    private String name;
+    private Direction direction;
 
-	public SortField(String name, Direction direction) {
-		this.name = name;
-		this.direction = direction;
-	}
+    public SortField(String name, Direction direction) {
+        this.name = name;
+        this.direction = direction;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public Direction getDirection() {
-		return direction;
-	}
+    public Direction getDirection() {
+        return direction;
+    }
 }

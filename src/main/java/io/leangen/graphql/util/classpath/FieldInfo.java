@@ -5,8 +5,7 @@ package io.leangen.graphql.util.classpath;
  *
  * @see ClassInfo
  */
-public class FieldInfo
-{
+public class FieldInfo {
     /*----------------------------------------------------------------------*\
                             Private Data Items
     \*----------------------------------------------------------------------*/
@@ -24,8 +23,7 @@ public class FieldInfo
     /**
      * Create a new, empty <tt>FieldInfo</tt> object.
      */
-    public FieldInfo()
-    {
+    public FieldInfo() {
     }
 
     /**
@@ -41,8 +39,7 @@ public class FieldInfo
                      String name,
                      String description,
                      String signature,
-                     Object value)
-    {
+                     Object value) {
         this.access = access;
         this.name = name;
         this.description = description;
@@ -59,8 +56,7 @@ public class FieldInfo
      *
      * @return the access modifiers, or 0 if none are set.
      */
-    public int getAccess()
-    {
+    public int getAccess() {
         return access;
     }
 
@@ -69,8 +65,7 @@ public class FieldInfo
      *
      * @return the field name
      */
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
@@ -79,8 +74,7 @@ public class FieldInfo
      *
      * @return the field description, or null
      */
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
@@ -89,8 +83,7 @@ public class FieldInfo
      *
      * @return the field signature, or null.
      */
-    public String getSignature()
-    {
+    public String getSignature() {
         return signature;
     }
 
@@ -99,8 +92,7 @@ public class FieldInfo
      *
      * @return the field value, or null.
      */
-    public Object getValue()
-    {
+    public Object getValue() {
         return value;
     }
 
@@ -109,8 +101,7 @@ public class FieldInfo
      *
      * @return the hash code
      */
-    public int hashCode()
-    {
+    public int hashCode() {
         return signature.hashCode();
     }
 
@@ -118,14 +109,12 @@ public class FieldInfo
      * Compare this object and another <tt>FieldInfo</tt> object. The two
      * objects are compared by their signature fields.
      *
-     * @param other  the other object
-     *
+     * @param other the other object
      * @return a negative integer, zero, or a positive integer, as this
-     *         object is less than, equal to, or greater than the specified
-     *         object.
+     * object is less than, equal to, or greater than the specified
+     * object.
      */
-    public int compareTo(FieldInfo other)
-    {
+    public int compareTo(FieldInfo other) {
         return this.signature.compareTo(other.signature);
     }
 
@@ -134,14 +123,12 @@ public class FieldInfo
      * object is a <tt>FieldInfo</tt> instance, the two will be compared by
      * signature.
      *
-     * @param other  the other object
-     *
+     * @param other the other object
      * @return <tt>true</tt> if <tt>other</tt> is a <tt>FieldInfo</tt>
-     *         object and it has the same signature as this object,
-     *         <tt>false</tt> otherwise.
+     * object and it has the same signature as this object,
+     * <tt>false</tt> otherwise.
      */
-    public boolean equals(Object other)
-    {
+    public boolean equals(Object other) {
         boolean result;
 
         if (other instanceof FieldInfo)
@@ -159,8 +146,7 @@ public class FieldInfo
      *
      * @return a string representation
      */
-    public String toString()
-    {
+    public String toString() {
         return (signature != null) ? signature : name;
     }
 }

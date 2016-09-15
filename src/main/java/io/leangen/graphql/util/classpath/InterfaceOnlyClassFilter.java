@@ -53,17 +53,15 @@ import java.lang.reflect.Modifier;
  * that matches class names that (a) can be loaded and (b) are interfaces. It
  * relies on the pool of classes read by a {@link ClassFinder}; it's
  * not really useful by itself.</p>
- *
+ * <p>
  * <p>This class is really just a convenient specialization of the
  * {@link ClassModifiersClassFilter} class.</p>
  *
- * @version <tt>$Revision$</tt>
- *
  * @author Copyright &copy; 2006 Brian M. Clapper
+ * @version <tt>$Revision$</tt>
  */
 public class InterfaceOnlyClassFilter
-    extends ClassModifiersClassFilter
-{
+        extends ClassModifiersClassFilter {
     /*----------------------------------------------------------------------*\
                             Constructor
     \*----------------------------------------------------------------------*/
@@ -72,8 +70,7 @@ public class InterfaceOnlyClassFilter
      * Construct a new <tt>InterfaceOnlyClassFilter</tt> that will accept
      * only classes that are interfaces.
      */
-    public InterfaceOnlyClassFilter()
-    {
-        super (Modifier.INTERFACE);
+    public InterfaceOnlyClassFilter() {
+        super(Modifier.INTERFACE);
     }
 }

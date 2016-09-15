@@ -8,22 +8,22 @@ import graphql.schema.DataFetchingEnvironment;
  */
 public class NodeTypeHintProvider implements GraphQLTypeHintProvider {
 
-	private Object result;
-	private DataFetchingEnvironment env;
-	private Relay relay;
+    private Object result;
+    private DataFetchingEnvironment env;
+    private Relay relay;
 
-	public NodeTypeHintProvider(Object result, DataFetchingEnvironment env, Relay relay) {
-		this.result = result;
-		this.env = env;
-		this.relay = relay;
-	}
+    public NodeTypeHintProvider(Object result, DataFetchingEnvironment env, Relay relay) {
+        this.result = result;
+        this.env = env;
+        this.relay = relay;
+    }
 
-	@Override
-	public String getGraphQLTypeHint() {
-		try {
-			return relay.fromGlobalId(env.getArguments().get("id").toString()).type;
-		} catch (Exception e) {
-			throw new IllegalStateException("Indeterminable GraphQL type for class " + result.getClass(), e);
-		}
-	}
+    @Override
+    public String getGraphQLTypeHint() {
+        try {
+            return relay.fromGlobalId(env.getArguments().get("id").toString()).type;
+        } catch (Exception e) {
+            throw new IllegalStateException("Indeterminable GraphQL type for class " + result.getClass(), e);
+        }
+    }
 }

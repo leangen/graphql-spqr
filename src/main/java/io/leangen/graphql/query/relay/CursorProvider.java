@@ -6,5 +6,5 @@ package io.leangen.graphql.query.relay;
 @FunctionalInterface
 public interface CursorProvider<N> {
 
-	String createCursor(N node, int index);
+    String createCursor(N node, int index);
 }

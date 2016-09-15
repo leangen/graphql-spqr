@@ -5,19 +5,19 @@ package io.leangen.graphql.query;
  */
 public class BackwardPageRequest {
 
-	private String before;
-	private int last;
+    private String before;
+    private int last;
 
-	public BackwardPageRequest(String before, int last) {
-		this.before = before;
-		this.last = last;
-	}
+    public BackwardPageRequest(String before, int last) {
+        this.before = before;
+        this.last = last;
+    }
 
-	public String getBefore() {
-		return before;
-	}
+    public String getBefore() {
+        return before;
+    }
 
-	public int getLast() {
-		return last;
-	}
+    public int getLast() {
+        return last;
+    }
 }

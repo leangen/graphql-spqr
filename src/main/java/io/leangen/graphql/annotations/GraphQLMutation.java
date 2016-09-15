@@ -12,6 +12,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface GraphQLMutation {
 
-	String name() default "";
-	String description() default "";
+    String name() default "";
+
+    String description() default "";
 }

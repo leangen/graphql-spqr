@@ -8,29 +8,29 @@ import io.leangen.graphql.annotations.NonNull;
  */
 public class Street {
 
-	private String name;
-	private Integer number;
+    private String name;
+    private Integer number;
 
-	public Street(String name, Integer number) {
-		this.name = name;
-		this.number = number;
-	}
+    public Street(String name, Integer number) {
+        this.name = name;
+        this.number = number;
+    }
 
-	@GraphQLQuery(name = "name", description = "Street name")
-	public @NonNull String getName() {
-		return name;
-	}
+    @GraphQLQuery(name = "name", description = "Street name")
+    public @NonNull String getName() {
+        return name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	@GraphQLQuery(name = "number", description = "House number")
-	public Integer getNumber() {
-		return number;
-	}
+    @GraphQLQuery(name = "number", description = "House number")
+    public Integer getNumber() {
+        return number;
+    }
 
-	public void setNumber(Integer number) {
-		this.number = number;
-	}
+    public void setNumber(Integer number) {
+        this.number = number;
+    }
 }

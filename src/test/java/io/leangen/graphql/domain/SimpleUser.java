@@ -8,33 +8,33 @@ import io.leangen.graphql.annotations.RelayId;
  */
 public class SimpleUser {
 
-	private String fullName;
-	private SimpleUser friend;
+    private String fullName;
+    private SimpleUser friend;
 
-	public SimpleUser() {
-	}
+    public SimpleUser() {
+    }
 
-	public SimpleUser(String fullName) {
-		this.fullName = fullName;
-	}
+    public SimpleUser(String fullName) {
+        this.fullName = fullName;
+    }
 
-	public SimpleUser(String fullName, SimpleUser friend) {
-		this.fullName = fullName;
-		this.friend = friend;
-	}
+    public SimpleUser(String fullName, SimpleUser friend) {
+        this.fullName = fullName;
+        this.friend = friend;
+    }
 
-	@GraphQLQuery(name = "fullName", description = "A person's name")
-	public @RelayId String getFullName() {
-		return fullName;
-	}
+    @GraphQLQuery(name = "fullName", description = "A person's name")
+    public @RelayId String getFullName() {
+        return fullName;
+    }
 
-	@GraphQLQuery(name = "friend", description = "A person's name")
-	public SimpleUser getFriend() {
-		return friend;
-	}
+    @GraphQLQuery(name = "friend", description = "A person's name")
+    public SimpleUser getFriend() {
+        return friend;
+    }
 
-	@GraphQLQuery(name = "education")
-	public Education getEducation(int year) {
-		return new Education("alma mater", year - 1, year + 1);
-	}
+    @GraphQLQuery(name = "education")
+    public Education getEducation(int year) {
+        return new Education("alma mater", year - 1, year + 1);
+    }
 }

@@ -53,33 +53,30 @@ package io.leangen.graphql.util.classpath;
  * <tt>java.lang.reflect.Modifier</tt> class). For instance, the the
  * following code fragment defines a filter that will match only public
  * final classes:</p>
- *
+ * <p>
  * <blockquote><pre>
  * import java.lang.reflect.Modifier;
- *
+ * <p>
  * ...
- *
+ * <p>
  * ClassFilter = new ClassModifiersClassFilter (Modifier.PUBLIC | Modifier.FINAL);
  * </pre></blockquote>
- *
+ * <p>
  * <p>This class relies on the pool of classes read by a
  * {@link ClassFinder}; it's not really useful by itself.</p>
  *
+ * @author Copyright &copy; 2006 Brian M. Clapper
+ * @version <tt>$Revision$</tt>
  * @see ClassFilter
  * @see ClassFinder
  * @see java.lang.reflect.Modifier
- *
- * @version <tt>$Revision$</tt>
- *
- * @author Copyright &copy; 2006 Brian M. Clapper
  */
-public class ClassModifiersClassFilter implements ClassFilter
-{
+public class ClassModifiersClassFilter implements ClassFilter {
     /*----------------------------------------------------------------------*\
                             Private Data Items
     \*----------------------------------------------------------------------*/
 
-    private int modifiers   = 0;
+    private int modifiers = 0;
 
     /*----------------------------------------------------------------------*\
                             Constructor
@@ -89,12 +86,11 @@ public class ClassModifiersClassFilter implements ClassFilter
      * Construct a new <tt>ClassModifiersClassFilter</tt> that will accept
      * any classes with the specified modifiers.
      *
-     * @param modifiers  the bit-field of modifier flags. See the
-     *                   <tt>java.lang.reflect.Modifier</tt> class for
-     *                   legal values.
+     * @param modifiers the bit-field of modifier flags. See the
+     *                  <tt>java.lang.reflect.Modifier</tt> class for
+     *                  legal values.
      */
-    public ClassModifiersClassFilter (int modifiers)
-    {
+    public ClassModifiersClassFilter(int modifiers) {
         super();
         this.modifiers = modifiers;
     }
@@ -107,12 +103,10 @@ public class ClassModifiersClassFilter implements ClassFilter
      * @param classFinder the {@link ClassFinder} that called this filter
      *                    (mostly for access to <tt>ClassFinder</tt>
      *                    utility methods)
-     *
      * @return <tt>true</tt> if and only if the name should be included
-     *         in the list; <tt>false</tt> otherwise
+     * in the list; <tt>false</tt> otherwise
      */
-    public boolean accept (ClassInfo classInfo, ClassFinder classFinder)
-    {
+    public boolean accept(ClassInfo classInfo, ClassFinder classFinder) {
         return ((classInfo.getModifier() & modifiers) != 0);
     }
 }

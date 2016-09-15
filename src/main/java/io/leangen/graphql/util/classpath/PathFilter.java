@@ -8,5 +8,5 @@ import java.nio.file.Path;
 @FunctionalInterface
 public interface PathFilter {
 
-	boolean accept(Path path);
+    boolean accept(Path path);
 }

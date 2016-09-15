@@ -46,8 +46,8 @@
 
 package io.leangen.graphql.util.classpath;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * <p><tt>SubclassClassFilter</tt> is a {@link ClassFilter} that matches
@@ -58,12 +58,10 @@ import java.util.HashMap;
  * <tt>SubclassClassFilter</tt> can be configured to use a specific class
  * loader.</p>
  *
- * @version <tt>$Revision$</tt>
- *
  * @author Copyright &copy; 2006 Brian M. Clapper
+ * @version <tt>$Revision$</tt>
  */
-public class SubclassClassFilter implements ClassFilter
-{
+public class SubclassClassFilter implements ClassFilter {
     /*----------------------------------------------------------------------*\
                             Private Data Items
     \*----------------------------------------------------------------------*/
@@ -79,10 +77,9 @@ public class SubclassClassFilter implements ClassFilter
      * only classes that extend the specified class or implement the
      * specified interface.
      *
-     * @param baseClassOrInterface  the base class or interface
+     * @param baseClassOrInterface the base class or interface
      */
-    public SubclassClassFilter (Class baseClassOrInterface)
-    {
+    public SubclassClassFilter(Class baseClassOrInterface) {
         this.baseClass = baseClassOrInterface;
     }
 
@@ -95,19 +92,17 @@ public class SubclassClassFilter implements ClassFilter
      *
      * @param classInfo   the {@link ClassInfo} object to test
      * @param classFinder the invoking {@link ClassFinder} object
-     *
      * @return <tt>true</tt> if the class name matches,
-     *         <tt>false</tt> if it doesn't
+     * <tt>false</tt> if it doesn't
      */
-    public boolean accept (ClassInfo classInfo, ClassFinder classFinder)
-    {
-        Map<String,ClassInfo> superClasses = new HashMap<String,ClassInfo>();
+    public boolean accept(ClassInfo classInfo, ClassFinder classFinder) {
+        Map<String, ClassInfo> superClasses = new HashMap<String, ClassInfo>();
 
         if (baseClass.isInterface())
-            classFinder.findAllInterfaces (classInfo, superClasses);
+            classFinder.findAllInterfaces(classInfo, superClasses);
         else
-            classFinder.findAllSuperClasses (classInfo, superClasses);
+            classFinder.findAllSuperClasses(classInfo, superClasses);
 
-        return superClasses.keySet().contains (baseClass.getName());
+        return superClasses.keySet().contains(baseClass.getName());
     }
 }

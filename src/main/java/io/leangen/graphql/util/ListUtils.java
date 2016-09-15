@@ -8,11 +8,11 @@ import java.util.List;
  */
 public class ListUtils {
 
-	@SuppressWarnings("unchecked")
-	public static <T> T getLast(List<T> list) {
-		if (list instanceof Deque) {
-			return ((Deque<T>)list).getLast();
-		}
-		return list.get(list.size() - 1);
-	}
+    @SuppressWarnings("unchecked")
+    public static <T> T getLast(List<T> list) {
+        if (list instanceof Deque) {
+            return ((Deque<T>) list).getLast();
+        }
+        return list.get(list.size() - 1);
+    }
 }

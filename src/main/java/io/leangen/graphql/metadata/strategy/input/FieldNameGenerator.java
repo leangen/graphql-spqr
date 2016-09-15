@@ -9,6 +9,7 @@ import java.util.Optional;
  */
 public interface FieldNameGenerator {
 
-	Optional<String> generateFieldName(Field field);
-	Optional<String> generateFieldName(Method fieldGetter);
+    Optional<String> generateFieldName(Field field);
+
+    Optional<String> generateFieldName(Method fieldGetter);
 }

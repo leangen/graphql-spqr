@@ -7,5 +7,5 @@ import java.lang.reflect.Type;
  */
 public interface InputDeserializer {
 
-	<T> T deserialize(Object graphQlInput, Type type);
+    <T> T deserialize(Object graphQlInput, Type type);
 }

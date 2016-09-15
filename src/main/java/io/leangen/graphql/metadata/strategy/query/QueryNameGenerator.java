@@ -9,7 +9,9 @@ import java.lang.reflect.Method;
  */
 public interface QueryNameGenerator {
 
-	String generateQueryName(Method queryMethod, AnnotatedType declaringType);
-	String generateQueryName(Field domainField, AnnotatedType declaringType);
-	String generateMutationName(Method mutationMethod, AnnotatedType declaringType);
+    String generateQueryName(Method queryMethod, AnnotatedType declaringType);
+
+    String generateQueryName(Field domainField, AnnotatedType declaringType);
+
+    String generateMutationName(Method mutationMethod, AnnotatedType declaringType);
 }

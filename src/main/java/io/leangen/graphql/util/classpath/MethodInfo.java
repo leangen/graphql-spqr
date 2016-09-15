@@ -5,8 +5,7 @@ package io.leangen.graphql.util.classpath;
  *
  * @see ClassInfo
  */
-public class MethodInfo implements Comparable<MethodInfo>
-{
+public class MethodInfo implements Comparable<MethodInfo> {
     /*----------------------------------------------------------------------*\
                             Private Data Items
     \*----------------------------------------------------------------------*/
@@ -24,8 +23,7 @@ public class MethodInfo implements Comparable<MethodInfo>
     /**
      * Create a new, empty <tt>MethodInfo</tt> object.
      */
-    public MethodInfo()
-    {
+    public MethodInfo() {
     }
 
     /**
@@ -41,8 +39,7 @@ public class MethodInfo implements Comparable<MethodInfo>
                       String name,
                       String description,
                       String signature,
-                      String[] exceptions)
-    {
+                      String[] exceptions) {
         this.access = access;
         this.name = name;
         this.description = description;
@@ -59,8 +56,7 @@ public class MethodInfo implements Comparable<MethodInfo>
      *
      * @return the access modifiers, or 0 if none are set.
      */
-    public int getAccess()
-    {
+    public int getAccess() {
         return access;
     }
 
@@ -69,8 +65,7 @@ public class MethodInfo implements Comparable<MethodInfo>
      *
      * @return the method name
      */
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
@@ -79,8 +74,7 @@ public class MethodInfo implements Comparable<MethodInfo>
      *
      * @return the method description, or null
      */
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
@@ -89,8 +83,7 @@ public class MethodInfo implements Comparable<MethodInfo>
      *
      * @return the method signature, or null.
      */
-    public String getSignature()
-    {
+    public String getSignature() {
         return signature;
     }
 
@@ -99,8 +92,7 @@ public class MethodInfo implements Comparable<MethodInfo>
      *
      * @return the names of the thrown exceptions, or null.
      */
-    public String[] getExceptions()
-    {
+    public String[] getExceptions() {
         return exceptions;
     }
 
@@ -110,8 +102,7 @@ public class MethodInfo implements Comparable<MethodInfo>
      * @return the hash code
      */
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return signature.hashCode();
     }
 
@@ -119,14 +110,12 @@ public class MethodInfo implements Comparable<MethodInfo>
      * Compare this object and another <tt>MethodInfo</tt> object. The two
      * objects are compared by their signature fields.
      *
-     * @param other  the other object
-     *
+     * @param other the other object
      * @return a negative integer, zero, or a positive integer, as this
-     *         object is less than, equal to, or greater than the specified
-     *         object.
+     * object is less than, equal to, or greater than the specified
+     * object.
      */
-    public int compareTo(MethodInfo other)
-    {
+    public int compareTo(MethodInfo other) {
         return this.signature.compareTo(other.signature);
     }
 
@@ -135,22 +124,13 @@ public class MethodInfo implements Comparable<MethodInfo>
      * object is a <tt>MethodInfo</tt> instance, the two will be compared by
      * signature.
      *
-     * @param other  the other object
-     *
+     * @param other the other object
      * @return <tt>true</tt> if <tt>other</tt> is a <tt>MethodInfo</tt>
-     *         object and it has the same signature as this object,
-     *         <tt>false</tt> otherwise.
+     * object and it has the same signature as this object,
+     * <tt>false</tt> otherwise.
      */
-    public boolean equals(Object other)
-    {
-        boolean result;
-
-        if (other instanceof MethodInfo)
-            result = compareTo((MethodInfo) other) == 0;
-        else
-            result = false;
-
-        return result;
+    public boolean equals(Object other) {
+        return other instanceof MethodInfo && compareTo((MethodInfo) other) == 0;
     }
 
     /**
@@ -160,8 +140,7 @@ public class MethodInfo implements Comparable<MethodInfo>
      *
      * @return a string representation
      */
-    public String toString()
-    {
+    public String toString() {
         return (signature != null) ? signature : name;
     }
 }

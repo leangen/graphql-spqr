@@ -12,6 +12,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface GraphQLType {
 
-	String name();
-	String description() default "";
+    String name();
+
+    String description() default "";
 }

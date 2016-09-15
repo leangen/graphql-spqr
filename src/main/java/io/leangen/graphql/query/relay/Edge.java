@@ -5,6 +5,7 @@ package io.leangen.graphql.query.relay;
  */
 public interface Edge<N> {
 
-	String getCursor();
-	N getNode();
+    String getCursor();
+
+    N getNode();
 }

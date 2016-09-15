@@ -8,14 +8,14 @@ import java.lang.reflect.Method;
  */
 public class DelegatingInvocationHandler implements InvocationHandler {
 
-	private Object delegate;
+    private Object delegate;
 
-	public DelegatingInvocationHandler(Object delegate) {
-		this.delegate = delegate;
-	}
+    public DelegatingInvocationHandler(Object delegate) {
+        this.delegate = delegate;
+    }
 
-	@Override
-	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-		return method.invoke(delegate, args);
-	}
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        return method.invoke(delegate, args);
+    }
 }

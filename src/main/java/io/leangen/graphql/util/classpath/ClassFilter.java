@@ -52,11 +52,9 @@ package io.leangen.graphql.util.classpath;
  * deliberately reminiscent of the <tt>java.io.FilenameFilter</tt>
  * interface.
  *
- * @see ClassFinder
- *
- * @version <tt>$Revision$</tt>
- *
  * @author Copyright &copy; 2006 Brian M. Clapper
+ * @version <tt>$Revision$</tt>
+ * @see ClassFinder
  */
 @FunctionalInterface
 public interface ClassFilter {
@@ -69,9 +67,8 @@ public interface ClassFilter {
      * @param classFinder the {@link ClassFinder} that called this filter
      *                    (mostly for access to <tt>ClassFinder</tt>
      *                    utility methods)
-     *
      * @return <tt>true</tt> if and only if the name should be included
-     *         in the list; <tt>false</tt> otherwise
+     * in the list; <tt>false</tt> otherwise
      */
     boolean accept(ClassInfo classInfo, ClassFinder classFinder);
 }

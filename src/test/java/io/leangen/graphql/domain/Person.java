@@ -5,5 +5,5 @@ package io.leangen.graphql.domain;
  */
 public interface Person {
 
-	String getName();
+    String getName();
 }

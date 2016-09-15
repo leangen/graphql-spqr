@@ -5,19 +5,19 @@ package io.leangen.graphql.query;
  */
 public class ForwardPageRequest {
 
-	private String after;
-	private int first;
+    private String after;
+    private int first;
 
-	public ForwardPageRequest(String after, int first) {
-		this.after = after;
-		this.first = first;
-	}
+    public ForwardPageRequest(String after, int first) {
+        this.after = after;
+        this.first = first;
+    }
 
-	public String getAfter() {
-		return after;
-	}
+    public String getAfter() {
+        return after;
+    }
 
-	public int getFirst() {
-		return first;
-	}
+    public int getFirst() {
+        return first;
+    }
 }

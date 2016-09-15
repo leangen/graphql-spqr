@@ -7,31 +7,31 @@ import io.leangen.graphql.query.relay.PageInfo;
  */
 public class GenericPageInfo<N> implements PageInfo<N> {
 
-	private String startCursor;
-	private String endCursor;
-	private boolean hasNextPage;
-	private boolean hasPreviousPage;
+    private String startCursor;
+    private String endCursor;
+    private boolean hasNextPage;
+    private boolean hasPreviousPage;
 
-	public GenericPageInfo(String startCursor, String endCursor, boolean hasNextPage, boolean hasPreviousPage) {
-		this.startCursor = startCursor;
-		this.endCursor = endCursor;
-		this.hasNextPage = hasNextPage;
-		this.hasPreviousPage = hasPreviousPage;
-	}
+    public GenericPageInfo(String startCursor, String endCursor, boolean hasNextPage, boolean hasPreviousPage) {
+        this.startCursor = startCursor;
+        this.endCursor = endCursor;
+        this.hasNextPage = hasNextPage;
+        this.hasPreviousPage = hasPreviousPage;
+    }
 
-	public String getStartCursor() {
-		return startCursor;
-	}
+    public String getStartCursor() {
+        return startCursor;
+    }
 
-	public String getEndCursor() {
-		return endCursor;
-	}
+    public String getEndCursor() {
+        return endCursor;
+    }
 
-	public boolean isHasNextPage() {
-		return hasNextPage;
-	}
+    public boolean isHasNextPage() {
+        return hasNextPage;
+    }
 
-	public boolean isHasPreviousPage() {
-		return hasPreviousPage;
-	}
+    public boolean isHasPreviousPage() {
+        return hasPreviousPage;
+    }
 }

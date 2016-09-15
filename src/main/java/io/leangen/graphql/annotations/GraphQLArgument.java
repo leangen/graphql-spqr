@@ -12,7 +12,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 public @interface GraphQLArgument {
 
-	String name();
-	String description() default "";
-	boolean required() default false;
+    String name();
+
+    String description() default "";
+
+    boolean required() default false;
 }

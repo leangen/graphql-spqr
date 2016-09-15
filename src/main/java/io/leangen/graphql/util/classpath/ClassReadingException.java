@@ -7,7 +7,7 @@ import java.io.IOException;
  */
 public class ClassReadingException extends IOException {
 
-	public ClassReadingException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public ClassReadingException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

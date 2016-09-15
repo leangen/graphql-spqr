@@ -9,18 +9,18 @@ import java.lang.reflect.Method;
  */
 public class MethodQueryNameGenerator implements QueryNameGenerator {
 
-	@Override
-	public String generateQueryName(Method queryMethod, AnnotatedType type) {
-		return queryMethod.getName();
-	}
+    @Override
+    public String generateQueryName(Method queryMethod, AnnotatedType type) {
+        return queryMethod.getName();
+    }
 
-	@Override
-	public String generateQueryName(Field domainField, AnnotatedType declaringType) {
-		return domainField.getName();
-	}
+    @Override
+    public String generateQueryName(Field domainField, AnnotatedType declaringType) {
+        return domainField.getName();
+    }
 
-	@Override
-	public String generateMutationName(Method mutationMethod, AnnotatedType declaringType) {
-		return mutationMethod.getName();
-	}
+    @Override
+    public String generateMutationName(Method mutationMethod, AnnotatedType declaringType) {
+        return mutationMethod.getName();
+    }
 }

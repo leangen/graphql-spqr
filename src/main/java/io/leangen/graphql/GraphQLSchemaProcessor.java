@@ -7,5 +7,5 @@ import graphql.schema.GraphQLSchema;
  */
 public interface GraphQLSchemaProcessor {
 
-	GraphQLSchema.Builder process(GraphQLSchema.Builder schemaBuilder);
+    GraphQLSchema.Builder process(GraphQLSchema.Builder schemaBuilder);
 }

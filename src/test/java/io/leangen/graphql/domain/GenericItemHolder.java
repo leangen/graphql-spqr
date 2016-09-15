@@ -7,8 +7,8 @@ import io.leangen.graphql.annotations.GraphQLQuery;
  */
 public class GenericItemHolder<T> {
 
-	@GraphQLQuery(name = "item", description = "The item this holder contains")
-	public T item;
-	@GraphQLQuery(name = "name", description = "The name of the contained item")
-	public String name;
+    @GraphQLQuery(name = "item", description = "The item this holder contains")
+    public T item;
+    @GraphQLQuery(name = "name", description = "The name of the contained item")
+    public String name;
 }
