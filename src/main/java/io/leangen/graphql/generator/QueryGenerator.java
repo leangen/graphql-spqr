@@ -1,28 +1,8 @@
 package io.leangen.graphql.generator;
 
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import graphql.Scalars;
 import graphql.relay.Relay;
-import graphql.schema.DataFetcher;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLInputObjectField;
-import graphql.schema.GraphQLInputObjectType;
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLNonNull;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
+import graphql.schema.*;
 import io.leangen.graphql.annotations.NonNull;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
@@ -31,8 +11,13 @@ import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.HintedTypeResolver;
 import io.leangen.graphql.query.IdTypeMapper;
+import io.leangen.graphql.query.relay.Page;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
+
+import java.lang.reflect.AnnotatedType;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -131,13 +116,13 @@ public class QueryGenerator {
 			return GraphQLUtils.toGraphQLScalarType(javaType.getType());
 		}
 		if (ClassUtils.isSuperType(Collection.class, javaType.getType())) {
-			if (javaType instanceof AnnotatedParameterizedType) {
-				return new GraphQLList(toGraphQLType(((AnnotatedParameterizedType) javaType).getAnnotatedActualTypeArguments()[0], parentTrail, buildContext));
-			} else {
-				throw new IllegalArgumentException("Raw Collection types are not possible to map");
-			}
+			return new GraphQLList(toGraphQLType(ClassUtils.getTypeArguments(javaType)[0], parentTrail, buildContext));
 		}
-		DomainType domainType = new DomainType(ClassUtils.getMappableType(javaType));
+		//Pages don't need special treatment here, just extract their real type
+		if(ClassUtils.isSuperType(Page.class, javaType.getType())) {
+			javaType = ClassUtils.getTypeArguments(javaType)[0];
+		}
+		DomainType domainType = new DomainType(javaType);
 		return toGraphQLType(domainType, parentTrail, buildContext);
 	}
 
@@ -199,17 +184,17 @@ public class QueryGenerator {
 			return GraphQLUtils.toGraphQLScalarType(javaType.getType());
 		}
 		if (ClassUtils.isSuperType(Collection.class, javaType.getType())) {
-			if (javaType instanceof AnnotatedParameterizedType) {
-				return new GraphQLList(toGraphQLInputType(((AnnotatedParameterizedType) javaType).getAnnotatedActualTypeArguments()[0], parentTrail, buildContext));
-			} else {
-				throw new IllegalArgumentException("Raw Collection types are not possible to map");
-			}
+			return new GraphQLList(toGraphQLInputType(ClassUtils.getTypeArguments(javaType)[0], parentTrail, buildContext));
 		}
-		Optional<GraphQLInputType> cached = buildContext.typeRepository.getInputType(javaType);
+		Optional<GraphQLInputType> cached = buildContext.typeRepository.getInputType(javaType.getType());
 		if (cached.isPresent()) {
 			return cached.get();
 		}
-		DomainType domainType = new DomainType(ClassUtils.getMappableType(javaType));
+		//Pages don't need special treatment here, just extract their real type
+		if(ClassUtils.isSuperType(Page.class, javaType.getType())) {
+			javaType = ClassUtils.getTypeArguments(javaType)[0];
+		}
+		DomainType domainType = new DomainType(javaType);
 		return toGraphQLInputType(domainType, parentTrail, buildContext);
 	}
 
@@ -229,7 +214,7 @@ public class QueryGenerator {
 				);
 
 		GraphQLInputObjectType type = typeBuilder.build();
-		buildContext.typeRepository.registerType(domainType, type);
+		buildContext.typeRepository.registerType(domainType.getJavaType().getType(), type);
 		return type;
 	}
 

@@ -1,6 +1,5 @@
 package io.leangen.graphql.generator;
 
-import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,7 +20,7 @@ public class TypeRepository {
 
 	private Map<String, GraphQLObjectType> outputTypesByName = new HashMap<>();
 	private Map<Type, List<GraphQLObjectType>> outputTypesByClass = new HashMap<>();
-	private Map<AnnotatedType, GraphQLInputType> inputTypesByClass = new HashMap<>();
+	private Map<Type, GraphQLInputType> inputTypesByClass = new HashMap<>();
 
 	public void registerType(DomainType domainType, GraphQLObjectType type) {
 		this.outputTypesByName.put(type.getName(), type);
@@ -29,15 +28,15 @@ public class TypeRepository {
 		this.outputTypesByClass.get(domainType.getJavaType().getType()).add(type);
 	}
 
-	public void registerType(DomainType domainType, GraphQLInputType type) {
-		this.inputTypesByClass.put(domainType.getJavaType(), type);
+	public void registerType(Type javaType, GraphQLInputType type) {
+		this.inputTypesByClass.put(javaType, type);
 	}
 
 	public GraphQLObjectType getOutputType(String name) {
 		return outputTypesByName.get(name);
 	}
 
-	public Optional<GraphQLInputType> getInputType(AnnotatedType javaType) {
+	public Optional<GraphQLInputType> getInputType(Type javaType) {
 		return Optional.ofNullable(inputTypesByClass.get(javaType));
 	}
 

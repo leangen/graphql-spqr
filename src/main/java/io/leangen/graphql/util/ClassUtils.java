@@ -1,22 +1,36 @@
 package io.leangen.graphql.util;
 
+import java.beans.Introspector;
+import java.io.Serializable;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.AnnotatedTypeVariable;
+import java.lang.reflect.AnnotatedWildcardType;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.TypeResolver;
 import io.leangen.gentyref8.GenericTypeReflector;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
-import io.leangen.graphql.query.relay.Page;
 import io.leangen.graphql.util.classpath.ClassFinder;
 import io.leangen.graphql.util.classpath.ClassInfo;
 import io.leangen.graphql.util.classpath.ClassReadingException;
 import io.leangen.graphql.util.classpath.SubclassClassFilter;
 import sun.misc.Unsafe;
-
-import java.beans.Introspector;
-import java.io.Serializable;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.stream.Collectors;
 
 import static io.leangen.gentyref8.GenericTypeReflector.annotate;
 import static io.leangen.gentyref8.GenericTypeReflector.capture;
@@ -41,7 +55,7 @@ public class ClassUtils {
 	}
 
 	/**
-	 * Retrieves all public methods on the given class (same as {@link Class#getMethods()}) annotated by the given annotations
+	 * Retrieves all public methods on the given class (same as {@link Class#getMethods()}) annotated by the given annotation
 	 * @param type The class to scan
 	 * @param annotation The annotation to look for
 	 * @return All annotated methods
@@ -51,10 +65,10 @@ public class ClassUtils {
 	}
 
 	/**
-	 * Retrieves all public fields on the given class (same as {@link Class#getFields()}) annotated by the given annotations
+	 * Retrieves all public fields on the given class (same as {@link Class#getFields()}) annotated by the given annotation
 	 * @param type The class to scan
 	 * @param annotation The annotation to look for
-	 * @return All annotated methods
+	 * @return All annotated fields
 	 */
 	public static Set<Field> getAnnotatedFields(final Class<?> type, final Class<? extends Annotation> annotation) {
 		return getAnnotatedElements(type.getFields(), annotation);
@@ -95,15 +109,12 @@ public class ClassUtils {
 	}
 
 	//TODO Return multiple types here e.g. for maps and "union" types for wildcards and variables
-	public static AnnotatedType getMappableType(AnnotatedType type) {
-		if (Collection.class.isAssignableFrom(getRawType(type.getType())) || Page.class.isAssignableFrom(getRawType(type.getType()))) {
-			if (type instanceof AnnotatedParameterizedType) {
-				return getMappableType(((AnnotatedParameterizedType) type).getAnnotatedActualTypeArguments()[0]);
-			} else {
-				throw new IllegalArgumentException("Raw Collection and Page types are not possible to map");
-			}
+	public static AnnotatedType[] getTypeArguments(AnnotatedType type) {
+		if (type instanceof AnnotatedParameterizedType) {
+			return ((AnnotatedParameterizedType) type).getAnnotatedActualTypeArguments();
+		} else {
+			throw new IllegalArgumentException("Raw parameterized types are not possible to map: " + type.getType().getTypeName());
 		}
-		return type;
 	}
 
 	/**
@@ -123,7 +134,7 @@ public class ClassUtils {
 	public static Class getRawType(Type type) {
 		Class<?> erased = GenericTypeReflector.erase(type);
 		//TODO This should preferably be a warning, not an exception, or have customizable behavior
-		if (erased == Objects.class && type != Object.class) {
+		if (erased == Object.class && type != Object.class) {
 			throw new IllegalArgumentException("Type " + type.getTypeName() + " is lost due to erasure");
 		}
 		return erased;
@@ -136,8 +147,8 @@ public class ClassUtils {
 	 */
 	public static void checkIfResolvable(AnnotatedType declaringType, Member member) {
 		try {
-			getMappableType(declaringType);
-			ClassUtils.getRawType(declaringType.getType());
+			getTypeArguments(declaringType);
+			getRawType(declaringType.getType());
 		} catch (IllegalArgumentException e) {
 			throw new TypeMappingException(member, e);
 		}

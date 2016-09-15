@@ -52,7 +52,7 @@ Exposing the service:
         .build();
     GraphQL graphQL = new GraphQL(schema);
     
-    //keep the reference to GraphQL instance and execute queries against it
+    //keep the reference to GraphQL instance and execute queries against it.
     //this query selects a user by ID and requests name and regDate fields only
     ExecutionResult result = graphQL.execute(   
         "{ user (id: 123) {

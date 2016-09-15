@@ -85,7 +85,7 @@ public class UserService<T> {
 		return user;
 	}
 
-	//TODO figure out how to deal with void returns :: return source object instead
+	//TODO figure out how to deal with void returns :: return source object instead?
 //	@GraphQLMutation(name="user")
 //	public void updateTitle(@GraphQLResolverSource User user, String title) {
 //		user.title = title;
