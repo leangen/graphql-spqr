@@ -12,7 +12,7 @@ Service class:
     class UserService {
     
         @GraphQLQuery(name = "user")
-        public User getUserById(@GraphQLArgument(name = "id") Integer id) {
+        public User getById(@GraphQLArgument(name = "id") Integer id) {
           ...
         }
     }
