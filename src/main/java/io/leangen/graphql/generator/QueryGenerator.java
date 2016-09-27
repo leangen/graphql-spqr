@@ -5,12 +5,14 @@ import graphql.relay.Relay;
 import graphql.schema.*;
 import io.leangen.graphql.annotations.NonNull;
 import io.leangen.graphql.annotations.RelayId;
+import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
 import io.leangen.graphql.metadata.DomainType;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.HintedTypeResolver;
 import io.leangen.graphql.query.IdTypeMapper;
+import io.leangen.graphql.query.conversion.ConverterRepository;
 import io.leangen.graphql.query.relay.Page;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
@@ -36,9 +38,9 @@ public class QueryGenerator {
 
     private static final String RELAY_ID = "id";
 
-    public QueryGenerator(QuerySourceRepository querySourceRepository, BuildContext.TypeGenerationMode mode) {
-        QueryRepository queryRepository = new QueryRepository(querySourceRepository);
-        BuildContext buildContext = new BuildContext(mode, queryRepository);
+    public QueryGenerator(QuerySourceRepository querySourceRepository, TypeMapperRepository typeMappers, ConverterRepository converters, BuildContext.TypeGenerationMode mode) {
+        QueryRepository queryRepository = new QueryRepository(querySourceRepository, typeMappers, converters);
+        BuildContext buildContext = new BuildContext(mode, queryRepository, typeMappers, converters);
         node = buildContext.relay.nodeInterface(new HintedTypeResolver(buildContext.typeRepository));
         this.queries = generateQueries(buildContext);
         this.mutations = generateMutations(buildContext);
@@ -118,12 +120,52 @@ public class QueryGenerator {
         if (ClassUtils.isSuperType(Collection.class, javaType.getType())) {
             return new GraphQLList(toGraphQLType(ClassUtils.getTypeArguments(javaType)[0], parentTrail, buildContext));
         }
+        if (ClassUtils.isSuperType(Map.class, javaType.getType())) {
+            return new GraphQLList(
+                    mapEntry(
+                            toGraphQLType(ClassUtils.getTypeArguments(javaType)[0], parentTrail, buildContext),
+                            toGraphQLType(ClassUtils.getTypeArguments(javaType)[1], parentTrail, buildContext)));
+        }
         //Pages don't need special treatment here, just extract their real type
         if (ClassUtils.isSuperType(Page.class, javaType.getType())) {
             javaType = ClassUtils.getTypeArguments(javaType)[0];
         }
         DomainType domainType = new DomainType(javaType);
         return toGraphQLType(domainType, parentTrail, buildContext);
+    }
+
+    private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType) {
+        return newObject()
+                .name("mapEntry_" + keyType.getName() + "_" + valueType.getName())
+                .description("Map entry")
+                .field(newFieldDefinition()
+                        .name("key")
+                        .description("Map key")
+                        .type(keyType)
+                        .build())
+                .field(newFieldDefinition()
+                        .name("value")
+                        .description("Map value")
+                        .type(valueType)
+                        .build())
+                .build();
+    }
+
+    private GraphQLInputType mapEntry(GraphQLInputType keyType, GraphQLInputType valueType) {
+        return newInputObject()
+                .name("mapEntry_" + keyType.getName() + "_" + valueType.getName() + "_input")
+                .description("Map entry input")
+                .field(newInputObjectField()
+                        .name("key")
+                        .description("Map key input")
+                        .type(keyType)
+                        .build())
+                .field(newInputObjectField()
+                        .name("value")
+                        .description("Map value input")
+                        .type(valueType)
+                        .build())
+                .build();
     }
 
     private GraphQLOutputType toGraphQLType(DomainType domainType, List<String> parentTrail, BuildContext buildContext) {
@@ -186,6 +228,12 @@ public class QueryGenerator {
         if (ClassUtils.isSuperType(Collection.class, javaType.getType())) {
             return new GraphQLList(toGraphQLInputType(ClassUtils.getTypeArguments(javaType)[0], parentTrail, buildContext));
         }
+        if (ClassUtils.isSuperType(Map.class, javaType.getType())) {
+            return new GraphQLList(
+                    mapEntry(
+                            toGraphQLInputType(ClassUtils.getTypeArguments(javaType)[0], parentTrail, buildContext),
+                            toGraphQLInputType(ClassUtils.getTypeArguments(javaType)[1], parentTrail, buildContext)));
+        }
         Optional<GraphQLInputType> cached = buildContext.typeRepository.getInputType(javaType.getType());
         if (cached.isPresent()) {
             return cached.get();
@@ -199,9 +247,9 @@ public class QueryGenerator {
     }
 
     private GraphQLInputType toGraphQLInputType(DomainType domainType, List<String> parentTrail, BuildContext buildContext) {
-//		if (buildContext.inputsInProgress.contains(domainType.getInputName())) {
-//			return new GraphQLTypeReference(domainType.getInputName());
-//		}
+		if (buildContext.inputsInProgress.contains(domainType.getInputName())) {
+			return new GraphQLTypeReference(domainType.getInputName());
+		}
         buildContext.inputsInProgress.add(domainType.getInputName());
         GraphQLInputObjectType.Builder typeBuilder = newInputObject()
                 .name(domainType.getInputName())

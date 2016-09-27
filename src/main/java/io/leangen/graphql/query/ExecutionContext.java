@@ -8,6 +8,7 @@ import io.leangen.graphql.generator.TypeRepository;
 import io.leangen.graphql.generator.proxy.NodeTypeHintProvider;
 import io.leangen.graphql.generator.proxy.ProxyFactory;
 import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
+import io.leangen.graphql.query.conversion.ConverterRepository;
 
 import java.lang.reflect.Type;
 
@@ -21,13 +22,16 @@ public class ExecutionContext {
     public final ProxyFactory proxyFactory;
     public final IdTypeMapper idTypeMapper;
     public final InputDeserializer inputDeserializer;
+    public final ConverterRepository converters;
 
-    public ExecutionContext(Relay relay, TypeRepository typeRepository, ProxyFactory proxyFactory, IdTypeMapper idTypeMapper, InputDeserializer inputDeserializer) {
+    public ExecutionContext(Relay relay, TypeRepository typeRepository, ProxyFactory proxyFactory, IdTypeMapper idTypeMapper, InputDeserializer inputDeserializer,
+                            ConverterRepository converters) {
         this.relay = relay;
         this.typeRepository = typeRepository;
         this.proxyFactory = proxyFactory;
         this.idTypeMapper = idTypeMapper;
         this.inputDeserializer = inputDeserializer;
+        this.converters = converters;
     }
 
     public Object proxyIfNeeded(DataFetchingEnvironment env, Object result, Type type) throws InstantiationException, IllegalAccessException {

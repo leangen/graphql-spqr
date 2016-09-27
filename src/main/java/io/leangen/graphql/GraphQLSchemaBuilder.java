@@ -5,8 +5,12 @@ import io.leangen.gentyref8.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.QuerySourceRepository;
+import io.leangen.graphql.generator.mapping.*;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
 import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
+import io.leangen.graphql.query.conversion.ConverterRepository;
+import io.leangen.graphql.query.conversion.InputConverter;
+import io.leangen.graphql.query.conversion.OutputConverter;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
@@ -24,9 +28,13 @@ public class GraphQLSchemaBuilder {
 
     private final QuerySourceRepository querySourceRepository = new QuerySourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
+    private final ConverterRepository converterRepository = new ConverterRepository();
+    private final TypeMapperRepository typeMappers = new TypeMapperRepository();
 
     public GraphQLSchemaBuilder() {
-        withResolverExtractors(new AnnotatedResolverExtractor());
+        withResolverExtractors(new AnnotatedResolverExtractor())
+                .withTypeAdapters(new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter())
+                .withOutputConverters(new CollectionToListOutputConverter());
     }
 
     public GraphQLSchemaBuilder(Object... querySourceBeans) {
@@ -94,9 +102,30 @@ public class GraphQLSchemaBuilder {
         return this;
     }
 
+    public GraphQLSchemaBuilder withInputConverters(InputConverter<?,?>... inputConverters) {
+        this.converterRepository.registerConverters(inputConverters);
+        return this;
+    }
+
+    public GraphQLSchemaBuilder withOutputConverters(OutputConverter<?,?>... outputConverters) {
+        this.converterRepository.registerConverters(outputConverters);
+        return this;
+    }
+
+    public GraphQLSchemaBuilder withTypeMappers(TypeMapper... typeMappers) {
+        this.typeMappers.registerTypeMapper(typeMappers);
+        return this;
+    }
+
+    public GraphQLSchemaBuilder withTypeAdapters(AbstractTypeAdapter<?,?>... typeAdapters) {
+        withInputConverters((InputConverter<?, ?>[]) typeAdapters);
+        withOutputConverters((OutputConverter<?, ?>[]) typeAdapters);
+        return withTypeMappers((TypeMapper[]) typeAdapters);
+    }
+
     public GraphQLSchema build() {
 
-        QueryGenerator queryGenerator = new QueryGenerator(querySourceRepository, BuildContext.TypeGenerationMode.FLAT);
+        QueryGenerator queryGenerator = new QueryGenerator(querySourceRepository, typeMappers, converterRepository, BuildContext.TypeGenerationMode.FLAT);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
         builder

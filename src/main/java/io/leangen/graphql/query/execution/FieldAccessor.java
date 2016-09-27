@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator;
+package io.leangen.graphql.query.execution;
 
 import io.leangen.graphql.util.ClassUtils;
 

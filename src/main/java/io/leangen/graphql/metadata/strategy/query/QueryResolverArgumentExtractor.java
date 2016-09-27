@@ -1,7 +1,9 @@
 package io.leangen.graphql.metadata.strategy.query;
 
+import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.metadata.QueryArgument;
 import io.leangen.graphql.query.ConnectionRequest;
+import io.leangen.graphql.query.conversion.ConverterRepository;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
@@ -13,7 +15,8 @@ import java.util.List;
  */
 public interface QueryResolverArgumentExtractor {
 
-    List<QueryArgument> extractResolverArguments(Method resolverMethod, AnnotatedType enclosingType);
+    List<QueryArgument> extractResolverArguments(List<String> parentPaths, Method resolverMethod, AnnotatedType enclosingType,
+                                                 TypeMapperRepository typeMappers, ConverterRepository converters);
 
     default boolean isExplicitRelayConnectionArgument(Parameter parameter) {
         return ConnectionRequest.class.isAssignableFrom(parameter.getType());

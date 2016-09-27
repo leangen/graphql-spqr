@@ -116,7 +116,7 @@ public class Query {
                 .map(argName -> new QueryArgument(
                         ClassUtils.getCommonSuperType(argumentsByName.get(argName).stream().map(QueryArgument::getJavaType).collect(Collectors.toList())),
                         argName,
-                        "",
+                        argumentsByName.get(argName).stream().map(QueryArgument::getDescription).filter(desc -> desc != null).findFirst().orElse(""),
 //						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRequired),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRequired),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isResolverSource),
@@ -149,7 +149,7 @@ public class Query {
                     //TODO implement simple filtering here
                 }
             } else {
-                Object result = resolver.resolve(env.getSource(), queryArguments, new ConnectionRequest(connectionArguments), executionContext);
+                Object result = resolver.resolve(hierarchicalName, env.getSource(), queryArguments, new ConnectionRequest(connectionArguments), executionContext);
                 return executionContext.proxyIfNeeded(env, result, resolver.getReturnType().getType());
             }
             throw new GraphQLException("Resolver for query " + hierarchicalName + " accepting arguments: " + env.getArguments().keySet() + " not implemented");
@@ -215,7 +215,10 @@ public class Query {
 
     @Override
     public int hashCode() {
-        return (name + javaType.toString() + (parent == null ? "" : parent.name)).hashCode();
+        int typeHash = Arrays.stream(javaType.getAnnotations())
+                .mapToInt(annotation -> annotation.getClass().getCanonicalName().hashCode())
+                .sum();
+        return (name + (parent == null ? "" : parent.name)).hashCode() + typeHash;
     }
 
     @Override
@@ -227,14 +230,17 @@ public class Query {
             return false;
         }
 
-        return otherQuery.name.equals(this.name) &&
-                ((otherQuery.javaType == null && this.javaType == null) || (otherQuery.javaType.equals(this.javaType))) &&
-                ((otherQuery.parent == null && this.parent == null) || otherQuery.parent.equals(this.parent));
+        if ((otherQuery.javaType == null && this.javaType != null) || (otherQuery.javaType != null && this.javaType == null)) {
+            return false;
+        }
+
+        return otherQuery.name.equals(this.name)
+                && (otherQuery.javaType == null || otherQuery.javaType.equals(this.javaType))
+                && (otherQuery.parent == null || otherQuery.parent.equals(this.parent));
     }
 
     @Override
     public String toString() {
         return hierarchicalName;
     }
-
 }

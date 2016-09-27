@@ -1,6 +1,8 @@
 package io.leangen.graphql.metadata.strategy.query;
 
+import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.metadata.QueryResolver;
+import io.leangen.graphql.query.conversion.ConverterRepository;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Member;
@@ -14,11 +16,25 @@ public interface ResolverExtractor {
 
     Predicate<Member> acceptAll = method -> true;
 
-    Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType type);
+    Collection<QueryResolver> extractQueryResolvers(Object querySourceBean,
+                                                    AnnotatedType type,
+                                                    TypeMapperRepository typeMappers,
+                                                    ConverterRepository converters);
 
-    Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType type);
+    Collection<QueryResolver> extractMutationResolvers(Object querySourceBean,
+                                                       AnnotatedType type,
+                                                       TypeMapperRepository typeMappers,
+                                                       ConverterRepository converters);
 
-    Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType type, Predicate<Member>... filters);
+    Collection<QueryResolver> extractQueryResolvers(Object querySourceBean,
+                                                    AnnotatedType type,
+                                                    TypeMapperRepository typeMappers,
+                                                    ConverterRepository converters,
+                                                    Predicate<Member>... filters);
 
-    Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType type, Predicate<Member>... filters);
+    Collection<QueryResolver> extractMutationResolvers(Object querySourceBean,
+                                                       AnnotatedType type,
+                                                       TypeMapperRepository typeMappers,
+                                                       ConverterRepository converters,
+                                                       Predicate<Member>... filters);
 }

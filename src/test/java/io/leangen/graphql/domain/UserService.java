@@ -2,11 +2,8 @@ package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.*;
 import io.leangen.graphql.query.ConnectionRequest;
-import io.leangen.graphql.query.relay.Page;
-import io.leangen.graphql.util.GraphQLUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by bojan.tomic on 3/5/16.
@@ -113,14 +110,14 @@ public class UserService<T> {
 //	 return Arrays.asList("macka", "bec");
 //	}
 //
-    @GraphQLQuery(name = "addresses")
-    public Page<Address> getByType(ConnectionRequest context, @GraphQLResolverSource User<String> owner, @GraphQLArgument(name = "type") String type) {
-        List<Address> addresses = owner.getAddresses().stream()
-                .filter(address -> address.getTypes().contains(type))
-                .collect(Collectors.toList());
-
-        return GraphQLUtils.createOffsetBasedPage(addresses, 20, 0);
-    }
+//    @GraphQLQuery(name = "addresses", description = "Service :: 1st override")
+//    public Page<Address> getByType(ConnectionRequest context, @GraphQLResolverSource User<String> owner, @GraphQLArgument(name = "type") String type) {
+//        List<Address> addresses = owner.getAddresses().stream()
+//                .filter(address -> address.getTypes().contains(type))
+//                .collect(Collectors.toList());
+//
+//        return GraphQLUtils.createOffsetBasedPage(addresses, 20, 0);
+//    }
 
     //
     @GraphQLQuery(name = "zmajs")
@@ -172,11 +169,16 @@ public class UserService<T> {
 //		return "Jack!";
 //	}
 
-//	@GraphQLQuery(name = "me", wrapper = User.class)
-//	public Map<String, Object> getCurrentUser() {
-//		Map<String, Object> user = new HashMap<>();
-//		user.put("id", 1000);
-//		user.put("name", "Dyno");
-//		return user;
-//	}
+	@GraphQLQuery(name = "me")
+	public Map<String, String> getCurrentUser() {
+		Map<String, String> user = new HashMap<>();
+		user.put("id", "1000");
+		user.put("name", "Dyno");
+		return user;
+	}
+
+    @GraphQLMutation(name = "upMe")
+    public Map<String, String> getUpdateCurrentUser(@GraphQLArgument(name = "updates") Map<String, String> updates) {
+        return updates;
+    }
 }

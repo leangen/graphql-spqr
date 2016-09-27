@@ -138,7 +138,9 @@ public class ClassUtils {
      */
     public static void checkIfResolvable(AnnotatedType declaringType, Member member) {
         try {
-            getTypeArguments(declaringType);
+            if (declaringType instanceof AnnotatedParameterizedType) {
+                getTypeArguments(declaringType);
+            }
             getRawType(declaringType.getType());
         } catch (IllegalArgumentException e) {
             throw new TypeMappingException(member, e);

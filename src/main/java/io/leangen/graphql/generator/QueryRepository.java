@@ -1,13 +1,16 @@
 package io.leangen.graphql.generator;
 
+import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryResolver;
 import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
+import io.leangen.graphql.query.conversion.ConverterRepository;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.leangen.graphql.metadata.Query.ROOT_QUERY;
@@ -20,11 +23,15 @@ public class QueryRepository {
     private QueryTreeNode queries;
     private Set<Query> mutations;
     private QuerySourceRepository querySourceRepository;
+    private TypeMapperRepository typeMappers;
+    private ConverterRepository converters;
 
-    public QueryRepository(QuerySourceRepository querySourceRepository) {
+    public QueryRepository(QuerySourceRepository querySourceRepository, TypeMapperRepository typeMappers, ConverterRepository converters) {
         this.querySourceRepository = querySourceRepository;
-        Collection<QueryResolver> queryResolvers = extractQueryResolvers(querySourceRepository.getQuerySources());
-        Collection<QueryResolver> mutationResolvers = extractMutationResolvers(querySourceRepository.getQuerySources());
+        this.typeMappers = typeMappers;
+        this.converters = converters;
+        Collection<QueryResolver> queryResolvers = extractQueryResolvers(querySourceRepository.getQuerySources(), typeMappers, converters);
+        Collection<QueryResolver> mutationResolvers = extractMutationResolvers(querySourceRepository.getQuerySources(), typeMappers, converters);
         queries = registerQueries(ROOT_QUERY, queryResolvers.stream().map(ModifiableQueryResolver::new).collect(Collectors.toList()));
         mutations = mutationResolvers.stream()
                 .collect(Collectors.groupingBy(QueryResolver::getQueryName)).entrySet().stream()
@@ -73,7 +80,7 @@ public class QueryRepository {
     public Query get(List<String> trail, String queryName) {
         LinkedList<String> fullTrail = new LinkedList<>(trail);
         fullTrail.add(queryName);
-        return get(fullTrail, queries).query;
+        return getNode(fullTrail, queries).query;
     }
 
     public Set<Query> getDomainQueries(List<String> trail, AnnotatedType domainType) {
@@ -81,46 +88,52 @@ public class QueryRepository {
         return assembleDomainQueries(trail, domainSource);
     }
 
-    public List<Query> getChildQueries(List<String> trail, AnnotatedType domainType) {
-        LinkedList<String> fullTrail = new LinkedList<>(trail);
-        QueryTreeNode node = get(fullTrail, queries);
-        List<Query> children = node == null ? new ArrayList<>() : node.children.values().stream().map(wrapper -> wrapper.query).collect(Collectors.toList());
-        children.addAll(getEmbeddableQueries(domainType.getType()));
-        children.addAll(getDomainQueries(trail, domainType));
-        return children;
+    public Collection<Query> getChildQueries(List<String> trail, AnnotatedType domainType) {
+        QueryTreeNode node = findNode(trail, queries);
+        Map<String, Query> children = new HashMap<>();
+
+        children.putAll(getDomainQueries(trail, domainType).stream().collect(Collectors.toMap(Query::getName, Function.identity())));
+        children.putAll(getEmbeddableQueries(domainType.getType()).stream().collect(Collectors.toMap(Query::getName, Function.identity())));
+        if (node != null) {
+            children.putAll(node.children.values().stream().map(wrapper -> wrapper.query).collect(Collectors.toMap(Query::getName, Function.identity())));
+        }
+        return children.values();
     }
 
-    public List<Query> getEmbeddableQueries(Type domainType) {
+    public Set<Query> getEmbeddableQueries(Type domainType) {
         return getRootQueries().stream()
                 .filter(query -> query.isEmbeddableForType(domainType))
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 
-    private QueryTreeNode get(Queue<String> trail, QueryTreeNode current) {
+    private QueryTreeNode findNode(List<String> trail, QueryTreeNode current) {
+        return getNode(new LinkedList<>(trail), current);
+    }
+
+    private QueryTreeNode getNode(Queue<String> trail, QueryTreeNode current) {
         if (trail.isEmpty()) {
             return current;
         }
         String queryName = trail.remove();
-        return current.get(queryName) == null ? null : get(trail, current.get(queryName));
+        return current.get(queryName) == null ? null : getNode(trail, current.get(queryName));
     }
 
     private Set<Query> assembleDomainQueries(List<String> trail, QuerySource querySource) {
-        QueryTreeNode node = get(new LinkedList<>(trail), queries);
-        if (node == null) {
-            return Collections.emptySet();
-        }
-        return extractQueryResolvers(Collections.singleton(querySource)).stream()
+        QueryTreeNode node = findNode(trail, queries);
+        return extractQueryResolvers(Collections.singleton(querySource), typeMappers, converters).stream()
                 .collect(Collectors.groupingBy(QueryResolver::getQueryName)).entrySet().stream()
-                .map(entry -> new Query(entry.getKey(), entry.getValue(), node.query))
+                .map(entry -> new Query(entry.getKey(), entry.getValue(), node == null ? ROOT_QUERY :node.query))
                 .collect(Collectors.toSet());
     }
 
-    private Collection<QueryResolver> extractQueryResolvers(Collection<QuerySource> querySources) {
-        return extractResolvers(querySources, ((querySource, extractor) -> extractor.extractQueryResolvers(querySource.getQuerySourceBean(), querySource.getJavaType())));
+    private Collection<QueryResolver> extractQueryResolvers(Collection<QuerySource> querySources, TypeMapperRepository typeMappers, ConverterRepository converters) {
+        return extractResolvers(querySources, ((querySource, extractor) ->
+                extractor.extractQueryResolvers(querySource.getQuerySourceBean(), querySource.getJavaType(), typeMappers, converters)));
     }
 
-    private Collection<QueryResolver> extractMutationResolvers(Collection<QuerySource> querySources) {
-        return extractResolvers(querySources, ((querySource, extractor) -> extractor.extractMutationResolvers(querySource.getQuerySourceBean(), querySource.getJavaType())));
+    private Collection<QueryResolver> extractMutationResolvers(Collection<QuerySource> querySources, TypeMapperRepository typeMappers, ConverterRepository converters) {
+        return extractResolvers(querySources, ((querySource, extractor) ->
+                extractor.extractMutationResolvers(querySource.getQuerySourceBean(), querySource.getJavaType(), typeMappers, converters)));
     }
 
     private Collection<QueryResolver> extractResolvers(Collection<QuerySource> querySources, BiFunction<QuerySource, ResolverExtractor, Collection<QueryResolver>> extraction) {
