@@ -2,8 +2,10 @@ package io.leangen.graphql.metadata.strategy.input;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.FieldNamingStrategy;
+import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.Field;
+import java.util.Optional;
 
 /**
  * Created by bojan.tomic on 5/25/16.
@@ -24,6 +26,16 @@ public class GsonFieldNamingStrategy implements FieldNamingStrategy {
 
     @Override
     public String translateName(Field field) {
-        return fieldNameGenerator.generateFieldName(field).orElse(fallback.translateName(field));
+        return fieldNameGenerator.generateFieldName(field)
+                .orElse(nameFromGetter(field)
+                        .orElse(fallback.translateName(field)));
+    }
+
+    private Optional<String> nameFromGetter(Field field) {
+        try {
+            return fieldNameGenerator.generateFieldName(ClassUtils.findGetter(field.getType(), field.getName()));
+        } catch (NoSuchMethodException e) {
+            return Optional.empty();
+        }
     }
 }
