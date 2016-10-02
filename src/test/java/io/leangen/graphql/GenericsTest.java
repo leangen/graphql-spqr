@@ -39,6 +39,7 @@ public class GenericsTest {
 
         GraphQLSchema schemaWithNonNullGenerics = new GraphQLSchemaBuilder()
                 .withSingletonQuerySource(nonNullStringService, nonNullString)
+                .withDefaults()
                 .build();
 
         GraphQLOutputType itemType = schemaWithNonNullGenerics.getQueryType().getFieldDefinition("getItem").getType();
@@ -71,6 +72,7 @@ public class GenericsTest {
 
         GraphQLSchema schemaWithDateIds = new GraphQLSchemaBuilder()
                 .withSingletonQuerySource(dateIdService, dateId)
+                .withDefaults()
                 .build();
 
         GraphQLOutputType itemType = schemaWithDateIds.getQueryType().getFieldDefinition("getItem").getType();
@@ -103,6 +105,7 @@ public class GenericsTest {
 
         GraphQLSchema schemaWithGenerics = new GraphQLSchemaBuilder()
                 .withSingletonQuerySource(wildcardNumberService, listOfWildcardNumbers)
+                .withDefaults()
                 .build();
 
         GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("getItem").getType();
