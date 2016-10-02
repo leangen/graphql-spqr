@@ -20,7 +20,9 @@ import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
 
 /**
- * Created by bojan.tomic on 3/2/16.
+ * This class is the main entry point to the library. It is used to generate a GraphQL schema by analyzing the registered classes
+ * and exposing the chosen methods as queries or mutations. The process of choosing the methods to expose is delegated
+ * to {@code QueryExtractor}s
  */
 public class GraphQLSchemaBuilder {
 
@@ -128,24 +130,23 @@ public class GraphQLSchemaBuilder {
         return this;
     }
 
-    public GraphQLSchemaBuilder withTypeMappersPriority(TypeMapper... typeMappers) {
-        this.typeMappers.registerTypeMappersWithPriority(typeMappers);
-        return this;
-    }
-
     public GraphQLSchemaBuilder withTypeAdapters(AbstractTypeAdapter<?,?>... typeAdapters) {
         withInputConverters((InputConverter<?, ?>[]) typeAdapters);
         withOutputConverters((OutputConverter<?, ?>[]) typeAdapters);
         return withTypeMappers((TypeMapper[]) typeAdapters);
     }
 
-    public GraphQLSchema build() {
+    private void init() {
         if (typeMappers.isEmpty()) {
             withDefaultMappers();
         }
         if (converterRepository.isEmpty()) {
             withDefaultConverters();
         }
+    }
+
+    public GraphQLSchema build() {
+        init();
 
         QueryGenerator queryGenerator = new QueryGenerator(querySourceRepository, typeMappers, converterRepository, BuildContext.TypeGenerationMode.FLAT);
 

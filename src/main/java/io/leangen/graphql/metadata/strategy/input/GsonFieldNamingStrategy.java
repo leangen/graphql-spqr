@@ -33,7 +33,7 @@ public class GsonFieldNamingStrategy implements FieldNamingStrategy {
 
     private Optional<String> nameFromGetter(Field field) {
         try {
-            return fieldNameGenerator.generateFieldName(ClassUtils.findGetter(field.getType(), field.getName()));
+            return fieldNameGenerator.generateFieldName(ClassUtils.findGetter(field.getDeclaringClass(), field.getName()));
         } catch (NoSuchMethodException e) {
             return Optional.empty();
         }
