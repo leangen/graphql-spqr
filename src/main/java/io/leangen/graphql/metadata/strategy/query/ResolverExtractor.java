@@ -14,8 +14,8 @@ public interface ResolverExtractor {
 
     Predicate<Member> acceptAll = method -> true;
 
-    Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType type);
-    Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType type);
-    Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType type, Predicate<Member>... filters);
-    Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType type, Predicate<Member>... filters);
+    Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType beanType);
+    Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType beanType);
+    Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType beanType, Predicate<Member>... filters);
+    Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType beanType, Predicate<Member>... filters);
 }
