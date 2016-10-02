@@ -1,4 +1,6 @@
-package io.leangen.graphql.generator.mapping;
+package io.leangen.graphql.generator.mapping.common;
+
+import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 
 import java.lang.reflect.AnnotatedType;
 

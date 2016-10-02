@@ -8,7 +8,7 @@ import io.leangen.graphql.generator.TypeRepository;
 import io.leangen.graphql.generator.proxy.NodeTypeHintProvider;
 import io.leangen.graphql.generator.proxy.ProxyFactory;
 import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
-import io.leangen.graphql.query.conversion.ConverterRepository;
+import io.leangen.graphql.generator.mapping.ConverterRepository;
 
 import java.lang.reflect.Type;
 

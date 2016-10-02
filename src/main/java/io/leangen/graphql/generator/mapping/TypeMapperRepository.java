@@ -2,9 +2,9 @@ package io.leangen.graphql.generator.mapping;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static java.util.Collections.addAll;
 
@@ -14,24 +14,18 @@ import static java.util.Collections.addAll;
 public class TypeMapperRepository {
 
     private final List<TypeMapper> typeMappers = new ArrayList<>();
-    private final Map<String, TypeMapper> typeMappersByPath = new HashMap<>();
 
-    public void registerTypeMapper(TypeMapper... typeMappers) {
+    public void registerTypeMappers(TypeMapper... typeMappers) {
         addAll(this.typeMappers, typeMappers);
     }
 
-    public void registerTypeMapperForPath(String path, AnnotatedType javaType) {
-        TypeMapper mapper = getTypeMapper(javaType);
-        if (mapper != null) {
-            typeMappersByPath.put(path, mapper);
-        }
+    public void registerTypeMappersWithPriority(TypeMapper... typeMappers) {
+        List<TypeMapper> mappers = Arrays.asList(typeMappers);
+        Collections.reverse(mappers);
+        mappers.forEach(mapper -> this.typeMappers.add(0, mapper));
     }
 
-    private TypeMapper getTypeMapper(AnnotatedType javaType) {
+    public TypeMapper getTypeMapper(AnnotatedType javaType) {
         return typeMappers.stream().filter(typeMapper -> typeMapper.supports(javaType)).findFirst().orElse(null);
-    }
-
-    public TypeMapper getTypeMapperByPath(String path) {
-        return typeMappersByPath.get(path);
     }
 }

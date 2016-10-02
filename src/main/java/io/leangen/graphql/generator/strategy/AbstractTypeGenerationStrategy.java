@@ -4,7 +4,6 @@ import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.generator.QueryRepository;
 import io.leangen.graphql.metadata.DomainType;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -18,7 +17,7 @@ public abstract class AbstractTypeGenerationStrategy {
         this.queryRepository = queryRepository;
     }
 
-    public abstract Entry get(DomainType domainType, List<String> parentTrail);
+    public abstract Entry get(DomainType domainType);
 
     public static class Entry {
         public String name;

@@ -3,7 +3,6 @@ package io.leangen.graphql.metadata;
 import graphql.GraphQLException;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.query.ConnectionRequest;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.relay.Page;
@@ -21,40 +20,25 @@ import java.util.stream.Collectors;
  */
 public class Query {
 
-    public static final Query ROOT_QUERY = new Query();
-
     private String name;
     private String description;
-    private Query parent;
-    private boolean virtual;
     private AnnotatedType javaType;
     private Type sourceType;
     private Map<String, QueryResolver> resolversByFingerprint;
     private List<QueryArgument> arguments;
     private List<QueryArgument> sortableArguments;
 
-    private boolean root;
     private boolean hasPrimaryResolver;
-    private String hierarchicalName;
 
-    private Query() {
-        this.name = GraphQLQuery.ROOT_QUERY_ALIAS;
-        this.hierarchicalName = this.name;
-    }
-
-    public Query(String name, List<QueryResolver> resolvers, Query parent) {
+    public Query(String name, List<QueryResolver> resolvers) {
         this.name = name;
         this.description = resolvers.stream().map(QueryResolver::getQueryDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
-        this.parent = parent;
-        this.root = parent.equals(ROOT_QUERY);
-        this.hierarchicalName = resolveHierarchicalName(parent) + "." + name;
-        this.virtual = resolvers.isEmpty();
         this.hasPrimaryResolver = resolvers.stream().filter(QueryResolver::isPrimaryResolver).findFirst().isPresent();
-        this.javaType = virtual ? null : resolveJavaType(resolvers, name);
-        this.sourceType = virtual ? null : resolveSourceType(resolvers);
-        this.resolversByFingerprint = collectResolversByFingerprint(hierarchicalName, resolvers);
-        this.arguments = virtual ? Collections.emptyList() : collectArguments(resolvers);
-        this.sortableArguments = virtual ? Collections.emptyList() : collectArguments(
+        this.javaType = resolveJavaType(resolvers, name);
+        this.sourceType = resolveSourceType(resolvers);
+        this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
+        this.arguments = collectArguments(resolvers);
+        this.sortableArguments = collectArguments(
                 resolvers.stream().filter(QueryResolver::supportsConnectionRequests).collect(Collectors.toList()));
     }
 
@@ -87,9 +71,9 @@ public class Query {
         return sourceTypes.get(0);
     }
 
-    private Map<String, QueryResolver> collectResolversByFingerprint(String hierarchicalName, List<QueryResolver> resolvers) {
+    private Map<String, QueryResolver> collectResolversByFingerprint(List<QueryResolver> resolvers) {
         Map<String, QueryResolver> resolversByFingerprint = new HashMap<>();
-        resolvers.forEach(resolver -> resolver.getFingerprints(hierarchicalName).forEach(fingerprint -> resolversByFingerprint.put(fingerprint, resolver)));
+        resolvers.forEach(resolver -> resolver.getFingerprints().forEach(fingerprint -> resolversByFingerprint.put(fingerprint, resolver)));
         return resolversByFingerprint;
     }
 
@@ -143,42 +127,29 @@ public class Query {
         QueryResolver resolver = resolversByFingerprint.get(getFingerprint(queryArguments));
         try {
             if (resolver == null) {
-                if (queryArguments.size() == 0 && !root) {
+                if (queryArguments.size() == 0 && env.getSource() != null) {
                     return ClassUtils.getFieldValue(env.getSource(), name);
                 } else {
                     //TODO implement simple filtering here
                 }
             } else {
-                Object result = resolver.resolve(hierarchicalName, env.getSource(), queryArguments, new ConnectionRequest(connectionArguments), executionContext);
+                Object result = resolver.resolve(env.getSource(), queryArguments, new ConnectionRequest(connectionArguments), executionContext);
                 return executionContext.proxyIfNeeded(env, result, resolver.getReturnType().getType());
             }
-            throw new GraphQLException("Resolver for query " + hierarchicalName + " accepting arguments: " + env.getArguments().keySet() + " not implemented");
+            throw new GraphQLException("Resolver for query " + name + " accepting arguments: " + env.getArguments().keySet() + " not implemented");
         } catch (Exception e) {
             throw new GraphQLException("Query resolution exception", e);
         }
     }
 
     public boolean isEmbeddableForType(Type type) {
-        return this.parent == ROOT_QUERY && this.sourceType != null && ClassUtils.isSuperType(this.sourceType, type);
-    }
-
-    private String resolveHierarchicalName(Query query) {
-        if (query.getParent() == null) {
-            return query.name;
-        }
-        return resolveHierarchicalName(query.getParent()) + "." + query.name;
+        return this.sourceType != null && ClassUtils.isSuperType(this.sourceType, type);
     }
 
     private String getFingerprint(Map<String, Object> arguments) {
-        StringBuilder fingerPrint = new StringBuilder(hierarchicalName);
+        StringBuilder fingerPrint = new StringBuilder();
         arguments.keySet().stream().sorted().forEach(fingerPrint::append);
         return fingerPrint.toString();
-    }
-
-    public int getFingerprint() {
-        StringBuilder fingerprint = new StringBuilder();
-        resolversByFingerprint.values().forEach(resolver -> fingerprint.append(resolver.getFingerprint()));
-        return fingerprint.toString().hashCode();
     }
 
     public boolean isPageable() {
@@ -201,16 +172,12 @@ public class Query {
         return javaType;
     }
 
-    public Query getParent() {
-        return parent;
-    }
-
     public List<QueryArgument> getArguments() {
         return arguments;
     }
 
-    public boolean isVirtual() {
-        return virtual;
+    public Collection<QueryResolver> getResolvers() {
+        return resolversByFingerprint.values();
     }
 
     @Override
@@ -218,7 +185,7 @@ public class Query {
         int typeHash = Arrays.stream(javaType.getAnnotations())
                 .mapToInt(annotation -> annotation.getClass().getCanonicalName().hashCode())
                 .sum();
-        return (name + (parent == null ? "" : parent.name)).hashCode() + typeHash;
+        return name.hashCode() + typeHash;
     }
 
     @Override
@@ -226,21 +193,16 @@ public class Query {
         if (!(other instanceof Query)) return false;
         Query otherQuery = (Query) other;
 
-        if ((otherQuery.parent == null && this.parent != null) || (otherQuery.parent != null && this.parent == null)) {
-            return false;
-        }
-
         if ((otherQuery.javaType == null && this.javaType != null) || (otherQuery.javaType != null && this.javaType == null)) {
             return false;
         }
 
         return otherQuery.name.equals(this.name)
-                && (otherQuery.javaType == null || otherQuery.javaType.equals(this.javaType))
-                && (otherQuery.parent == null || otherQuery.parent.equals(this.parent));
+                && (otherQuery.javaType == null || otherQuery.javaType.equals(this.javaType));
     }
 
     @Override
     public String toString() {
-        return hierarchicalName;
+        return name + "(" + String.join(",", arguments.stream().map(QueryArgument::getName).collect(Collectors.toList())) + ")";
     }
 }

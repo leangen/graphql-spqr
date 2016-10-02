@@ -4,8 +4,8 @@ import io.leangen.graphql.annotations.GraphQLResolverSource;
 import io.leangen.graphql.annotations.RelayConnectionRequest;
 import io.leangen.graphql.query.ConnectionRequest;
 import io.leangen.graphql.query.ExecutionContext;
-import io.leangen.graphql.query.conversion.InputConverter;
-import io.leangen.graphql.query.conversion.OutputConverter;
+import io.leangen.graphql.generator.mapping.InputConverter;
+import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.query.execution.Executable;
 
 import java.lang.reflect.AnnotatedType;
@@ -24,7 +24,6 @@ import java.util.*;
  */
 public class QueryResolver {
 
-    private Executable executable;
     private String queryName;
     private String queryDescription;
     private List<QueryArgument> queryArguments;
@@ -32,7 +31,7 @@ public class QueryResolver {
     private AnnotatedType returnType;
     private QueryArgument sourceArgument;
     private String wrappedAttribute;
-    private Set<List<String>> parentQueryTrails;
+    private Executable executable;
     private boolean relayId;
 
     public QueryResolver(String queryName, String queryDescription, boolean relayId, Executable executable, List<QueryArgument> queryArguments) {
@@ -43,7 +42,6 @@ public class QueryResolver {
         this.queryArguments = queryArguments;
         this.connectionRequestArguments = resolveConnectionRequestArguments();
         this.returnType = executable.getReturnType();
-        this.parentQueryTrails = executable.getParentTrails();
         this.wrappedAttribute = executable.getWrappedAttribute();
         this.sourceArgument = resolveSource(queryArguments);
     }
@@ -97,7 +95,7 @@ public class QueryResolver {
      * @throws InvocationTargetException
      * @throws IllegalAccessException
      */
-    public Object resolve(String queryPath, Object source, Map<String, Object> arguments, Object connectionRequest, ExecutionContext executionContext) throws InvocationTargetException, IllegalAccessException {
+    public Object resolve(Object source, Map<String, Object> arguments, Object connectionRequest, ExecutionContext executionContext) throws InvocationTargetException, IllegalAccessException {
         int queryArgumentsCount = queryArguments.size();
         int sourceObjectPosition = getQuerySourceObjectPosition();
         int contextObjectPosition = getConnectionRequestObjectPosition();
@@ -119,7 +117,7 @@ public class QueryResolver {
                 args[i] = executionContext.idTypeMapper.deserialize(id, executable.getAnnotatedParameterTypes()[idObjectPosition].getType());
             } else {
                 QueryArgument inputArgument = queryArguments.get(currentParamIndex++);
-                InputConverter argValueConverter = executionContext.converters.getInputConverterByPath(queryPath + "." + inputArgument.getName());
+                InputConverter argValueConverter = executionContext.converters.getInputConverter(inputArgument.getJavaType());
                 AnnotatedType argValueType = argValueConverter != null ? argValueConverter.getSubstituteType(inputArgument.getJavaType()) : inputArgument.getJavaType();
                 Object argValue = executionContext.inputDeserializer.deserialize(arguments.get(inputArgument.getName()), argValueType);
                 args[i] = argValueConverter != null ? argValueConverter.convertInput(argValue) : argValue;
@@ -129,7 +127,7 @@ public class QueryResolver {
 //        if (result instanceof Collection) {
 //            result = new ArrayList<>(((Collection<?>) result));
 //        }
-        OutputConverter resultConverter = executionContext.converters.getOutputConverterByPath(queryPath);
+        OutputConverter resultConverter = executionContext.converters.getOutputConverter(this.getReturnType());
         return resultConverter != null ? resultConverter.convertOutput(result) : result;
         //Wrap returned values for resolvers that don't directly return domain objects
 //        if (isWrapped()) {
@@ -224,25 +222,20 @@ public class QueryResolver {
         return relayId;
     }
 
-    public Set<List<String>> getParentQueryTrails() {
-        return parentQueryTrails;
-    }
-
     /**
      * Get the fingerprint of this resolver. Fingerprint uniquely identifies a resolver within a query.
      * It is based on the name of the query and all parameters this specific resolver accepts.
      * It is used to decide which resolver to invoke for the query, based on the provided arguments.
      *
-     * @param parentTrail The string representation of all
      * @return The unique "fingerprint" string identifying this resolver
      */
-    public Set<String> getFingerprints(String parentTrail) {
+    public Set<String> getFingerprints() {
         Set<String> fingerprints = new HashSet<>(sourceArgument == null ? 1 : 2);
-        StringBuilder fingerPrint = new StringBuilder(parentTrail);
+        StringBuilder fingerPrint = new StringBuilder();
         queryArguments.stream().filter(arg -> !arg.isRelayConnection()).map(QueryArgument::getName).sorted().forEach(fingerPrint::append);
         fingerprints.add(fingerPrint.toString());
         if (sourceArgument != null) {
-            fingerPrint = new StringBuilder(parentTrail);
+            fingerPrint = new StringBuilder();
             queryArguments.stream()
                     .filter(arg -> !arg.isResolverSource())
                     .filter(arg -> !arg.isRelayConnection())
@@ -264,6 +257,10 @@ public class QueryResolver {
 
     public AnnotatedType getReturnType() {
         return returnType;
+    }
+
+    public Executable getExecutable() {
+        return executable;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package io.leangen.graphql.query.conversion;
+package io.leangen.graphql.generator.mapping;
 
 import java.lang.reflect.AnnotatedType;
 

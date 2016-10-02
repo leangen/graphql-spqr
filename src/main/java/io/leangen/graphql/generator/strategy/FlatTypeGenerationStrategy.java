@@ -5,7 +5,6 @@ import io.leangen.graphql.generator.QueryRepository;
 import io.leangen.graphql.metadata.DomainType;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -20,7 +19,7 @@ public class FlatTypeGenerationStrategy extends AbstractTypeGenerationStrategy {
     }
 
     @Override
-    public Entry get(DomainType domainType, List<String> parentTrail) {
+    public Entry get(DomainType domainType) {
         if (inProgress.contains(domainType.getName())) {
             return new Entry(domainType.getName(), new GraphQLTypeReference(domainType.getName()));
         }

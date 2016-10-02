@@ -2,12 +2,10 @@ package io.leangen.graphql.util;
 
 import graphql.schema.GraphQLScalarType;
 import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.metadata.QueryResolver;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
 import io.leangen.graphql.query.DefaultIdTypeMapper;
 import io.leangen.graphql.query.IdTypeMapper;
-import io.leangen.graphql.query.conversion.ConverterRepository;
 import io.leangen.graphql.query.relay.CursorProvider;
 import io.leangen.graphql.query.relay.Edge;
 import io.leangen.graphql.query.relay.Page;
@@ -105,7 +103,7 @@ public class GraphQLUtils {
     //TODO refactor this not to require QueryResolver construction, nor isRelayId, which should be removed
     private static <N> String getIdFieldName(Class<N> nodeType) {
         Collection<QueryResolver> resolvers = new AnnotatedResolverExtractor()
-                .extractQueryResolvers(null, GenericTypeReflector.annotate(nodeType), new TypeMapperRepository(), new ConverterRepository());
+                .extractQueryResolvers(null, GenericTypeReflector.annotate(nodeType));
         Optional<QueryResolver> id = resolvers.stream().filter(QueryResolver::isRelayId).findFirst();
         if (id.isPresent()) {
             return id.get().getQueryName();

@@ -3,6 +3,9 @@ package io.leangen.graphql.domain;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.NonNull;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 /**
  * Created by bojan.tomic on 3/21/16.
  */
@@ -32,5 +35,10 @@ public class Street {
 
     public void setNumber(Integer number) {
         this.number = number;
+    }
+
+    @GraphQLQuery(name = "uri", description = "xxx")
+    public URI getUri() throws URISyntaxException {
+        return new URI("scheme://random.shit");
     }
 }

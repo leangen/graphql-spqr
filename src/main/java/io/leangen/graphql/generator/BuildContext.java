@@ -4,14 +4,12 @@ import graphql.relay.Relay;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.proxy.ProxyFactory;
 import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
-import io.leangen.graphql.generator.strategy.CappedTypeGenerationStrategy;
-import io.leangen.graphql.generator.strategy.CircularTypeGenerationStrategy;
 import io.leangen.graphql.generator.strategy.FlatTypeGenerationStrategy;
 import io.leangen.graphql.metadata.strategy.input.GsonInputDeserializer;
 import io.leangen.graphql.query.DefaultIdTypeMapper;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.IdTypeMapper;
-import io.leangen.graphql.query.conversion.ConverterRepository;
+import io.leangen.graphql.generator.mapping.ConverterRepository;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -33,17 +31,11 @@ public class BuildContext {
     public final Set<String> inputsInProgress = new HashSet<>();
 
     public enum TypeGenerationMode {
-        FLAT, CAPPED, CIRCULAR
+        FLAT
     }
 
     public BuildContext(TypeGenerationMode mode, QueryRepository queryRepository, TypeMapperRepository typeMappers, ConverterRepository converters) {
         switch (mode) {
-            case CAPPED:
-                this.typeStrategy = new CappedTypeGenerationStrategy(queryRepository);
-                break;
-            case CIRCULAR:
-                this.typeStrategy = new CircularTypeGenerationStrategy(queryRepository);
-                break;
             default:
                 this.typeStrategy = new FlatTypeGenerationStrategy(queryRepository);
         }

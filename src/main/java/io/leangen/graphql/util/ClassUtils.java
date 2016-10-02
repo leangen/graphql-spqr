@@ -106,6 +106,14 @@ public class ClassUtils {
         }
     }
 
+    public static AnnotatedType[] getTypeArgumentsSafely(AnnotatedType type) {
+        try {
+            return getTypeArguments(type);
+        } catch (IllegalArgumentException e) {
+            return new AnnotatedType[0];
+        }
+    }
+
     /**
      * Returns the exact annotated parameters types of the method declared by the given type, with type variables resolved (if possible)
      *
@@ -179,12 +187,19 @@ public class ClassUtils {
         return Introspector.decapitalize(setter.getName().replaceAll("^set", ""));
     }
 
+    public static Method findGetter(Class<?> type, String fieldName) throws NoSuchMethodException {
+        try {
+            return type.getMethod("get" + capitalize(fieldName));
+        } catch (NoSuchMethodException e) { /*no-op*/}
+        return type.getMethod("is" + capitalize(fieldName));
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> T getFieldValue(Object source, String fieldName) {
         try {
             try {
                 //TODO handle "is" for booleans
-                return (T) source.getClass().getMethod("get" + capitalize(fieldName)).invoke(source);
+                return (T) findGetter(source.getClass(), fieldName).invoke(source);
             } catch (NoSuchMethodException e) {
                 return (T) source.getClass().getField(fieldName).get(source);
             }

@@ -4,9 +4,7 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLResolverSource;
 import io.leangen.graphql.annotations.RelayConnectionRequest;
-import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.metadata.QueryArgument;
-import io.leangen.graphql.query.conversion.ConverterRepository;
 import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
@@ -21,29 +19,16 @@ import java.util.List;
 public class AnnotatedArgumentExtractor implements QueryResolverArgumentExtractor {
 
     @Override
-    public List<QueryArgument> extractResolverArguments(List<String> parentPaths, Method resolverMethod, AnnotatedType enclosingType,
-                                                        TypeMapperRepository typeMappers, ConverterRepository converters) {
-
+    public List<QueryArgument> extractResolverArguments(Method resolverMethod, AnnotatedType enclosingType) {
         List<QueryArgument> queryArguments = new ArrayList<>(resolverMethod.getParameterCount());
         AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, enclosingType);
         for (int i = 0; i < resolverMethod.getParameterCount(); i++) {
             Parameter parameter = resolverMethod.getParameters()[i];
             GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
             ClassUtils.checkIfResolvable(parameterTypes[i], resolverMethod); //checks if the type is resolvable
-
-            String argName = meta != null && !meta.name().isEmpty() ? meta.name() : parameter.getName();
-            AnnotatedType argType = parameterTypes[i];
-
-            parentPaths.stream()
-                    .map(parentPath -> parentPath + "." + argName)
-                    .forEach(path -> {
-                        typeMappers.registerTypeMapperForPath(path, argType);
-                        converters.registerInputConverterForPath(path, argType);
-                    });
-
             queryArguments.add(new QueryArgument(
-                    argType,
-                    argName,
+                    parameterTypes[i],
+                    meta != null && !meta.name().isEmpty() ? meta.name() : parameter.getName(),
                     meta != null ? meta.description() : null,
                     meta != null && meta.required(),
                     parameter.isAnnotationPresent(GraphQLResolverSource.class),

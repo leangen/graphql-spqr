@@ -7,12 +7,18 @@ import io.leangen.graphql.annotations.GraphQLQuery;
  */
 public class Education {
 
+    public enum Tier {
+        TOP, BOTTOM
+    }
+
     @GraphQLQuery(name = "schoolName", description = "The school where education was obtained")
     public String schoolName;
     @GraphQLQuery(name = "startYear", description = "The starting year of education")
     public Integer startYear;
     @GraphQLQuery(name = "endYear", description = "The final year of education")
     public Integer endYear;
+    @GraphQLQuery(name = "tier", description = "The school tier")
+    public Tier tier;
 
     public Education(String schoolName, int startYear, int endYear) {
         this.schoolName = schoolName;

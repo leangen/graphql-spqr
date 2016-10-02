@@ -1,8 +1,6 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.metadata.QueryResolver;
-import io.leangen.graphql.query.conversion.ConverterRepository;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Member;
@@ -30,25 +28,23 @@ public class PublicResolverExtractor implements ResolverExtractor {
     }
 
     @Override
-    public Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType type, TypeMapperRepository typeMappers, ConverterRepository converters) {
-        return extractQueryResolvers(querySourceBean, type, typeMappers, converters, acceptAll);
+    public Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType type) {
+        return extractQueryResolvers(querySourceBean, type, acceptAll);
     }
 
     @Override
-    public Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType type, TypeMapperRepository typeMappers, ConverterRepository converters) {
-        return extractMutationResolvers(querySourceBean, type, typeMappers, converters, acceptAll);
+    public Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType type) {
+        return extractMutationResolvers(querySourceBean, type, acceptAll);
     }
 
     @Override
-    public Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType type, TypeMapperRepository typeMappers,
-                                                           ConverterRepository converters, Predicate<Member>... filters) {
+    public Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType type, Predicate<Member>... filters) {
 //		return extractResolvers(querySourceBean, type, queryNameGenerator::generateQueryName, this::isQuery, filters);
         return null;
     }
 
     @Override
-    public Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType type, TypeMapperRepository typeMappers,
-                                                              ConverterRepository converters, Predicate<Member>... filters) {
+    public Collection<QueryResolver> extractMutationResolvers(Object querySourceBean, AnnotatedType type, Predicate<Member>... filters) {
 //		return extractResolvers(querySourceBean, type, queryNameGenerator::generateMutationName, this::isMutation, filters);
         return null;
     }

@@ -1,8 +1,6 @@
 package io.leangen.graphql.generator.mapping;
 
 import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.graphql.query.conversion.InputConverter;
-import io.leangen.graphql.query.conversion.OutputConverter;
 import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;

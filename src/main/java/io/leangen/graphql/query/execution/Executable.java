@@ -6,11 +6,9 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Created by bojan.tomic on 7/20/16.
@@ -39,18 +37,6 @@ public abstract class Executable {
      * @return The name of the attribute this partial resolver returns
      */
     abstract public String getWrappedAttribute();
-
-    public Set<List<String>> getParentTrails() {
-        if (!delegate.isAnnotationPresent(GraphQLQuery.class) ||
-                delegate.getAnnotation(GraphQLQuery.class).parentQueries().length == 0 ||
-                (delegate.getAnnotation(GraphQLQuery.class).parentQueries().length == 1 &&
-                        delegate.getAnnotation(GraphQLQuery.class).parentQueries()[0].equals(GraphQLQuery.ROOT_QUERY_ALIAS))) {
-            return ROOT_QUERY_ONLY;
-        }
-        return Arrays.stream(delegate.getAnnotation(GraphQLQuery.class).parentQueries())
-                .map(parentExpression -> Arrays.asList(parentExpression.split("\\.")))
-                .collect(Collectors.toSet());
-    }
 
     @Override
     public int hashCode() {
