@@ -29,4 +29,8 @@ public class ConverterRepository {
     public OutputConverter getOutputConverter(AnnotatedType outputType) {
         return outputConverters.stream().filter(conv -> conv.supports(outputType)).findFirst().orElse(null);
     }
+
+    public boolean isEmpty() {
+        return inputConverters.isEmpty() && outputConverters.isEmpty();
+    }
 }

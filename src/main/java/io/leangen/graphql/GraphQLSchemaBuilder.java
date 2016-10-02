@@ -140,6 +140,12 @@ public class GraphQLSchemaBuilder {
     }
 
     public GraphQLSchema build() {
+        if (typeMappers.isEmpty()) {
+            withDefaultMappers();
+        }
+        if (converterRepository.isEmpty()) {
+            withDefaultConverters();
+        }
 
         QueryGenerator queryGenerator = new QueryGenerator(querySourceRepository, typeMappers, converterRepository, BuildContext.TypeGenerationMode.FLAT);
 

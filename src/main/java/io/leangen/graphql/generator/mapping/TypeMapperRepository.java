@@ -28,4 +28,8 @@ public class TypeMapperRepository {
     public TypeMapper getTypeMapper(AnnotatedType javaType) {
         return typeMappers.stream().filter(typeMapper -> typeMapper.supports(javaType)).findFirst().orElse(null);
     }
+
+    public boolean isEmpty() {
+        return typeMappers.isEmpty();
+    }
 }
