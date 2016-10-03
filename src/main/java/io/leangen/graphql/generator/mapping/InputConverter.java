@@ -13,8 +13,9 @@ public interface InputConverter<T, S> {
 
     /**
      * The returned type has to erase to {@code Class<S>}
-     * @param original
-     * @return
+     *
+     * @param original The original type of the input value
+     * @return The type of the input value this converter produces for the given original type
      */
     AnnotatedType getSubstituteType(AnnotatedType original);
 }

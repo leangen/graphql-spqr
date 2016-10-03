@@ -212,8 +212,8 @@ public class ClassUtils {
      * Scans classpath for implementations/subtypes of the given Type. Only the matching classes are loaded.
      *
      * @param superType The type whose implementations/subtypes are to be looked for
-     * @return A collection of <tt>Type</tt>s found on the classpath that are implementations/subtypes of <tt>superType</tt>
-     * @throws ClassReadingException
+     * @return A collection of {@link Type}s found on the classpath that are implementations/subtypes of {@code superType}
+     * @throws ClassReadingException If a class file
      */
     public static Collection<Type> findImplementations(Type superType) throws ClassReadingException {
         Collection<ClassInfo> rawImpls = new ClassFinder()
@@ -319,8 +319,10 @@ public class ClassUtils {
      *
      * @param type The class representation of the instance type
      * @param <T>  The instance type
+     *
      * @return Bare instance, potentially not fully initialized
-     * @throws InstantiationException If an instance of <tt>Unsafe<tt/> could not be acquired
+     *
+     * @throws InstantiationException If an instance of {@link Unsafe} could not be acquired
      */
     @SuppressWarnings("unchecked")
     public static <T> T allocateInstance(Class<T> type) throws InstantiationException {

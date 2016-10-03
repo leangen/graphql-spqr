@@ -91,9 +91,11 @@ public class QueryResolver {
      * @param arguments         All regular (non Relay connection specific) arguments as provided in the query
      * @param connectionRequest Relay connection specific arguments provided in the query
      * @param executionContext  An object containing all global information that might be needed during resolver execution
+     *
      * @return The result returned by the underlying method/field, potentially proxied and wrapped
-     * @throws InvocationTargetException
-     * @throws IllegalAccessException
+     *
+     * @throws InvocationTargetException If a reflective invocation of the underlying method/field fails
+     * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
      */
     public Object resolve(Object source, Map<String, Object> arguments, Object connectionRequest, ExecutionContext executionContext) throws InvocationTargetException, IllegalAccessException {
         int queryArgumentsCount = queryArguments.size();

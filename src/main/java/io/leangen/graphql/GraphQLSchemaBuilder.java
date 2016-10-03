@@ -20,24 +20,24 @@ import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
 
 /**
- * This class is the main entry point to the library. It is used to generate a GraphQL schema by analyzing the registered classes
+ * <p>This class is the main entry point to the library. It is used to generate a GraphQL schema by analyzing the registered classes
  * and exposing the chosen methods as GraphQL queries or mutations. The process of choosing the methods to expose is delegated
  * to {@link ResolverExtractor} instances, and a different set of extractors can be attached to each registered class.
  * One such coupling of a registered class and a set of extractors is modeled by an instance of {@link io.leangen.graphql.generator.QuerySource}.
- * Methods of the {@code with*QuerySource} family are used to register sources to be analyzed.
- * Extractors can also be registered globally (to be used when none are provided explicitly) via {@link #withResolverExtractors(ResolverExtractor...)}.
+ * Methods of the {@code with*QuerySource} family are used to register sources to be analyzed.</p>
+ * <p>Extractors can also be registered globally (to be used when none are provided explicitly) via {@link #withResolverExtractors(ResolverExtractor...)}.
  * The process of mapping the Java methods to GraphQL queries/mutations will also transparently map all encountered Java types
  * to corresponding GraphQL types. The entire mapping process is handled by an instance {@link QueryGenerator} where actual type
- * mapping is delegated to different instances of {@link TypeMapper}.
- * To customize the mapping process, clients can registers their own {@link TypeMapper}s using {@link #withTypeMappers(TypeMapper...)}.
+ * mapping is delegated to different instances of {@link TypeMapper}.</p>
+ * <p>To customize the mapping process, clients can registers their own {@link TypeMapper}s using {@link #withTypeMappers(TypeMapper...)}.
  * Runtime conversion between values provided by the GraphQL client and those expected by Java code might be needed.
- * This is handled by {@link InputConverter} instances.
- * Similarly, the conversion between values returned by Java code and those expected by the GraphQL client (if needed) is
+ * This is handled by {@link InputConverter} instances.</p>
+ * <p>Similarly, the conversion between values returned by Java code and those expected by the GraphQL client (if needed) is
  * handled by {@link OutputConverter} instances.
  * Custom implementations of both {@link InputConverter} and {@link OutputConverter} can be provided using
- * {@link #withInputConverters(InputConverter[])} and {@link #withOutputConverters(OutputConverter[])} respectively.
+ * {@link #withInputConverters(InputConverter[])} and {@link #withOutputConverters(OutputConverter[])} respectively.</p>
  *
- * Example:
+ * <p><b>Example:</b></p>
  *
  * <pre>
  * {@code
@@ -74,8 +74,8 @@ public class GraphQLSchemaBuilder {
 
     /**
      * Construct with {@code querySourceBeans} as singleton query sources with default extractors
-     * Equivalent to: {@code new GraphQLSchemaBuilder().withSingletonQuerySources(querySourceBeans)}
-     * See {@link #withSingletonQuerySources(Object...)}
+     * <p>Equivalent to: {@code new GraphQLSchemaBuilder().withSingletonQuerySources(querySourceBeans)}</p>
+     * <p>See {@link #withSingletonQuerySources(Object...)}</p>
      *
      * @param querySourceBeans Singletons to register as query sources
      */
@@ -104,7 +104,7 @@ public class GraphQLSchemaBuilder {
     /**
      * Register {@code querySourceBean} as a singleton {@link io.leangen.graphql.generator.QuerySource},
      * with {@code beanType} as its runtime type and with the globally registered {@link ResolverExtractor}s.
-     * See {@link #withSingletonQuerySource(Object)}
+     * <p>See {@link #withSingletonQuerySource(Object)}</p>
      *
      * @param querySourceBean The singleton bean whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -195,7 +195,7 @@ public class GraphQLSchemaBuilder {
      * This is not normally required as domain types will be discovered dynamically and globally registered extractors
      * will be used anyway. Only needed when no exposed method refers to this domain type directly
      * (relying exclusively on interfaces instead) and the type should still be mapped and listed in the resulting schema.
-     * <b>Note: Interface mapping is not yet fully implemented!</b>
+     * <p><b>Note: Interface mapping is not yet fully implemented!</b></p>
      *
      * @param domainQuerySource The domain type that is to be scanned for query/mutation methods
      *
@@ -272,8 +272,8 @@ public class GraphQLSchemaBuilder {
 
     /**
      * Registers all built-in {@link TypeMapper}s, {@link InputConverter}s and {@link OutputConverter}s
-     * Equivalent to calling {@code withDefaultMappers().withDefaultConverters()}
-     * See {@link #withDefaultMappers()} and {@link #withDefaultConverters()}
+     * <p>Equivalent to calling {@code withDefaultMappers().withDefaultConverters()}</p>
+     * <p>See {@link #withDefaultMappers()} and {@link #withDefaultConverters()}</p>
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
@@ -284,7 +284,7 @@ public class GraphQLSchemaBuilder {
 
     /**
      * Registers all built-in {@link TypeMapper}s
-     * See {@link #withTypeMappers(TypeMapper...)}
+     * <p>See {@link #withTypeMappers(TypeMapper...)}</p>
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
@@ -295,7 +295,7 @@ public class GraphQLSchemaBuilder {
 
     /**
      * Registers all built-in {@link InputConverter}s and {@link OutputConverter}s
-     * See {@link #withInputConverters(InputConverter[])} and {@link #withOutputConverters(OutputConverter[])} )}
+     * <p>See {@link #withInputConverters(InputConverter[])} and {@link #withOutputConverters(OutputConverter[])} )}</p>
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
@@ -306,9 +306,9 @@ public class GraphQLSchemaBuilder {
 
     /**
      * Registers custom {@link TypeMapper}s to be used for mapping Java type to GraphQL types.
-     * <b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type
-     * will be used for mapping it.<b/>
-     * See {@link TypeMapper#supports(AnnotatedType)}
+     * <p><b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type
+     * will be used for mapping it.</b></p>
+     * <p>See {@link TypeMapper#supports(AnnotatedType)}</p>
      *
      * @param typeMappers Custom type mappers to register with the builder
      *
@@ -324,10 +324,10 @@ public class GraphQLSchemaBuilder {
      * into those expected by the corresponding Java method. Only needed in some specific cases when usual deserialization
      * isn't enough, for example, when a client-provided {@link java.util.List} should be repackaged into a {@link java.util.Map},
      * which is normally done because GraphQL type system has no direct support for maps.
-     * <b>Ordering of converters is strictly important as the first {@link InputConverter} that supports the given Java type
-     * will be used for converting it.<b/>
-     * See {@link InputConverter#supports(AnnotatedType)}
-     * See {@link #withDefaults()}
+     * <p><b>Ordering of converters is strictly important as the first {@link InputConverter} that supports the given Java type
+     * will be used for converting it.</b></p>
+     * <p>See {@link InputConverter#supports(AnnotatedType)}</p>
+     * <p>See {@link #withDefaults()}</p>
      *
      * @param inputConverters Custom input converters to register with the builder
      *
@@ -343,10 +343,10 @@ public class GraphQLSchemaBuilder {
      * into those expected by the GraphQL client. Only needed in some specific cases when usual serialization isn't enough,
      * for example, when an instance of {@link java.util.Map} should be repackaged into a {@link java.util.List}, which
      * is normally done because GraphQL type system has no direct support for maps.
-     * <b>Ordering of converters is strictly important as the first {@link OutputConverter} that supports the given Java type
-     * will be used for converting it.<b/>
-     * See {@link OutputConverter#supports(AnnotatedType)}
-     * See {@link #withDefaults()}
+     * <p><b>Ordering of converters is strictly important as the first {@link OutputConverter} that supports the given Java type
+     * will be used for converting it.</b></p>
+     * <p>See {@link OutputConverter#supports(AnnotatedType)}</p>
+     * <p>See {@link #withDefaults()}</p>
      *
      * @param outputConverters Custom output converters to register with the builder
      *
@@ -365,11 +365,11 @@ public class GraphQLSchemaBuilder {
      * For example, because GraphQL type system has no notion of maps, {@link java.util.Map}s require special logic
      * both when mapping them to a GraphQL type and when converting them before and after invoking a Java method.
      * For this reason, all code dealing with translating {@link java.util.Map}s is kept in one place in {@link MapToListTypeAdapter}.
-     * <b>Ordering of mappers/converters is strictly important as the first one supporting the given Java type
-     * will be used to map/convert it.<b/>
-     * See {@link #withDefaultMappers()}
-     * See {@link #withDefaultConverters()}
-     * See {@link #withDefaults()}
+     * <p><b>Ordering of mappers/converters is strictly important as the first one supporting the given Java type
+     * will be used to map/convert it.</b></p>
+     * <p>See {@link #withDefaultMappers()}</p>
+     * <p>See {@link #withDefaultConverters()}</p>
+     * <p>See {@link #withDefaults()}</p>
      *
      * @param typeAdapters Custom type adapters to register with the builder
      *
