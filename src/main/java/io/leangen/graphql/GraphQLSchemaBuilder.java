@@ -405,6 +405,13 @@ public class GraphQLSchemaBuilder {
         }
     }
 
+    /**
+     * Builds the GraphQL schema based on the results of analysis of the registered sources. All exposed methods will be mapped
+     * as queries or mutation and all Java types referred to by those methods will be mapped to corresponding GraphQL types.
+     * Such schema can then be used to construct {@link graphql.GraphQL} instances. See the example in the description of this class.
+     *
+     * @return The finished GraphQL schema
+     */
     public GraphQLSchema build() {
         init();
 

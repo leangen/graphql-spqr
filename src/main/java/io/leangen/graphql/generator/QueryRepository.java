@@ -35,7 +35,7 @@ public class QueryRepository {
                 .collect(Collectors.toSet());
     }
 
-    public Collection<Query> getRootQueries() {
+    public Collection<Query> getQueries() {
         return rootQueries;
     }
 
@@ -64,7 +64,7 @@ public class QueryRepository {
     }
 
     public Set<Query> getEmbeddableQueries(Type domainType) {
-        return getRootQueries().stream()
+        return getQueries().stream()
                 .filter(query -> query.isEmbeddableForType(domainType))
                 .collect(Collectors.toSet());
     }

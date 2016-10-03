@@ -34,11 +34,8 @@ public class BuildContext {
         FLAT
     }
 
-    public BuildContext(TypeGenerationMode mode, QueryRepository queryRepository, TypeMapperRepository typeMappers, ConverterRepository converters) {
-        switch (mode) {
-            default:
-                this.typeStrategy = new FlatTypeGenerationStrategy(queryRepository);
-        }
+    public BuildContext(QueryRepository queryRepository, TypeMapperRepository typeMappers, ConverterRepository converters) {
+        this.typeStrategy = new FlatTypeGenerationStrategy(queryRepository);
         this.queryRepository = queryRepository;
         this.typeRepository = new TypeRepository();
         this.idTypeMapper = new DefaultIdTypeMapper();
