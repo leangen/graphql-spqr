@@ -2,7 +2,6 @@ package io.leangen.graphql;
 
 import graphql.schema.GraphQLSchema;
 import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.QuerySourceRepository;
 import io.leangen.graphql.generator.mapping.*;
@@ -415,7 +414,7 @@ public class GraphQLSchemaBuilder {
     public GraphQLSchema build() {
         init();
 
-        QueryGenerator queryGenerator = new QueryGenerator(querySourceRepository, typeMappers, converterRepository, BuildContext.TypeGenerationMode.FLAT);
+        QueryGenerator queryGenerator = new QueryGenerator(querySourceRepository, typeMappers, converterRepository);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
         builder
