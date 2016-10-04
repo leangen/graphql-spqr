@@ -24,6 +24,6 @@ public class BeanResolverExtractor extends PublicResolverExtractor {
 
     @Override
     protected boolean isMutation(Method method) {
-        return super.isMutation(method) && ClassUtils.isSetter(method);
+        return ClassUtils.isSetter(method);
     }
 }
