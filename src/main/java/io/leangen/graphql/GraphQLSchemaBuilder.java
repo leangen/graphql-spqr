@@ -65,11 +65,9 @@ public class GraphQLSchemaBuilder {
     private final TypeMapperRepository typeMappers = new TypeMapperRepository();
 
     /**
-     * Construct using {@link AnnotatedResolverExtractor} as the only global extractor
+     * Default constructor
      */
-    public GraphQLSchemaBuilder() {
-        withResolverExtractors(new AnnotatedResolverExtractor());
-    }
+    public GraphQLSchemaBuilder() {}
 
     /**
      * Construct with {@code querySourceBeans} as singleton query sources with default extractors
@@ -79,7 +77,6 @@ public class GraphQLSchemaBuilder {
      * @param querySourceBeans Singletons to register as query sources
      */
     public GraphQLSchemaBuilder(Object... querySourceBeans) {
-        this();
         this.withSingletonQuerySources(querySourceBeans);
     }
 
@@ -271,14 +268,25 @@ public class GraphQLSchemaBuilder {
 
     /**
      * Registers all built-in {@link TypeMapper}s, {@link InputConverter}s and {@link OutputConverter}s
-     * <p>Equivalent to calling {@code withDefaultMappers().withDefaultConverters()}</p>
+     * <p>Equivalent to calling {@code withDefaultResolverExtractors().withDefaultMappers().withDefaultConverters()}</p>
      * <p>See {@link #withDefaultMappers()} and {@link #withDefaultConverters()}</p>
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
     public GraphQLSchemaBuilder withDefaults() {
-        return withDefaultMappers()
+        return withDefaultResolverExtractors()
+                .withDefaultMappers()
                 .withDefaultConverters();
+    }
+
+    /**
+     * Registers default resolver extractors. Currently this only includes {@link AnnotatedResolverExtractor}.
+     * <p>See {@link #withResolverExtractors(ResolverExtractor...)}</p>
+     *
+     * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
+     */
+    public GraphQLSchemaBuilder withDefaultResolverExtractors() {
+        return withResolverExtractors(new AnnotatedResolverExtractor());
     }
 
     /**
@@ -393,9 +401,16 @@ public class GraphQLSchemaBuilder {
     }
 
     /**
-     * Registers default mappers and/or converters if none were registered explicitly, ensuring the builder is in a valid state
+     * Registers default extractors, mappers and/or converters if none were registered explicitly,
+     * ensuring the builder is in a valid state
      */
     private void init() {
+        if (querySourceRepository.isEmpty()) {
+            throw new IllegalStateException("At least one (non-domain) query source must be registered");
+        }
+        if (!querySourceRepository.hasGlobalExtractors()) {
+            withDefaultResolverExtractors();
+        }
         if (typeMappers.isEmpty()) {
             withDefaultMappers();
         }

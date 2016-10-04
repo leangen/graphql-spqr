@@ -2,6 +2,7 @@ package io.leangen.graphql.util;
 
 import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.TypeResolver;
+import io.leangen.gentyref8.AnnotatedTypeImpl;
 import io.leangen.gentyref8.GenericTypeReflector;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.util.classpath.ClassFinder;
@@ -17,8 +18,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.leangen.gentyref8.GenericTypeReflector.annotate;
-import static io.leangen.gentyref8.GenericTypeReflector.capture;
+import static io.leangen.gentyref8.GenericTypeReflector.*;
 import static java.util.Arrays.stream;
 
 /**
@@ -272,9 +272,9 @@ public class ClassUtils {
         if (types.isEmpty()) {
             throw new IllegalArgumentException("At least one class must be provided");
         }
-        if (types.stream().allMatch(type -> type.equals(types.get(0)))) return types.get(0);
+        if (types.stream().allMatch(type -> AnnotatedTypeImpl.equals(type, types.get(0)))) return types.get(0);
         List<Class> classes = types.stream().map(AnnotatedType::getType).map(ClassUtils::getRawType).collect(Collectors.toList());
-        return annotate(getCommonSuperTypes(classes).get(0));
+        return replaceAnnotations(annotate(getCommonSuperTypes(classes).get(0)), getMergedAnnotations(types.toArray(new AnnotatedType[types.size()])));
     }
 
     /**

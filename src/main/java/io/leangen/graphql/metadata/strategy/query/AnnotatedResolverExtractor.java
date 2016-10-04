@@ -81,4 +81,17 @@ public class AnnotatedResolverExtractor implements ResolverExtractor {
                         argumentExtractor.extractResolverArguments(method, beanType)
                 )).collect(Collectors.toSet());
     }
+
+    @Override
+    public int hashCode() {
+        return queryNameGenerator.getClass().hashCode() + argumentExtractor.getClass().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof AnnotatedResolverExtractor)) return false;
+        AnnotatedResolverExtractor that = (AnnotatedResolverExtractor) other;
+        return this.queryNameGenerator.getClass().equals(that.queryNameGenerator.getClass())
+                && this.argumentExtractor.getClass().equals(that.argumentExtractor.getClass());
+    }
 }

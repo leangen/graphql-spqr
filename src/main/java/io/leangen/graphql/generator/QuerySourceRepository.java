@@ -3,12 +3,7 @@ package io.leangen.graphql.generator;
 import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
 
 import java.lang.reflect.AnnotatedType;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-
-import static java.util.Collections.addAll;
+import java.util.*;
 
 /**
  * Created by bojan.tomic on 7/12/16.
@@ -36,7 +31,9 @@ public class QuerySourceRepository {
     }
 
     public void registerGlobalQueryExtractors(ResolverExtractor... resolverExtractors) {
-        addAll(this.resolverExtractors, resolverExtractors);
+        Arrays.stream(resolverExtractors)
+                .filter(resolverExtractor -> !this.resolverExtractors.contains(resolverExtractor)) //don't allow duplicates
+                .forEach(this.resolverExtractors::add);
     }
 
     public QuerySource domainSourceForType(AnnotatedType domainType) {
@@ -49,5 +46,13 @@ public class QuerySourceRepository {
 
     public Collection<QuerySource> getDomainQuerySources() {
         return domainQuerySources.values();
+    }
+
+    public boolean hasGlobalExtractors() {
+        return !resolverExtractors.isEmpty();
+    }
+
+    public boolean isEmpty() {
+        return querySources.isEmpty();
     }
 }
