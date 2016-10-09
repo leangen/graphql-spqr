@@ -1,15 +1,5 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLOutputType;
-import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.gentyref8.TypeFactory;
-import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
-import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
-import io.leangen.graphql.util.ClassUtils;
-
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
@@ -17,6 +7,16 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLOutputType;
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.geantyref.TypeFactory;
+import io.leangen.graphql.generator.BuildContext;
+import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.util.ClassUtils;
 
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
@@ -44,7 +44,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     public AnnotatedType getSubstituteType(AnnotatedType original) {
         AnnotatedType[] mapType = ((AnnotatedParameterizedType) original).getAnnotatedActualTypeArguments();
         Type entryType = TypeFactory.parameterizedClass(AbstractMap.SimpleEntry.class, mapType[0].getType(), mapType[1].getType());
-        return GenericTypeReflector.replaceAnnotations(GenericTypeReflector.annotate(TypeFactory.parameterizedClass(List.class, entryType)), original.getAnnotations());
+        return GenericTypeReflector.annotate(TypeFactory.parameterizedClass(List.class, entryType), original.getAnnotations());
     }
 
     @Override
@@ -95,10 +95,5 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
                         .type(valueType)
                         .build())
                 .build();
-    }
-
-    @Override
-    public boolean supports(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(Map.class, type.getType());
     }
 }

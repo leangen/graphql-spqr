@@ -1,13 +1,17 @@
 package io.leangen.graphql.generator;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLObjectType;
-import io.leangen.gentyref8.GenericTypeReflector;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.DomainType;
-
-import java.lang.reflect.Type;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by bojan.tomic on 5/7/16.

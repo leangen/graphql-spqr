@@ -1,21 +1,37 @@
 package io.leangen.graphql;
 
-import graphql.ExecutionResult;
-import graphql.GraphQL;
-import graphql.Scalars;
-import graphql.schema.*;
-import io.leangen.gentyref8.TypeToken;
-import io.leangen.graphql.annotations.NonNull;
-import io.leangen.graphql.annotations.RelayId;
-import io.leangen.graphql.domain.GenericItemRepo;
 import org.junit.Test;
 
 import java.lang.reflect.AnnotatedType;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import graphql.ExecutionResult;
+import graphql.GraphQL;
+import graphql.Scalars;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLModifiedType;
+import graphql.schema.GraphQLNonNull;
+import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLSchema;
+import graphql.schema.GraphQLType;
+import io.leangen.geantyref.TypeToken;
+import io.leangen.graphql.annotations.NonNull;
+import io.leangen.graphql.annotations.RelayId;
+import io.leangen.graphql.domain.GenericItemRepo;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by bojan.tomic on 7/25/16.

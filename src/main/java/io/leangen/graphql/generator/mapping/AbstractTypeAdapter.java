@@ -1,9 +1,9 @@
 package io.leangen.graphql.generator.mapping;
 
-import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.graphql.util.ClassUtils;
-
 import java.lang.reflect.AnnotatedType;
+
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.util.ClassUtils;
 
 /**
  * Created by bojan.tomic on 9/21/16.
@@ -14,7 +14,7 @@ public abstract class AbstractTypeAdapter<T, S>
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return ClassUtils.isSuperType(getSourceType().getType(), type.getType());
+        return ClassUtils.isAssignable(getSourceType().getType(), type.getType());
     }
 
     private AnnotatedType getSourceType() {

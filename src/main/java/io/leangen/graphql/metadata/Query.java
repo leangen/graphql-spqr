@@ -1,19 +1,23 @@
 package io.leangen.graphql.metadata;
 
-import graphql.GraphQLException;
-import graphql.schema.DataFetchingEnvironment;
-import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.graphql.query.ConnectionRequest;
-import io.leangen.graphql.query.ExecutionContext;
-import io.leangen.graphql.query.relay.Page;
-import io.leangen.graphql.util.ClassUtils;
-
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import graphql.GraphQLException;
+import graphql.schema.DataFetchingEnvironment;
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.query.ConnectionRequest;
+import io.leangen.graphql.query.ExecutionContext;
+import io.leangen.graphql.query.relay.Page;
+import io.leangen.graphql.util.ClassUtils;
 
 /**
  * Created by bojan.tomic on 3/19/16.
@@ -133,7 +137,7 @@ public class Query {
                     //TODO implement simple filtering here
                 }
             } else {
-                Object result = resolver.resolve(env.getSource(), queryArguments, new ConnectionRequest(connectionArguments), executionContext);
+                Object result = resolver.resolve(env.getSource(), env.getContext(), queryArguments, new ConnectionRequest(connectionArguments), executionContext);
                 return executionContext.proxyIfNeeded(env, result, resolver.getReturnType().getType());
             }
             throw new GraphQLException("Resolver for query " + name + " accepting arguments: " + env.getArguments().keySet() + " not implemented");

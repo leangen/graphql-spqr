@@ -1,6 +1,12 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import graphql.schema.*;
+import java.lang.reflect.AnnotatedType;
+import java.util.Optional;
+
+import graphql.schema.GraphQLInputObjectType;
+import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
@@ -9,9 +15,6 @@ import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
 import io.leangen.graphql.metadata.DomainType;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.util.ClassUtils;
-
-import java.lang.reflect.AnnotatedType;
-import java.util.Optional;
 
 import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
@@ -61,10 +64,12 @@ public class ObjectTypeMapper implements TypeMapper {
         }
 
         DomainType domainType = new DomainType(javaType);
+
 //        if (buildContext.inputsInProgress.contains(domainType.getInputName())) {
 //            return new GraphQLTypeReference(domainType.getInputName());
 //        }
         buildContext.inputsInProgress.add(domainType.getInputName());
+
         GraphQLInputObjectType.Builder typeBuilder = newInputObject()
                 .name(domainType.getInputName())
                 .description(domainType.getDescription());

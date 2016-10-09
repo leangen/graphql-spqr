@@ -1,19 +1,33 @@
 package io.leangen.graphql;
 
-import graphql.schema.GraphQLSchema;
-import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.graphql.generator.QueryGenerator;
-import io.leangen.graphql.generator.QuerySourceRepository;
-import io.leangen.graphql.generator.mapping.*;
-import io.leangen.graphql.generator.mapping.common.*;
-import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
-import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
-
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+
+import graphql.schema.GraphQLSchema;
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.QuerySourceRepository;
+import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.generator.mapping.ConverterRepository;
+import io.leangen.graphql.generator.mapping.InputConverter;
+import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.mapping.TypeMapperRepository;
+import io.leangen.graphql.generator.mapping.common.CollectionToListOutputConverter;
+import io.leangen.graphql.generator.mapping.common.EnumMapper;
+import io.leangen.graphql.generator.mapping.common.ListMapper;
+import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
+import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
+import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
+import io.leangen.graphql.generator.mapping.common.PageMapper;
+import io.leangen.graphql.generator.mapping.common.RelayIdMapper;
+import io.leangen.graphql.generator.mapping.common.ScalarMapper;
+import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
+import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
+import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
 
 import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
@@ -107,8 +121,8 @@ public class GraphQLSchemaBuilder {
      * @param beanType Runtime type of {@code querySourceBean}. Should be explicitly provided when it differs from its class
      *                 (that can be obtained via {@link Object#getClass()}). This is commonly the case when the class is generic
      *                 or when the instance has been proxied by a framework.
-     *                 Use {@link io.leangen.gentyref8.TypeToken} to get a {@link Type} literal
-     *                 or {@link io.leangen.gentyref8.TypeFactory} to create it dynamically.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
@@ -125,8 +139,8 @@ public class GraphQLSchemaBuilder {
      *                        those methods will be invoked in query/mutation execution time
      * @param beanType Runtime type of {@code querySourceBean}. Should be explicitly provided when it differs from its class
      *                 (that can be obtained via {@link Object#getClass()}) and when annotations on the type should be kept.
-     *                 Use {@link io.leangen.gentyref8.TypeToken} to get an {@link AnnotatedType} literal
-     *                 or {@link io.leangen.gentyref8.TypeFactory} to create it dynamically.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get an {@link AnnotatedType} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
@@ -144,8 +158,8 @@ public class GraphQLSchemaBuilder {
      * @param beanType Runtime type of {@code querySourceBean}. Should be explicitly provided when it differs from its class
      *                 (that can be obtained via {@link Object#getClass()}). This is commonly the case when the class is generic
      *                 or when the instance has been proxied by a framework.
-     *                 Use {@link io.leangen.gentyref8.TypeToken} to get a {@link Type} literal
-     *                 or {@link io.leangen.gentyref8.TypeFactory} to create it dynamically.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
      * @param extractors Custom extractor to use when analyzing {@code beanType}
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
@@ -162,8 +176,8 @@ public class GraphQLSchemaBuilder {
      *                        those methods will be invoked in query/mutation execution time
      * @param beanType Runtime type of {@code querySourceBean}. Should be explicitly provided when it differs from its class
      *                 (that can be obtained via {@link Object#getClass()}) and when annotations on the type should be kept.
-     *                 Use {@link io.leangen.gentyref8.TypeToken} to get an {@link AnnotatedType} literal
-     *                 or {@link io.leangen.gentyref8.TypeFactory} to create it dynamically.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get an {@link AnnotatedType} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
      * @param extractors Custom extractors to use when analyzing {@code beanType}
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
@@ -297,7 +311,7 @@ public class GraphQLSchemaBuilder {
      */
     public GraphQLSchemaBuilder withDefaultMappers() {
         return withTypeMappers(new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new MapToListTypeAdapter<>(),
-                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new ObjectTypeMapper());
+                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter<>(), new ObjectTypeMapper());
     }
 
     /**
@@ -307,8 +321,9 @@ public class GraphQLSchemaBuilder {
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
     public GraphQLSchemaBuilder withDefaultConverters() {
-        return withInputConverters(new MapToListTypeAdapter<>())
-                .withOutputConverters(new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter());
+        return withInputConverters(new MapToListTypeAdapter<>(), new OptionalAdapter<>())
+                .withOutputConverters(new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
+                        new CollectionToListOutputConverter(), new OptionalAdapter<>());
     }
 
     /**

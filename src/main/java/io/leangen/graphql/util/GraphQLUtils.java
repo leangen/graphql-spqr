@@ -1,7 +1,22 @@
 package io.leangen.graphql.util;
 
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
 import graphql.schema.GraphQLScalarType;
-import io.leangen.gentyref8.GenericTypeReflector;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.QueryResolver;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
 import io.leangen.graphql.query.DefaultIdTypeMapper;
@@ -13,14 +28,19 @@ import io.leangen.graphql.query.relay.generic.GenericEdge;
 import io.leangen.graphql.query.relay.generic.GenericPage;
 import io.leangen.graphql.query.relay.generic.GenericPageInfo;
 
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.URI;
-import java.util.*;
-
-import static graphql.Scalars.*;
-import static io.leangen.graphql.util.Scalars.*;
+import static graphql.Scalars.GraphQLBigDecimal;
+import static graphql.Scalars.GraphQLBigInteger;
+import static graphql.Scalars.GraphQLBoolean;
+import static graphql.Scalars.GraphQLByte;
+import static graphql.Scalars.GraphQLChar;
+import static graphql.Scalars.GraphQLFloat;
+import static graphql.Scalars.GraphQLInt;
+import static graphql.Scalars.GraphQLLong;
+import static graphql.Scalars.GraphQLShort;
+import static graphql.Scalars.GraphQLString;
+import static io.leangen.graphql.util.Scalars.GraphQLISODate;
+import static io.leangen.graphql.util.Scalars.GraphQLUri;
+import static io.leangen.graphql.util.Scalars.GraphQLUuid;
 
 /**
  * Created by bojan.tomic on 3/4/16.

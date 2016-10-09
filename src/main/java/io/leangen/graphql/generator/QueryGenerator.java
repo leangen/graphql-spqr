@@ -1,20 +1,34 @@
 package io.leangen.graphql.generator;
 
+import java.lang.reflect.AnnotatedType;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import graphql.relay.Relay;
-import graphql.schema.*;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLInputObjectField;
+import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLNonNull;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.annotations.NonNull;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
+import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.HintedTypeResolver;
 import io.leangen.graphql.query.IdTypeMapper;
 import io.leangen.graphql.util.ClassUtils;
-
-import java.lang.reflect.AnnotatedType;
-import java.util.*;
-import java.util.stream.Collectors;
 
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -192,7 +206,8 @@ public class QueryGenerator {
      */
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
         javaType = ClassUtils.stripBounds(javaType);
-        GraphQLInputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLInputType(javaType, buildContext, this);
+        TypeMapper mapper = buildContext.typeMappers.getTypeMapper(javaType);
+        GraphQLInputType type = mapper.toGraphQLInputType(javaType, buildContext, this);
         if (javaType.isAnnotationPresent(NonNull.class)) {
             return new GraphQLNonNull(type);
         }

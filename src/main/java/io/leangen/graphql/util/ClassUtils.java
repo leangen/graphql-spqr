@@ -2,23 +2,41 @@ package io.leangen.graphql.util;
 
 import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.TypeResolver;
-import io.leangen.gentyref8.AnnotatedTypeImpl;
-import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
-import io.leangen.graphql.util.classpath.ClassFinder;
-import io.leangen.graphql.util.classpath.ClassInfo;
-import io.leangen.graphql.util.classpath.ClassReadingException;
-import io.leangen.graphql.util.classpath.SubclassClassFilter;
+
 import sun.misc.Unsafe;
 
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.AnnotatedTypeVariable;
+import java.lang.reflect.AnnotatedWildcardType;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.leangen.gentyref8.GenericTypeReflector.*;
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import io.leangen.graphql.util.classpath.ClassFinder;
+import io.leangen.graphql.util.classpath.ClassInfo;
+import io.leangen.graphql.util.classpath.ClassReadingException;
+import io.leangen.graphql.util.classpath.SubclassClassFilter;
+
+import static io.leangen.geantyref.GenericTypeReflector.annotate;
+import static io.leangen.geantyref.GenericTypeReflector.capture;
+import static io.leangen.geantyref.GenericTypeReflector.getMergedAnnotations;
 import static java.util.Arrays.stream;
 
 /**
@@ -129,7 +147,7 @@ public class ClassUtils {
         return GenericTypeReflector.getExactParameterTypes(method, declaringType);
     }
 
-    public static Class getRawType(Type type) {
+    public static Class<?> getRawType(Type type) {
         Class<?> erased = GenericTypeReflector.erase(type);
         //TODO This should preferably be a warning, not an exception, or have customizable behavior
         if (erased == Object.class && type != Object.class) {
@@ -239,6 +257,22 @@ public class ClassUtils {
         return GenericTypeReflector.isSuperType(superType, subType);
     }
 
+    public static boolean isAssignable(Type wrapper, Type primitive) {
+        return (wrapper instanceof AnnotatedParameterizedType &&
+                Arrays.stream(((AnnotatedParameterizedType) wrapper).getAnnotatedActualTypeArguments())
+                        .allMatch(arg -> arg instanceof AnnotatedTypeVariable) &&
+                ClassUtils.getRawType(wrapper).isAssignableFrom(ClassUtils.getRawType(primitive)))
+                || (wrapper == Byte.class && primitive == byte.class)
+                || (wrapper == Short.class && primitive == short.class)
+                || (wrapper == Integer.class && primitive == int.class)
+                || (wrapper == Long.class && primitive == long.class)
+                || (wrapper == Float.class && primitive == float.class)
+                || (wrapper == Double.class && primitive == double.class)
+                || (wrapper == Boolean.class && primitive == boolean.class)
+                || (wrapper == Void.class && primitive == void.class)
+                || ClassUtils.isSuperType(wrapper, primitive);
+    }
+
     /**
      * Returns the first bound of bounded types, or the unchanged type itself.
      * If the given type is an AnnotatedWildcardType its first lower bound is returned if it exists, or it's first upper bound otherwise.
@@ -272,9 +306,9 @@ public class ClassUtils {
         if (types.isEmpty()) {
             throw new IllegalArgumentException("At least one class must be provided");
         }
-        if (types.stream().allMatch(type -> AnnotatedTypeImpl.equals(type, types.get(0)))) return types.get(0);
+        if (types.stream().allMatch(type -> GenericTypeReflector.equals(type, types.get(0)))) return types.get(0);
         List<Class> classes = types.stream().map(AnnotatedType::getType).map(ClassUtils::getRawType).collect(Collectors.toList());
-        return replaceAnnotations(annotate(getCommonSuperTypes(classes).get(0)), getMergedAnnotations(types.toArray(new AnnotatedType[types.size()])));
+        return annotate(getCommonSuperTypes(classes).get(0), getMergedAnnotations(types.toArray(new AnnotatedType[types.size()])));
     }
 
     /**
@@ -330,19 +364,6 @@ public class ClassUtils {
             throw new InstantiationException("Unsafe is unavailable. Instance allocation failed.");
         }
         return (T) unsafe.allocateInstance(type);
-    }
-
-    /**
-     * Returns an array containing all annotations declared by the given annotated types
-     *
-     * @param types Annotated types whose annotations are to be extracted and merged
-     * @return An array containing all annotations declared by the given annotated types
-     */
-    private static Annotation[] getMergedAnnotations(AnnotatedType... types) {
-        return Arrays.stream(types)
-                .flatMap(type -> Arrays.stream(type.getAnnotations()))
-                .distinct()
-                .toArray(Annotation[]::new);
     }
 
     private static String capitalize(final String str) {

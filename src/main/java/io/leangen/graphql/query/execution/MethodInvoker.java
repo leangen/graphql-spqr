@@ -1,14 +1,14 @@
 package io.leangen.graphql.query.execution;
 
-import io.leangen.gentyref8.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.util.ClassUtils;
-
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Map;
+
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.util.ClassUtils;
 
 /**
  * Created by bojan.tomic on 7/20/16.

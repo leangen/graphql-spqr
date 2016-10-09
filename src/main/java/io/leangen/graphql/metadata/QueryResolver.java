@@ -1,18 +1,22 @@
 package io.leangen.graphql.metadata;
 
-import io.leangen.graphql.annotations.GraphQLResolverSource;
-import io.leangen.graphql.annotations.RelayConnectionRequest;
-import io.leangen.graphql.query.ConnectionRequest;
-import io.leangen.graphql.query.ExecutionContext;
-import io.leangen.graphql.generator.mapping.InputConverter;
-import io.leangen.graphql.generator.mapping.OutputConverter;
-import io.leangen.graphql.query.execution.Executable;
-
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+
+import io.leangen.graphql.annotations.RelayConnectionRequest;
+import io.leangen.graphql.generator.mapping.InputConverter;
+import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.query.ConnectionRequest;
+import io.leangen.graphql.query.ExecutionContext;
+import io.leangen.graphql.query.execution.Executable;
 
 /**
  * Class representing a single method used to resolve a specific query given specific arguments.
@@ -97,32 +101,32 @@ public class QueryResolver {
      * @throws InvocationTargetException If a reflective invocation of the underlying method/field fails
      * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
      */
-    public Object resolve(Object source, Map<String, Object> arguments, Object connectionRequest, ExecutionContext executionContext) throws InvocationTargetException, IllegalAccessException {
+    @SuppressWarnings("unchecked")
+    public Object resolve(Object source, Object context, Map<String, Object> arguments, Object connectionRequest, ExecutionContext executionContext) throws InvocationTargetException, IllegalAccessException {
         int queryArgumentsCount = queryArguments.size();
-        int sourceObjectPosition = getQuerySourceObjectPosition();
-        int contextObjectPosition = getConnectionRequestObjectPosition();
-        int idObjectPosition = getIdObjectPosition();
 
         Object[] args = new Object[queryArgumentsCount];
-        int currentParamIndex = 0;
         for (int i = 0; i < queryArgumentsCount; i++) {
-            if (i == contextObjectPosition) {
+            QueryArgument argDescriptor =  queryArguments.get(i);
+
+            if (argDescriptor.isRelayConnection()) {
                 args[i] = connectionRequest;
-            } else if (i == sourceObjectPosition && !arguments.containsKey(sourceArgument.getName())) {
+            } else if (argDescriptor.isResolverSource() && !arguments.containsKey(sourceArgument.getName())) {
                 args[i] = source;
-            } else if (i == idObjectPosition) {
-                String rawId = arguments.get(queryArguments.get(currentParamIndex++).getName()).toString();
+            } else if (argDescriptor.isContext()) {
+                args[i] = context;
+            } else if (argDescriptor.isRelayId()) {
+                String rawId = arguments.get(argDescriptor.getName()).toString();
                 String id = rawId;
                 try {
                     id = executionContext.relay.fromGlobalId(rawId).id;
                 } catch (Exception e) {/*noop*/}
-                args[i] = executionContext.idTypeMapper.deserialize(id, executable.getAnnotatedParameterTypes()[idObjectPosition].getType());
+                args[i] = executionContext.idTypeMapper.deserialize(id, executable.getAnnotatedParameterTypes()[i].getType());
             } else {
-                QueryArgument inputArgument = queryArguments.get(currentParamIndex++);
-                InputConverter argValueConverter = executionContext.converters.getInputConverter(inputArgument.getJavaType());
-                AnnotatedType argValueType = argValueConverter != null ? argValueConverter.getSubstituteType(inputArgument.getJavaType()) : inputArgument.getJavaType();
-                Object argValue = executionContext.inputDeserializer.deserialize(arguments.get(inputArgument.getName()), argValueType);
-                args[i] = argValueConverter != null ? argValueConverter.convertInput(argValue) : argValue;
+                InputConverter argValueConverter = executionContext.converters.getInputConverter(argDescriptor.getJavaType());
+                AnnotatedType argValueType = argValueConverter != null ? argValueConverter.getSubstituteType(argDescriptor.getJavaType()) : argDescriptor.getJavaType();
+                Object argValue = executionContext.inputDeserializer.deserialize(arguments.get(argDescriptor.getName()), argValueType);
+                args[i] = argValueConverter == null ? argValue : argValueConverter.convertInput(argValue);
             }
         }
         Object result = executable.execute(source, args);
@@ -130,7 +134,7 @@ public class QueryResolver {
 //            result = new ArrayList<>(((Collection<?>) result));
 //        }
         OutputConverter resultConverter = executionContext.converters.getOutputConverter(this.getReturnType());
-        return resultConverter != null ? resultConverter.convertOutput(result) : result;
+        return resultConverter == null ? result : resultConverter.convertOutput(result);
         //Wrap returned values for resolvers that don't directly return domain objects
 //        if (isWrapped()) {
 //            if (!Map.class.isAssignableFrom(result.getClass())) {
@@ -148,7 +152,7 @@ public class QueryResolver {
     }
 
     /**
-     * Returns whether this resolver is the primary. Primary resolver is the one accepting nothing but the Relay ID
+     * Checks whether this resolver is the primary. Primary resolver is the one accepting nothing but the Relay ID.
      *
      * @return Boolean indicating whether this resolver is the primary resolver for this query
      */
@@ -164,48 +168,6 @@ public class QueryResolver {
      */
     public Type getSourceType() {
         return sourceArgument == null ? null : sourceArgument.getJavaType().getType();
-    }
-
-
-    /**
-     * Gets the index of the argument representing the query source (object returned by the parent query),
-     * or -1 if this resolved does not accept such an object.
-     *
-     * @return The index of the argument representing the query source
-     */
-    private int getQuerySourceObjectPosition() {
-        for (int i = 0; i < executable.getParameterCount(); i++) {
-            if (executable.getParameters()[i].isAnnotationPresent(GraphQLResolverSource.class)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private int getConnectionRequestObjectPosition() {
-        if (!supportsConnectionRequests()) return -1;
-        for (int i = 0; i < executable.getParameterCount(); i++) {
-            if (executable.getParameters()[i].getType().equals(ConnectionRequest.class)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    //TODO Deal with methods accepting multiple Relay IDs
-
-    /**
-     * Returns the index of the argument representing Relay ID, as such object have special logic for (de)serialization
-     *
-     * @return The index of the argument representing Relay ID
-     */
-    private int getIdObjectPosition() {
-        for (int i = 0; i < queryArguments.size(); i++) {
-            if (queryArguments.get(i).isRelayId()) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     private boolean isWrapped() {
@@ -233,24 +195,11 @@ public class QueryResolver {
      */
     public Set<String> getFingerprints() {
         Set<String> fingerprints = new HashSet<>(sourceArgument == null ? 1 : 2);
-        StringBuilder fingerPrint = new StringBuilder();
-        queryArguments.stream().filter(arg -> !arg.isRelayConnection()).map(QueryArgument::getName).sorted().forEach(fingerPrint::append);
-        fingerprints.add(fingerPrint.toString());
+        fingerprints.add(fingerprint(false));
         if (sourceArgument != null) {
-            fingerPrint = new StringBuilder();
-            queryArguments.stream()
-                    .filter(arg -> !arg.isResolverSource())
-                    .filter(arg -> !arg.isRelayConnection())
-                    .map(QueryArgument::getName)
-                    .sorted()
-                    .forEach(fingerPrint::append);
-            fingerprints.add(fingerPrint.toString());
+            fingerprints.add(fingerprint(true));
         }
         return fingerprints;
-    }
-
-    public int getFingerprint() {
-        return executable.hashCode();
     }
 
     public List<QueryArgument> getQueryArguments() {
@@ -263,6 +212,18 @@ public class QueryResolver {
 
     public Executable getExecutable() {
         return executable;
+    }
+
+    private String fingerprint(boolean skipResolverSource) {
+        StringBuilder fingerprint = new StringBuilder();
+        Predicate<QueryArgument> sourceFilter = skipResolverSource ? arg -> !arg.isResolverSource() : arg -> true;
+        queryArguments.stream()
+                .filter(sourceFilter)
+                .filter(arg -> !arg.isRelayConnection() && !arg.isContext())
+                .map(QueryArgument::getName)
+                .sorted()
+                .forEach(fingerprint::append);
+        return fingerprint.toString();
     }
 
     @Override
