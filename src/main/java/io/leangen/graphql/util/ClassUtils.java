@@ -235,7 +235,7 @@ public class ClassUtils {
      */
     public static Collection<Type> findImplementations(Type superType) throws ClassReadingException {
         Collection<ClassInfo> rawImpls = new ClassFinder()
-                .addPrunedClassPath()
+                .addExplicitClassPath()
                 .findClasses(new SubclassClassFilter(getRawType(superType)));
 
 

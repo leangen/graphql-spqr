@@ -3,7 +3,7 @@ package io.leangen.graphql.generator.mapping;
 import java.lang.reflect.AnnotatedType;
 
 /**
- * @param <T> The argument type of an exposed method or field
+ * @param <T> The actual argument type of an exposed method
  * @param <S> The substitute type as which the argument values are to be deserialized
  */
 public interface InputConverter<T, S> {

@@ -106,7 +106,7 @@ public class ClassFinder {
      *
      * @return this ClassFinder instance to allow call chaining
      */
-    public ClassFinder addPrunedClassPath() {
+    public ClassFinder addExplicitClassPath() {
         String path = System.getProperty("java.class.path");
         String[] libPaths = System.getProperty("java.library.path").split(File.pathSeparator);
         String javaHome = System.getProperty("java.home");
