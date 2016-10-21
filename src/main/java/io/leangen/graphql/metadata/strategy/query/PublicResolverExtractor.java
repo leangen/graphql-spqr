@@ -1,10 +1,5 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.metadata.QueryResolver;
-import io.leangen.graphql.query.execution.MethodInvoker;
-import io.leangen.graphql.query.execution.SingletonMethodInvoker;
-import io.leangen.graphql.util.ClassUtils;
-
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -12,6 +7,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import io.leangen.graphql.metadata.QueryResolver;
+import io.leangen.graphql.query.execution.MethodInvoker;
+import io.leangen.graphql.query.execution.SingletonMethodInvoker;
+import io.leangen.graphql.util.ClassUtils;
 
 /**
  * Created by bojan.tomic on 6/10/16.
@@ -44,7 +44,7 @@ public class PublicResolverExtractor implements ResolverExtractor {
     public Collection<QueryResolver> extractQueryResolvers(Object querySourceBean, AnnotatedType beanType, Predicate<Member>... filters) {
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         return Arrays.stream(rawType.getMethods())
-                .filter(method -> rawType.getPackage().equals(method.getDeclaringClass().getPackage()))
+                .filter(method -> !rawType.isArray() && rawType.getPackage().equals(method.getDeclaringClass().getPackage()))
                 .filter(this::isQuery)
                 .filter(Arrays.stream(filters).reduce(Predicate::and).orElse(acceptAll))
                 .map(method -> new QueryResolver(

@@ -21,14 +21,10 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.annotations.NonNull;
 import io.leangen.graphql.annotations.RelayId;
-import io.leangen.graphql.generator.mapping.ConverterRepository;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.query.ExecutionContext;
-import io.leangen.graphql.query.HintedTypeResolver;
 import io.leangen.graphql.query.IdTypeMapper;
-import io.leangen.graphql.util.ClassUtils;
 
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -51,15 +47,10 @@ public class QueryGenerator {
 
     /**
      *
-     * @param querySourceRepository Repository containing all the registered (singleton and domain) query sources
-     * @param typeMappers Repository of all registered {@link io.leangen.graphql.generator.mapping.TypeMapper}s
-     * @param converters Repository of all registered {@link io.leangen.graphql.generator.mapping.InputConverter}s
-     *                   and {@link io.leangen.graphql.generator.mapping.OutputConverter}s
+     * @param buildContext The shared context containing all the global information needed for mapping
      */
-    public QueryGenerator(QuerySourceRepository querySourceRepository, TypeMapperRepository typeMappers, ConverterRepository converters) {
-        QueryRepository queryRepository = new QueryRepository(querySourceRepository);
-        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converters);
-        this.node = buildContext.relay.nodeInterface(new HintedTypeResolver(buildContext.typeRepository));
+    public QueryGenerator(BuildContext buildContext) {
+        this.node = buildContext.relay.nodeInterface(buildContext.typeResolver);
         this.queries = generateQueries(buildContext);
         this.mutations = generateMutations(buildContext);
     }
@@ -163,7 +154,6 @@ public class QueryGenerator {
      * @return GraphQL output type corresponding to the given Java type
      */
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
-        javaType = ClassUtils.stripBounds(javaType);
         GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, buildContext, this);
         if (javaType.isAnnotationPresent(NonNull.class)) {
             return new GraphQLNonNull(type);
@@ -205,7 +195,6 @@ public class QueryGenerator {
      * @return GraphQL input type corresponding to the given Java type
      */
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
-        javaType = ClassUtils.stripBounds(javaType);
         TypeMapper mapper = buildContext.typeMappers.getTypeMapper(javaType);
         GraphQLInputType type = mapper.toGraphQLInputType(javaType, buildContext, this);
         if (javaType.isAnnotationPresent(NonNull.class)) {

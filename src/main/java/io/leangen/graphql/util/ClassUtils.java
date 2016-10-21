@@ -8,19 +8,24 @@ import sun.misc.Unsafe;
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.AnnotatedTypeVariable;
 import java.lang.reflect.AnnotatedWildcardType;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,6 +33,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.util.classpath.ClassFinder;
 import io.leangen.graphql.util.classpath.ClassInfo;
@@ -36,6 +42,7 @@ import io.leangen.graphql.util.classpath.SubclassClassFilter;
 
 import static io.leangen.geantyref.GenericTypeReflector.annotate;
 import static io.leangen.geantyref.GenericTypeReflector.capture;
+import static io.leangen.geantyref.GenericTypeReflector.getExactSuperType;
 import static io.leangen.geantyref.GenericTypeReflector.getMergedAnnotations;
 import static java.util.Arrays.stream;
 
@@ -226,6 +233,17 @@ public class ClassUtils {
         }
     }
 
+    public static Collection<AnnotatedType> getInterfaces(AnnotatedType type) {
+        Class clazz = getRawType(type.getType());
+        Set<AnnotatedType> interfaces = new HashSet<>();
+        do {
+            Arrays.stream(clazz.getInterfaces())
+                    .map(inter -> getExactSuperType(type, inter))
+                    .forEach(interfaces::add);
+        } while ((clazz = clazz.getSuperclass()) != Object.class && clazz != null);
+        return interfaces;
+    }
+
     /**
      * Scans classpath for implementations/subtypes of the given Type. Only the matching classes are loaded.
      *
@@ -257,26 +275,33 @@ public class ClassUtils {
         return GenericTypeReflector.isSuperType(superType, subType);
     }
 
-    public static boolean isAssignable(Type wrapper, Type primitive) {
-        return (wrapper instanceof AnnotatedParameterizedType &&
-                Arrays.stream(((AnnotatedParameterizedType) wrapper).getAnnotatedActualTypeArguments())
-                        .allMatch(arg -> arg instanceof AnnotatedTypeVariable) &&
-                ClassUtils.getRawType(wrapper).isAssignableFrom(ClassUtils.getRawType(primitive)))
-                || (wrapper == Byte.class && primitive == byte.class)
-                || (wrapper == Short.class && primitive == short.class)
-                || (wrapper == Integer.class && primitive == int.class)
-                || (wrapper == Long.class && primitive == long.class)
-                || (wrapper == Float.class && primitive == float.class)
-                || (wrapper == Double.class && primitive == double.class)
-                || (wrapper == Boolean.class && primitive == boolean.class)
-                || (wrapper == Void.class && primitive == void.class)
-                || ClassUtils.isSuperType(wrapper, primitive);
+    public static boolean isAssignable(Type superType, Type subType) {
+        return (((superType instanceof ParameterizedType
+                && Arrays.stream(((ParameterizedType) superType).getActualTypeArguments())
+                .allMatch(arg -> arg instanceof TypeVariable))
+                || (superType instanceof GenericArrayType &&
+                ((GenericArrayType) superType).getGenericComponentType() instanceof TypeVariable)) 
+                && ClassUtils.getRawType(superType).isAssignableFrom(ClassUtils.getRawType(subType)))
+                || (superType == Byte.class && subType == byte.class)
+                || (superType == Short.class && subType == short.class)
+                || (superType == Integer.class && subType == int.class)
+                || (superType == Long.class && subType == long.class)
+                || (superType == Float.class && subType == float.class)
+                || (superType == Double.class && subType == double.class)
+                || (superType == Boolean.class && subType == boolean.class)
+                || (superType == Void.class && subType == void.class)
+                || ClassUtils.isSuperType(superType, subType);
     }
 
     /**
-     * Returns the first bound of bounded types, or the unchanged type itself.
-     * If the given type is an AnnotatedWildcardType its first lower bound is returned if it exists, or it's first upper bound otherwise.
-     * If the type is an AnnotatedTypeVariable, its first bound is returned. In all other cases, the unchanged type itself is returned.
+     * Recursively replaces all bounded types found within the structure of the given {@link AnnotatedType} with their first bound.
+     * I.e.
+     * <ul>
+     *     <li>All {@link AnnotatedWildcardType}s are replaced with their first lower bound if it exists, 
+     *     or their first upper bound otherwise. All annotations are preserved.</li>
+     *     <li>All {@link AnnotatedTypeVariable}s are replaced with their first bound. All annotations are preserved.</li>
+     *     <li>Other types are kept as they are.</li>
+     * </ul>
      *
      * @param type A potentially bounded type
      * @return The first bound of bounded types, or the unchanged type itself
@@ -292,6 +317,16 @@ public class ClassUtils {
         if (type instanceof AnnotatedTypeVariable) {
             AnnotatedType bound = ((AnnotatedTypeVariable) type).getAnnotatedBounds()[0];
             return type.getAnnotations().length > 0 ? GenericTypeReflector.replaceAnnotations(bound, getMergedAnnotations(type, bound)) : bound;
+        }
+        if (type instanceof AnnotatedParameterizedType) {
+            AnnotatedParameterizedType parameterizedType = (AnnotatedParameterizedType) type;
+            AnnotatedType[] typeArguments = Arrays.stream(parameterizedType.getAnnotatedActualTypeArguments())
+                    .map(ClassUtils::stripBounds)
+                    .toArray(AnnotatedType[]::new);
+            return GenericTypeReflector.replaceParameters(parameterizedType, typeArguments);
+        }
+        if (type instanceof AnnotatedArrayType) {
+            return TypeFactory.arrayOf(stripBounds(((AnnotatedArrayType) type).getAnnotatedGenericComponentType()), type.getAnnotations());
         }
         return type;
     }

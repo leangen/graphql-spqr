@@ -17,6 +17,7 @@ import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.query.ConnectionRequest;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.execution.Executable;
+import io.leangen.graphql.util.ClassUtils;
 
 /**
  * Class representing a single method used to resolve a specific query given specific arguments.
@@ -45,7 +46,7 @@ public class QueryResolver {
         this.relayId = relayId;
         this.queryArguments = queryArguments;
         this.connectionRequestArguments = resolveConnectionRequestArguments();
-        this.returnType = executable.getReturnType();
+        this.returnType = ClassUtils.stripBounds(executable.getReturnType());
         this.wrappedAttribute = executable.getWrappedAttribute();
         this.sourceArgument = resolveSource(queryArguments);
     }

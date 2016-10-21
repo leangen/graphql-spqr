@@ -5,8 +5,10 @@ import java.util.Optional;
 
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLTypeReference;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
@@ -50,6 +52,8 @@ public class ObjectTypeMapper implements TypeMapper {
         if (relayId.isPresent()) {
             typeBuilder.withInterface(queryGenerator.node);
         }
+        ClassUtils.getInterfaces(javaType).forEach(
+                inter -> typeBuilder.withInterface((GraphQLInterfaceType) queryGenerator.toGraphQLType(inter, buildContext)));
 
         GraphQLObjectType type = typeBuilder.build();
         buildContext.typeRepository.registerType(domainType, type);
@@ -58,16 +62,16 @@ public class ObjectTypeMapper implements TypeMapper {
 
     @Override
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
-        Optional<GraphQLInputType> cached = buildContext.typeRepository.getInputType(javaType.getType());
-        if (cached.isPresent()) {
-            return cached.get();
-        }
+//        Optional<GraphQLInputType> cached = buildContext.typeRepository.getInputType(javaType.getType());
+//        if (cached.isPresent()) {
+//            return cached.get();
+//        }
 
         DomainType domainType = new DomainType(javaType);
 
-//        if (buildContext.inputsInProgress.contains(domainType.getInputName())) {
-//            return new GraphQLTypeReference(domainType.getInputName());
-//        }
+        if (buildContext.inputsInProgress.contains(domainType.getInputName())) {
+            return new GraphQLTypeReference(domainType.getInputName());
+        }
         buildContext.inputsInProgress.add(domainType.getInputName());
 
         GraphQLInputObjectType.Builder typeBuilder = newInputObject()

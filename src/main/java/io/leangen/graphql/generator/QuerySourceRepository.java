@@ -1,9 +1,13 @@
 package io.leangen.graphql.generator;
 
-import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
-
 import java.lang.reflect.AnnotatedType;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+
+import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
 
 import static java.util.Collections.addAll;
 
@@ -12,7 +16,7 @@ import static java.util.Collections.addAll;
  */
 public class QuerySourceRepository {
 
-    public final Collection<ResolverExtractor> resolverExtractors = new LinkedHashSet<>();
+    private final Collection<ResolverExtractor> resolverExtractors = new LinkedHashSet<>();
     private final Collection<QuerySource> querySources = new HashSet<>();
     private final Map<AnnotatedType, QuerySource> domainQuerySources = new HashMap<>();
 

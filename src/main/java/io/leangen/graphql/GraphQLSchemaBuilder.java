@@ -8,7 +8,9 @@ import java.util.HashSet;
 
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.QueryRepository;
 import io.leangen.graphql.generator.QuerySourceRepository;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
@@ -16,8 +18,10 @@ import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
+import io.leangen.graphql.generator.mapping.common.ArrayMapper;
 import io.leangen.graphql.generator.mapping.common.CollectionToListOutputConverter;
 import io.leangen.graphql.generator.mapping.common.EnumMapper;
+import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
 import io.leangen.graphql.generator.mapping.common.ListMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
@@ -73,6 +77,7 @@ import static java.util.Collections.addAll;
  */
 public class GraphQLSchemaBuilder {
 
+    private final Collection<Class<?>> mappedInterfaces = new HashSet<>();
     private final QuerySourceRepository querySourceRepository = new QuerySourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final ConverterRepository converterRepository = new ConverterRepository();
@@ -303,6 +308,11 @@ public class GraphQLSchemaBuilder {
         return withResolverExtractors(new AnnotatedResolverExtractor());
     }
 
+    public GraphQLSchemaBuilder withMappedInterfaces(Class<?>... interfaces) {
+        addAll(mappedInterfaces, interfaces);
+        return this;
+    }
+
     /**
      * Registers all built-in {@link TypeMapper}s
      * <p>See {@link #withTypeMappers(TypeMapper...)}</p>
@@ -310,8 +320,8 @@ public class GraphQLSchemaBuilder {
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
     public GraphQLSchemaBuilder withDefaultMappers() {
-        return withTypeMappers(new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new MapToListTypeAdapter<>(),
-                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter<>(), new ObjectTypeMapper());
+        return withTypeMappers(new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new ArrayMapper<>(), new MapToListTypeAdapter<>(),
+                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter<>(), new InterfaceMapper(), new ObjectTypeMapper());
     }
 
     /**
@@ -444,7 +454,9 @@ public class GraphQLSchemaBuilder {
     public GraphQLSchema build() {
         init();
 
-        QueryGenerator queryGenerator = new QueryGenerator(querySourceRepository, typeMappers, converterRepository);
+        QueryRepository queryRepository = new QueryRepository(querySourceRepository, mappedInterfaces);
+        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converterRepository);
+        QueryGenerator queryGenerator = new QueryGenerator(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
         builder

@@ -1,27 +1,34 @@
 package io.leangen.graphql.generator;
 
-import io.leangen.graphql.metadata.Query;
-import io.leangen.graphql.metadata.QueryResolver;
-import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
-
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import io.leangen.graphql.metadata.Query;
+import io.leangen.graphql.metadata.QueryResolver;
+import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
 
 /**
  * Created by bojan.tomic on 3/17/16.
  */
 public class QueryRepository {
 
-    private Set<Query> rootQueries;
-    private Set<Query> mutations;
-    private QuerySourceRepository querySourceRepository;
+    private final Set<Query> rootQueries;
+    private final Set<Query> mutations;
+    private final QuerySourceRepository querySourceRepository;
+    private final Collection<Class<?>> mappedInterfaces;
 
-    public QueryRepository(QuerySourceRepository querySourceRepository) {
+    public QueryRepository(QuerySourceRepository querySourceRepository, Collection<Class<?>> mappedInterfaces) {
         this.querySourceRepository = querySourceRepository;
+        this.mappedInterfaces = mappedInterfaces;
         Collection<QueryResolver> queryResolvers = extractQueryResolvers(querySourceRepository.getQuerySources());
         Collection<QueryResolver> mutationResolvers = extractMutationResolvers(querySourceRepository.getQuerySources());
         rootQueries = assembleQueries(queryResolvers);
@@ -43,7 +50,7 @@ public class QueryRepository {
         return mutations;
     }
 
-    public Set<Query> getDomainQueries( AnnotatedType domainType) {
+    public Set<Query> getDomainQueries(AnnotatedType domainType) {
         QuerySource domainSource = querySourceRepository.domainSourceForType(domainType);
         return assembleDomainQueries(domainSource);
     }
