@@ -1,8 +1,5 @@
 package io.leangen.graphql.util;
 
-import com.fasterxml.classmate.ResolvedType;
-import com.fasterxml.classmate.TypeResolver;
-
 import sun.misc.Unsafe;
 
 import java.beans.Introspector;
@@ -25,25 +22,22 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.util.classpath.ClassFinder;
-import io.leangen.graphql.util.classpath.ClassInfo;
 import io.leangen.graphql.util.classpath.ClassReadingException;
 import io.leangen.graphql.util.classpath.SubclassClassFilter;
 
 import static io.leangen.geantyref.GenericTypeReflector.annotate;
 import static io.leangen.geantyref.GenericTypeReflector.capture;
-import static io.leangen.geantyref.GenericTypeReflector.getExactSuperType;
-import static io.leangen.geantyref.GenericTypeReflector.getMergedAnnotations;
 import static java.util.Arrays.stream;
 
 /**
@@ -52,7 +46,6 @@ import static java.util.Arrays.stream;
 public class ClassUtils {
 
     private static Unsafe unsafe;
-    private static TypeResolver typeResolver = new TypeResolver();
 
     static {
         try {
@@ -122,20 +115,11 @@ public class ClassUtils {
         return GenericTypeReflector.getExactFieldType(field, declaringType);
     }
 
-    //TODO Return multiple types here e.g. for maps and "union" types for wildcards and variables
     public static AnnotatedType[] getTypeArguments(AnnotatedType type) {
         if (type instanceof AnnotatedParameterizedType) {
             return ((AnnotatedParameterizedType) type).getAnnotatedActualTypeArguments();
         } else {
             throw new IllegalArgumentException("Raw parameterized types are not possible to map: " + type.getType().getTypeName());
-        }
-    }
-
-    public static AnnotatedType[] getTypeArgumentsSafely(AnnotatedType type) {
-        try {
-            return getTypeArguments(type);
-        } catch (IllegalArgumentException e) {
-            return new AnnotatedType[0];
         }
     }
 
@@ -233,42 +217,26 @@ public class ClassUtils {
         }
     }
 
-    public static Collection<AnnotatedType> getInterfaces(AnnotatedType type) {
-        Class clazz = getRawType(type.getType());
-        Set<AnnotatedType> interfaces = new HashSet<>();
-        do {
-            Arrays.stream(clazz.getInterfaces())
-                    .map(inter -> getExactSuperType(type, inter))
-                    .forEach(interfaces::add);
-        } while ((clazz = clazz.getSuperclass()) != Object.class && clazz != null);
-        return interfaces;
-    }
-
     /**
-     * Scans classpath for implementations/subtypes of the given Type. Only the matching classes are loaded.
+     * Scans classpath for implementations/subtypes of the given {@link AnnotatedType}. Only the matching classes are loaded.
      *
      * @param superType The type whose implementations/subtypes are to be looked for
-     * @return A collection of {@link Type}s found on the classpath that are implementations/subtypes of {@code superType}
-     * @throws ClassReadingException If a class file
+     * @return A collection of {@link AnnotatedType}s found on the classpath that are implementations/subtypes of {@code superType}
+     * @throws RuntimeException If a class file could not be parsed or a class could not be loaded
      */
-    public static Collection<Type> findImplementations(Type superType) throws ClassReadingException {
-        Collection<ClassInfo> rawImpls = new ClassFinder()
-                .addExplicitClassPath()
-                .findClasses(new SubclassClassFilter(getRawType(superType)));
-
-
-        ResolvedType resolvedSuperType = typeResolver.resolve(superType);
-        return rawImpls.stream()
-                .map(classInfo -> loadClass(classInfo.getClassName()))
-                .map(raw -> {
-                    try {
-                        return typeResolver.resolveSubtype(resolvedSuperType, raw);
-                    } catch (IllegalArgumentException e) {
-                        return null;
-                    }
-                })
-                .filter(impl -> impl != null)
-                .collect(Collectors.toList());
+    public static Collection<AnnotatedType> findImplementations(AnnotatedType superType, String... packages) {
+        try {
+            ClassFinder classFinder = new ClassFinder();
+            classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(packages);
+            return classFinder
+                    .findClasses(new SubclassClassFilter(getRawType(superType.getType()))).stream()
+                    .map(classInfo -> loadClass(classInfo.getClassName()))
+                    .map(raw -> GenericTypeReflector.getExactSubType(superType, raw))
+                    .filter(impl -> impl != null)
+                    .collect(Collectors.toList());
+        } catch (ClassReadingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static boolean isSuperType(Type superType, Type subType) {
@@ -280,7 +248,7 @@ public class ClassUtils {
                 && Arrays.stream(((ParameterizedType) superType).getActualTypeArguments())
                 .allMatch(arg -> arg instanceof TypeVariable))
                 || (superType instanceof GenericArrayType &&
-                ((GenericArrayType) superType).getGenericComponentType() instanceof TypeVariable)) 
+                ((GenericArrayType) superType).getGenericComponentType() instanceof TypeVariable))
                 && ClassUtils.getRawType(superType).isAssignableFrom(ClassUtils.getRawType(subType)))
                 || (superType == Byte.class && subType == byte.class)
                 || (superType == Short.class && subType == short.class)
@@ -293,11 +261,45 @@ public class ClassUtils {
                 || ClassUtils.isSuperType(superType, subType);
     }
 
+    public static boolean containsAnnotation(AnnotatedType type, Class<? extends Annotation> annotation) {
+        if (type.isAnnotationPresent(annotation)) {
+            return true;
+        }
+        if (type instanceof AnnotatedParameterizedType) {
+            AnnotatedParameterizedType parameterizedType = ((AnnotatedParameterizedType) type);
+            return Arrays.stream(parameterizedType.getAnnotatedActualTypeArguments())
+                    .anyMatch(param -> containsAnnotation(param, annotation));
+        }
+        if (type instanceof AnnotatedTypeVariable) {
+            AnnotatedTypeVariable variable = ((AnnotatedTypeVariable) type);
+            return Arrays.stream(variable.getAnnotatedBounds())
+                    .anyMatch(bound -> containsAnnotation(bound, annotation));
+        }
+        if (type instanceof AnnotatedWildcardType) {
+            AnnotatedWildcardType wildcard = ((AnnotatedWildcardType) type);
+            return Stream.concat(
+                    Arrays.stream(wildcard.getAnnotatedLowerBounds()),
+                    Arrays.stream(wildcard.getAnnotatedUpperBounds()))
+                    .anyMatch(param -> containsAnnotation(param, annotation));
+        }
+        if (type instanceof AnnotatedArrayType) {
+            return containsAnnotation(((AnnotatedArrayType) type).getAnnotatedGenericComponentType(), annotation);
+        }
+        return false;
+    }
+
+    public static Annotation[] getAllAnnotations(Stream<AnnotatedType> types) {
+        return types
+                .flatMap(type -> Arrays.stream(type.getAnnotations()))
+                .distinct()
+                .toArray(Annotation[]::new);
+    }
+
     /**
      * Recursively replaces all bounded types found within the structure of the given {@link AnnotatedType} with their first bound.
      * I.e.
      * <ul>
-     *     <li>All {@link AnnotatedWildcardType}s are replaced with their first lower bound if it exists, 
+     *     <li>All {@link AnnotatedWildcardType}s are replaced with their first lower bound if it exists,
      *     or their first upper bound otherwise. All annotations are preserved.</li>
      *     <li>All {@link AnnotatedTypeVariable}s are replaced with their first bound. All annotations are preserved.</li>
      *     <li>Other types are kept as they are.</li>
@@ -421,6 +423,19 @@ public class ClassUtils {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Returns an array containing all annotations declared by the given annotated types, without duplicates.
+     *
+     * @param types Annotated types whose annotations are to be extracted and merged
+     * @return An array containing all annotations declared by the given annotated types, without duplicates
+     */
+    private static Annotation[] getMergedAnnotations(AnnotatedType... types) {
+        return Arrays.stream(types)
+                .flatMap(type -> Arrays.stream(type.getAnnotations()))
+                .distinct()
+                .toArray(Annotation[]::new);
     }
 
     private static class TypeComparator implements Comparator<Class<?>> {

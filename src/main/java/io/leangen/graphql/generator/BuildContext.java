@@ -10,6 +10,7 @@ import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.proxy.ProxyFactory;
 import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
 import io.leangen.graphql.generator.strategy.FlatTypeGenerationStrategy;
+import io.leangen.graphql.generator.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.strategy.input.GsonInputDeserializer;
 import io.leangen.graphql.query.DefaultIdTypeMapper;
 import io.leangen.graphql.query.ExecutionContext;
@@ -30,6 +31,7 @@ public class BuildContext {
     public final TypeMapperRepository typeMappers;
     public final Relay relay;
     public final TypeResolver typeResolver;
+    public final InterfaceMappingStrategy interfaceStrategy;
 
     public final Set<String> inputsInProgress = new HashSet<>();
 
@@ -40,7 +42,7 @@ public class BuildContext {
      * @param converters Repository of all registered {@link io.leangen.graphql.generator.mapping.InputConverter}s
      *                   and {@link io.leangen.graphql.generator.mapping.OutputConverter}s
      */
-    public BuildContext(QueryRepository queryRepository, TypeMapperRepository typeMappers, ConverterRepository converters) {
+    public BuildContext(QueryRepository queryRepository, TypeMapperRepository typeMappers, ConverterRepository converters, InterfaceMappingStrategy interfaceStrategy) {
         this.typeStrategy = new FlatTypeGenerationStrategy(queryRepository);
         this.queryRepository = queryRepository;
         this.typeRepository = new TypeRepository();
@@ -49,6 +51,7 @@ public class BuildContext {
         this.proxyFactory = new ProxyFactory();
         this.relay = new Relay();
         this.typeResolver = new HintedTypeResolver(this.typeRepository);
+        this.interfaceStrategy = interfaceStrategy;
         this.executionContext = new ExecutionContext(relay, typeRepository, proxyFactory, idTypeMapper, new GsonInputDeserializer(), converters);
     }
 }

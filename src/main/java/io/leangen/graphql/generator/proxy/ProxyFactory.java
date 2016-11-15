@@ -1,17 +1,19 @@
 package io.leangen.graphql.generator.proxy;
 
-import io.leangen.graphql.query.relay.Page;
-import io.leangen.graphql.util.ClassUtils;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.ClassFileVersion;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.FieldAccessor;
 import net.bytebuddy.implementation.InvocationHandlerAdapter;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import io.leangen.graphql.query.relay.Page;
+import io.leangen.graphql.util.ClassUtils;
 
 import static net.bytebuddy.matcher.ElementMatchers.isDeclaredBy;
 
@@ -30,21 +32,21 @@ public class ProxyFactory {
         }
     }
 
-    public Object proxy(Object target, GraphQLTypeHintProvider hintProvider) throws IllegalAccessException, InstantiationException {
+    public Object proxy(Object target, String typeHint) throws IllegalAccessException, InstantiationException {
         if (Iterable.class.isAssignableFrom(target.getClass())) {
             List<Object> result = new ArrayList<>();
             for (Object element : (Iterable) target) {
-                result.add(proxy(element, hintProvider.getGraphQLTypeHint()));
+                result.add(proxy(element, typeHint));
             }
             return result;
         } else if (Page.class.isAssignableFrom(target.getClass())) {
             throw new IllegalArgumentException("Paged result can not be proxied");
         } else {
-            return proxy(target, hintProvider.getGraphQLTypeHint());
+            return proxySingle(target, typeHint);
         }
     }
 
-    private Object proxy(Object target, String typeHint) throws IllegalAccessException, InstantiationException {
+    private Object proxySingle(Object target, String typeHint) throws IllegalAccessException, InstantiationException {
         RelayNodeProxy proxy;
         try {
             proxy = proxyTypeRegistry.get(target.getClass()).newInstance();
@@ -54,6 +56,13 @@ public class ProxyFactory {
         }
         proxy.setDelegate(new DelegatingInvocationHandler(target));
         proxy.setGraphQLTypeHint(typeHint);
+        for (Field field : target.getClass().getFields()) {
+            field.set(proxy, field.get(target));
+        }
+        for (Field field : target.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            field.set(proxy, field.get(target));
+        }
         return proxy;
     }
 

@@ -15,8 +15,8 @@ import io.leangen.graphql.generator.QueryGenerator;
  */
 public interface TypeMapper {
 
-    GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator);
-    GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator);
+    GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext);
+    GraphQLInputType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext);
 
     boolean supports(AnnotatedType type);
 }

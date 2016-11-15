@@ -11,10 +11,10 @@ import io.leangen.graphql.generator.mapping.AbstractTypeSubstitutingMapper;
  * @author Bojan Tomic (kaqqao)
  */
 public class ArrayMapper<S> extends AbstractTypeSubstitutingMapper<S[]> {
-    
+
     @Override
     public AnnotatedType getSubstituteType(AnnotatedType original) {
-        return TypeFactory.parameterizedAnnotatedClass(List.class, original.getAnnotations(), 
+        return TypeFactory.parameterizedAnnotatedClass(List.class, original.getAnnotations(),
                 ((AnnotatedArrayType) original).getAnnotatedGenericComponentType());
     }
 

@@ -7,8 +7,8 @@ import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
+import io.leangen.graphql.generator.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.DomainType;
-import io.leangen.graphql.util.ClassUtils;
 
 import static graphql.schema.GraphQLInterfaceType.newInterface;
 
@@ -17,8 +17,14 @@ import static graphql.schema.GraphQLInterfaceType.newInterface;
  */
 public class InterfaceMapper extends ObjectTypeMapper {
 
+    private final InterfaceMappingStrategy interfaceStrategy;
+
+    public InterfaceMapper(InterfaceMappingStrategy interfaceStrategy) {
+        this.interfaceStrategy = interfaceStrategy;
+    }
+
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
         DomainType domainType = new DomainType(javaType);
 
         AbstractTypeGenerationStrategy.Entry typeEntry = buildContext.typeStrategy.get(domainType);
@@ -35,12 +41,12 @@ public class InterfaceMapper extends ObjectTypeMapper {
 
         typeBuilder.typeResolver(buildContext.typeResolver);
         GraphQLInterfaceType type = typeBuilder.build();
-        buildContext.typeRepository.registerType(domainType, type);
+        buildContext.typeRepository.registerType(type);
         return type;
     }
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return ClassUtils.getRawType(type.getType()).isInterface();
+        return interfaceStrategy.supports(type);
     }
 }

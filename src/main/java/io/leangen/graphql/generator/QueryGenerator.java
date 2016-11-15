@@ -146,7 +146,7 @@ public class QueryGenerator {
     /**
      * Maps a Java type to a GraphQL output type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link io.leangen.graphql.generator.mapping.TypeMapper#toGraphQLType(AnnotatedType, BuildContext, QueryGenerator)}</p>
+     * <p>See {@link TypeMapper#toGraphQLType(AnnotatedType, QueryGenerator, BuildContext)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL output type
      * @param buildContext The shared context containing all the global information needed for mapping
@@ -154,19 +154,12 @@ public class QueryGenerator {
      * @return GraphQL output type corresponding to the given Java type
      */
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
-        GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, buildContext, this);
+        GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, this, buildContext);
         if (javaType.isAnnotationPresent(NonNull.class)) {
             return new GraphQLNonNull(type);
         }
         return type;
     }
-
-//	private GraphQLInterfaceType toGraphQLInterface(DomainType interfaze, BuildContext buildContext) {
-//		GraphQLObjectType.Builder typeBuilder = newInterface()
-//				.name(interfaze.getName())
-//				.description(interfaze.getDescription())
-//				.;
-//	}
 
     /**
      * Maps a single query (representing a ('getter') method on a domain object) to a GraphQL input field.
@@ -187,7 +180,7 @@ public class QueryGenerator {
     /**
      * Maps a Java type to a GraphQL input type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link io.leangen.graphql.generator.mapping.TypeMapper#toGraphQLInputType(AnnotatedType, BuildContext, QueryGenerator)}</p>
+     * <p>See {@link TypeMapper#toGraphQLInputType(AnnotatedType, QueryGenerator, BuildContext)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL input type
      * @param buildContext The shared context containing all the global information needed for mapping
@@ -196,7 +189,7 @@ public class QueryGenerator {
      */
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
         TypeMapper mapper = buildContext.typeMappers.getTypeMapper(javaType);
-        GraphQLInputType type = mapper.toGraphQLInputType(javaType, buildContext, this);
+        GraphQLInputType type = mapper.toGraphQLInputType(javaType, this, buildContext);
         if (javaType.isAnnotationPresent(NonNull.class)) {
             return new GraphQLNonNull(type);
         }
@@ -253,7 +246,7 @@ public class QueryGenerator {
         return env -> {
             String typeName;
             try {
-                typeName = relay.fromGlobalId((String) env.getArguments().get(RELAY_ID)).type;
+                typeName = relay.fromGlobalId((String) env.getArguments().get(RELAY_ID)).getType();
             } catch (Exception e) {
                 throw new IllegalArgumentException(env.getArguments().get(RELAY_ID) + " is not a valid Relay node ID");
             }

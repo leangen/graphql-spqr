@@ -24,21 +24,28 @@ public class QueryRepository {
     private final Set<Query> rootQueries;
     private final Set<Query> mutations;
     private final QuerySourceRepository querySourceRepository;
-    private final Collection<Class<?>> mappedInterfaces;
+    private final QueryBuilder queryBuilder;
 
-    public QueryRepository(QuerySourceRepository querySourceRepository, Collection<Class<?>> mappedInterfaces) {
+    public QueryRepository(QuerySourceRepository querySourceRepository, QueryBuilder queryBuilder) {
         this.querySourceRepository = querySourceRepository;
-        this.mappedInterfaces = mappedInterfaces;
+        this.queryBuilder = queryBuilder;
         Collection<QueryResolver> queryResolvers = extractQueryResolvers(querySourceRepository.getQuerySources());
         Collection<QueryResolver> mutationResolvers = extractMutationResolvers(querySourceRepository.getQuerySources());
         rootQueries = assembleQueries(queryResolvers);
-        mutations = assembleQueries(mutationResolvers);
+        mutations = assembleMutations(mutationResolvers);
     }
 
     private Set<Query> assembleQueries(Collection<QueryResolver> resolvers) {
         return resolvers.stream()
                 .collect(Collectors.groupingBy(QueryResolver::getQueryName)).entrySet().stream()
-                .map(entry -> new Query(entry.getKey(), entry.getValue()))
+                .map(entry -> queryBuilder.buildQuery(entry.getValue()))
+                .collect(Collectors.toSet());
+    }
+
+    private Set<Query> assembleMutations(Collection<QueryResolver> resolvers) {
+        return resolvers.stream()
+                .collect(Collectors.groupingBy(QueryResolver::getQueryName)).entrySet().stream()
+                .map(entry -> queryBuilder.buildMutation(entry.getValue()))
                 .collect(Collectors.toSet());
     }
 

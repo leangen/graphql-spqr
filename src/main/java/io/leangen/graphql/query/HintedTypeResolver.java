@@ -1,9 +1,6 @@
 package io.leangen.graphql.query;
 
-import java.util.List;
-
 import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.generator.TypeRepository;
 import io.leangen.graphql.generator.proxy.RelayNodeProxy;
@@ -21,10 +18,11 @@ public class HintedTypeResolver implements TypeResolver {
 
     @Override
     public GraphQLObjectType getType(Object object) {
-        List<GraphQLOutputType> candidates = typeRepository.getOutputTypes(object.getClass());
-        if (candidates.size() == 1) {
-            return (GraphQLObjectType) candidates.get(0);
-        }
+//        Selection selection = executionContext.getOperationDefinition().getSelectionSet().getSelections().get(0);
+//        if (selection instanceof Field) {
+//            String gQlType = (String) executionContext.getFieldMeta().get(selection);
+//            return (GraphQLObjectType) executionContext.getGraphQLSchema().getType(gQlType);
+//        }
         return (GraphQLObjectType) typeRepository.getOutputType(((RelayNodeProxy) object).getGraphQLTypeHint());
     }
 }

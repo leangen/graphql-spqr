@@ -1,5 +1,8 @@
 package io.leangen.graphql.generator.mapping.common;
 
+import java.lang.reflect.AnnotatedType;
+import java.util.Arrays;
+
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
@@ -9,9 +12,6 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.DomainType;
 import io.leangen.graphql.util.ClassUtils;
 
-import java.lang.reflect.AnnotatedType;
-import java.util.Arrays;
-
 import static graphql.schema.GraphQLEnumType.newEnum;
 
 /**
@@ -20,7 +20,7 @@ import static graphql.schema.GraphQLEnumType.newEnum;
 public class EnumMapper implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
         DomainType enumType = new DomainType(javaType);
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(enumType.getName())
@@ -30,7 +30,7 @@ public class EnumMapper implements TypeMapper {
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
         DomainType enumType = new DomainType(javaType);
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(enumType.getInputName())

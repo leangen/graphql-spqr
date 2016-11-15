@@ -1,10 +1,7 @@
 package io.leangen.graphql.metadata;
 
-import java.io.Serializable;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -13,11 +10,12 @@ import java.util.stream.Collectors;
 
 import graphql.GraphQLException;
 import graphql.schema.DataFetchingEnvironment;
-import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.query.ConnectionRequest;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.relay.Page;
 import io.leangen.graphql.util.ClassUtils;
+
+import static java.util.Arrays.stream;
 
 /**
  * Created by bojan.tomic on 3/19/16.
@@ -34,84 +32,21 @@ public class Query {
 
     private boolean hasPrimaryResolver;
 
-    public Query(String name, List<QueryResolver> resolvers) {
+    public Query(String name, AnnotatedType javaType, Type sourceType, List<QueryArgument> arguments, List<QueryArgument> sortableArguments, List<QueryResolver> resolvers) {
         this.name = name;
         this.description = resolvers.stream().map(QueryResolver::getQueryDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
         this.hasPrimaryResolver = resolvers.stream().filter(QueryResolver::isPrimaryResolver).findFirst().isPresent();
-        this.javaType = resolveJavaType(resolvers, name);
-        this.sourceType = resolveSourceType(resolvers);
+        this.javaType = javaType;
+        this.sourceType = sourceType;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
-        this.arguments = collectArguments(resolvers);
-        this.sortableArguments = collectArguments(
-                resolvers.stream().filter(QueryResolver::supportsConnectionRequests).collect(Collectors.toList()));
-    }
-
-    private AnnotatedType resolveJavaType(List<QueryResolver> resolvers, String queryName) {
-        if (resolvers.size() == 1) {
-            return resolvers.get(0).getReturnType();
-        }
-        List<AnnotatedType> returnTypes = resolvers.stream()
-                .map(QueryResolver::getReturnType)
-                .collect(Collectors.toList());
-        AnnotatedType mostSpecificSuperType = ClassUtils.getCommonSuperType(returnTypes);
-        if (mostSpecificSuperType.getType() == Object.class || mostSpecificSuperType.getType() == Cloneable.class || mostSpecificSuperType.getType() == Serializable.class) {
-            throw new IllegalArgumentException("Resolvers for query " + queryName + " do not return compatible types");
-        }
-        Annotation[] aggregatedAnnotations = resolvers.stream()
-                .flatMap(resolver -> Arrays.stream(resolver.getReturnType().getAnnotations()))
-                .distinct()
-                .toArray(Annotation[]::new);
-        return GenericTypeReflector.replaceAnnotations(mostSpecificSuperType, aggregatedAnnotations);
-    }
-
-    private Type resolveSourceType(List<QueryResolver> resolvers) {
-        List<Type> sourceTypes = resolvers.stream()
-                .map(QueryResolver::getSourceType)
-                .distinct()
-                .collect(Collectors.toList());
-        if (sourceTypes.size() > 1) {
-            throw new IllegalStateException("Not all resolvers expect the same source type");
-        }
-        return sourceTypes.get(0);
+        this.arguments = arguments;
+        this.sortableArguments = sortableArguments;
     }
 
     private Map<String, QueryResolver> collectResolversByFingerprint(List<QueryResolver> resolvers) {
         Map<String, QueryResolver> resolversByFingerprint = new HashMap<>();
         resolvers.forEach(resolver -> resolver.getFingerprints().forEach(fingerprint -> resolversByFingerprint.put(fingerprint, resolver)));
         return resolversByFingerprint;
-    }
-
-    private Type resolveGenericType(String queryName, List<QueryResolver> resolvers) {
-        Map<Type, String> knownTypes = new HashMap<>();
-        resolvers.forEach(resolver -> knownTypes.putIfAbsent(resolver.getReturnType().getType(), resolver.toString()));
-
-        if (knownTypes.size() != 1) {
-            StringBuilder message = new StringBuilder("Not all resolver methods for query '" + queryName + "' return or wrap with the same type:\n");
-            knownTypes.values().forEach(example -> message.append(example).append("\n"));
-            throw new IllegalArgumentException(message.toString());
-        }
-
-        return knownTypes.keySet().iterator().next();
-    }
-
-    //TODO do annotations or overloading decide what arg is required? should that decision be externalized?
-    private List<QueryArgument> collectArguments(List<QueryResolver> resolvers) {
-        Map<String, List<QueryArgument>> argumentsByName = resolvers.stream()
-                .flatMap(resolver -> resolver.getQueryArguments().stream()) // merge all known args for this query
-                .collect(Collectors.groupingBy(QueryArgument::getName));
-
-        return argumentsByName.keySet().stream()
-                .map(argName -> new QueryArgument(
-                        ClassUtils.getCommonSuperType(argumentsByName.get(argName).stream().map(QueryArgument::getJavaType).collect(Collectors.toList())),
-                        argName,
-                        argumentsByName.get(argName).stream().map(QueryArgument::getDescription).filter(desc -> desc != null).findFirst().orElse(""),
-//						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRequired),
-                        argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRequired),
-                        argumentsByName.get(argName).stream().anyMatch(QueryArgument::isResolverSource),
-                        argumentsByName.get(argName).stream().anyMatch(QueryArgument::isContext),
-                        argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRelayConnection)
-                ))
-                .collect(Collectors.toList());
     }
 
     public Object resolve(DataFetchingEnvironment env, ExecutionContext executionContext) {
@@ -138,7 +73,7 @@ public class Query {
                 }
             } else {
                 Object result = resolver.resolve(env.getSource(), env.getContext(), queryArguments, new ConnectionRequest(connectionArguments), executionContext);
-                return executionContext.proxyIfNeeded(env, result, resolver.getReturnType().getType());
+                return executionContext.proxyIfNeeded(env, result, resolver);
             }
             throw new GraphQLException("Resolver for query " + name + " accepting arguments: " + env.getArguments().keySet() + " not implemented");
         } catch (Exception e) {
@@ -186,7 +121,7 @@ public class Query {
 
     @Override
     public int hashCode() {
-        int typeHash = Arrays.stream(javaType.getAnnotations())
+        int typeHash = stream(javaType.getAnnotations())
                 .mapToInt(annotation -> annotation.getClass().getCanonicalName().hashCode())
                 .sum();
         return name.hashCode() + typeHash;

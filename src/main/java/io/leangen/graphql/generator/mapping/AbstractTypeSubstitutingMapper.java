@@ -16,12 +16,12 @@ import io.leangen.graphql.generator.QueryGenerator;
 public abstract class AbstractTypeSubstitutingMapper<S> implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
         return queryGenerator.toGraphQLType(getSubstituteType(javaType), buildContext);
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
         return queryGenerator.toGraphQLInputType(getSubstituteType(javaType), buildContext);
     }
 

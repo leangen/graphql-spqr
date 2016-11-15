@@ -1,9 +1,11 @@
 package io.leangen.graphql.metadata;
 
-import io.leangen.graphql.annotations.GraphQLType;
-import io.leangen.graphql.util.ClassUtils;
-
+import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
+import java.util.Arrays;
+
+import io.leangen.graphql.annotations.types.GraphQLType;
+import io.leangen.graphql.util.ClassUtils;
 
 /**
  * Created by bojan.tomic on 3/2/16.
@@ -18,11 +20,24 @@ public class DomainType {
 
     public DomainType(AnnotatedType javaType) {
         this.javaType = javaType;
-        this.name = resolveName();
-        this.description = resolveDescription();
+        this.name = resolveName(javaType);
+        this.description = resolveDescription(javaType);
     }
 
-    private String resolveName() {
+    private String resolveName(AnnotatedType javaType) {
+        if (javaType instanceof AnnotatedParameterizedType) {
+            String baseName = resolveBaseName(javaType);
+            if (baseName.equals("User")) return baseName;
+            StringBuilder genericName = new StringBuilder(baseName);
+            Arrays.stream(((AnnotatedParameterizedType) javaType).getAnnotatedActualTypeArguments())
+                    .map(arg -> ClassUtils.getRawType(arg.getType()).getSimpleName())
+                    .forEach(argName -> genericName.append("_").append(argName));
+            return genericName.toString();
+        }
+        return resolveBaseName(javaType);
+    }
+
+    private String resolveBaseName(AnnotatedType javaType) {
         if (javaType.isAnnotationPresent(GraphQLType.class)) {
             return javaType.getAnnotation(GraphQLType.class).name();
         } else {
@@ -30,7 +45,7 @@ public class DomainType {
         }
     }
 
-    private String resolveDescription() {
+    private String resolveDescription(AnnotatedType javaType) {
         if (javaType.isAnnotationPresent(GraphQLType.class)) {
             return javaType.getAnnotation(GraphQLType.class).description();
         } else {

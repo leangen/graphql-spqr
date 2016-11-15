@@ -6,17 +6,34 @@ import org.objectweb.asm.ClassVisitor;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import io.leangen.graphql.GraphQLSchemaBuilder;
+
+import static java.util.Arrays.stream;
 
 /**
  * <p>A <tt>ClassFinder</tt> object is used to find classes. By default, an
@@ -111,8 +128,8 @@ public class ClassFinder {
         String[] libPaths = System.getProperty("java.library.path").split(File.pathSeparator);
         String javaHome = System.getProperty("java.home");
 
-        return add(Arrays.stream(path.split(File.pathSeparator))
-                .filter(part -> !Arrays.stream(libPaths).anyMatch(part::startsWith) && !part.startsWith(javaHome)));
+        return add(stream(path.split(File.pathSeparator))
+                .filter(part -> !stream(libPaths).anyMatch(part::startsWith) && !part.startsWith(javaHome)));
     }
 
     /**
@@ -121,7 +138,7 @@ public class ClassFinder {
      * @return this ClassFinder instance to allow call chaining
      */
     public ClassFinder addClassPath() {
-        return add(Arrays.stream(System.getProperty("java.class.path").split(File.pathSeparator)));
+        return add(stream(System.getProperty("java.class.path").split(File.pathSeparator)));
     }
 
     /**
@@ -152,6 +169,35 @@ public class ClassFinder {
     public ClassFinder add(Collection<File> files) {
         File[] array = new File[files.size()];
         return add(files.toArray(array));
+    }
+
+    public ClassFinder add(String... packages) {
+        ClassLoader[] classLoaders = new ClassLoader[] {Thread.currentThread().getContextClassLoader(), GraphQLSchemaBuilder.class.getClassLoader()};
+        Set<File> files = Arrays.stream(packages)
+                .map(pckg -> pckg.replace(".", "/").replace("\\", "/"))
+                .map(path -> path.startsWith("/") ? path.substring(1) : path)
+                .flatMap(path -> Arrays.stream(classLoaders).flatMap(loader -> getDirectories(loader, path).stream()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        return add(files);
+    }
+
+    private List<File> getDirectories(ClassLoader classLoader, String path) {
+        try {
+            final Enumeration<URL> urls = classLoader.getResources(path);
+            List<File> files = new ArrayList<>();
+            while (urls.hasMoreElements()) {
+                String filePath = urls.nextElement().getFile();
+                Pattern jarFilePattern = Pattern.compile("file:((.*?)\\.jar)!/.*");
+                Matcher m = jarFilePattern.matcher(filePath);
+                if (m.matches()) {
+                    filePath = m.group(1);
+                }
+                files.add(new File(filePath));
+            }
+            return files;
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Can not read path " + path, e);
+        }
     }
 
     private ClassFinder add(Stream<String> paths) {
@@ -411,7 +457,7 @@ public class ClassFinder {
 
     private Collection<Path> findFiles(File rootDir, PathFilter... filters) {
         try (Stream<Path> paths = Files.walk(rootDir.toPath(), FileVisitOption.FOLLOW_LINKS)) {
-            return paths.filter(path -> Arrays.stream(filters).allMatch(filter -> filter.accept(path)))
+            return paths.filter(path -> stream(filters).allMatch(filter -> filter.accept(path)))
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException(e);

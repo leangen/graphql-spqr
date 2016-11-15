@@ -1,7 +1,9 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInputType;
@@ -27,15 +29,11 @@ import static graphql.schema.GraphQLObjectType.newObject;
 public class ObjectTypeMapper implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
         DomainType domainType = new DomainType(javaType);
         Optional<Query> relayId = buildContext.queryRepository.getDomainQueries(domainType.getJavaType()).stream()
                 .filter(query -> query.getJavaType().isAnnotationPresent(RelayId.class))
                 .findFirst();
-
-        if (relayId.isPresent()) {
-            buildContext.proxyFactory.registerType(ClassUtils.getRawType(domainType.getJavaType().getType()));
-        }
 
         AbstractTypeGenerationStrategy.Entry typeEntry = buildContext.typeStrategy.get(domainType);
         if (typeEntry.type.isPresent()) {
@@ -49,19 +47,33 @@ public class ObjectTypeMapper implements TypeMapper {
         buildContext.queryRepository.getChildQueries(domainType.getJavaType())
                 .forEach(childQuery -> typeBuilder.field(queryGenerator.toGraphQLQuery(childQuery, typeEntry.name, buildContext)));
 
+        Set<String> interfaceNames = new HashSet<>();
         if (relayId.isPresent()) {
             typeBuilder.withInterface(queryGenerator.node);
+            interfaceNames.add(queryGenerator.node.getName());
         }
-        ClassUtils.getInterfaces(javaType).forEach(
-                inter -> typeBuilder.withInterface((GraphQLInterfaceType) queryGenerator.toGraphQLType(inter, buildContext)));
+        buildContext.interfaceStrategy.getInterfaces(javaType).forEach(
+                inter -> {
+                    GraphQLOutputType graphQLInterface = queryGenerator.toGraphQLType(inter, buildContext);
+                    if (graphQLInterface instanceof GraphQLInterfaceType) {
+                        typeBuilder.withInterface((GraphQLInterfaceType) graphQLInterface);
+                    } else {
+                        typeBuilder.withInterface((GraphQLTypeReference) graphQLInterface);
+                    }
+                    interfaceNames.add(graphQLInterface.getName());
+                });
 
         GraphQLObjectType type = typeBuilder.build();
-        buildContext.typeRepository.registerType(domainType, type);
+        buildContext.typeRepository.registerCovariantTypes(interfaceNames, javaType.getType(), type);
+        buildContext.typeRepository.registerType(type);
+        if (!interfaceNames.isEmpty()) {
+            buildContext.proxyFactory.registerType(ClassUtils.getRawType(javaType.getType()));
+        }
         return type;
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
 //        Optional<GraphQLInputType> cached = buildContext.typeRepository.getInputType(javaType.getType());
 //        if (cached.isPresent()) {
 //            return cached.get();

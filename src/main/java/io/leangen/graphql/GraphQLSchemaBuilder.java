@@ -9,6 +9,8 @@ import java.util.HashSet;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
+import io.leangen.graphql.generator.DefaultQueryBuilder;
+import io.leangen.graphql.generator.QueryBuilder;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.QueryRepository;
 import io.leangen.graphql.generator.QuerySourceRepository;
@@ -29,7 +31,11 @@ import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.PageMapper;
 import io.leangen.graphql.generator.mapping.common.RelayIdMapper;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
+import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
+import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
+import io.leangen.graphql.generator.strategy.AnnotatedInterfaceStrategy;
+import io.leangen.graphql.generator.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
 import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
 
@@ -77,7 +83,8 @@ import static java.util.Collections.addAll;
  */
 public class GraphQLSchemaBuilder {
 
-    private final Collection<Class<?>> mappedInterfaces = new HashSet<>();
+    private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
+    private QueryBuilder queryBuilder = new DefaultQueryBuilder();
     private final QuerySourceRepository querySourceRepository = new QuerySourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final ConverterRepository converterRepository = new ConverterRepository();
@@ -308,8 +315,8 @@ public class GraphQLSchemaBuilder {
         return withResolverExtractors(new AnnotatedResolverExtractor());
     }
 
-    public GraphQLSchemaBuilder withMappedInterfaces(Class<?>... interfaces) {
-        addAll(mappedInterfaces, interfaces);
+    public GraphQLSchemaBuilder withInterfaceMappingStrategy(InterfaceMappingStrategy interfaceStrategy) {
+        this.interfaceStrategy = interfaceStrategy;
         return this;
     }
 
@@ -320,8 +327,10 @@ public class GraphQLSchemaBuilder {
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
     public GraphQLSchemaBuilder withDefaultMappers() {
-        return withTypeMappers(new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new ArrayMapper<>(), new MapToListTypeAdapter<>(),
-                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter<>(), new InterfaceMapper(), new ObjectTypeMapper());
+        return withTypeMappers(
+                new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
+                new UnionInlineMapper(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(), new ListMapper(),
+                new PageMapper(), new OptionalAdapter<>(), new InterfaceMapper(interfaceStrategy), new ObjectTypeMapper());
     }
 
     /**
@@ -454,8 +463,8 @@ public class GraphQLSchemaBuilder {
     public GraphQLSchema build() {
         init();
 
-        QueryRepository queryRepository = new QueryRepository(querySourceRepository, mappedInterfaces);
-        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converterRepository);
+        QueryRepository queryRepository = new QueryRepository(querySourceRepository, queryBuilder);
+        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converterRepository, interfaceStrategy);
         QueryGenerator queryGenerator = new QueryGenerator(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();

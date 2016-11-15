@@ -48,7 +48,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     }
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
         return new GraphQLList(
                 mapEntry(
                         queryGenerator.toGraphQLType(ClassUtils.getTypeArguments(javaType)[0], buildContext),
@@ -56,7 +56,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext, QueryGenerator queryGenerator) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
         return new GraphQLList(
                 mapEntry(
                         queryGenerator.toGraphQLInputType(ClassUtils.getTypeArguments(javaType)[0], buildContext),
