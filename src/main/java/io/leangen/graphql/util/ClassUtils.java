@@ -239,10 +239,6 @@ public class ClassUtils {
         }
     }
 
-    public static boolean isSuperType(Type superType, Type subType) {
-        return GenericTypeReflector.isSuperType(superType, subType);
-    }
-
     public static boolean isAssignable(Type superType, Type subType) {
         return (((superType instanceof ParameterizedType
                 && Arrays.stream(((ParameterizedType) superType).getActualTypeArguments())
@@ -258,7 +254,7 @@ public class ClassUtils {
                 || (superType == Double.class && subType == double.class)
                 || (superType == Boolean.class && subType == boolean.class)
                 || (superType == Void.class && subType == void.class)
-                || ClassUtils.isSuperType(superType, subType);
+                || GenericTypeReflector.isSuperType(superType, subType);
     }
 
     public static boolean containsAnnotation(AnnotatedType type, Class<? extends Annotation> annotation) {
@@ -312,8 +308,8 @@ public class ClassUtils {
         if (type instanceof AnnotatedWildcardType) {
             AnnotatedWildcardType wildcard = (AnnotatedWildcardType) type;
             AnnotatedType bound = wildcard.getAnnotatedLowerBounds().length > 0
-                    ? wildcard.getAnnotatedLowerBounds()[0]
-                    : wildcard.getAnnotatedUpperBounds()[0];
+                    ? stripBounds(wildcard.getAnnotatedLowerBounds()[0])
+                    : stripBounds(wildcard.getAnnotatedUpperBounds()[0]);
             return type.getAnnotations().length > 0 ? GenericTypeReflector.replaceAnnotations(bound, getMergedAnnotations(type, bound)) : bound;
         }
         if (type instanceof AnnotatedTypeVariable) {

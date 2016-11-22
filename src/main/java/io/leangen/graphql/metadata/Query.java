@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import graphql.GraphQLException;
 import graphql.schema.DataFetchingEnvironment;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.query.ConnectionRequest;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.relay.Page;
@@ -73,7 +74,7 @@ public class Query {
                 }
             } else {
                 Object result = resolver.resolve(env.getSource(), env.getContext(), queryArguments, new ConnectionRequest(connectionArguments), executionContext);
-                return executionContext.proxyIfNeeded(env, result, resolver);
+                return result;
             }
             throw new GraphQLException("Resolver for query " + name + " accepting arguments: " + env.getArguments().keySet() + " not implemented");
         } catch (Exception e) {
@@ -82,7 +83,7 @@ public class Query {
     }
 
     public boolean isEmbeddableForType(Type type) {
-        return this.sourceType != null && ClassUtils.isSuperType(this.sourceType, type);
+        return this.sourceType != null && GenericTypeReflector.isSuperType(this.sourceType, type);
     }
 
     private String getFingerprint(Map<String, Object> arguments) {

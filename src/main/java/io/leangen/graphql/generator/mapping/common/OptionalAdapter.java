@@ -5,20 +5,21 @@ import java.lang.reflect.AnnotatedType;
 import java.util.Optional;
 
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.query.ExecutionContext;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class OptionalAdapter<T> extends AbstractTypeAdapter<Optional<T>, T> {
+public class OptionalAdapter extends AbstractTypeAdapter<Optional<?>, Object> {
 
     @Override
-    public T convertOutput(Optional<T> original) {
-        return original.orElse(null);
+    public Object convertOutput(Optional<?> original, AnnotatedType type, ExecutionContext executionContext) {
+        return original.map(inner -> executionContext.convertOutput(inner, getSubstituteType(type))).orElse(null);
     }
 
     @Override
-    public Optional<T> convertInput(T substitute) {
-        return Optional.ofNullable(substitute);
+    public Optional<?> convertInput(Object substitute, AnnotatedType type, ExecutionContext executionContext) {
+        return Optional.ofNullable(executionContext.convertInput(substitute, getSubstituteType(type)));
     }
 
     @Override

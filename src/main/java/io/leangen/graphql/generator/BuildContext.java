@@ -14,7 +14,6 @@ import io.leangen.graphql.generator.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.strategy.input.GsonInputDeserializer;
 import io.leangen.graphql.query.DefaultIdTypeMapper;
 import io.leangen.graphql.query.ExecutionContext;
-import io.leangen.graphql.query.HintedTypeResolver;
 import io.leangen.graphql.query.IdTypeMapper;
 
 /**
@@ -50,7 +49,7 @@ public class BuildContext {
         this.typeMappers = typeMappers;
         this.proxyFactory = new ProxyFactory();
         this.relay = new Relay();
-        this.typeResolver = new HintedTypeResolver(this.typeRepository);
+        this.typeResolver = new HintedTypeResolver(this.typeRepository, this.typeMappers);
         this.interfaceStrategy = interfaceStrategy;
         this.executionContext = new ExecutionContext(relay, typeRepository, proxyFactory, idTypeMapper, new GsonInputDeserializer(), converters);
     }

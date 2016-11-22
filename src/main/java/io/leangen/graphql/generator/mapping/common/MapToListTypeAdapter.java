@@ -16,6 +16,7 @@ import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.util.ClassUtils;
 
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -29,14 +30,14 @@ import static graphql.schema.GraphQLObjectType.newObject;
 public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, List<AbstractMap.SimpleEntry<K,V>>> {
 
     @Override
-    public List<AbstractMap.SimpleEntry<K,V>> convertOutput(Map<K,V> original) {
+    public List<AbstractMap.SimpleEntry<K,V>> convertOutput(Map<K, V> original, AnnotatedType type, ExecutionContext executionContext) {
         return original.entrySet().stream()
                 .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Map<K,V> convertInput(List<AbstractMap.SimpleEntry<K,V>> original) {
+    public Map<K,V> convertInput(List<AbstractMap.SimpleEntry<K, V>> original, AnnotatedType type, ExecutionContext executionContext) {
         return original.stream().collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
     }
 

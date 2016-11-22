@@ -4,6 +4,7 @@ import java.lang.reflect.AnnotatedType;
 
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.query.relay.Page;
@@ -27,6 +28,6 @@ public class PageMapper extends ObjectTypeMapper {
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return ClassUtils.isSuperType(Page.class, type.getType());
+        return GenericTypeReflector.isSuperType(Page.class, type.getType());
     }
 }

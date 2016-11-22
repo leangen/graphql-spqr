@@ -50,7 +50,7 @@ public class QueryGenerator {
      * @param buildContext The shared context containing all the global information needed for mapping
      */
     public QueryGenerator(BuildContext buildContext) {
-        this.node = buildContext.relay.nodeInterface(buildContext.typeResolver);
+        this.node = buildContext.relay.nodeInterface(new RelayNodeTypeResolver());
         this.queries = generateQueries(buildContext);
         this.mutations = generateMutations(buildContext);
     }

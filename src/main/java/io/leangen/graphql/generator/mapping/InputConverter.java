@@ -2,13 +2,15 @@ package io.leangen.graphql.generator.mapping;
 
 import java.lang.reflect.AnnotatedType;
 
+import io.leangen.graphql.query.ExecutionContext;
+
 /**
  * @param <T> The actual argument type of an exposed method
  * @param <S> The substitute type as which the argument values are to be deserialized
  */
 public interface InputConverter<T, S> {
 
-    T convertInput(S substitute);
+    T convertInput(S substitute, AnnotatedType type, ExecutionContext executionContext);
     boolean supports(AnnotatedType type);
 
     /**

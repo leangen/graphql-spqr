@@ -64,8 +64,7 @@ public class ObjectTypeMapper implements TypeMapper {
                 });
 
         GraphQLObjectType type = typeBuilder.build();
-        buildContext.typeRepository.registerCovariantTypes(interfaceNames, javaType.getType(), type);
-        buildContext.typeRepository.registerType(type);
+        buildContext.typeRepository.registerCovariantTypes(interfaceNames, javaType, type);
         if (!interfaceNames.isEmpty()) {
             buildContext.proxyFactory.registerType(ClassUtils.getRawType(javaType.getType()));
         }
@@ -96,9 +95,7 @@ public class ObjectTypeMapper implements TypeMapper {
                         field -> typeBuilder.field(queryGenerator.toGraphQLInputField(field, buildContext))
                 );
 
-        GraphQLInputObjectType type = typeBuilder.build();
-        buildContext.typeRepository.registerType(domainType.getJavaType().getType(), type);
-        return type;
+        return typeBuilder.build();
     }
 
     @Override

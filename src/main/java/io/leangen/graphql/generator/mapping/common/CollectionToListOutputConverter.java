@@ -1,12 +1,14 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import io.leangen.graphql.generator.mapping.OutputConverter;
-import io.leangen.graphql.util.ClassUtils;
-
+import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.query.ExecutionContext;
 
 /**
  * Converts outputs of non-list collection types into lists. Needed because graphql-java always expects a list
@@ -16,12 +18,15 @@ import java.util.List;
 public class CollectionToListOutputConverter implements OutputConverter<Collection<?>, List<?>> {
 
     @Override
-    public List<?> convertOutput(Collection<?> original) {
-        return new ArrayList<>(original);
+    public List<?> convertOutput(Collection<?> original, AnnotatedType type, ExecutionContext executionContext) {
+        AnnotatedType inner = ((AnnotatedParameterizedType) type).getAnnotatedActualTypeArguments()[0];
+        return original.stream()
+                .map(item -> executionContext.convertOutput(item, inner))
+                .collect(Collectors.toList());
     }
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return ClassUtils.isSuperType(Collection.class, type.getType()) && !ClassUtils.isSuperType(List.class, type.getType());
+        return GenericTypeReflector.isSuperType(Collection.class, type.getType());
     }
 }

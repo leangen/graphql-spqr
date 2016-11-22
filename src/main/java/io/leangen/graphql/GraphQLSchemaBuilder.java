@@ -31,6 +31,7 @@ import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.PageMapper;
 import io.leangen.graphql.generator.mapping.common.RelayIdMapper;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
+import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
 import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
@@ -328,9 +329,10 @@ public class GraphQLSchemaBuilder {
      */
     public GraphQLSchemaBuilder withDefaultMappers() {
         return withTypeMappers(
-                new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
-                new UnionInlineMapper(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(), new ListMapper(),
-                new PageMapper(), new OptionalAdapter<>(), new InterfaceMapper(interfaceStrategy), new ObjectTypeMapper());
+                new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new ArrayMapper<>(),
+                new UnionTypeMapper(), new UnionInlineMapper(), new StreamToCollectionTypeAdapter(),
+                new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(),
+                new OptionalAdapter(), new InterfaceMapper(interfaceStrategy), new ObjectTypeMapper());
     }
 
     /**
@@ -340,9 +342,9 @@ public class GraphQLSchemaBuilder {
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
     public GraphQLSchemaBuilder withDefaultConverters() {
-        return withInputConverters(new MapToListTypeAdapter<>(), new OptionalAdapter<>())
+        return withInputConverters(new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter())
                 .withOutputConverters(new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
-                        new CollectionToListOutputConverter(), new OptionalAdapter<>());
+                        new CollectionToListOutputConverter(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
     }
 
     /**

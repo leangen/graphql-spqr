@@ -8,6 +8,7 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
 import io.leangen.graphql.generator.strategy.InterfaceMappingStrategy;
+import io.leangen.graphql.generator.types.MappedGraphQLInterfaceType;
 import io.leangen.graphql.metadata.DomainType;
 
 import static graphql.schema.GraphQLInterfaceType.newInterface;
@@ -40,9 +41,7 @@ public class InterfaceMapper extends ObjectTypeMapper {
                 .forEach(childQuery -> typeBuilder.field(queryGenerator.toGraphQLQuery(childQuery, typeEntry.name, buildContext)));
 
         typeBuilder.typeResolver(buildContext.typeResolver);
-        GraphQLInterfaceType type = typeBuilder.build();
-        buildContext.typeRepository.registerType(type);
-        return type;
+        return new MappedGraphQLInterfaceType(typeBuilder.build(), javaType);
     }
 
     @Override

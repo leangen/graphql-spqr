@@ -6,6 +6,7 @@ import java.util.Collection;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLOutputType;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.mapping.TypeMapper;
@@ -28,6 +29,6 @@ public class ListMapper implements TypeMapper {
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return ClassUtils.isSuperType(Collection.class, type.getType());
+        return GenericTypeReflector.isSuperType(Collection.class, type.getType());
     }
 }

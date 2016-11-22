@@ -13,7 +13,6 @@ import java.util.function.Predicate;
 
 import io.leangen.graphql.annotations.RelayConnectionRequest;
 import io.leangen.graphql.generator.mapping.InputConverter;
-import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.query.ConnectionRequest;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.execution.Executable;
@@ -127,15 +126,10 @@ public class QueryResolver {
                 InputConverter argValueConverter = executionContext.converters.getInputConverter(argDescriptor.getJavaType());
                 AnnotatedType argValueType = argValueConverter != null ? argValueConverter.getSubstituteType(argDescriptor.getJavaType()) : argDescriptor.getJavaType();
                 Object argValue = executionContext.inputDeserializer.deserialize(arguments.get(argDescriptor.getName()), argValueType);
-                args[i] = argValueConverter == null ? argValue : argValueConverter.convertInput(argValue);
+                args[i] = executionContext.convertInput(argValue, argDescriptor.getJavaType());
             }
         }
-        Object result = executable.execute(source, args);
-//        if (result instanceof Collection) {
-//            result = new ArrayList<>(((Collection<?>) result));
-//        }
-        OutputConverter resultConverter = executionContext.converters.getOutputConverter(this.getReturnType());
-        return resultConverter == null ? result : resultConverter.convertOutput(result);
+        return executionContext.convertOutput(executable.execute(source, args), this.getReturnType());
         //Wrap returned values for resolvers that don't directly return domain objects
 //        if (isWrapped()) {
 //            if (!Map.class.isAssignableFrom(result.getClass())) {

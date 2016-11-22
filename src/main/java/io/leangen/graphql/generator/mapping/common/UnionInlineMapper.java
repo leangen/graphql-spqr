@@ -6,11 +6,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import graphql.schema.GraphQLOutputType;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.union.Union;
-import io.leangen.graphql.util.ClassUtils;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -26,6 +26,6 @@ public class UnionInlineMapper extends UnionMapper {
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return ClassUtils.isSuperType(Union.class, type.getType());
+        return GenericTypeReflector.isSuperType(Union.class, type.getType());
     }
 }
