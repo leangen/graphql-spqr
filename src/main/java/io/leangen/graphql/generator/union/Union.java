@@ -83,7 +83,7 @@ public abstract class Union {
         AnnotatedType[] distinctTypes = dedupe(types);
         Class union;
         try {
-            union = Class.forName(Union.class.getCanonicalName() + distinctTypes.length);
+            union = Class.forName(Union.class.getName() + distinctTypes.length);
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Unions of more than 10 types are not supported");
         }

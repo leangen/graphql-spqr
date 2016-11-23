@@ -123,7 +123,7 @@ public class Query {
     @Override
     public int hashCode() {
         int typeHash = stream(javaType.getAnnotations())
-                .mapToInt(annotation -> annotation.getClass().getCanonicalName().hashCode())
+                .mapToInt(annotation -> annotation.getClass().getName().hashCode())
                 .sum();
         return name.hashCode() + typeHash;
     }

@@ -13,6 +13,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.TypeResolver;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLTypeHintProvider;
+import io.leangen.graphql.generator.exceptions.UnresolvableTypeException;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.proxy.TypeHintProvider;
 import io.leangen.graphql.generator.types.MappedGraphQLType;
@@ -75,9 +76,7 @@ public class HintedTypeResolver implements TypeResolver {
                 }
             } catch (Exception e) {/*no-op*/}
         }
-        throw new IllegalStateException(String.format(
-                "Exact GraphQL type for %s is unresolvable for object of type %s",
-                env.getFieldType().getName(), result.getClass().getCanonicalName()));
+        throw new UnresolvableTypeException(env.getFieldType(), result);
     }
 
     @Override

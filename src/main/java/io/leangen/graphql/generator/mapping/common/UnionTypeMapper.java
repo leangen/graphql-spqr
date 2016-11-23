@@ -44,7 +44,7 @@ public class UnionTypeMapper extends UnionMapper {
             try {
                 possibleTypes = annotation.possibleTypeFactory().newInstance().getPossibleTypes();
             } catch (InstantiationException | IllegalAccessException e) {
-                throw new IllegalArgumentException(annotation.possibleTypeFactory().getCanonicalName() +
+                throw new IllegalArgumentException(annotation.possibleTypeFactory().getName() +
                         " must have a public default constructor", e);
             }
         }

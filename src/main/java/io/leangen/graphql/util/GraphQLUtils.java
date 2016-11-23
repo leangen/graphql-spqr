@@ -128,7 +128,7 @@ public class GraphQLUtils {
         if (id.isPresent()) {
             return id.get().getQueryName();
         }
-        throw new IllegalStateException("ID field unknown for type " + nodeType.getCanonicalName());
+        throw new IllegalStateException("ID field unknown for type " + nodeType.getName());
     }
 
     private static Map<Type, GraphQLScalarType> getScalarMapping() {
