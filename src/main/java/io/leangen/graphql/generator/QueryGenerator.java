@@ -16,10 +16,8 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
-import io.leangen.graphql.annotations.NonNull;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.Query;
@@ -154,11 +152,7 @@ public class QueryGenerator {
      * @return GraphQL output type corresponding to the given Java type
      */
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
-        GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, this, buildContext);
-        if (javaType.isAnnotationPresent(NonNull.class)) {
-            return new GraphQLNonNull(type);
-        }
-        return type;
+        return buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, this, buildContext);
     }
 
     /**
@@ -189,11 +183,7 @@ public class QueryGenerator {
      */
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
         TypeMapper mapper = buildContext.typeMappers.getTypeMapper(javaType);
-        GraphQLInputType type = mapper.toGraphQLInputType(javaType, this, buildContext);
-        if (javaType.isAnnotationPresent(NonNull.class)) {
-            return new GraphQLNonNull(type);
-        }
-        return type;
+        return mapper.toGraphQLInputType(javaType, this, buildContext);
     }
 
     /**

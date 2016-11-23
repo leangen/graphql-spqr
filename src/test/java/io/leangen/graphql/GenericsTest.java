@@ -6,20 +6,15 @@ import java.lang.reflect.AnnotatedType;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
-import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLModifiedType;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
@@ -29,6 +24,10 @@ import io.leangen.graphql.annotations.NonNull;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.domain.GenericItemRepo;
 
+import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertArgumentsPresent;
+import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOf;
+import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOfNonNull;
+import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertNonNull;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -39,12 +38,15 @@ import static org.junit.Assert.assertTrue;
 public class GenericsTest {
 
     // IMPORTANT! All type declarations have to stay outside of tests (can not be inlined)
-    // as the annotation parser treats them differently and discards the annotations otherwise
+    // as the annotation parser treats them differently and discards the annotations otherwise.
+    // This is JDK8 bug: http://stackoverflow.com/questions/39952812
     public static final AnnotatedType nonNullString = new TypeToken<GenericItemRepo<@NonNull String>>() {
     }.getAnnotatedType();
     public static final AnnotatedType dateId = new TypeToken<GenericItemRepo<@RelayId Date>>() {
     }.getAnnotatedType();
     public static final AnnotatedType listOfWildcardNumbers = new TypeToken<GenericItemRepo<@NonNull List<? extends Number>>>() {
+    }.getAnnotatedType();
+    public static final AnnotatedType arrayOfListsOfNumbers = new TypeToken<GenericItemRepo<@NonNull List<Number> @NonNull[]>>() {
     }.getAnnotatedType();
 
     @Test
@@ -142,40 +144,44 @@ public class GenericsTest {
         assertTrue(result.getErrors().isEmpty());
         Object[] expected = wildcardNumberService.getAllItems().toArray();
         Object[] actual = wildcardNumberService.getAllItems().toArray();
-        for (int i = 0; i < expected.length; i++) {
-            assertArrayEquals(((Collection<?>) expected[i]).toArray(), ((Collection<?>) actual[i]).toArray());
-        }
+        assertArrayEquals(expected, actual);
     }
 
-    private static void assertNonNull(GraphQLType wrapperType, GraphQLType wrappedType) {
-        assertEquals(GraphQLNonNull.class, wrapperType.getClass());
-        assertEquals(((GraphQLNonNull) wrapperType).getWrappedType(), wrappedType);
-    }
+    @Test
+    public void testArrayGenerics() {
+        GenericItemRepo<@NonNull List<Number> @NonNull[]> arrayNumberService = new GenericItemRepo<>();
+        List<Number>[] array1 = (List<Number>[]) new List[1];
+        array1[0] = Arrays.asList(12, 13.4, new BigDecimal("4000"));
+        List<Number>[] array2 = (List<Number>[]) new List[1];
+        array2[0] = Arrays.asList(new BigDecimal("12.56"), 14.78);
+        arrayNumberService.addItem("scores1", array1);
+        arrayNumberService.addItem("scores2", array2);
 
-    private static void assertNonNull(GraphQLType wrapperType, Class<?> wrappedTypeClass) {
-        assertEquals(GraphQLNonNull.class, wrapperType.getClass());
-        assertEquals(((GraphQLNonNull) wrapperType).getWrappedType().getClass(), wrappedTypeClass);
-    }
+        GraphQLSchema schemaWithGenerics = new GraphQLSchemaBuilder()
+                .withSingletonQuerySource(arrayNumberService, arrayOfListsOfNumbers)
+                .withDefaults()
+                .build();
 
-    private static void assertListOfNonNull(GraphQLType wrapperType, GraphQLType wrappedType) {
-        assertEquals(wrapperType.getClass(), GraphQLList.class);
-        assertEquals(((GraphQLList) wrapperType).getWrappedType().getClass(), GraphQLNonNull.class);
-        assertEquals(((GraphQLNonNull) (((GraphQLList) wrapperType).getWrappedType())).getWrappedType(), wrappedType);
-    }
+        GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("getItem").getType();
+        assertNonNull(itemType, GraphQLList.class);
+        GraphQLType inner = ((GraphQLNonNull) itemType).getWrappedType();
+        assertListOf(inner, GraphQLNonNull.class);
+        inner = ((GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
+        assertListOf(inner, Scalars.GraphQLBigDecimal);
 
-    private static void assertListOfNonNull(GraphQLType wrapperType, Class<? extends GraphQLModifiedType> wrappedTypeClass) {
-        assertEquals(wrapperType.getClass(), GraphQLList.class);
-        assertEquals(((GraphQLList) wrapperType).getWrappedType().getClass(), GraphQLNonNull.class);
-        assertEquals(((GraphQLNonNull) (((GraphQLList) wrapperType).getWrappedType())).getWrappedType().getClass(), wrappedTypeClass);
-    }
+        GraphQLFieldDefinition addOneItem = schemaWithGenerics.getMutationType().getFieldDefinition("addItem");
+        GraphQLType itemArgType = addOneItem.getArgument("item").getType();
+        assertNonNull(itemArgType, GraphQLList.class);
+        inner = ((GraphQLNonNull) itemType).getWrappedType();
+        assertListOf(inner, GraphQLNonNull.class);
+        inner = ((GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
+        assertListOf(inner, Scalars.GraphQLBigDecimal);
 
-    private static void assertListOf(GraphQLType wrapperType, GraphQLType wrappedType) {
-        assertEquals(GraphQLList.class, wrapperType.getClass());
-        assertEquals(wrappedType, ((GraphQLList) wrapperType).getWrappedType());
-    }
-
-    private static void assertArgumentsPresent(GraphQLFieldDefinition field, String... argumentNames) {
-        Set<String> argNames = field.getArguments().stream().map(GraphQLArgument::getName).collect(Collectors.toSet());
-        Arrays.stream(argumentNames).forEach(argName -> assertTrue(argNames.contains(argName)));
+        GraphQL graphQL = new GraphQL(schemaWithGenerics);
+        ExecutionResult result = graphQL.execute("{ getAllItems }");
+        assertTrue(result.getErrors().isEmpty());
+        Object[] expected = arrayNumberService.getAllItems().toArray();
+        Object[] actual = arrayNumberService.getAllItems().toArray();
+        assertArrayEquals(expected, actual);
     }
 }

@@ -1,18 +1,17 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.RelayId;
-
 import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
+
+import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.RelayId;
 
 /**
  * Created by bojan.tomic on 3/5/16.
  */
 public class User<T> implements Person {
 
-    @GraphQLQuery(name = "name", description = "A person's name")
     public String name;
 
     @GraphQLQuery(name = "title", description = "A person's title")
@@ -37,6 +36,7 @@ public class User<T> implements Person {
     }
 
     @Override
+    @GraphQLQuery(name = "name", description = "A person's name")
     public String getName() {
         return name;
     }

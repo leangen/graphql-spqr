@@ -17,14 +17,12 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.NonNull;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.domain.Education;
-import io.leangen.graphql.domain.SimpleOne;
-import io.leangen.graphql.domain.SimpleTwo;
 import io.leangen.graphql.domain.Street;
 
-import static io.leangen.graphql.GraphQLTypeAssertions.assertListOf;
-import static io.leangen.graphql.GraphQLTypeAssertions.assertMapOf;
-import static io.leangen.graphql.GraphQLTypeAssertions.assertNonNull;
-import static io.leangen.graphql.GraphQLTypeAssertions.assertUnionOf;
+import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOf;
+import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertMapOf;
+import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertNonNull;
+import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertUnionOf;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -153,4 +151,22 @@ public class UnionTest {
 
     public static class A1 implements UA {}
     public static class A2 implements UA {}
+
+    @io.leangen.graphql.annotations.types.GraphQLType(name = "SimpleOne")
+    public static class SimpleOne {
+
+        @GraphQLQuery(name = "one")
+        public String getOne() {
+            return "one";
+        }
+    }
+
+    @io.leangen.graphql.annotations.types.GraphQLType(name = "SimpleTwo")
+    public static class SimpleTwo {
+
+        @GraphQLQuery(name = "two")
+        public String getTwo() {
+            return "two";
+        }
+    }
 }

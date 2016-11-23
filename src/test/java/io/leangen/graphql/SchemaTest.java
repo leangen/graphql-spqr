@@ -1,13 +1,20 @@
 package io.leangen.graphql;
 
+import org.junit.Test;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.List;
+
+import graphql.ExecutionResult;
+import graphql.GraphQL;
+import graphql.schema.GraphQLSchema;
+import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.User;
 import io.leangen.graphql.domain.UserService;
 import io.leangen.graphql.query.relay.Page;
 import io.leangen.graphql.util.GraphQLUtils;
-import org.junit.Test;
-
-import java.util.List;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -26,7 +33,7 @@ public class SchemaTest {
             "}}";
 
     private static final String simpleQuery = "{users(regDate: 1465667452785) {" +
-            "id, name, addresses {" +
+            "id, name, title, zmajs, addresses {" +
             "types" +
             "}}}";
 
@@ -49,14 +56,16 @@ public class SchemaTest {
             "name" +
             "}}";
 
-    private static final String complexGenericInputQuery = "{users (educations: [" +
+    private static final String complexGenericInputQuery = "{usersArr (educations: [" +
             "{schoolName: \"tshc\"," +
             "startYear: 1999," +
-            "endYear: 2003}," +
+            "endYear: 2003," +
+            "tier: TOP}," +
 
             "{schoolName: \"other\"," +
             "startYear: 1999," +
-            "endYear: 2003}]) {" +
+            "endYear: 2003," +
+            "tier: BOTTOM}]) {" +
             "name" +
             "}}";
 
@@ -69,6 +78,32 @@ public class SchemaTest {
             "    }" +
             "  }" +
             "}";
+
+    private static final String mapInputMutation = "mutation M {" +
+            "upMe (updates: {" +
+            "       key: \"name\"," +
+            "       value: \"New Dyno\"}) {" +
+            "   key" +
+            "   value" +
+            "}}";
+
+    @Test
+    public void testSchema() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        GraphQLSchema schema = new GraphQLSchemaBuilder().withDefaults()
+                .withSingletonQuerySource(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getType())
+                .build();
+
+        List<String> context = Arrays.asList("xxx", "zzz", "yyy");
+        GraphQL exe = new GraphQL(schema);
+        ExecutionResult result = null;
+
+        result = exe.execute(complexGenericInputQuery, context);
+        assertTrue(result.getErrors().isEmpty());
+        result = exe.execute(simpleQuery, context);
+        assertTrue(result.getErrors().isEmpty());
+        result = exe.execute(mapInputMutation, context);
+        assertTrue(result.getErrors().isEmpty());
+    }
 
     @Test
     public void testIdBasedPageCreation() {

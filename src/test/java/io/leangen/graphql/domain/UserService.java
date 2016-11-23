@@ -1,9 +1,22 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.*;
-import io.leangen.graphql.query.ConnectionRequest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
-import java.util.*;
+import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLMutation;
+import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.GraphQLResolverSource;
+import io.leangen.graphql.annotations.RelayId;
+import io.leangen.graphql.query.ConnectionRequest;
 
 /**
  * Created by bojan.tomic on 3/5/16.
@@ -62,7 +75,7 @@ public class UserService<T> {
     }
 
     @GraphQLQuery(name = "users")
-    public List<User<String>> getUsersByRegDate(@GraphQLArgument(name = "regDate") Date date) {
+    public List<User<String>> getUsersByRegDate(@GraphQLArgument(name = "regDate") Optional<Date> date) {
         return getUsersById(null, 1);
     }
 
@@ -169,13 +182,13 @@ public class UserService<T> {
 //		return "Jack!";
 //	}
 
-	@GraphQLQuery(name = "me")
-	public Map<String, String> getCurrentUser() {
-		Map<String, String> user = new HashMap<>();
-		user.put("id", "1000");
-		user.put("name", "Dyno");
-		return user;
-	}
+    @GraphQLQuery(name = "me")
+    public Map<String, String> getCurrentUser() {
+        Map<String, String> user = new HashMap<>();
+        user.put("id", "1000");
+        user.put("name", "Dyno");
+        return user;
+    }
 
     @GraphQLMutation(name = "upMe")
     public Map<String, String> getUpdateCurrentUser(@GraphQLArgument(name = "updates") Map<String, String> updates) {

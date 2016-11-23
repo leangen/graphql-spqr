@@ -26,6 +26,7 @@ import io.leangen.graphql.generator.mapping.common.EnumMapper;
 import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
 import io.leangen.graphql.generator.mapping.common.ListMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
+import io.leangen.graphql.generator.mapping.common.NonNullMapper;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.PageMapper;
@@ -329,7 +330,7 @@ public class GraphQLSchemaBuilder {
      */
     public GraphQLSchemaBuilder withDefaultMappers() {
         return withTypeMappers(
-                new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new ArrayMapper<>(),
+                new NonNullMapper(), new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new ArrayMapper<>(),
                 new UnionTypeMapper(), new UnionInlineMapper(), new StreamToCollectionTypeAdapter(),
                 new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(),
                 new OptionalAdapter(), new InterfaceMapper(interfaceStrategy), new ObjectTypeMapper());
