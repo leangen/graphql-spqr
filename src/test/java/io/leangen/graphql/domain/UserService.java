@@ -74,6 +74,13 @@ public class UserService<T> {
         return getUsersById(null, 1);
     }
 
+    @GraphQLQuery(name = "usersArr")
+    @SuppressWarnings("unchecked")
+    public User<String>[] getUsersByAnyEducationArray(@GraphQLArgument(name = "educations") T[] educations) {
+        List<User<String>> users = getUsersById(null, 1);
+        return users.toArray(new User[users.size()]);
+    }
+
     @GraphQLQuery(name = "users")
     public List<User<String>> getUsersByRegDate(@GraphQLArgument(name = "regDate") Optional<Date> date) {
         return getUsersById(null, 1);

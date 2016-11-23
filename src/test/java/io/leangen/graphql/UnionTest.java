@@ -146,7 +146,7 @@ public class UnionTest {
     public static class I1 implements UI {}
     public static class I2 implements UI {}
 
-    @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypeAutoDiscovery = true)
+    @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypeAutoDiscovery = true, scanPackages = "io.leangen")
     public interface UA {}
 
     public static class A1 implements UA {}
