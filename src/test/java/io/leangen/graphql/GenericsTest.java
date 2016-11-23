@@ -32,21 +32,19 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by bojan.tomic on 7/25/16.
- */
+@SuppressWarnings("unchecked")
 public class GenericsTest {
 
     // IMPORTANT! All type declarations have to stay outside of tests (can not be inlined)
     // as the annotation parser treats them differently and discards the annotations otherwise.
     // This is JDK8 bug: http://stackoverflow.com/questions/39952812
-    public static final AnnotatedType nonNullString = new TypeToken<GenericItemRepo<@NonNull String>>() {
+    private static final AnnotatedType nonNullString = new TypeToken<GenericItemRepo<@NonNull String>>() {
     }.getAnnotatedType();
-    public static final AnnotatedType dateId = new TypeToken<GenericItemRepo<@RelayId Date>>() {
+    private static final AnnotatedType dateId = new TypeToken<GenericItemRepo<@RelayId Date>>() {
     }.getAnnotatedType();
-    public static final AnnotatedType listOfWildcardNumbers = new TypeToken<GenericItemRepo<@NonNull List<? extends Number>>>() {
+    private static final AnnotatedType listOfWildcardNumbers = new TypeToken<GenericItemRepo<@NonNull List<? extends Number>>>() {
     }.getAnnotatedType();
-    public static final AnnotatedType arrayOfListsOfNumbers = new TypeToken<GenericItemRepo<@NonNull List<Number> @NonNull[]>>() {
+    private static final AnnotatedType arrayOfListsOfNumbers = new TypeToken<GenericItemRepo<@NonNull List<Number> @NonNull[]>>() {
     }.getAnnotatedType();
 
     @Test
