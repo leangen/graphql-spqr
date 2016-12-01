@@ -1,7 +1,6 @@
 package io.leangen.graphql.generator.types;
 
 import java.lang.reflect.AnnotatedType;
-import java.util.Collections;
 
 import graphql.schema.GraphQLObjectType;
 
@@ -14,7 +13,7 @@ public class MappedGraphQLObjectType extends GraphQLObjectType implements Mapped
 
     public MappedGraphQLObjectType(GraphQLObjectType graphQLType, AnnotatedType javaType) {
         super(graphQLType.getName(), graphQLType.getDescription(), graphQLType.getFieldDefinitions(),
-                graphQLType.getInterfaces(), Collections.emptyList());
+                graphQLType.getInterfaces());
         this.javaType = javaType;
     }
 
@@ -23,9 +22,10 @@ public class MappedGraphQLObjectType extends GraphQLObjectType implements Mapped
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj instanceof GraphQLObjectType &&
-                ((GraphQLObjectType) obj).getName().contentEquals(getName()) &&
-                ((GraphQLObjectType) obj).getFieldDefinitions().equals(getFieldDefinitions());
+    public boolean equals(Object that) {
+        return this == that || (that instanceof GraphQLObjectType &&
+                ((GraphQLObjectType) that).getName().equals(this.getName()) &&
+                ((GraphQLObjectType) that).getFieldDefinitions().equals(this.getFieldDefinitions()) &&
+                ((GraphQLObjectType) that).getInterfaces().equals(this.getInterfaces()));
     }
 }

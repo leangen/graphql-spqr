@@ -92,7 +92,7 @@ public class GenericsTest {
                 .build();
 
         GraphQLOutputType itemType = schemaWithDateIds.getQueryType().getFieldDefinition("getItem").getType();
-        assertEquals(itemType, Scalars.GraphQLID);
+        assertEquals(Scalars.GraphQLID, itemType);
 
         GraphQLOutputType itemCollectionType = schemaWithDateIds.getQueryType().getFieldDefinition("getAllItems").getType();
         assertListOf(itemCollectionType, Scalars.GraphQLID);

@@ -1,7 +1,6 @@
 package io.leangen.graphql.generator.types;
 
 import java.lang.reflect.AnnotatedType;
-import java.util.Collections;
 
 import graphql.schema.GraphQLUnionType;
 
@@ -14,7 +13,7 @@ public class MappedGraphQLUnionType extends GraphQLUnionType implements MappedGr
 
     public MappedGraphQLUnionType(GraphQLUnionType graphQLType, AnnotatedType javaType) {
         super(graphQLType.getName(), graphQLType.getDescription(), graphQLType.getTypes(),
-                Collections.emptyList(), graphQLType.getTypeResolver());
+                graphQLType.getTypeResolver());
         this.javaType = javaType;
     }
 
@@ -23,9 +22,9 @@ public class MappedGraphQLUnionType extends GraphQLUnionType implements MappedGr
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj == this || (obj instanceof GraphQLUnionType &&
-                ((GraphQLUnionType) obj).getName().equals(getName()) &&
-                ((GraphQLUnionType) obj).getAllTypes().equals(getAllTypes()));
+    public boolean equals(Object that) {
+        return that == this || (that instanceof GraphQLUnionType &&
+                ((GraphQLUnionType) that).getName().equals(this.getName()) &&
+                ((GraphQLUnionType) that).getTypes().equals(this.getTypes()));
     }
 }

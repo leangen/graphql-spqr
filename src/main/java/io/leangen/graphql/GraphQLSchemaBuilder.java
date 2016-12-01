@@ -329,11 +329,12 @@ public class GraphQLSchemaBuilder {
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
     public GraphQLSchemaBuilder withDefaultMappers() {
+        ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
         return withTypeMappers(
                 new NonNullMapper(), new RelayIdMapper(), new ScalarMapper(), new EnumMapper(), new ArrayMapper<>(),
                 new UnionTypeMapper(), new UnionInlineMapper(), new StreamToCollectionTypeAdapter(),
                 new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(),
-                new OptionalAdapter(), new InterfaceMapper(interfaceStrategy), new ObjectTypeMapper());
+                new OptionalAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
     }
 
     /**

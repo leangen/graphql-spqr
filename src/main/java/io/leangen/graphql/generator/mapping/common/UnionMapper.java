@@ -1,18 +1,15 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Modifier;
 import java.util.List;
 
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.util.ClassUtils;
 
 import static graphql.schema.GraphQLUnionType.newUnionType;
 
@@ -34,8 +31,6 @@ public abstract class UnionMapper implements TypeMapper {
                 .forEach(type -> {
                     if (type instanceof GraphQLObjectType) {
                         builder.possibleType((GraphQLObjectType) type);
-                    } else if (type instanceof GraphQLTypeReference) {
-                        builder.possibleType((GraphQLTypeReference) type);
                     } else {
                         throw new TypeMappingException(type.getClass().getSimpleName() +
                                 " is not a valid GraphQL union member. Only object types can be unionized.");
@@ -44,11 +39,7 @@ public abstract class UnionMapper implements TypeMapper {
 
         GraphQLUnionType union = builder.build();
         for (int i = 0; i < possibleJavaTypes.size(); i++) {
-            Class<?> rawComponentType = ClassUtils.getRawType(possibleJavaTypes.get(i).getType());
-            if (!rawComponentType.isPrimitive() && !rawComponentType.isArray() && !Modifier.isFinal(rawComponentType.getModifiers())) {
-                buildContext.proxyFactory.registerType(rawComponentType);
-            }
-            buildContext.typeRepository.registerCovariantTypes(union.getName(), possibleJavaTypes.get(i), union.getAllTypes().get(i));
+            buildContext.typeRepository.registerCovariantTypes(union.getName(), possibleJavaTypes.get(i), union.getTypes().get(i));
         }
         return union;
     }

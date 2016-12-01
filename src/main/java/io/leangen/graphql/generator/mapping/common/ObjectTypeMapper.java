@@ -6,11 +6,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import graphql.schema.GraphQLInputObjectType;
-import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLTypeReference;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
@@ -23,13 +21,10 @@ import io.leangen.graphql.util.ClassUtils;
 import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
 
-/**
- * Created by bojan.tomic on 9/21/16.
- */
 public class ObjectTypeMapper implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLObjectType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
         DomainType domainType = new DomainType(javaType);
         Optional<Query> relayId = buildContext.queryRepository.getDomainQueries(domainType.getJavaType()).stream()
                 .filter(query -> query.getJavaType().isAnnotationPresent(RelayId.class))
@@ -37,7 +32,7 @@ public class ObjectTypeMapper implements TypeMapper {
 
         AbstractTypeGenerationStrategy.Entry typeEntry = buildContext.typeStrategy.get(domainType);
         if (typeEntry.type.isPresent()) {
-            return typeEntry.type.get();
+            return GraphQLObjectType.reference(typeEntry.type.get().getName());
         }
 
         GraphQLObjectType.Builder typeBuilder = newObject()
@@ -55,11 +50,7 @@ public class ObjectTypeMapper implements TypeMapper {
         buildContext.interfaceStrategy.getInterfaces(javaType).forEach(
                 inter -> {
                     GraphQLOutputType graphQLInterface = queryGenerator.toGraphQLType(inter, buildContext);
-                    if (graphQLInterface instanceof GraphQLInterfaceType) {
-                        typeBuilder.withInterface((GraphQLInterfaceType) graphQLInterface);
-                    } else {
-                        typeBuilder.withInterface((GraphQLTypeReference) graphQLInterface);
-                    }
+                    typeBuilder.withInterface((GraphQLInterfaceType) graphQLInterface);
                     interfaceNames.add(graphQLInterface.getName());
                 });
 
@@ -72,7 +63,7 @@ public class ObjectTypeMapper implements TypeMapper {
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLInputObjectType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
 //        Optional<GraphQLInputType> cached = buildContext.typeRepository.getInputType(javaType.getType());
 //        if (cached.isPresent()) {
 //            return cached.get();
@@ -81,7 +72,7 @@ public class ObjectTypeMapper implements TypeMapper {
         DomainType domainType = new DomainType(javaType);
 
         if (buildContext.inputsInProgress.contains(domainType.getInputName())) {
-            return new GraphQLTypeReference(domainType.getInputName());
+            return GraphQLInputObjectType.reference(domainType.getInputName());
         }
         buildContext.inputsInProgress.add(domainType.getInputName());
 
