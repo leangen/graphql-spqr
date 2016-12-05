@@ -9,10 +9,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import io.leangen.graphql.annotations.RelayConnectionRequest;
-import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.query.ConnectionRequest;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.execution.Executable;
@@ -33,7 +32,7 @@ public class QueryResolver {
     private List<QueryArgument> queryArguments;
     private List<Parameter> connectionRequestArguments;
     private AnnotatedType returnType;
-    private QueryArgument sourceArgument;
+    private Set<QueryArgument> sourceArguments;
     private String wrappedAttribute;
     private Executable executable;
     private boolean relayId;
@@ -47,7 +46,7 @@ public class QueryResolver {
         this.connectionRequestArguments = resolveConnectionRequestArguments();
         this.returnType = ClassUtils.stripBounds(executable.getReturnType());
         this.wrappedAttribute = executable.getWrappedAttribute();
-        this.sourceArgument = resolveSource(queryArguments);
+        this.sourceArguments = resolveSources(queryArguments);
     }
 
     /**
@@ -56,14 +55,13 @@ public class QueryResolver {
      * Even then, not all resolvers of such queries necessarily accept a source object.
      *
      * @param arguments All arguments that this resolver accepts
-     * @return The argument representing the query source (object returned by the parent query),
-     * or null if this resolver doesn't accept a query source
+     * @return The arguments representing possible query sources for this resolver
+     * (object returned by the parent query), or null if this resolver doesn't accept a query source
      */
-    private QueryArgument resolveSource(List<QueryArgument> arguments) {
+    private Set<QueryArgument> resolveSources(List<QueryArgument> arguments) {
         return arguments.stream()
                 .filter(QueryArgument::isResolverSource)
-                .findFirst()
-                .orElse(null);
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -111,7 +109,7 @@ public class QueryResolver {
 
             if (argDescriptor.isRelayConnection()) {
                 args[i] = connectionRequest;
-            } else if (argDescriptor.isResolverSource() && !arguments.containsKey(sourceArgument.getName())) {
+            } else if (argDescriptor.isResolverSource() && !arguments.containsKey(argDescriptor.getName())) {
                 args[i] = source;
             } else if (argDescriptor.isContext()) {
                 args[i] = context;
@@ -119,12 +117,11 @@ public class QueryResolver {
                 String rawId = arguments.get(argDescriptor.getName()).toString();
                 String id = rawId;
                 try {
-                    id = executionContext.relay.fromGlobalId(rawId).id;
+                    id = executionContext.relay.fromGlobalId(rawId).getId();
                 } catch (Exception e) {/*noop*/}
                 args[i] = executionContext.idTypeMapper.deserialize(id, executable.getAnnotatedParameterTypes()[i].getType());
             } else {
-                InputConverter argValueConverter = executionContext.converters.getInputConverter(argDescriptor.getJavaType());
-                AnnotatedType argValueType = argValueConverter != null ? argValueConverter.getSubstituteType(argDescriptor.getJavaType()) : argDescriptor.getJavaType();
+                AnnotatedType argValueType = executionContext.getMappableType(argDescriptor.getJavaType());
                 Object argValue = executionContext.inputDeserializer.deserialize(arguments.get(argDescriptor.getName()), argValueType);
                 args[i] = executionContext.convertInput(argValue, argDescriptor.getJavaType());
             }
@@ -156,13 +153,13 @@ public class QueryResolver {
     }
 
     /**
-     * Gets the generic Java type of the source object (object returned by the parent query),
+     * Gets the generic Java types of the source objects (object returned by the parent query),
      * if one is accepted by this resolver. Used to decide if this query can be nested inside another.
      *
      * @return The generic Java type of the source object, or null if this resolver does not accept one.
      */
-    public Type getSourceType() {
-        return sourceArgument == null ? null : sourceArgument.getJavaType().getType();
+    public Set<Type> getSourceTypes() {
+        return sourceArguments.stream().map(arg -> arg.getJavaType().getType()).collect(Collectors.toSet());
     }
 
     private boolean isWrapped() {
@@ -189,11 +186,9 @@ public class QueryResolver {
      * @return The unique "fingerprint" string identifying this resolver
      */
     public Set<String> getFingerprints() {
-        Set<String> fingerprints = new HashSet<>(sourceArgument == null ? 1 : 2);
-        fingerprints.add(fingerprint(false));
-        if (sourceArgument != null) {
-            fingerprints.add(fingerprint(true));
-        }
+        Set<String> fingerprints = new HashSet<>(sourceArguments.size() + 1);
+        sourceArguments.forEach(source -> fingerprints.add(fingerprint(source)));
+        fingerprints.add(fingerprint(null));
         return fingerprints;
     }
 
@@ -209,11 +204,10 @@ public class QueryResolver {
         return executable;
     }
 
-    private String fingerprint(boolean skipResolverSource) {
+    private String fingerprint(QueryArgument ignoredResolverSource) {
         StringBuilder fingerprint = new StringBuilder();
-        Predicate<QueryArgument> sourceFilter = skipResolverSource ? arg -> !arg.isResolverSource() : arg -> true;
         queryArguments.stream()
-                .filter(sourceFilter)
+                .filter(arg -> arg != ignoredResolverSource)
                 .filter(arg -> !arg.isRelayConnection() && !arg.isContext())
                 .map(QueryArgument::getName)
                 .sorted()

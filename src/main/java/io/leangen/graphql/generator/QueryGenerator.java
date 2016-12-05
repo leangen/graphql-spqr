@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import graphql.relay.Relay;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputType;
@@ -21,6 +22,7 @@ import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.Query;
+import io.leangen.graphql.metadata.QueryArgument;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.IdTypeMapper;
 
@@ -76,7 +78,7 @@ public class QueryGenerator {
 
         //TODO Shouldn't this check if the return type has relayID? Also, why add queries without primary resolver?
         //Add support for Relay Node query only if Relay-enabled resolvers exist
-        if (nodeQueriesByType.values().stream().filter(Query::hasPrimaryResolver).findFirst().isPresent()) {
+        if (nodeQueriesByType.values().stream().anyMatch(Query::hasPrimaryResolver)) {
             queries.add(buildContext.relay.nodeField(node, createNodeResolver(nodeQueriesByType, buildContext.relay, buildContext.executionContext)));
         }
         return queries;
@@ -195,19 +197,28 @@ public class QueryGenerator {
      */
     private void addArguments(GraphQLFieldDefinition.Builder queryBuilder, Query query, BuildContext buildContext) {
         query.getArguments()
-                .forEach(argument -> queryBuilder.argument(newArgument() //attach each argument to the query
-                        .name(argument.getName())
-                        .description(argument.getDescription())
-                        .type(toGraphQLInputType(argument.getJavaType(), buildContext))
-                        .build()));
+                .forEach(argument -> queryBuilder.argument(toGraphQLArgument(argument, buildContext)));
         if (query.isPageable()) {
             queryBuilder.argument(buildContext.relay.getConnectionFieldArguments());
         }
     }
 
+    private GraphQLArgument toGraphQLArgument(QueryArgument queryArgument, BuildContext buildContext) {
+        GraphQLArgument.Builder argument = newArgument()
+                .name(queryArgument.getName())
+                .description(queryArgument.getDescription())
+                .type(toGraphQLInputType(queryArgument.getJavaType(), buildContext));
+        if (queryArgument.getDefaultValue().isPresent()) {
+            AnnotatedType mappableType = buildContext.executionContext.getMappableType(queryArgument.getJavaType());
+            argument.defaultValue(buildContext.executionContext.inputDeserializer.deserializeString(
+                    queryArgument.getDefaultValue().get(), mappableType));
+        }
+        return argument.build();
+    }
+
     /**
      * Creates a generic resolver for the given query.
-     * This resolver simply invokes {@link Query#resolve(DataFetchingEnvironment, ExecutionContext)}
+     * @implSpec This resolver simply invokes {@link Query#resolve(DataFetchingEnvironment, ExecutionContext)}
      *
      * @param query The query for which the resolver is being created
      * @param executionContext The shared context containing all the global information needed for query resolution

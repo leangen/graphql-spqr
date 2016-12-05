@@ -5,16 +5,16 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Created by bojan.tomic on 3/2/16.
- */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
 public @interface GraphQLArgument {
+
+    String NONE = "\n\t\t\n\t\t\n\ue000\ue001\ue002\n\t\t\t\t\n";
+    String NULL = "\n\t\t\n\t\t\n\ue000\ue001\ue002\ue003\n\t\t\t\t\n";
 
     String name();
 
     String description() default "";
 
-    boolean required() default false;
+    String defaultValue() default NONE;
 }

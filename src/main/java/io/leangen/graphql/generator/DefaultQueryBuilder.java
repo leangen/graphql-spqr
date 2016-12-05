@@ -4,8 +4,11 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
@@ -27,13 +30,13 @@ public class DefaultQueryBuilder implements QueryBuilder {
     public Query buildQuery(List<QueryResolver> resolvers) {
         String name = resolveName(resolvers);
         AnnotatedType javaType = resolveJavaType(name, resolvers);
-        Type sourceType = resolveSourceType(resolvers);
+        List<Type> sourceTypes = resolveSourceTypes(resolvers);
         List<QueryArgument> arguments = collectArguments(resolvers);
         List<QueryArgument> sortableArguments = collectArguments(
                 resolvers.stream()
                         .filter(QueryResolver::supportsConnectionRequests)
                         .collect(Collectors.toList()));
-        return new Query(name, javaType, sourceType, arguments, sortableArguments, resolvers);
+        return new Query(name, javaType, sourceTypes, arguments, sortableArguments, resolvers);
     }
 
     @Override
@@ -65,15 +68,14 @@ public class DefaultQueryBuilder implements QueryBuilder {
         return GenericTypeReflector.replaceAnnotations(mostSpecificSuperType, aggregatedAnnotations);
     }
 
-    protected Type resolveSourceType(List<QueryResolver> resolvers) {
-        List<Type> sourceTypes = resolvers.stream()
-                .map(QueryResolver::getSourceType)
-                .distinct()
-                .collect(Collectors.toList());
-        if (sourceTypes.size() > 1) {
-            throw new IllegalStateException("Not all resolvers expect the same source type");
+    protected List<Type> resolveSourceTypes(List<QueryResolver> resolvers) {
+        Set<Type> sourceTypes = resolvers.get(0).getSourceTypes();
+        boolean allSame = resolvers.stream().map(QueryResolver::getSourceTypes)
+                .allMatch(types -> types.size() == sourceTypes.size() && types.containsAll(sourceTypes));
+        if (!allSame) {
+            throw new IllegalStateException("Not all resolvers expect the same source types");
         }
-        return sourceTypes.get(0);
+        return new ArrayList<>(sourceTypes);
     }
 
     //TODO do annotations or overloading decide what arg is required? should that decision be externalized?
@@ -86,9 +88,12 @@ public class DefaultQueryBuilder implements QueryBuilder {
                 .map(argName -> new QueryArgument(
                         ClassUtils.getCommonSuperType(argumentsByName.get(argName).stream().map(QueryArgument::getJavaType).collect(Collectors.toList())),
                         argName,
-                        argumentsByName.get(argName).stream().map(QueryArgument::getDescription).filter(desc -> desc != null).findFirst().orElse(""),
+                        argumentsByName.get(argName).stream().map(QueryArgument::getDescription).filter(Objects::nonNull).findFirst().orElse(""),
 //						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRequired),
-                        argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRequired),
+                        argumentsByName.get(argName).stream()
+                                .map(QueryArgument::getDefaultValue)
+                                .filter(QueryArgument.DefaultValue::isPresent)
+                                .findFirst().orElse(QueryArgument.DefaultValue.empty()),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isResolverSource),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isContext),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRelayConnection)

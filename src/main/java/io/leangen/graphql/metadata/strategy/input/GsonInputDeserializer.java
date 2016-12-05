@@ -7,9 +7,6 @@ import com.google.gson.JsonElement;
 
 import java.lang.reflect.AnnotatedType;
 
-/**
- * Created by bojan.tomic on 5/25/16.
- */
 public class GsonInputDeserializer implements InputDeserializer {
 
     private Gson gson;
@@ -32,5 +29,10 @@ public class GsonInputDeserializer implements InputDeserializer {
         }
         JsonElement jsonElement = gson.toJsonTree(graphQlInput);
         return gson.fromJson(jsonElement, type.getType());
+    }
+
+    @Override
+    public <T> T deserializeString(String json, AnnotatedType type) {
+        return gson.fromJson(json, type.getType());
     }
 }

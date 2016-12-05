@@ -18,27 +18,24 @@ import io.leangen.graphql.util.ClassUtils;
 
 import static java.util.Arrays.stream;
 
-/**
- * Created by bojan.tomic on 3/19/16.
- */
 public class Query {
 
     private String name;
     private String description;
     private AnnotatedType javaType;
-    private Type sourceType;
+    private List<Type> sourceTypes;
     private Map<String, QueryResolver> resolversByFingerprint;
     private List<QueryArgument> arguments;
     private List<QueryArgument> sortableArguments;
 
     private boolean hasPrimaryResolver;
 
-    public Query(String name, AnnotatedType javaType, Type sourceType, List<QueryArgument> arguments, List<QueryArgument> sortableArguments, List<QueryResolver> resolvers) {
+    public Query(String name, AnnotatedType javaType, List<Type> sourceTypes, List<QueryArgument> arguments, List<QueryArgument> sortableArguments, List<QueryResolver> resolvers) {
         this.name = name;
         this.description = resolvers.stream().map(QueryResolver::getQueryDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
-        this.hasPrimaryResolver = resolvers.stream().filter(QueryResolver::isPrimaryResolver).findFirst().isPresent();
+        this.hasPrimaryResolver = resolvers.stream().anyMatch(QueryResolver::isPrimaryResolver);
         this.javaType = javaType;
-        this.sourceType = sourceType;
+        this.sourceTypes = sourceTypes;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
         this.sortableArguments = sortableArguments;
@@ -83,7 +80,7 @@ public class Query {
     }
 
     public boolean isEmbeddableForType(Type type) {
-        return this.sourceType != null && GenericTypeReflector.isSuperType(this.sourceType, type);
+        return this.sourceTypes.stream().anyMatch(sourceType -> GenericTypeReflector.isSuperType(sourceType, type));
     }
 
     private String getFingerprint(Map<String, Object> arguments) {
@@ -130,15 +127,16 @@ public class Query {
 
     @Override
     public boolean equals(Object other) {
+        if (this == other) return true;
         if (!(other instanceof Query)) return false;
-        Query otherQuery = (Query) other;
+        Query that = (Query) other;
 
-        if ((otherQuery.javaType == null && this.javaType != null) || (otherQuery.javaType != null && this.javaType == null)) {
+        if ((that.javaType == null && this.javaType != null) || (that.javaType != null && this.javaType == null)) {
             return false;
         }
 
-        return otherQuery.name.equals(this.name)
-                && (otherQuery.javaType == null || otherQuery.javaType.equals(this.javaType));
+        return that.name.equals(this.name)
+                && (that.javaType == null || that.javaType.equals(this.javaType));
     }
 
     @Override

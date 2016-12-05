@@ -13,9 +13,6 @@ import io.leangen.graphql.annotations.RelayConnectionRequest;
 import io.leangen.graphql.metadata.QueryArgument;
 import io.leangen.graphql.util.ClassUtils;
 
-/**
- * Created by bojan.tomic on 7/17/16.
- */
 public class AnnotatedArgumentExtractor implements QueryResolverArgumentExtractor {
 
     @Override
@@ -30,7 +27,7 @@ public class AnnotatedArgumentExtractor implements QueryResolverArgumentExtracto
                     ClassUtils.stripBounds(parameterTypes[i]),
                     meta != null && !meta.name().isEmpty() ? meta.name() : parameter.getName(),
                     meta != null ? meta.description() : null,
-                    meta != null && meta.required(),
+                    meta != null ? QueryArgument.DefaultValue.of(meta.defaultValue()) : QueryArgument.DefaultValue.empty(),
                     parameter.isAnnotationPresent(GraphQLResolverSource.class),
                     parameter.isAnnotationPresent(GraphQLContext.class),
                     parameter.isAnnotationPresent(RelayConnectionRequest.class) || isExplicitRelayConnectionArgument(parameter)

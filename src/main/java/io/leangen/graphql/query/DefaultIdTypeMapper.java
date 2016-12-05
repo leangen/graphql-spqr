@@ -1,13 +1,19 @@
 package io.leangen.graphql.query;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.*;
+import java.util.Base64;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
-/**
- * Created by bojan.tomic on 4/13/16.
- */
 public class DefaultIdTypeMapper implements IdTypeMapper {
 
     protected Serializer<Object> TO_BASE64_STRING;
@@ -24,7 +30,7 @@ public class DefaultIdTypeMapper implements IdTypeMapper {
                 out.writeObject(value);
                 return Base64.getEncoder().encodeToString(bytes.toByteArray());
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
             }
         };
         FROM_BASE64_STRING = serializedValue -> {
