@@ -5,6 +5,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import io.leangen.graphql.generator.mapping.strategy.DefaultValueProvider;
+import io.leangen.graphql.generator.mapping.strategy.JsonDefaultValueProvider;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
 public @interface GraphQLArgument {
@@ -17,4 +20,6 @@ public @interface GraphQLArgument {
     String description() default "";
 
     String defaultValue() default NONE;
+    
+    Class<? extends DefaultValueProvider> defaultValueProvider() default JsonDefaultValueProvider.class;
 }

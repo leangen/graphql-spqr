@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import graphql.GraphQLException;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 import io.leangen.graphql.query.ConnectionRequest;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.relay.Page;
@@ -20,17 +21,20 @@ import static java.util.Arrays.stream;
 
 public class Query {
 
-    private String name;
-    private String description;
-    private AnnotatedType javaType;
-    private List<Type> sourceTypes;
-    private Map<String, QueryResolver> resolversByFingerprint;
-    private List<QueryArgument> arguments;
-    private List<QueryArgument> sortableArguments;
+    private final String name;
+    private final String description;
+    private final AnnotatedType javaType;
+    private final List<Type> sourceTypes;
+    private final Map<String, QueryResolver> resolversByFingerprint;
+    private final List<QueryArgument> arguments;
+    private final List<QueryArgument> sortableArguments;
+    private final InputDeserializer inputDeserializer;
 
     private boolean hasPrimaryResolver;
 
-    public Query(String name, AnnotatedType javaType, List<Type> sourceTypes, List<QueryArgument> arguments, List<QueryArgument> sortableArguments, List<QueryResolver> resolvers) {
+    public Query(String name, AnnotatedType javaType, List<Type> sourceTypes, List<QueryArgument> arguments, 
+                 List<QueryArgument> sortableArguments, List<QueryResolver> resolvers, InputDeserializer inputDeserializer) {
+        
         this.name = name;
         this.description = resolvers.stream().map(QueryResolver::getQueryDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
         this.hasPrimaryResolver = resolvers.stream().anyMatch(QueryResolver::isPrimaryResolver);
@@ -39,6 +43,7 @@ public class Query {
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
         this.sortableArguments = sortableArguments;
+        this.inputDeserializer = inputDeserializer;
     }
 
     private Map<String, QueryResolver> collectResolversByFingerprint(List<QueryResolver> resolvers) {
@@ -70,7 +75,7 @@ public class Query {
                     //TODO implement simple filtering here
                 }
             } else {
-                Object result = resolver.resolve(env.getSource(), env.getContext(), queryArguments, new ConnectionRequest(connectionArguments), executionContext);
+                Object result = resolver.resolve(env.getSource(), env.getContext(), queryArguments, inputDeserializer, new ConnectionRequest(connectionArguments), executionContext);
                 return result;
             }
             throw new GraphQLException("Resolver for query " + name + " accepting arguments: " + env.getArguments().keySet() + " not implemented");
@@ -117,12 +122,16 @@ public class Query {
         return resolversByFingerprint.values();
     }
 
+    public InputDeserializer getInputDeserializer() {
+        return inputDeserializer;
+    }
+
     @Override
     public int hashCode() {
         int typeHash = stream(javaType.getAnnotations())
                 .mapToInt(annotation -> annotation.getClass().getName().hashCode())
-                .sum();
-        return name.hashCode() + typeHash;
+                .reduce((x, y) -> x ^ y).orElse(0);
+        return name.hashCode() ^ typeHash;
     }
 
     @Override

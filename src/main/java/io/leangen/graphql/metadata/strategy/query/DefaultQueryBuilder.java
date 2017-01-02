@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator;
+package io.leangen.graphql.metadata.strategy.query;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -17,6 +17,7 @@ import io.leangen.graphql.generator.union.Union;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryArgument;
 import io.leangen.graphql.metadata.QueryResolver;
+import io.leangen.graphql.metadata.strategy.input.InputDeserializerFactory;
 import io.leangen.graphql.util.ClassUtils;
 
 import static java.util.Arrays.stream;
@@ -25,6 +26,12 @@ import static java.util.Arrays.stream;
  * @author Bojan Tomic (kaqqao)
  */
 public class DefaultQueryBuilder implements QueryBuilder {
+
+    private final InputDeserializerFactory inputDeserializerFactory;
+
+    public DefaultQueryBuilder(InputDeserializerFactory inputDeserializerFactory) {
+        this.inputDeserializerFactory = inputDeserializerFactory;
+    }
 
     @Override
     public Query buildQuery(List<QueryResolver> resolvers) {
@@ -36,7 +43,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
                 resolvers.stream()
                         .filter(QueryResolver::supportsConnectionRequests)
                         .collect(Collectors.toList()));
-        return new Query(name, javaType, sourceTypes, arguments, sortableArguments, resolvers);
+        return new Query(name, javaType, sourceTypes, arguments, sortableArguments, resolvers, inputDeserializerFactory.getDeserializer(arguments));
     }
 
     @Override
@@ -90,10 +97,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
                         argName,
                         argumentsByName.get(argName).stream().map(QueryArgument::getDescription).filter(Objects::nonNull).findFirst().orElse(""),
 //						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRequired),
-                        argumentsByName.get(argName).stream()
-                                .map(QueryArgument::getDefaultValue)
-                                .filter(QueryArgument.DefaultValue::isPresent)
-                                .findFirst().orElse(QueryArgument.DefaultValue.empty()),
+                        argumentsByName.get(argName).stream().map(QueryArgument::getDefaultValueProvider).findFirst().get(),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isResolverSource),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isContext),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRelayConnection)

@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.graphql.annotations.RelayConnectionRequest;
+import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 import io.leangen.graphql.query.ConnectionRequest;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.execution.Executable;
@@ -27,15 +28,15 @@ import io.leangen.graphql.util.ClassUtils;
  */
 public class QueryResolver {
 
-    private String queryName;
-    private String queryDescription;
-    private List<QueryArgument> queryArguments;
-    private List<Parameter> connectionRequestArguments;
-    private AnnotatedType returnType;
-    private Set<QueryArgument> sourceArguments;
-    private String wrappedAttribute;
-    private Executable executable;
-    private boolean relayId;
+    private final String queryName;
+    private final String queryDescription;
+    private final boolean relayId;
+    private final List<QueryArgument> queryArguments;
+    private final List<Parameter> connectionRequestArguments;
+    private final AnnotatedType returnType;
+    private final Set<QueryArgument> sourceArguments;
+    private final String wrappedAttribute;
+    private final Executable executable;
 
     public QueryResolver(String queryName, String queryDescription, boolean relayId, Executable executable, List<QueryArgument> queryArguments) {
         this.executable = executable;
@@ -100,7 +101,9 @@ public class QueryResolver {
      * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
      */
     @SuppressWarnings("unchecked")
-    public Object resolve(Object source, Object context, Map<String, Object> arguments, Object connectionRequest, ExecutionContext executionContext) throws InvocationTargetException, IllegalAccessException {
+    public Object resolve(Object source, Object context, Map<String, Object> arguments, InputDeserializer inputDeserializer,
+                          Object connectionRequest, ExecutionContext executionContext) throws InvocationTargetException, IllegalAccessException {
+        
         int queryArgumentsCount = queryArguments.size();
 
         Object[] args = new Object[queryArgumentsCount];
@@ -122,7 +125,7 @@ public class QueryResolver {
                 args[i] = executionContext.idTypeMapper.deserialize(id, executable.getAnnotatedParameterTypes()[i].getType());
             } else {
                 AnnotatedType argValueType = executionContext.getMappableType(argDescriptor.getJavaType());
-                Object argValue = executionContext.inputDeserializer.deserialize(arguments.get(argDescriptor.getName()), argValueType);
+                Object argValue = inputDeserializer.deserialize(arguments.get(argDescriptor.getName()), argValueType);
                 args[i] = executionContext.convertInput(argValue, argDescriptor.getJavaType());
             }
         }

@@ -7,25 +7,19 @@ import graphql.relay.Relay;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
-import io.leangen.graphql.generator.proxy.ProxyFactory;
-import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
-import io.leangen.graphql.generator.strategy.FlatTypeGenerationStrategy;
-import io.leangen.graphql.generator.strategy.InterfaceMappingStrategy;
-import io.leangen.graphql.metadata.strategy.input.GsonInputDeserializer;
+import io.leangen.graphql.generator.mapping.strategy.AbstractTypeGenerationStrategy;
+import io.leangen.graphql.generator.mapping.strategy.FlatTypeGenerationStrategy;
+import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.query.DefaultIdTypeMapper;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.IdTypeMapper;
 
-/**
- * Created by bojan.tomic on 3/30/16.
- */
 public class BuildContext {
 
     public final AbstractTypeGenerationStrategy typeStrategy;
     public final ExecutionContext executionContext;
     public final QueryRepository queryRepository;
     public final TypeRepository typeRepository;
-    public final ProxyFactory proxyFactory;
     public final IdTypeMapper idTypeMapper;
     public final TypeMapperRepository typeMappers;
     public final Relay relay;
@@ -47,10 +41,9 @@ public class BuildContext {
         this.typeRepository = new TypeRepository();
         this.idTypeMapper = new DefaultIdTypeMapper();
         this.typeMappers = typeMappers;
-        this.proxyFactory = new ProxyFactory();
         this.relay = new Relay();
         this.typeResolver = new HintedTypeResolver(this.typeRepository, this.typeMappers);
         this.interfaceStrategy = interfaceStrategy;
-        this.executionContext = new ExecutionContext(relay, typeRepository, proxyFactory, idTypeMapper, new GsonInputDeserializer(), converters);
+        this.executionContext = new ExecutionContext(relay, typeRepository, idTypeMapper, converters);
     }
 }

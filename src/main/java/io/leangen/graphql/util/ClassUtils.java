@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -25,6 +26,8 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,9 +43,6 @@ import static io.leangen.geantyref.GenericTypeReflector.annotate;
 import static io.leangen.geantyref.GenericTypeReflector.capture;
 import static java.util.Arrays.stream;
 
-/**
- * Created by bojan.tomic on 3/2/16.
- */
 public class ClassUtils {
 
     private static Unsafe unsafe;
@@ -232,13 +232,37 @@ public class ClassUtils {
                     .findClasses(new SubclassClassFilter(getRawType(superType.getType()))).stream()
                     .map(classInfo -> loadClass(classInfo.getClassName()))
                     .map(raw -> GenericTypeReflector.getExactSubType(superType, raw))
-                    .filter(impl -> impl != null)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } catch (ClassReadingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    public static Collection<Class> findImplementations(Class superType, String... packages) {
+        try {
+            ClassFinder classFinder = new ClassFinder();
+            classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(packages);
+            return classFinder
+                    .findClasses(new SubclassClassFilter(superType)).stream()
+                    .map(classInfo -> loadClass(classInfo.getClassName()))
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         } catch (ClassReadingException e) {
             throw new RuntimeException(e);
         }
     }
 
+    public static boolean isAbstract(AnnotatedType type) {
+        return isAbstract(getRawType(type.getType()));
+    }
+    
+    public static boolean isAbstract(Class<?> type) {
+        return (type.isInterface() || Modifier.isAbstract(type.getModifiers())) && 
+                !type.isPrimitive() && !type.isArray() &&
+                !Collection.class.isAssignableFrom(type) && !Map.class.isAssignableFrom(type);
+    }
+    
     public static boolean isAssignable(Type superType, Type subType) {
         return (((superType instanceof ParameterizedType
                 && Arrays.stream(((ParameterizedType) superType).getActualTypeArguments())
@@ -358,7 +382,7 @@ public class ClassUtils {
             rollingIntersect.retainAll(getSuperTypes(classes.get(i)));
         }
         List<Class<?>> result = new LinkedList<>(rollingIntersect);
-        Collections.sort(result, new TypeComparator());
+        result.sort(new TypeComparator());
         return result;
     }
 

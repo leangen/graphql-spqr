@@ -23,6 +23,8 @@ import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryArgument;
+import io.leangen.graphql.metadata.QueryArgumentDefaultValue;
+import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.IdTypeMapper;
 
@@ -197,21 +199,21 @@ public class QueryGenerator {
      */
     private void addArguments(GraphQLFieldDefinition.Builder queryBuilder, Query query, BuildContext buildContext) {
         query.getArguments()
-                .forEach(argument -> queryBuilder.argument(toGraphQLArgument(argument, buildContext)));
+                .forEach(argument -> queryBuilder.argument(toGraphQLArgument(argument, query.getInputDeserializer(), buildContext)));
         if (query.isPageable()) {
             queryBuilder.argument(buildContext.relay.getConnectionFieldArguments());
         }
     }
 
-    private GraphQLArgument toGraphQLArgument(QueryArgument queryArgument, BuildContext buildContext) {
+    private GraphQLArgument toGraphQLArgument(QueryArgument queryArgument, InputDeserializer inputDeserializer, BuildContext buildContext) {
         GraphQLArgument.Builder argument = newArgument()
                 .name(queryArgument.getName())
                 .description(queryArgument.getDescription())
                 .type(toGraphQLInputType(queryArgument.getJavaType(), buildContext));
-        if (queryArgument.getDefaultValue().isPresent()) {
-            AnnotatedType mappableType = buildContext.executionContext.getMappableType(queryArgument.getJavaType());
-            argument.defaultValue(buildContext.executionContext.inputDeserializer.deserializeString(
-                    queryArgument.getDefaultValue().get(), mappableType));
+
+        QueryArgumentDefaultValue defaultValue = queryArgument.getDefaultValueProvider().getDefaultValue(queryArgument, inputDeserializer, buildContext);
+        if (defaultValue.isPresent()) {
+            argument.defaultValue(defaultValue.get());
         }
         return argument.build();
     }

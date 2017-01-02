@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import graphql.Scalars;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
@@ -13,11 +14,12 @@ import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
+import io.leangen.graphql.generator.mapping.strategy.AbstractTypeGenerationStrategy;
 import io.leangen.graphql.metadata.DomainType;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.util.ClassUtils;
 
+import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
 import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
 
@@ -56,19 +58,11 @@ public class ObjectTypeMapper implements TypeMapper {
 
         GraphQLObjectType type = typeBuilder.build();
         buildContext.typeRepository.registerCovariantTypes(interfaceNames, javaType, type);
-        if (!interfaceNames.isEmpty()) {
-            buildContext.proxyFactory.registerType(ClassUtils.getRawType(javaType.getType()));
-        }
         return type;
     }
 
     @Override
     public GraphQLInputObjectType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
-//        Optional<GraphQLInputType> cached = buildContext.typeRepository.getInputType(javaType.getType());
-//        if (cached.isPresent()) {
-//            return cached.get();
-//        }
-
         DomainType domainType = new DomainType(javaType);
 
         if (buildContext.inputsInProgress.contains(domainType.getInputName())) {
@@ -86,6 +80,12 @@ public class ObjectTypeMapper implements TypeMapper {
                         field -> typeBuilder.field(queryGenerator.toGraphQLInputField(field, buildContext))
                 );
 
+        if (ClassUtils.isAbstract(javaType)) {
+            typeBuilder.field(newInputObjectField()
+                    .name("_type_")
+                    .type(Scalars.GraphQLString)
+                    .build());
+        }
         return typeBuilder.build();
     }
 

@@ -9,8 +9,6 @@ import java.util.HashSet;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.DefaultQueryBuilder;
-import io.leangen.graphql.generator.QueryBuilder;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.QueryRepository;
 import io.leangen.graphql.generator.QuerySourceRepository;
@@ -36,9 +34,12 @@ import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter
 import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
 import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
-import io.leangen.graphql.generator.strategy.AnnotatedInterfaceStrategy;
-import io.leangen.graphql.generator.strategy.InterfaceMappingStrategy;
+import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
+import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
+import io.leangen.graphql.metadata.strategy.input.GsonInputDeserializerFactory;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
+import io.leangen.graphql.metadata.strategy.query.DefaultQueryBuilder;
+import io.leangen.graphql.metadata.strategy.query.QueryBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
 
 import static graphql.schema.GraphQLObjectType.newObject;
@@ -86,7 +87,7 @@ import static java.util.Collections.addAll;
 public class GraphQLSchemaBuilder {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
-    private QueryBuilder queryBuilder = new DefaultQueryBuilder();
+    private QueryBuilder queryBuilder = new DefaultQueryBuilder(new GsonInputDeserializerFactory());
     private final QuerySourceRepository querySourceRepository = new QuerySourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final ConverterRepository converterRepository = new ConverterRepository();

@@ -11,25 +11,18 @@ import io.leangen.graphql.generator.TypeRepository;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
-import io.leangen.graphql.generator.proxy.ProxyFactory;
-import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 
 public class ExecutionContext {
 
     public final Relay relay;
     public final TypeRepository typeRepository;
-    public final ProxyFactory proxyFactory;
     public final IdTypeMapper idTypeMapper;
-    public final InputDeserializer inputDeserializer;
     public final ConverterRepository converters;
 
-    public ExecutionContext(Relay relay, TypeRepository typeRepository, ProxyFactory proxyFactory, IdTypeMapper idTypeMapper,
-                            InputDeserializer inputDeserializer, ConverterRepository converters) {
+    public ExecutionContext(Relay relay, TypeRepository typeRepository, IdTypeMapper idTypeMapper, ConverterRepository converters) {
         this.relay = relay;
         this.typeRepository = typeRepository;
-        this.proxyFactory = proxyFactory;
         this.idTypeMapper = idTypeMapper;
-        this.inputDeserializer = inputDeserializer;
         this.converters = converters;
     }
 
