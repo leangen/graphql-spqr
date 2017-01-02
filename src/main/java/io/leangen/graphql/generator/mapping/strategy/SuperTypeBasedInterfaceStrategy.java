@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator.strategy;
+package io.leangen.graphql.generator.mapping.strategy;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
@@ -19,8 +19,6 @@ public class SuperTypeBasedInterfaceStrategy extends AbstractInterfaceMappingStr
     @Override
     public boolean supportsInterface(AnnotatedType interfase) {
         Class<?> raw = ClassUtils.getRawType(interfase.getType());
-        return mappedTypes.stream()
-                .filter(type -> type.isAssignableFrom(raw))
-                .findFirst().isPresent();
+        return mappedTypes.stream().anyMatch(type -> type.isAssignableFrom(raw));
     }
 }

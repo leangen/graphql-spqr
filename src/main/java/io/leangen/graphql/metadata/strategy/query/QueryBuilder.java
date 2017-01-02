@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator;
+package io.leangen.graphql.metadata.strategy.query;
 
 import java.util.List;
 

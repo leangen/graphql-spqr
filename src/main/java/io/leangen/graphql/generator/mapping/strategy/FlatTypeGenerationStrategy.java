@@ -1,15 +1,12 @@
-package io.leangen.graphql.generator.strategy;
+package io.leangen.graphql.generator.mapping.strategy;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import graphql.schema.GraphQLTypeReference;
 import io.leangen.graphql.generator.QueryRepository;
 import io.leangen.graphql.metadata.DomainType;
 
-import java.util.HashSet;
-import java.util.Set;
-
-/**
- * Created by bojan.tomic on 3/29/16.
- */
 public class FlatTypeGenerationStrategy extends AbstractTypeGenerationStrategy {
 
     private Set<String> inProgress = new HashSet<>();

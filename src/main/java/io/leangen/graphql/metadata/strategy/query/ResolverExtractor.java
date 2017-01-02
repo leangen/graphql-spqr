@@ -1,15 +1,12 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.metadata.QueryResolver;
-
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Member;
 import java.util.Collection;
 import java.util.function.Predicate;
 
-/**
- * Created by bojan.tomic on 6/7/16.
- */
+import io.leangen.graphql.metadata.QueryResolver;
+
 public interface ResolverExtractor {
 
     Predicate<Member> acceptAll = method -> true;

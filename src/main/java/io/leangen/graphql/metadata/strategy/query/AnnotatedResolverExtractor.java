@@ -1,14 +1,5 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.annotations.GraphQLMutation;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.RelayId;
-import io.leangen.graphql.metadata.QueryResolver;
-import io.leangen.graphql.query.execution.FieldAccessor;
-import io.leangen.graphql.query.execution.MethodInvoker;
-import io.leangen.graphql.query.execution.SingletonMethodInvoker;
-import io.leangen.graphql.util.ClassUtils;
-
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Member;
 import java.util.Arrays;
@@ -18,9 +9,15 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Created by bojan.tomic on 6/7/16.
- */
+import io.leangen.graphql.annotations.GraphQLMutation;
+import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.RelayId;
+import io.leangen.graphql.metadata.QueryResolver;
+import io.leangen.graphql.query.execution.FieldAccessor;
+import io.leangen.graphql.query.execution.MethodInvoker;
+import io.leangen.graphql.query.execution.SingletonMethodInvoker;
+import io.leangen.graphql.util.ClassUtils;
+
 public class AnnotatedResolverExtractor implements ResolverExtractor {
 
     private final QueryNameGenerator queryNameGenerator;

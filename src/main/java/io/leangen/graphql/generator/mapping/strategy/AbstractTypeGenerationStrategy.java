@@ -1,14 +1,11 @@
-package io.leangen.graphql.generator.strategy;
+package io.leangen.graphql.generator.mapping.strategy;
+
+import java.util.Optional;
 
 import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.generator.QueryRepository;
 import io.leangen.graphql.metadata.DomainType;
 
-import java.util.Optional;
-
-/**
- * Created by bojan.tomic on 3/29/16.
- */
 public abstract class AbstractTypeGenerationStrategy {
 
     protected QueryRepository queryRepository;

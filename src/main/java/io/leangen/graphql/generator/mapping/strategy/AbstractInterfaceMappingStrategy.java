@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator.strategy;
+package io.leangen.graphql.generator.mapping.strategy;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;

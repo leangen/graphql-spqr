@@ -7,8 +7,8 @@ import graphql.schema.GraphQLInterfaceType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.generator.strategy.AbstractTypeGenerationStrategy;
-import io.leangen.graphql.generator.strategy.InterfaceMappingStrategy;
+import io.leangen.graphql.generator.mapping.strategy.AbstractTypeGenerationStrategy;
+import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.generator.types.MappedGraphQLInterfaceType;
 import io.leangen.graphql.metadata.DomainType;
 

@@ -14,11 +14,9 @@ import java.util.stream.Collectors;
 
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryResolver;
+import io.leangen.graphql.metadata.strategy.query.QueryBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
 
-/**
- * Created by bojan.tomic on 3/17/16.
- */
 public class QueryRepository {
 
     private final Set<Query> rootQueries;
