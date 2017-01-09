@@ -25,11 +25,11 @@ import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
 import io.leangen.graphql.generator.mapping.common.ListMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.NonNullMapper;
+import io.leangen.graphql.generator.mapping.common.ObjectScalarAdapter;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.PageMapper;
 import io.leangen.graphql.generator.mapping.common.RelayIdMapper;
-import io.leangen.graphql.generator.mapping.common.ScalarJsonMapper;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
 import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
@@ -37,7 +37,6 @@ import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
 import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
-import io.leangen.graphql.metadata.strategy.input.GsonInputDeserializerFactory;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
 import io.leangen.graphql.metadata.strategy.query.DefaultQueryBuilder;
 import io.leangen.graphql.metadata.strategy.query.QueryBuilder;
@@ -88,7 +87,7 @@ import static java.util.Collections.addAll;
 public class GraphQLSchemaBuilder {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
-    private QueryBuilder queryBuilder = new DefaultQueryBuilder(new GsonInputDeserializerFactory());
+    private QueryBuilder queryBuilder = new DefaultQueryBuilder();
     private final QuerySourceRepository querySourceRepository = new QuerySourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final ConverterRepository converterRepository = new ConverterRepository();
@@ -333,7 +332,7 @@ public class GraphQLSchemaBuilder {
     public GraphQLSchemaBuilder withDefaultMappers() {
         ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
         return withTypeMappers(
-                new NonNullMapper(), new RelayIdMapper(), new ScalarMapper(), new ScalarJsonMapper(),
+                new NonNullMapper(), new RelayIdMapper(), new ScalarMapper(), new ObjectScalarAdapter(),
                 new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(), new UnionInlineMapper(),
                 new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
                 new ListMapper(), new PageMapper(), new OptionalAdapter(), 
@@ -348,7 +347,7 @@ public class GraphQLSchemaBuilder {
      */
     public GraphQLSchemaBuilder withDefaultConverters() {
         return withInputConverters(new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter())
-                .withOutputConverters(new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
+                .withOutputConverters(new ObjectScalarAdapter(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
                         new CollectionToListOutputConverter(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
     }
 

@@ -1,22 +1,22 @@
 package io.leangen.graphql.generator;
 
-import java.util.HashSet;
+import java.lang.reflect.AnnotatedType;
 import java.util.Set;
 
 import graphql.relay.Relay;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
-import io.leangen.graphql.generator.mapping.strategy.AbstractTypeGenerationStrategy;
-import io.leangen.graphql.generator.mapping.strategy.FlatTypeGenerationStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
+import io.leangen.graphql.metadata.strategy.input.GsonInputDeserializerFactory;
+import io.leangen.graphql.metadata.strategy.input.InputDeserializerFactory;
 import io.leangen.graphql.query.DefaultIdTypeMapper;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.IdTypeMapper;
+import io.leangen.graphql.util.collections.AnnotatedTypeSet;
 
 public class BuildContext {
 
-    public final AbstractTypeGenerationStrategy typeStrategy;
     public final ExecutionContext executionContext;
     public final QueryRepository queryRepository;
     public final TypeRepository typeRepository;
@@ -25,8 +25,10 @@ public class BuildContext {
     public final Relay relay;
     public final TypeResolver typeResolver;
     public final InterfaceMappingStrategy interfaceStrategy;
+    public final InputDeserializerFactory inputDeserializerFactory;
 
-    public final Set<String> inputsInProgress = new HashSet<>();
+    public final Set<AnnotatedType> knownTypes = new AnnotatedTypeSet();
+    public final Set<AnnotatedType> knownInputTypes = new AnnotatedTypeSet();
 
     /**
      *
@@ -36,7 +38,6 @@ public class BuildContext {
      *                   and {@link io.leangen.graphql.generator.mapping.OutputConverter}s
      */
     public BuildContext(QueryRepository queryRepository, TypeMapperRepository typeMappers, ConverterRepository converters, InterfaceMappingStrategy interfaceStrategy) {
-        this.typeStrategy = new FlatTypeGenerationStrategy(queryRepository);
         this.queryRepository = queryRepository;
         this.typeRepository = new TypeRepository();
         this.idTypeMapper = new DefaultIdTypeMapper();
@@ -44,6 +45,7 @@ public class BuildContext {
         this.relay = new Relay();
         this.typeResolver = new HintedTypeResolver(this.typeRepository, this.typeMappers);
         this.interfaceStrategy = interfaceStrategy;
+        this.inputDeserializerFactory = new GsonInputDeserializerFactory();
         this.executionContext = new ExecutionContext(relay, typeRepository, idTypeMapper, converters);
     }
 }

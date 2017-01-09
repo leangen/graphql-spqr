@@ -1,13 +1,12 @@
 package io.leangen.graphql.metadata.strategy.input;
 
-import java.util.List;
-
-import io.leangen.graphql.metadata.QueryArgument;
+import java.lang.reflect.Type;
+import java.util.Set;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
 public interface InputDeserializerFactory {
     
-    InputDeserializer getDeserializer(List<QueryArgument> arguments);
+    InputDeserializer getDeserializer(Set<Type> abstractTypes);
 }

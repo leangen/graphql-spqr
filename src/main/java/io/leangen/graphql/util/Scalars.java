@@ -1,13 +1,10 @@
 package io.leangen.graphql.util;
 
-import com.google.gson.Gson;
-
 import java.lang.reflect.AnnotatedType;
 import java.net.URI;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,9 +19,6 @@ import graphql.language.StringValue;
 import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.GraphQLScalarType;
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.metadata.strategy.input.GsonInputDeserializer;
-import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 
 public class Scalars {
 
@@ -113,15 +107,16 @@ public class Scalars {
         }
     });
 
-    public static GraphQLScalarType graphQLJson(AnnotatedType type) {
-        return new GraphQLScalarType("JSON_" + type.getType().getTypeName(), "Built-in JSON", new Coercing() {
-
-            private final InputDeserializer deserializer = new GsonInputDeserializer(new Gson());
-            private final AnnotatedType MAP = GenericTypeReflector.annotate(Map.class);
+    public static String getScalarTypeName(AnnotatedType type) {
+        return "JSON_" + type.getType().getTypeName();
+    }
+    
+    public static GraphQLScalarType graphQLObjectScalar(AnnotatedType type) {
+        return new GraphQLScalarType(getScalarTypeName(type), "Built-in JSON", new Coercing() {
 
             @Override
             public Object serialize(Object input) {
-                return deserializer.deserialize(input, MAP);
+                return input;
             }
 
             @Override
@@ -132,7 +127,7 @@ public class Scalars {
             @Override
             public Object parseLiteral(Object input) {
                 if (!(input instanceof ObjectValue)) return null;
-                return deserializer.deserialize(parseFieldValue(((ObjectValue) input)), type);
+                return parseFieldValue(((ObjectValue) input));
             }
 
             private Object parseFieldValue(Value value) {

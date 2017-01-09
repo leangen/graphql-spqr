@@ -28,12 +28,11 @@ public class Query {
     private final Map<String, QueryResolver> resolversByFingerprint;
     private final List<QueryArgument> arguments;
     private final List<QueryArgument> sortableArguments;
-    private final InputDeserializer inputDeserializer;
 
     private boolean hasPrimaryResolver;
 
     public Query(String name, AnnotatedType javaType, List<Type> sourceTypes, List<QueryArgument> arguments, 
-                 List<QueryArgument> sortableArguments, List<QueryResolver> resolvers, InputDeserializer inputDeserializer) {
+                 List<QueryArgument> sortableArguments, List<QueryResolver> resolvers) {
         
         this.name = name;
         this.description = resolvers.stream().map(QueryResolver::getQueryDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
@@ -43,7 +42,6 @@ public class Query {
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
         this.sortableArguments = sortableArguments;
-        this.inputDeserializer = inputDeserializer;
     }
 
     private Map<String, QueryResolver> collectResolversByFingerprint(List<QueryResolver> resolvers) {
@@ -52,7 +50,7 @@ public class Query {
         return resolversByFingerprint;
     }
 
-    public Object resolve(DataFetchingEnvironment env, ExecutionContext executionContext) {
+    public Object resolve(DataFetchingEnvironment env, InputDeserializer inputDeserializer, ExecutionContext executionContext) {
         Map<String, Object> queryArguments = new HashMap<>();
         Map<String, Object> connectionArguments = new HashMap<>();
 
@@ -120,10 +118,6 @@ public class Query {
 
     public Collection<QueryResolver> getResolvers() {
         return resolversByFingerprint.values();
-    }
-
-    public InputDeserializer getInputDeserializer() {
-        return inputDeserializer;
     }
 
     @Override

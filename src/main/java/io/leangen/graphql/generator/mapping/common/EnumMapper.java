@@ -1,7 +1,9 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.Set;
 
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLInputType;
@@ -20,7 +22,7 @@ import static graphql.schema.GraphQLEnumType.newEnum;
 public class EnumMapper implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
         DomainType enumType = new DomainType(javaType);
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(enumType.getName())
@@ -30,7 +32,7 @@ public class EnumMapper implements TypeMapper {
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
         DomainType enumType = new DomainType(javaType);
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(enumType.getInputName())

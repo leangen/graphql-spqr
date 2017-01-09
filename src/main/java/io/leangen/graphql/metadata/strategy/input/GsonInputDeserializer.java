@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
 
 public class GsonInputDeserializer implements InputDeserializer {
 
@@ -15,16 +16,16 @@ public class GsonInputDeserializer implements InputDeserializer {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T deserialize(Object graphQlInput, AnnotatedType type) {
-        if (graphQlInput.getClass() == type.getType()) {
+    public <T> T deserialize(Object graphQlInput, Type sourceType, AnnotatedType outputType) {
+        if (graphQlInput.getClass() == outputType.getType()) {
             return (T) graphQlInput;
         }
-        JsonElement jsonElement = gson.toJsonTree(graphQlInput);
-        return gson.fromJson(jsonElement, type.getType());
+        JsonElement jsonElement = gson.toJsonTree(graphQlInput, sourceType);
+        return gson.fromJson(jsonElement, outputType.getType());
     }
 
     @Override
-    public <T> T deserializeString(String json, AnnotatedType type) {
-        return gson.fromJson(json, type.getType());
+    public <T> T deserializeString(String json, AnnotatedType outputType) {
+        return gson.fromJson(json, outputType.getType());
     }
 }

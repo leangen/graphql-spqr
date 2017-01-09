@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
 
 public class JacksonInputDeserializer implements InputDeserializer {
 
@@ -15,8 +16,8 @@ public class JacksonInputDeserializer implements InputDeserializer {
     }
 
     @Override
-    public <T> T deserialize(Object graphQlInput, AnnotatedType type) {
-        return objectMapper.convertValue(graphQlInput, objectMapper.getTypeFactory().constructType(type.getType()));
+    public <T> T deserialize(Object graphQlInput, Type sourceType, AnnotatedType outputType) {
+        return objectMapper.convertValue(graphQlInput, objectMapper.getTypeFactory().constructType(outputType.getType()));
     }
 
     @Override

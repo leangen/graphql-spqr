@@ -129,7 +129,7 @@ public class QueryResolver {
                 args[i] = executionContext.convertInput(argValue, argDescriptor.getJavaType());
             }
         }
-        return executionContext.convertOutput(executable.execute(source, args), this.getReturnType());
+        return executionContext.convertOutput(executable.execute(source, args), this.getReturnType(), inputDeserializer);
         //Wrap returned values for resolvers that don't directly return domain objects
 //        if (isWrapped()) {
 //            if (!Map.class.isAssignableFrom(result.getClass())) {

@@ -1,14 +1,18 @@
 package io.leangen.graphql.generator;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import graphql.Scalars;
 import graphql.relay.Relay;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -19,14 +23,13 @@ import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
-import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryArgument;
-import io.leangen.graphql.metadata.QueryArgumentDefaultValue;
 import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.IdTypeMapper;
+import io.leangen.graphql.util.ClassUtils;
 
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -112,15 +115,17 @@ public class QueryGenerator {
      * @return GraphQL output field representing the given query
      */
     public GraphQLFieldDefinition toGraphQLQuery(Query query, String enclosingTypeName, BuildContext buildContext) {
+        Set<Type> abstractTypes = new HashSet<>();
+        GraphQLOutputType type = toGraphQLType(query, abstractTypes, buildContext);
         GraphQLFieldDefinition.Builder queryBuilder = newFieldDefinition()
                 .name(query.getName())
                 .description(query.getName())
-                .type(toGraphQLType(query, buildContext));
-        addArguments(queryBuilder, query, buildContext);
-        if (query.getJavaType().isAnnotationPresent(RelayId.class)) {
+                .type(type);
+        addArguments(queryBuilder, query, abstractTypes, buildContext);
+        if (type.equals(Scalars.GraphQLID)) {
             queryBuilder.dataFetcher(createRelayIdResolver(query, enclosingTypeName, buildContext.relay, buildContext.idTypeMapper, buildContext.executionContext));
         } else {
-            queryBuilder.dataFetcher(createResolver(query, buildContext.executionContext));
+            queryBuilder.dataFetcher(createResolver(query, buildContext.inputDeserializerFactory.getDeserializer(abstractTypes), buildContext.executionContext));
         }
 
         return queryBuilder.build();
@@ -129,15 +134,15 @@ public class QueryGenerator {
     /**
      * Maps the (Java) return type of the given query to a GraphQL output type, taking care to map
      * {@link io.leangen.graphql.query.relay.Page} to a Relay GraphQL spec compliant connection type.
-     * <p>Delegates most of the work to {@link #toGraphQLInputType(AnnotatedType, BuildContext)}.</p>
+     * <p>Delegates most of the work to {@link #toGraphQLInputType(AnnotatedType, Set, BuildContext)}.</p>
      *
      * @param query The query whose return type is to be mapped to a GraphQL output type
      * @param buildContext The shared context containing all the global information needed for mapping
      *
      * @return GraphQL type representing the return type of the given query
      */
-    private GraphQLOutputType toGraphQLType(Query query, BuildContext buildContext) {
-        GraphQLOutputType type = toGraphQLType(query.getJavaType(), buildContext);
+    private GraphQLOutputType toGraphQLType(Query query, Set<Type> abstractTypes, BuildContext buildContext) {
+        GraphQLOutputType type = toGraphQLType(query.getJavaType(), abstractTypes, buildContext);
         if (query.isPageable()) {
             GraphQLObjectType edge = buildContext.relay.edgeType(type.getName(), type, null, Collections.emptyList());
             type = buildContext.relay.connectionType(type.getName(), edge, Collections.emptyList());
@@ -148,15 +153,18 @@ public class QueryGenerator {
     /**
      * Maps a Java type to a GraphQL output type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link TypeMapper#toGraphQLType(AnnotatedType, QueryGenerator, BuildContext)}</p>
+     * <p>See {@link TypeMapper#toGraphQLType(AnnotatedType, Set, QueryGenerator, BuildContext)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL output type
      * @param buildContext The shared context containing all the global information needed for mapping
      *
      * @return GraphQL output type corresponding to the given Java type
      */
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
-        return buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, this, buildContext);
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, BuildContext buildContext) {
+        if (ClassUtils.isAbstract(javaType)) {
+            abstractTypes.add(javaType.getType());
+        }
+        return buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, abstractTypes, this, buildContext);
     }
 
     /**
@@ -167,27 +175,30 @@ public class QueryGenerator {
      *
      * @return GraphQL input field representing the given query
      */
-    public GraphQLInputObjectField toGraphQLInputField(Query query, BuildContext buildContext) {
+    public GraphQLInputObjectField toGraphQLInputField(Query query, Set<Type> abstractTypes, BuildContext buildContext) {
         GraphQLInputObjectField.Builder builder = newInputObjectField()
                 .name(query.getName())
                 .description(query.getDescription())
-                .type(toGraphQLInputType(query.getJavaType(), buildContext));
+                .type(toGraphQLInputType(query.getJavaType(), abstractTypes, buildContext));
         return builder.build();
     }
 
     /**
      * Maps a Java type to a GraphQL input type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link TypeMapper#toGraphQLInputType(AnnotatedType, QueryGenerator, BuildContext)}</p>
+     * <p>See {@link TypeMapper#toGraphQLInputType(AnnotatedType, Set, QueryGenerator, BuildContext)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL input type
      * @param buildContext The shared context containing all the global information needed for mapping
      *
      * @return GraphQL input type corresponding to the given Java type
      */
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, BuildContext buildContext) {
+        if (ClassUtils.isAbstract(javaType)) {
+            abstractTypes.add(javaType.getType());
+        }
         TypeMapper mapper = buildContext.typeMappers.getTypeMapper(javaType);
-        return mapper.toGraphQLInputType(javaType, this, buildContext);
+        return mapper.toGraphQLInputType(javaType, abstractTypes, this, buildContext);
     }
 
     /**
@@ -197,38 +208,40 @@ public class QueryGenerator {
      * @param query The query whose arguments are to be mapped
      * @param buildContext The shared context containing all the global information needed for mapping
      */
-    private void addArguments(GraphQLFieldDefinition.Builder queryBuilder, Query query, BuildContext buildContext) {
+    private void addArguments(GraphQLFieldDefinition.Builder queryBuilder, Query query, Set<Type> abstractTypes, BuildContext buildContext) {
         query.getArguments()
-                .forEach(argument -> queryBuilder.argument(toGraphQLArgument(argument, query.getInputDeserializer(), buildContext)));
+                .forEach(argument -> queryBuilder.argument(toGraphQLArgument(argument, abstractTypes, buildContext)));
         if (query.isPageable()) {
             queryBuilder.argument(buildContext.relay.getConnectionFieldArguments());
         }
     }
 
-    private GraphQLArgument toGraphQLArgument(QueryArgument queryArgument, InputDeserializer inputDeserializer, BuildContext buildContext) {
+    private GraphQLArgument toGraphQLArgument(QueryArgument queryArgument, Set<Type> abstractTypes, BuildContext buildContext) {
+        Set<Type> argumentAbstractTypes = new HashSet<>();
         GraphQLArgument.Builder argument = newArgument()
                 .name(queryArgument.getName())
                 .description(queryArgument.getDescription())
-                .type(toGraphQLInputType(queryArgument.getJavaType(), buildContext));
+                .type(toGraphQLInputType(queryArgument.getJavaType(), argumentAbstractTypes, buildContext));
 
-        QueryArgumentDefaultValue defaultValue = queryArgument.getDefaultValueProvider().getDefaultValue(queryArgument, inputDeserializer, buildContext);
-        if (defaultValue.isPresent()) {
-            argument.defaultValue(defaultValue.get());
-        }
+        abstractTypes.addAll(argumentAbstractTypes);
+//        QueryArgumentDefaultValue defaultValue = queryArgument.getDefaultValueProvider().getDefaultValue(queryArgument, buildContext.inputDeserializerFactory.getDeserializer(argumentAbstractTypes), buildContext);
+//        if (defaultValue.isPresent()) {
+//            argument.defaultValue(defaultValue.get());
+//        }
         return argument.build();
     }
 
     /**
      * Creates a generic resolver for the given query.
-     * @implSpec This resolver simply invokes {@link Query#resolve(DataFetchingEnvironment, ExecutionContext)}
+     * @implSpec This resolver simply invokes {@link Query#resolve(DataFetchingEnvironment, InputDeserializer, ExecutionContext)}
      *
      * @param query The query for which the resolver is being created
      * @param executionContext The shared context containing all the global information needed for query resolution
      *
      * @return The resolver for the given query
      */
-    private DataFetcher createResolver(Query query, ExecutionContext executionContext) {
-        return env -> query.resolve(env, executionContext);
+    private DataFetcher createResolver(Query query, InputDeserializer inputDeserializer, ExecutionContext executionContext) {
+        return env -> query.resolve(env, inputDeserializer, executionContext);
     }
 
     /**
@@ -259,19 +272,19 @@ public class QueryGenerator {
             if (!nodeQueriesByType.get(typeName).hasPrimaryResolver()) {
                 throw new IllegalArgumentException("Query '" + nodeQueriesByType.get(typeName).getName() + "' has no primary resolver");
             }
-            return nodeQueriesByType.get(typeName).resolve(env, executionContext);
+            return nodeQueriesByType.get(typeName).resolve(env, null, executionContext);
         };
     }
 
     /**
-     * Similarly to {@link #createResolver(Query, ExecutionContext)}, this creates a resolver that delegates
-     * to {@link Query#resolve(DataFetchingEnvironment, ExecutionContext)}, but it additionally encodes the result
+     * Similarly to {@link #createResolver(Query, InputDeserializer, ExecutionContext)}, this creates a resolver that delegates
+     * to {@link Query#resolve(DataFetchingEnvironment, InputDeserializer, ExecutionContext)}, but it additionally encodes the result
      * into a a string suitable to be used as a Relay ID.
      *
      * @param query The query for which the resolver is being created
      * @param enclosingTypeName The name of the GraphQL output type this field belongs to
      * @param relay Relay helper
-     * @param idTypeMapper Mapper used to encode the value return by {@link Query#resolve(DataFetchingEnvironment, ExecutionContext)}
+     * @param idTypeMapper Mapper used to encode the value return by {@link Query#resolve(DataFetchingEnvironment, InputDeserializer, ExecutionContext)}
      *                     into a string value suitable to be used as a Relay ID
      * @param executionContext The shared context containing all the global information needed for query resolution
      *
@@ -279,7 +292,7 @@ public class QueryGenerator {
      */
     private DataFetcher createRelayIdResolver(Query query, String enclosingTypeName, Relay relay, IdTypeMapper idTypeMapper, ExecutionContext executionContext) {
         return env -> {
-            Object id = query.resolve(env, executionContext);
+            Object id = query.resolve(env, null, executionContext);
             return relay.toGlobalId(enclosingTypeName, idTypeMapper.serialize(id));
         };
     }

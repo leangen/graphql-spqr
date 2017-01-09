@@ -8,7 +8,7 @@ import io.leangen.geantyref.GenericTypeReflector;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class MapJsonMapper extends ScalarJsonMapper {
+public class MapScalarAdapter extends ObjectScalarAdapter {
 
     @Override
     public boolean supports(AnnotatedType type) {

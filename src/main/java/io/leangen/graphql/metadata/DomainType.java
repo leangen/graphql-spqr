@@ -27,7 +27,6 @@ public class DomainType {
     private String resolveName(AnnotatedType javaType) {
         if (javaType instanceof AnnotatedParameterizedType) {
             String baseName = resolveBaseName(javaType);
-            if (baseName.equals("User")) return baseName;
             StringBuilder genericName = new StringBuilder(baseName);
             Arrays.stream(((AnnotatedParameterizedType) javaType).getAnnotatedActualTypeArguments())
                     .map(arg -> ClassUtils.getRawType(arg.getType()).getSimpleName())

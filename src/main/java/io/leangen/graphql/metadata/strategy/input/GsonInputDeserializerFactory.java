@@ -4,12 +4,10 @@ import com.google.gson.FieldNamingStrategy;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapterFactory;
 
-import java.lang.reflect.AnnotatedType;
-import java.util.List;
+import java.lang.reflect.Type;
+import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
-import io.leangen.graphql.metadata.QueryArgument;
 import io.leangen.graphql.util.ClassUtils;
 
 /**
@@ -18,41 +16,46 @@ import io.leangen.graphql.util.ClassUtils;
 public class GsonInputDeserializerFactory implements InputDeserializerFactory {
 
     private final FieldNamingStrategy fieldNamingStrategy;
-    private final BiConsumer<GsonBuilder, List<QueryArgument>> configurer;
+    private final BiConsumer<GsonBuilder, Set<Type>> configurer;
     private final InputDeserializer defaultInputDeserializer;
 
     public GsonInputDeserializerFactory() {
-        this(new GsonFieldNamingStrategy(), ((gsonBuilder, queryArguments) -> {}));
+        this(new GsonFieldNamingStrategy(), new AbstractAdapterConfigurer());
     }
 
-    public GsonInputDeserializerFactory(FieldNamingStrategy fieldNamingStrategy, BiConsumer<GsonBuilder, List<QueryArgument>> configurer) {
+    public GsonInputDeserializerFactory(FieldNamingStrategy fieldNamingStrategy, BiConsumer<GsonBuilder, Set<Type>> configurer) {
         this.fieldNamingStrategy = fieldNamingStrategy;
         this.configurer = configurer;
         this.defaultInputDeserializer = new GsonInputDeserializer(new GsonBuilder().setFieldNamingStrategy(fieldNamingStrategy).create());
     }
 
     @Override
-    public InputDeserializer getDeserializer(List<QueryArgument> arguments) {
-        List<AnnotatedType> types = arguments.stream().map(QueryArgument::getJavaType).collect(Collectors.toList());
-        if (types.stream().noneMatch(ClassUtils::isAbstract)) {
+    public InputDeserializer getDeserializer(Set<Type> abstractTypes) {
+        if (abstractTypes.isEmpty()) {
             return defaultInputDeserializer;
         }
-        
+
         GsonBuilder gsonBuilder = new GsonBuilder()
                 .setFieldNamingStrategy(fieldNamingStrategy);
-        configurer.accept(gsonBuilder, arguments);
+        configurer.accept(gsonBuilder, abstractTypes);
 
-        types.stream()
-                .map(type -> ClassUtils.getRawType(type.getType()))
-                .filter(ClassUtils::isAbstract)
-                .distinct()
-                .map(this::adapterFor)
-                .forEach(gsonBuilder::registerTypeAdapterFactory);
         return new GsonInputDeserializer(gsonBuilder.create());
     }
 
+    public static class AbstractAdapterConfigurer implements BiConsumer<GsonBuilder, Set<Type>> {
+
+        @Override
+        public void accept(GsonBuilder gsonBuilder, Set<Type> abstractTypes) {
+            abstractTypes.stream()
+                    .map(ClassUtils::getRawType)
+                    .distinct()
+                    .map(GsonInputDeserializerFactory::adapterFor)
+                    .forEach(gsonBuilder::registerTypeAdapterFactory);
+        }
+    }
+
     @SuppressWarnings("unchecked")
-    private TypeAdapterFactory adapterFor(Class superClass) {
+    private static TypeAdapterFactory adapterFor(Class superClass) {
         RuntimeTypeAdapterFactory adapterFactory = RuntimeTypeAdapterFactory.of(superClass, "_type_");
 
         ClassUtils.findImplementations(superClass).stream()

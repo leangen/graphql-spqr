@@ -79,7 +79,7 @@
         <dependency>
             <groupId>io.leangen.geantyref</groupId>
             <artifactId>geantyref</artifactId>
-            <version>1.1.0</version>
+            <version>1.1.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.graphql-java</groupId>

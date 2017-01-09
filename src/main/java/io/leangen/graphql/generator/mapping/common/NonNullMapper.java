@@ -2,8 +2,10 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLNonNull;
@@ -20,13 +22,13 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 public class NonNullMapper implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return new GraphQLNonNull(queryGenerator.toGraphQLType(removeNonNull(javaType), buildContext));
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+        return new GraphQLNonNull(queryGenerator.toGraphQLType(removeNonNull(javaType), abstractTypes, buildContext));
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return new GraphQLNonNull(queryGenerator.toGraphQLInputType(removeNonNull(javaType), buildContext));
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+        return new GraphQLNonNull(queryGenerator.toGraphQLInputType(removeNonNull(javaType), abstractTypes, buildContext));
     }
 
     @Override

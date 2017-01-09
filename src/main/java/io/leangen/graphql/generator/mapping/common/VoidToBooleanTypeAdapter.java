@@ -3,6 +3,7 @@ package io.leangen.graphql.generator.mapping.common;
 import java.lang.reflect.AnnotatedType;
 
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 import io.leangen.graphql.query.ExecutionContext;
 
 /**
@@ -11,7 +12,7 @@ import io.leangen.graphql.query.ExecutionContext;
 public class VoidToBooleanTypeAdapter extends AbstractTypeAdapter<Void, Boolean> {
 
     @Override
-    public Boolean convertOutput(Void original, AnnotatedType type, ExecutionContext executionContext) {
+    public Boolean convertOutput(Void original, AnnotatedType type, InputDeserializer inputDeserializer, ExecutionContext executionContext) {
         return true;
     }
 

@@ -1,7 +1,9 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Set;
 
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLObjectType;
@@ -19,7 +21,7 @@ import static graphql.schema.GraphQLUnionType.newUnionType;
 public abstract class UnionMapper implements TypeMapper {
 
     protected GraphQLUnionType toGraphQLUnion(String name, String description, List<AnnotatedType> possibleJavaTypes,
-                                            QueryGenerator queryGenerator, BuildContext buildContext) {
+                                              Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
 
         GraphQLUnionType.Builder builder = newUnionType()
                 .name(name)
@@ -27,7 +29,7 @@ public abstract class UnionMapper implements TypeMapper {
                 .typeResolver(buildContext.typeResolver);
 
         possibleJavaTypes.stream()
-                .map(pos -> queryGenerator.toGraphQLType(pos, buildContext))
+                .map(pos -> queryGenerator.toGraphQLType(pos, abstractTypes, buildContext))
                 .forEach(type -> {
                     if (type instanceof GraphQLObjectType) {
                         builder.possibleType((GraphQLObjectType) type);
@@ -45,7 +47,7 @@ public abstract class UnionMapper implements TypeMapper {
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
         throw new UnsupportedOperationException("GraphQL union type can not be used as input type");
     }
 }

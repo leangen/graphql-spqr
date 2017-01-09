@@ -1,9 +1,11 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import graphql.schema.GraphQLOutputType;
@@ -20,10 +22,10 @@ import io.leangen.graphql.util.ClassUtils;
 public class UnionTypeMapper extends UnionMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
         GraphQLUnion annotation = javaType.getAnnotation(GraphQLUnion.class);
         List<AnnotatedType> possibleJavaTypes = getPossibleJavaTypes(javaType);
-        return toGraphQLUnion(annotation.name(), annotation.description(), possibleJavaTypes, queryGenerator, buildContext);
+        return toGraphQLUnion(annotation.name(), annotation.description(), possibleJavaTypes, abstractTypes, queryGenerator, buildContext);
     }
 
     @Override

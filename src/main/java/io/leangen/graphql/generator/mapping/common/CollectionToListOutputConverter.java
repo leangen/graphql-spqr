@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 import io.leangen.graphql.query.ExecutionContext;
 
 /**
@@ -18,10 +19,10 @@ import io.leangen.graphql.query.ExecutionContext;
 public class CollectionToListOutputConverter implements OutputConverter<Collection<?>, List<?>> {
 
     @Override
-    public List<?> convertOutput(Collection<?> original, AnnotatedType type, ExecutionContext executionContext) {
+    public List<?> convertOutput(Collection<?> original, AnnotatedType type, InputDeserializer inputDeserializer, ExecutionContext executionContext) {
         AnnotatedType inner = ((AnnotatedParameterizedType) type).getAnnotatedActualTypeArguments()[0];
         return original.stream()
-                .map(item -> executionContext.convertOutput(item, inner))
+                .map(item -> executionContext.convertOutput(item, inner, inputDeserializer))
                 .collect(Collectors.toList());
     }
 

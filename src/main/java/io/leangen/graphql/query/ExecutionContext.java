@@ -11,6 +11,7 @@ import io.leangen.graphql.generator.TypeRepository;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 
 public class ExecutionContext {
 
@@ -27,9 +28,9 @@ public class ExecutionContext {
     }
 
     @SuppressWarnings("unchecked")
-    public Object convertOutput(Object output, AnnotatedType type) {
+    public Object convertOutput(Object output, AnnotatedType type, InputDeserializer inputDeserializer) {
         OutputConverter outputConverter = this.converters.getOutputConverter(type);
-        return outputConverter == null ? output : outputConverter.convertOutput(output, type, this);
+        return outputConverter == null ? output : outputConverter.convertOutput(output, type, inputDeserializer, this);
     }
 
     @SuppressWarnings("unchecked")

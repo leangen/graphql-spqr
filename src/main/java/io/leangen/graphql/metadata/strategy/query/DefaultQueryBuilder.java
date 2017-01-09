@@ -17,7 +17,6 @@ import io.leangen.graphql.generator.union.Union;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryArgument;
 import io.leangen.graphql.metadata.QueryResolver;
-import io.leangen.graphql.metadata.strategy.input.InputDeserializerFactory;
 import io.leangen.graphql.util.ClassUtils;
 
 import static java.util.Arrays.stream;
@@ -26,12 +25,6 @@ import static java.util.Arrays.stream;
  * @author Bojan Tomic (kaqqao)
  */
 public class DefaultQueryBuilder implements QueryBuilder {
-
-    private final InputDeserializerFactory inputDeserializerFactory;
-
-    public DefaultQueryBuilder(InputDeserializerFactory inputDeserializerFactory) {
-        this.inputDeserializerFactory = inputDeserializerFactory;
-    }
 
     @Override
     public Query buildQuery(List<QueryResolver> resolvers) {
@@ -43,7 +36,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
                 resolvers.stream()
                         .filter(QueryResolver::supportsConnectionRequests)
                         .collect(Collectors.toList()));
-        return new Query(name, javaType, sourceTypes, arguments, sortableArguments, resolvers, inputDeserializerFactory.getDeserializer(arguments));
+        return new Query(name, javaType, sourceTypes, arguments, sortableArguments, resolvers);
     }
 
     @Override
