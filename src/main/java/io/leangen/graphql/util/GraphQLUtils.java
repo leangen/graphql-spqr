@@ -88,7 +88,7 @@ public class GraphQLUtils {
     }
 
     public static <N, I> Page<N> createIdBasedPage(List<N> nodes, String idFieldName, I globalMinId, I globalMaxId, Comparator<I> comparator, IdTypeMapper idTypeMapper) {
-        boolean hasNextPage = comparator.compare(ClassUtils.getFieldValue(ListUtils.getLast(nodes), idFieldName), globalMaxId) < 0;
+        boolean hasNextPage = comparator.compare(ClassUtils.getFieldValue(nodes.get(nodes.size() - 1), idFieldName), globalMaxId) < 0;
         boolean hasPreviousPage = comparator.compare(ClassUtils.getFieldValue(nodes.get(0), idFieldName), globalMinId) > 0;
 
         return createIdBasedPage(nodes, idFieldName, idTypeMapper, hasNextPage, hasPreviousPage);
@@ -117,7 +117,7 @@ public class GraphQLUtils {
     }
 
     public static <N> GenericPageInfo<N> createPageInfo(List<Edge<N>> edges, boolean hasNextPage, boolean hasPreviousPage) {
-        return new GenericPageInfo<>(edges.get(0).getCursor(), ListUtils.getLast(edges).getCursor(), hasNextPage, hasPreviousPage);
+        return new GenericPageInfo<>(edges.get(0).getCursor(), edges.get(edges.size() - 1).getCursor(), hasNextPage, hasPreviousPage);
     }
 
     //TODO refactor this not to require QueryResolver construction, nor isRelayId, which should be removed

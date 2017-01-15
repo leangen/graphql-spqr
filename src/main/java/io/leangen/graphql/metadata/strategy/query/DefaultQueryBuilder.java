@@ -16,6 +16,7 @@ import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.generator.union.Union;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryArgument;
+import io.leangen.graphql.metadata.QueryArgumentDefaultValue;
 import io.leangen.graphql.metadata.QueryResolver;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -90,7 +91,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
                         argName,
                         argumentsByName.get(argName).stream().map(QueryArgument::getDescription).filter(Objects::nonNull).findFirst().orElse(""),
 //						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRequired),
-                        argumentsByName.get(argName).stream().map(QueryArgument::getDefaultValueProvider).findFirst().get(),
+                        argumentsByName.get(argName).stream().map(QueryArgument::getDefaultValue).filter(def -> def != QueryArgumentDefaultValue.EMPTY).findFirst().orElse(QueryArgumentDefaultValue.EMPTY),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isResolverSource),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isContext),
                         argumentsByName.get(argName).stream().anyMatch(QueryArgument::isRelayConnection)

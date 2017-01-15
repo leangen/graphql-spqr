@@ -9,18 +9,13 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLTypeReference;
+import graphql.schema.GraphQLScalarType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.mapping.OutputConverter;
-import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.util.ClassUtils;
@@ -30,31 +25,24 @@ import io.leangen.graphql.util.Scalars;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class ObjectScalarAdapter implements TypeMapper, OutputConverter<Object, Map<String, ?>> {
+public class ObjectScalarAdapter extends CachingAbstractAwareMapper<GraphQLScalarType, GraphQLScalarType> implements OutputConverter<Object, Map<String, ?>> {
 
     private final AnnotatedType MAP = GenericTypeReflector.annotate(LinkedHashMap.class);
     private final Map<Type, Set<Type>> abstractComponentTypes = new HashMap<>();
+
+    @Override
+    public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+        return Scalars.graphQLObjectScalar(typeName, javaType);
+    }
     
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        if (buildContext.knownTypes.contains(javaType)) {
-            return new GraphQLTypeReference(Scalars.getScalarTypeName(javaType));
-        }
-        buildContext.knownTypes.add(javaType);
-        
-        abstractTypes.addAll(collectAbstract(javaType, new HashSet<>(), buildContext.queryRepository::getChildQueries, buildContext));
-        return Scalars.graphQLObjectScalar(javaType);
+    public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+        return toGraphQLType(typeName, javaType, abstractTypes, queryGenerator, buildContext);
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        if (buildContext.knownTypes.contains(javaType)) {
-            return new GraphQLTypeReference(Scalars.getScalarTypeName(javaType));
-        }
-        buildContext.knownTypes.add(javaType);
-        
-        abstractTypes.addAll(collectAbstract(javaType, new HashSet<>(), buildContext.queryRepository::getInputDomainQueries, buildContext));
-        return Scalars.graphQLObjectScalar(javaType);
+    protected void registerAbstract(AnnotatedType type, Set<Type> abstractTypes, BuildContext buildContext) {
+        abstractTypes.addAll(collectAbstract(type, new HashSet<>(), buildContext));
     }
 
     @Override
@@ -67,23 +55,23 @@ public class ObjectScalarAdapter implements TypeMapper, OutputConverter<Object, 
         return type.isAnnotationPresent(GraphQLScalar.class);
     }
 
-    private Set<Type> collectAbstract(AnnotatedType javaType, Set<Type> seen, Function<AnnotatedType, Collection<Query>> queryExtractor, BuildContext buildContext) {
+    private Set<Type> collectAbstract(AnnotatedType javaType, Set<Type> seen, BuildContext buildContext) {
         javaType = buildContext.executionContext.getMappableType(javaType);
         if (GraphQLUtils.isScalar(javaType.getType())) {
             return Collections.emptySet();
         }
         if (GenericTypeReflector.isSuperType(Collection.class, javaType.getType())) {
-            return collectAbstractInner(ClassUtils.getTypeArguments(javaType)[0], seen, queryExtractor, buildContext);
+            return collectAbstractInner(ClassUtils.getTypeArguments(javaType)[0], seen, buildContext);
         }
         if (GenericTypeReflector.isSuperType(Map.class, javaType.getType())) {
-            Set<Type> abstractTypes = collectAbstractInner(ClassUtils.getTypeArguments(javaType)[0], seen, queryExtractor, buildContext);
-            abstractTypes.addAll(collectAbstractInner(ClassUtils.getTypeArguments(javaType)[1], seen, queryExtractor, buildContext));
+            Set<Type> abstractTypes = collectAbstractInner(ClassUtils.getTypeArguments(javaType)[0], seen, buildContext);
+            abstractTypes.addAll(collectAbstractInner(ClassUtils.getTypeArguments(javaType)[1], seen, buildContext));
             return abstractTypes;
         }
-        return collectAbstractInner(javaType, seen, queryExtractor, buildContext);
+        return collectAbstractInner(javaType, seen, buildContext);
     }
-    
-    private Set<Type> collectAbstractInner(AnnotatedType javaType, Set<Type> seen, Function<AnnotatedType, Collection<Query>> queryExtractor, BuildContext buildContext) {
+
+    private Set<Type> collectAbstractInner(AnnotatedType javaType, Set<Type> seen, BuildContext buildContext) {
         if (abstractComponentTypes.containsKey(javaType.getType())) {
             return abstractComponentTypes.get(javaType.getType());
         }
@@ -95,7 +83,8 @@ public class ObjectScalarAdapter implements TypeMapper, OutputConverter<Object, 
         if (ClassUtils.isAbstract(javaType)) {
             abstractTypes.add(javaType.getType());
         }
-        queryExtractor.apply(javaType).forEach(childQuery -> abstractTypes.addAll(collectAbstract(childQuery.getJavaType(), seen, queryExtractor, buildContext)));
+        buildContext.queryRepository.getInputDomainQueries(javaType)
+                .forEach(childQuery -> abstractTypes.addAll(collectAbstract(childQuery.getJavaType(), seen, buildContext)));
         abstractComponentTypes.put(javaType.getType(), abstractTypes);
         return abstractTypes;
     }

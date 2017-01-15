@@ -26,7 +26,6 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -259,8 +258,7 @@ public class ClassUtils {
     
     public static boolean isAbstract(Class<?> type) {
         return (type.isInterface() || Modifier.isAbstract(type.getModifiers())) && 
-                !type.isPrimitive() && !type.isArray() &&
-                !Collection.class.isAssignableFrom(type) && !Map.class.isAssignableFrom(type);
+                !type.isPrimitive() && !type.isArray();
     }
     
     public static boolean isAssignable(Type superType, Type subType) {
@@ -281,6 +279,10 @@ public class ClassUtils {
                 || GenericTypeReflector.isSuperType(superType, subType);
     }
 
+    public static String toString(AnnotatedType type) {
+        return type.getType().getTypeName() + "(" + Arrays.toString(type.getAnnotations()) + ")";
+    }
+    
     public static boolean containsAnnotation(AnnotatedType type, Class<? extends Annotation> annotation) {
         if (type.isAnnotationPresent(annotation)) {
             return true;

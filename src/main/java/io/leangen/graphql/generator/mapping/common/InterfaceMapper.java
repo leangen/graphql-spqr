@@ -8,17 +8,15 @@ import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInterfaceType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
-import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.generator.types.MappedGraphQLInterfaceType;
-import io.leangen.graphql.metadata.DomainType;
 
 import static graphql.schema.GraphQLInterfaceType.newInterface;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class InterfaceMapper implements TypeMapper {
+public class InterfaceMapper extends CachingAbstractAwareMapper<GraphQLInterfaceType, GraphQLInputObjectType> {
 
     private final InterfaceMappingStrategy interfaceStrategy;
     private final ObjectTypeMapper objectTypeMapper;
@@ -29,28 +27,21 @@ public class InterfaceMapper implements TypeMapper {
     }
 
     @Override
-    public GraphQLInterfaceType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        DomainType domainType = new DomainType(javaType);
-
-        if (buildContext.knownTypes.contains(javaType)) {
-            return GraphQLInterfaceType.reference(domainType.getName());
-        }
-        buildContext.knownTypes.add(javaType);
-
+    public GraphQLInterfaceType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
         GraphQLInterfaceType.Builder typeBuilder = newInterface()
-                .name(domainType.getName())
-                .description(domainType.getDescription());
+                .name(typeName)
+                .description(buildContext.typeMetaDataGenerator.generateTypeDescription(javaType));
 
-        buildContext.queryRepository.getChildQueries(domainType.getJavaType())
-                .forEach(childQuery -> typeBuilder.field(queryGenerator.toGraphQLQuery(childQuery, domainType.getName(), buildContext)));
+        buildContext.queryRepository.getChildQueries(javaType)
+                .forEach(childQuery -> typeBuilder.field(queryGenerator.toGraphQLQuery(childQuery, typeName, buildContext)));
 
         typeBuilder.typeResolver(buildContext.typeResolver);
         return new MappedGraphQLInterfaceType(typeBuilder.build(), javaType);
     }
 
     @Override
-    public GraphQLInputObjectType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return objectTypeMapper.toGraphQLInputType(javaType, abstractTypes, queryGenerator, buildContext);
+    public GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+        return objectTypeMapper.toGraphQLInputType(typeName, javaType, abstractTypes, queryGenerator, buildContext);
     }
 
     @Override

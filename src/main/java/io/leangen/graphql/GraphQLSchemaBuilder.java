@@ -37,10 +37,12 @@ import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
 import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
+import io.leangen.graphql.metadata.strategy.input.InputDeserializerFactory;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
 import io.leangen.graphql.metadata.strategy.query.DefaultQueryBuilder;
 import io.leangen.graphql.metadata.strategy.query.QueryBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
+import io.leangen.graphql.util.Defaults;
 
 import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
@@ -88,6 +90,7 @@ public class GraphQLSchemaBuilder {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
     private QueryBuilder queryBuilder = new DefaultQueryBuilder();
+    private InputDeserializerFactory inputDeserializerFactory = Defaults.inputDeserializerFactory();
     private final QuerySourceRepository querySourceRepository = new QuerySourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final ConverterRepository converterRepository = new ConverterRepository();
@@ -428,6 +431,11 @@ public class GraphQLSchemaBuilder {
         return withTypeMappers((TypeMapper[]) typeAdapters);
     }
 
+    public GraphQLSchemaBuilder withInputDeseriazlierFactory(InputDeserializerFactory inputDeserializerFactory) {
+        this.inputDeserializerFactory = inputDeserializerFactory;
+        return this;
+    }
+    
     /**
      * Registers custom schema processors that can perform arbitrary transformations on the schema just before it is built.
      *
@@ -470,7 +478,7 @@ public class GraphQLSchemaBuilder {
         init();
 
         QueryRepository queryRepository = new QueryRepository(querySourceRepository, queryBuilder);
-        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converterRepository, interfaceStrategy);
+        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converterRepository, interfaceStrategy, inputDeserializerFactory);
         QueryGenerator queryGenerator = new QueryGenerator(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();

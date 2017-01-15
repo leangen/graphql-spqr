@@ -25,8 +25,10 @@ public class Scalars {
     public static GraphQLScalarType GraphQLUuid = new GraphQLScalarType("UUID", "Built-in UUID", new Coercing() {
         @Override
         public Object serialize(Object input) {
-            if (input instanceof String || input instanceof UUID) {
+            if (input instanceof String) {
                 return input;
+            } if (input instanceof UUID) {
+                return input.toString();
             } else {
                 return null;
             }
@@ -107,12 +109,8 @@ public class Scalars {
         }
     });
 
-    public static String getScalarTypeName(AnnotatedType type) {
-        return "JSON_" + type.getType().getTypeName();
-    }
-    
-    public static GraphQLScalarType graphQLObjectScalar(AnnotatedType type) {
-        return new GraphQLScalarType(getScalarTypeName(type), "Built-in JSON", new Coercing() {
+    public static GraphQLScalarType graphQLObjectScalar(String name, AnnotatedType type) {
+        return new GraphQLScalarType(name, "Built-in object scalar", new Coercing() {
 
             @Override
             public Object serialize(Object input) {

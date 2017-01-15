@@ -26,10 +26,10 @@ import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryArgument;
+import io.leangen.graphql.metadata.QueryArgumentDefaultValue;
 import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 import io.leangen.graphql.query.ExecutionContext;
 import io.leangen.graphql.query.IdTypeMapper;
-import io.leangen.graphql.util.ClassUtils;
 
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -106,7 +106,7 @@ public class QueryGenerator {
     }
 
     /**
-     * Maps a single query to a GraphQL output field (as queries in GraphQL are nothing but fields on the root query type).
+     * Maps a single query to a GraphQL output field (as queries in GraphQL are nothing but fields of the root query type).
      *
      * @param query The query to map to a GraphQL output field
      * @param enclosingTypeName The name of the GraphQL output type this field belongs to
@@ -161,9 +161,6 @@ public class QueryGenerator {
      * @return GraphQL output type corresponding to the given Java type
      */
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, BuildContext buildContext) {
-        if (ClassUtils.isAbstract(javaType)) {
-            abstractTypes.add(javaType.getType());
-        }
         return buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, abstractTypes, this, buildContext);
     }
 
@@ -194,9 +191,6 @@ public class QueryGenerator {
      * @return GraphQL input type corresponding to the given Java type
      */
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, BuildContext buildContext) {
-        if (ClassUtils.isAbstract(javaType)) {
-            abstractTypes.add(javaType.getType());
-        }
         TypeMapper mapper = buildContext.typeMappers.getTypeMapper(javaType);
         return mapper.toGraphQLInputType(javaType, abstractTypes, this, buildContext);
     }
@@ -224,10 +218,10 @@ public class QueryGenerator {
                 .type(toGraphQLInputType(queryArgument.getJavaType(), argumentAbstractTypes, buildContext));
 
         abstractTypes.addAll(argumentAbstractTypes);
-//        QueryArgumentDefaultValue defaultValue = queryArgument.getDefaultValueProvider().getDefaultValue(queryArgument, buildContext.inputDeserializerFactory.getDeserializer(argumentAbstractTypes), buildContext);
-//        if (defaultValue.isPresent()) {
-//            argument.defaultValue(defaultValue.get());
-//        }
+        QueryArgumentDefaultValue defaultValue = queryArgument.getDefaultValue();
+        if (defaultValue.isPresent()) {
+            argument.defaultValue(defaultValue.get());
+        }
         return argument.build();
     }
 
