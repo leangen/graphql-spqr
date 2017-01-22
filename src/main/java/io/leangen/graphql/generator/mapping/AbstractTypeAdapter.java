@@ -3,6 +3,7 @@ package io.leangen.graphql.generator.mapping;
 import java.lang.reflect.AnnotatedType;
 
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMapper;
 import io.leangen.graphql.util.ClassUtils;
 
 /**

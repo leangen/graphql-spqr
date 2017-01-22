@@ -1,4 +1,4 @@
-package io.leangen.graphql.query;
+package io.leangen.graphql.metadata.strategy.value;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class DefaultIdTypeMapper implements IdTypeMapper {
+public class SimpleStringValueMapper {
 
     protected Serializer<Object> TO_BASE64_STRING;
     protected Serializer<Object> TO_STRING;
@@ -22,7 +22,7 @@ public class DefaultIdTypeMapper implements IdTypeMapper {
     private Map<Type, Serializer<?>> serializers = new HashMap<>();
     private Map<Type, Deserializer<?>> deserializers = new HashMap<>();
 
-    public DefaultIdTypeMapper() {
+    public SimpleStringValueMapper() {
         TO_STRING = Object::toString;
         TO_BASE64_STRING = value -> {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -55,28 +55,25 @@ public class DefaultIdTypeMapper implements IdTypeMapper {
         withDeserializer(URI.class, URI::create);
     }
 
-    protected <T> DefaultIdTypeMapper withSerializer(Class<T> clazz, Serializer<? super T> serializer) {
+    protected <T> SimpleStringValueMapper withSerializer(Class<T> clazz, Serializer<? super T> serializer) {
         serializers.put(clazz, serializer);
         return this;
     }
 
-    protected <T> DefaultIdTypeMapper withDeserializer(Class<T> clazz, Deserializer<? super T> deserializer) {
+    protected <T> SimpleStringValueMapper withDeserializer(Class<T> clazz, Deserializer<? super T> deserializer) {
         deserializers.put(clazz, deserializer);
         return this;
     }
 
-    @Override
     public boolean supports(Type type) {
         return serializers.containsKey(type);
     }
 
-    @Override
     @SuppressWarnings("unchecked")
     public <T> String serialize(T id) {
         return ((Serializer<T>) serializers.getOrDefault(id.getClass(), TO_BASE64_STRING)).serialize(id);
     }
 
-    @Override
     @SuppressWarnings("unchecked")
     public <T> T deserialize(String id, Type type) {
         return ((Deserializer<T>) deserializers.getOrDefault(type, FROM_BASE64_STRING)).deserialize(id);

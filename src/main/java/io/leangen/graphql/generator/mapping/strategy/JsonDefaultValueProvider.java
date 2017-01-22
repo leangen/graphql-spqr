@@ -16,7 +16,7 @@ public class JsonDefaultValueProvider implements DefaultValueProvider {
         if (initialValue.isEmpty()) {
             return initialValue;
         } else {
-            return new QueryArgumentDefaultValue(Defaults.inputDeserializerFactory().getDeserializer().deserialize(initialValue.get(), parameterType));
+            return new QueryArgumentDefaultValue(Defaults.valueMapperFactory().getValueMapper().fromString(initialValue.get(), parameterType));
         }
     }
 }

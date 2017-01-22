@@ -14,19 +14,15 @@ import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
-import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
-import io.leangen.graphql.util.ClassUtils;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public abstract class CachingAbstractAwareMapper<O extends GraphQLOutputType, I extends GraphQLInputType> implements TypeMapper {
+public abstract class CachingMapper<O extends GraphQLOutputType, I extends GraphQLInputType> extends AbstractionCollectingMapper {
     
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        registerAbstract(javaType, abstractTypes, buildContext);
-        
+    public GraphQLOutputType graphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
         String typeName = getTypeName(javaType, buildContext);
         if (buildContext.knownTypes.contains(typeName)) {
             return getReferenceFor(typeName);
@@ -36,9 +32,7 @@ public abstract class CachingAbstractAwareMapper<O extends GraphQLOutputType, I 
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        registerAbstract(javaType, abstractTypes, buildContext);
-
+    public GraphQLInputType graphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
         String typeName = getInputTypeName(javaType, buildContext);
         if (buildContext.knownInputTypes.contains(typeName)) {
             return getInputReferenceFor(typeName);
@@ -65,12 +59,6 @@ public abstract class CachingAbstractAwareMapper<O extends GraphQLOutputType, I 
     
     protected GraphQLInputType getInputReferenceFor(String name) {
         return inputReferenceFor(getTypeArguments(1), name);
-    }
-    
-    protected void registerAbstract(AnnotatedType type, Set<Type> abstractTypes, BuildContext buildContext) {
-        if (ClassUtils.isAbstract(type)) {
-            abstractTypes.add(type.getType());
-        }
     }
     
     private GraphQLOutputType referenceFor(AnnotatedType type, String typeName) {
@@ -101,6 +89,6 @@ public abstract class CachingAbstractAwareMapper<O extends GraphQLOutputType, I 
     }
     
     private AnnotatedType getTypeArguments(int index) {
-        return GenericTypeReflector.getTypeParameter(getClass().getAnnotatedSuperclass(), CachingAbstractAwareMapper.class.getTypeParameters()[index]);
+        return GenericTypeReflector.getTypeParameter(getClass().getAnnotatedSuperclass(), CachingMapper.class.getTypeParameters()[index]);
     }
 }

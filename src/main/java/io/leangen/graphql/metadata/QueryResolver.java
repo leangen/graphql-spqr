@@ -12,9 +12,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.graphql.annotations.RelayConnectionRequest;
-import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
 import io.leangen.graphql.query.ConnectionRequest;
-import io.leangen.graphql.query.ExecutionContext;
+import io.leangen.graphql.query.ResolutionContext;
 import io.leangen.graphql.query.execution.Executable;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -35,7 +34,6 @@ public class QueryResolver {
     private final List<Parameter> connectionRequestArguments;
     private final AnnotatedType returnType;
     private final Set<QueryArgument> sourceArguments;
-    private final String wrappedAttribute;
     private final Executable executable;
 
     public QueryResolver(String queryName, String queryDescription, boolean relayId, Executable executable, List<QueryArgument> queryArguments) {
@@ -46,7 +44,6 @@ public class QueryResolver {
         this.queryArguments = queryArguments;
         this.connectionRequestArguments = resolveConnectionRequestArguments();
         this.returnType = ClassUtils.stripBounds(executable.getReturnType());
-        this.wrappedAttribute = executable.getWrappedAttribute();
         this.sourceArguments = resolveSources(queryArguments);
     }
 
@@ -90,10 +87,7 @@ public class QueryResolver {
     /**
      * Prepares the parameters by mapping/parsing the input and/or source object and invokes the underlying resolver method/field
      *
-     * @param source            The source object for this query (the result of the parent query)
-     * @param arguments         All regular (non Relay connection specific) arguments as provided in the query
-     * @param connectionRequest Relay connection specific arguments provided in the query
-     * @param executionContext  An object containing all global information that might be needed during resolver execution
+     * @param resolutionContext An object containing all contextual information needed during query resolution
      *
      * @return The result returned by the underlying method/field, potentially proxied and wrapped
      *
@@ -101,45 +95,18 @@ public class QueryResolver {
      * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
      */
     @SuppressWarnings("unchecked")
-    public Object resolve(Object source, Object context, Map<String, Object> arguments, InputDeserializer inputDeserializer,
-                          Object connectionRequest, ExecutionContext executionContext) throws InvocationTargetException, IllegalAccessException {
-        
+    public Object resolve(ResolutionContext resolutionContext, Map<String, Object> arguments) throws InvocationTargetException, IllegalAccessException {
+
         int queryArgumentsCount = queryArguments.size();
 
         Object[] args = new Object[queryArgumentsCount];
         for (int i = 0; i < queryArgumentsCount; i++) {
             QueryArgument argDescriptor =  queryArguments.get(i);
+            Object argValue = arguments.get(argDescriptor.getName());
 
-            if (argDescriptor.isRelayConnection()) {
-                args[i] = connectionRequest;
-            } else if (argDescriptor.isResolverSource() && !arguments.containsKey(argDescriptor.getName())) {
-                args[i] = source;
-            } else if (argDescriptor.isContext()) {
-                args[i] = context;
-            } else if (argDescriptor.isRelayId()) {
-                String rawId = arguments.get(argDescriptor.getName()).toString();
-                String id = rawId;
-                try {
-                    id = executionContext.relay.fromGlobalId(rawId).getId();
-                } catch (Exception e) {/*noop*/}
-                args[i] = executionContext.idTypeMapper.deserialize(id, executable.getAnnotatedParameterTypes()[i].getType());
-            } else {
-                AnnotatedType argValueType = executionContext.getMappableType(argDescriptor.getJavaType());
-                Object argValue = inputDeserializer.deserialize(arguments.get(argDescriptor.getName()), argValueType);
-                args[i] = executionContext.convertInput(argValue, argDescriptor.getJavaType());
-            }
+            args[i] = resolutionContext.getInputValue(argValue, argDescriptor.getJavaType());
         }
-        return executionContext.convertOutput(executable.execute(source, args), this.getReturnType(), inputDeserializer);
-        //Wrap returned values for resolvers that don't directly return domain objects
-//        if (isWrapped()) {
-//            if (!Map.class.isAssignableFrom(result.getClass())) {
-//                Map<String, Object> wrappedResult = new HashMap<>(1);
-//                wrappedResult.put(wrappedAttribute, result);
-//                return wrappedResult;
-//            }
-//            return result;
-//        }
-//        return result;
+        return executable.execute(resolutionContext.source, args);
     }
 
     public boolean supportsConnectionRequests() {
@@ -163,10 +130,6 @@ public class QueryResolver {
      */
     public Set<Type> getSourceTypes() {
         return sourceArguments.stream().map(arg -> arg.getJavaType().getType()).collect(Collectors.toSet());
-    }
-
-    private boolean isWrapped() {
-        return !(wrappedAttribute == null || wrappedAttribute.isEmpty());
     }
 
     public String getQueryName() {
@@ -201,10 +164,6 @@ public class QueryResolver {
 
     public AnnotatedType getReturnType() {
         return returnType;
-    }
-
-    public Executable getExecutable() {
-        return executable;
     }
 
     private String fingerprint(QueryArgument ignoredResolverSource) {

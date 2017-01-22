@@ -1,6 +1,5 @@
 package io.leangen.graphql.util;
 
-import java.lang.reflect.AnnotatedType;
 import java.net.URI;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -109,7 +108,7 @@ public class Scalars {
         }
     });
 
-    public static GraphQLScalarType graphQLObjectScalar(String name, AnnotatedType type) {
+    public static GraphQLScalarType graphQLObjectScalar(String name) {
         return new GraphQLScalarType(name, "Built-in object scalar", new Coercing() {
 
             @Override

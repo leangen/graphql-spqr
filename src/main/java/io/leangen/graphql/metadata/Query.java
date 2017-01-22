@@ -11,10 +11,10 @@ import java.util.stream.Collectors;
 import graphql.GraphQLException;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.query.ConnectionRequest;
-import io.leangen.graphql.query.ExecutionContext;
-import io.leangen.graphql.query.relay.Page;
+import io.leangen.graphql.query.GlobalContext;
+import io.leangen.graphql.query.ResolutionContext;
 import io.leangen.graphql.util.ClassUtils;
 
 import static java.util.Arrays.stream;
@@ -50,7 +50,7 @@ public class Query {
         return resolversByFingerprint;
     }
 
-    public Object resolve(DataFetchingEnvironment env, InputDeserializer inputDeserializer, ExecutionContext executionContext) {
+    public Object resolve(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalContext globalContext) {
         Map<String, Object> queryArguments = new HashMap<>();
         Map<String, Object> connectionArguments = new HashMap<>();
 
@@ -63,6 +63,8 @@ public class Query {
                 }
             }
         });
+        
+        ResolutionContext resolutionContext = new ResolutionContext(env, new ConnectionRequest(connectionArguments), valueMapper, globalContext);
 
         QueryResolver resolver = resolversByFingerprint.get(getFingerprint(queryArguments));
         try {
@@ -73,8 +75,8 @@ public class Query {
                     //TODO implement simple filtering here
                 }
             } else {
-                Object result = resolver.resolve(env.getSource(), env.getContext(), queryArguments, inputDeserializer, new ConnectionRequest(connectionArguments), executionContext);
-                return result;
+                Object result = resolver.resolve(resolutionContext, queryArguments);
+                return resolutionContext.convertOutput(result, resolver.getReturnType());
             }
             throw new GraphQLException("Resolver for query " + name + " accepting arguments: " + env.getArguments().keySet() + " not implemented");
         } catch (Exception e) {
@@ -90,10 +92,6 @@ public class Query {
         StringBuilder fingerPrint = new StringBuilder();
         arguments.keySet().stream().sorted().forEach(fingerPrint::append);
         return fingerPrint.toString();
-    }
-
-    public boolean isPageable() {
-        return Page.class.isAssignableFrom(ClassUtils.getRawType(javaType.getType()));
     }
 
     public boolean hasPrimaryResolver() {

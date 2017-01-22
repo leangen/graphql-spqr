@@ -1,4 +1,4 @@
-package io.leangen.graphql.metadata.strategy.input;
+package io.leangen.graphql.metadata.strategy.value;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;

@@ -1,10 +1,10 @@
-package io.leangen.graphql.metadata.strategy.input;
-
-import io.leangen.graphql.annotations.GraphQLQuery;
+package io.leangen.graphql.metadata.strategy.value;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Optional;
+
+import io.leangen.graphql.annotations.GraphQLQuery;
 
 /**
  * Created by bojan.tomic on 5/25/16.

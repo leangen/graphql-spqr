@@ -22,7 +22,7 @@ import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
 import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
 
-public class ObjectTypeMapper extends CachingAbstractAwareMapper<GraphQLObjectType, GraphQLInputObjectType> {
+public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLInputObjectType> {
 
     @Override
     public GraphQLObjectType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
@@ -36,7 +36,7 @@ public class ObjectTypeMapper extends CachingAbstractAwareMapper<GraphQLObjectTy
                 .description(buildContext.typeMetaDataGenerator.generateTypeDescription(javaType));
 
         buildContext.queryRepository.getChildQueries(javaType)
-                .forEach(childQuery -> typeBuilder.field(queryGenerator.toGraphQLQuery(childQuery, typeName, buildContext)));
+                .forEach(childQuery -> typeBuilder.field(queryGenerator.toGraphQLQuery(childQuery, buildContext)));
 
         Set<String> interfaceNames = new HashSet<>();
         if (relayId.isPresent()) {

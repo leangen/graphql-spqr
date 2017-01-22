@@ -1,4 +1,4 @@
-package io.leangen.graphql.metadata.strategy.input;
+package io.leangen.graphql.metadata.strategy.value;
 
 import com.google.gson.FieldNamingStrategy;
 import com.google.gson.GsonBuilder;
@@ -13,33 +13,33 @@ import io.leangen.graphql.util.ClassUtils;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class GsonInputDeserializerFactory implements InputDeserializerFactory {
+public class GsonValueMapperFactory implements ValueMapperFactory {
 
     private final FieldNamingStrategy fieldNamingStrategy;
     private final BiConsumer<GsonBuilder, Set<Type>> configurer;
-    private final InputDeserializer defaultInputDeserializer;
+    private final ValueMapper defaultValueMapper;
 
-    public GsonInputDeserializerFactory() {
+    public GsonValueMapperFactory() {
         this(new GsonFieldNamingStrategy(), new AbstractAdapterConfigurer());
     }
 
-    public GsonInputDeserializerFactory(FieldNamingStrategy fieldNamingStrategy, BiConsumer<GsonBuilder, Set<Type>> configurer) {
+    public GsonValueMapperFactory(FieldNamingStrategy fieldNamingStrategy, BiConsumer<GsonBuilder, Set<Type>> configurer) {
         this.fieldNamingStrategy = fieldNamingStrategy;
         this.configurer = configurer;
-        this.defaultInputDeserializer = new GsonInputDeserializer(new GsonBuilder().setFieldNamingStrategy(fieldNamingStrategy).create());
+        this.defaultValueMapper = new GsonValueMapper(new GsonBuilder().setFieldNamingStrategy(fieldNamingStrategy).create());
     }
 
     @Override
-    public InputDeserializer getDeserializer(Set<Type> abstractTypes) {
+    public ValueMapper getValueMapper(Set<Type> abstractTypes) {
         if (abstractTypes.isEmpty()) {
-            return defaultInputDeserializer;
+            return defaultValueMapper;
         }
 
         GsonBuilder gsonBuilder = new GsonBuilder()
                 .setFieldNamingStrategy(fieldNamingStrategy);
         configurer.accept(gsonBuilder, abstractTypes);
 
-        return new GsonInputDeserializer(gsonBuilder.create());
+        return new GsonValueMapper(gsonBuilder.create());
     }
 
     public static class AbstractAdapterConfigurer implements BiConsumer<GsonBuilder, Set<Type>> {
@@ -49,7 +49,7 @@ public class GsonInputDeserializerFactory implements InputDeserializerFactory {
             abstractTypes.stream()
                     .map(ClassUtils::getRawType)
                     .distinct()
-                    .map(GsonInputDeserializerFactory::adapterFor)
+                    .map(GsonValueMapperFactory::adapterFor)
                     .forEach(gsonBuilder::registerTypeAdapterFactory);
         }
     }

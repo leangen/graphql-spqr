@@ -5,7 +5,6 @@ import java.lang.reflect.AnnotatedType;
 import java.util.List;
 
 import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.generator.mapping.AbstractTypeSubstitutingMapper;
 
 /**
  * @author Bojan Tomic (kaqqao)

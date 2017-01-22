@@ -16,7 +16,7 @@ import static graphql.schema.GraphQLInterfaceType.newInterface;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class InterfaceMapper extends CachingAbstractAwareMapper<GraphQLInterfaceType, GraphQLInputObjectType> {
+public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQLInputObjectType> {
 
     private final InterfaceMappingStrategy interfaceStrategy;
     private final ObjectTypeMapper objectTypeMapper;
@@ -33,7 +33,7 @@ public class InterfaceMapper extends CachingAbstractAwareMapper<GraphQLInterface
                 .description(buildContext.typeMetaDataGenerator.generateTypeDescription(javaType));
 
         buildContext.queryRepository.getChildQueries(javaType)
-                .forEach(childQuery -> typeBuilder.field(queryGenerator.toGraphQLQuery(childQuery, typeName, buildContext)));
+                .forEach(childQuery -> typeBuilder.field(queryGenerator.toGraphQLQuery(childQuery, buildContext)));
 
         typeBuilder.typeResolver(buildContext.typeResolver);
         return new MappedGraphQLInterfaceType(typeBuilder.build(), javaType);

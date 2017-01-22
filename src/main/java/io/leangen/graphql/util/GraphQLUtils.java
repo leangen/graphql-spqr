@@ -19,8 +19,7 @@ import graphql.schema.GraphQLScalarType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.QueryResolver;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
-import io.leangen.graphql.query.DefaultIdTypeMapper;
-import io.leangen.graphql.query.IdTypeMapper;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.query.relay.CursorProvider;
 import io.leangen.graphql.query.relay.Edge;
 import io.leangen.graphql.query.relay.Page;
@@ -53,8 +52,6 @@ public class GraphQLUtils {
 
     public static final Map<Type, GraphQLScalarType> scalars = getScalarMapping();
 
-    public static final IdTypeMapper defaultIdMapper = new DefaultIdTypeMapper();
-
     public static GraphQLScalarType toGraphQLScalarType(Type javaType) {
         return scalars.get(javaType);
     }
@@ -64,34 +61,34 @@ public class GraphQLUtils {
     }
 
     public static <N> Page<N> createIdBasedPage(List<N> nodes, String idFieldName, boolean hasNextPage, boolean hasPreviousPage) {
-        return createIdBasedPage(nodes, idFieldName, new DefaultIdTypeMapper(), hasNextPage, hasPreviousPage);
+        return createIdBasedPage(nodes, idFieldName, Defaults.valueMapperFactory().getValueMapper(), hasNextPage, hasPreviousPage);
     }
 
     public static <N> Page<N> createIdBasedPage(List<N> nodes, boolean hasNextPage, boolean hasPreviousPage) {
-        return createIdBasedPage(nodes, new DefaultIdTypeMapper(), hasNextPage, hasPreviousPage);
+        return createIdBasedPage(nodes, Defaults.valueMapperFactory().getValueMapper(), hasNextPage, hasPreviousPage);
     }
 
-    public static <N> Page<N> createIdBasedPage(List<N> nodes, IdTypeMapper idTypeMapper, boolean hasNextPage, boolean hasPreviousPage) {
-        return createIdBasedPage(nodes, getIdFieldName(nodes.get(0).getClass()), idTypeMapper, hasNextPage, hasPreviousPage);
+    public static <N> Page<N> createIdBasedPage(List<N> nodes, ValueMapper valueMapper, boolean hasNextPage, boolean hasPreviousPage) {
+        return createIdBasedPage(nodes, getIdFieldName(nodes.get(0).getClass()), valueMapper, hasNextPage, hasPreviousPage);
     }
 
-    public static <N> Page<N> createIdBasedPage(List<N> nodes, String idFieldName, IdTypeMapper idTypeMapper, boolean hasNextPage, boolean hasPreviousPage) {
-        return createPage(nodes, (node, index) -> idTypeMapper.serialize(ClassUtils.getFieldValue(node, idFieldName)), hasNextPage, hasPreviousPage);
+    public static <N> Page<N> createIdBasedPage(List<N> nodes, String idFieldName, ValueMapper valueMapper, boolean hasNextPage, boolean hasPreviousPage) {
+        return createPage(nodes, (node, index) -> valueMapper.toString(ClassUtils.getFieldValue(node, idFieldName)), hasNextPage, hasPreviousPage);
     }
 
     public static <N, I extends Comparable<? super I>> Page<N> createIdBasedPage(List<N> nodes, I globalMinId, I globalMaxId) {
-        return createIdBasedPage(nodes, globalMinId, globalMaxId, Comparator.naturalOrder(), defaultIdMapper);
+        return createIdBasedPage(nodes, globalMinId, globalMaxId, Comparator.naturalOrder(), Defaults.valueMapperFactory().getValueMapper());
     }
 
-    public static <N, I> Page<N> createIdBasedPage(List<N> nodes, I globalMinId, I globalMaxId, Comparator<I> comparator, IdTypeMapper idTypeMapper) {
-        return createIdBasedPage(nodes, getIdFieldName(nodes.get(0).getClass()), globalMinId, globalMaxId, comparator, idTypeMapper);
+    public static <N, I> Page<N> createIdBasedPage(List<N> nodes, I globalMinId, I globalMaxId, Comparator<I> comparator, ValueMapper valueMapper) {
+        return createIdBasedPage(nodes, getIdFieldName(nodes.get(0).getClass()), globalMinId, globalMaxId, comparator, valueMapper);
     }
 
-    public static <N, I> Page<N> createIdBasedPage(List<N> nodes, String idFieldName, I globalMinId, I globalMaxId, Comparator<I> comparator, IdTypeMapper idTypeMapper) {
+    public static <N, I> Page<N> createIdBasedPage(List<N> nodes, String idFieldName, I globalMinId, I globalMaxId, Comparator<I> comparator, ValueMapper valueMapper) {
         boolean hasNextPage = comparator.compare(ClassUtils.getFieldValue(nodes.get(nodes.size() - 1), idFieldName), globalMaxId) < 0;
         boolean hasPreviousPage = comparator.compare(ClassUtils.getFieldValue(nodes.get(0), idFieldName), globalMinId) > 0;
 
-        return createIdBasedPage(nodes, idFieldName, idTypeMapper, hasNextPage, hasPreviousPage);
+        return createIdBasedPage(nodes, idFieldName, valueMapper, hasNextPage, hasPreviousPage);
     }
 
     public static <N> Page<N> createOffsetBasedPage(List<N> nodes, long count, long offset) {

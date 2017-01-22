@@ -1,4 +1,4 @@
-package io.leangen.graphql.metadata.strategy.input;
+package io.leangen.graphql.metadata.strategy.value;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

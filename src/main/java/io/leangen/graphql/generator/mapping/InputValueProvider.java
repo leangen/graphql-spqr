@@ -7,9 +7,9 @@ import io.leangen.graphql.query.ResolutionContext;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public interface OutputConverter<T, S> {
-
-    S convertOutput(T original, AnnotatedType type, ResolutionContext resolutionContext);
+public interface InputValueProvider {
     
+    Object getInputValue(Object rawInput, AnnotatedType type, ResolutionContext resolutionContext);
+
     boolean supports(AnnotatedType type);
 }

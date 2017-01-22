@@ -1,6 +1,5 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
 import java.util.List;
@@ -8,8 +7,7 @@ import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.mapping.OutputConverter;
-import io.leangen.graphql.metadata.strategy.input.InputDeserializer;
-import io.leangen.graphql.query.ExecutionContext;
+import io.leangen.graphql.query.ResolutionContext;
 
 /**
  * Converts outputs of non-list collection types into lists. Needed because graphql-java always expects a list
@@ -19,10 +17,10 @@ import io.leangen.graphql.query.ExecutionContext;
 public class CollectionToListOutputConverter implements OutputConverter<Collection<?>, List<?>> {
 
     @Override
-    public List<?> convertOutput(Collection<?> original, AnnotatedType type, InputDeserializer inputDeserializer, ExecutionContext executionContext) {
-        AnnotatedType inner = ((AnnotatedParameterizedType) type).getAnnotatedActualTypeArguments()[0];
+    public List<?> convertOutput(Collection<?> original, AnnotatedType type, ResolutionContext resolutionContext) {
+        AnnotatedType inner = GenericTypeReflector.getTypeParameter(type, Collection.class.getTypeParameters()[0]);
         return original.stream()
-                .map(item -> executionContext.convertOutput(item, inner, inputDeserializer))
+                .map(item -> resolutionContext.convertOutput(item, inner))
                 .collect(Collectors.toList());
     }
 

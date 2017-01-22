@@ -4,10 +4,7 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.Map;
 
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.util.ClassUtils;
 
 /**
@@ -36,12 +33,6 @@ public class MethodInvoker extends Executable {
 
 
     public AnnotatedType resolveReturnType(AnnotatedType enclosingType) {
-        if (delegate.isAnnotationPresent(GraphQLQuery.class) &&
-                delegate.getAnnotation(GraphQLQuery.class).wrapper() != Void.class) {
-            return GenericTypeReflector.updateAnnotations(
-                    GenericTypeReflector.annotate(delegate.getAnnotation(GraphQLQuery.class).wrapper()),
-                    ((Method) delegate).getAnnotatedReturnType().getAnnotations());
-        }
         return ClassUtils.getReturnType(((Method) delegate), enclosingType);
     }
 
@@ -58,32 +49,6 @@ public class MethodInvoker extends Executable {
     @Override
     public Parameter[] getParameters() {
         return ((Method) delegate).getParameters();
-    }
-
-    @Override
-    public String getWrappedAttribute() {
-        if (delegate.isAnnotationPresent(GraphQLQuery.class) &&
-                delegate.getAnnotation(GraphQLQuery.class).wrapper() != Void.class &&
-                !Map.class.isAssignableFrom(((Method) delegate).getReturnType())) {
-
-            String attributeName;
-            if (!delegate.getAnnotation(GraphQLQuery.class).attribute().isEmpty()) {
-                attributeName = delegate.getAnnotation(GraphQLQuery.class).attribute();
-            } else if (((Method) delegate).getName().startsWith("get")) {
-                attributeName = ClassUtils.getFieldNameFromGetter(((Method) delegate));
-            } else {
-                attributeName = ((Method) delegate).getName();
-            }
-            //TODO move this check to builder
-//			DomainType domainType = new DomainType(((Method) delegate).getAnnotation(GraphQLQuery.class).wrapper());
-//			if (domainType.hasField(attributeName)) {
-            return attributeName;
-//			} else {
-//				throw new IllegalArgumentException("Method " + ((Method) delegate).getDeclaringClass().getName() + "#" + ((Method) delegate).getName()
-//						+ " wraps attribute '" + attributeName + "' which is invalid for wrapper type " + returnType.getTypeName());
-//			}
-        }
-        return null;
     }
 
     @Override

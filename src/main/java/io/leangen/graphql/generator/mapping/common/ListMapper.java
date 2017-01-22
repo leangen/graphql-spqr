@@ -12,7 +12,6 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.util.ClassUtils;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -21,16 +20,20 @@ public class ListMapper implements TypeMapper {
 
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return new GraphQLList(queryGenerator.toGraphQLType(ClassUtils.getTypeArguments(javaType)[0], abstractTypes, buildContext));
+        return new GraphQLList(queryGenerator.toGraphQLType(getElementType(javaType), abstractTypes, buildContext));
     }
 
     @Override
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return new GraphQLList(queryGenerator.toGraphQLInputType(ClassUtils.getTypeArguments(javaType)[0], abstractTypes, buildContext));
+        return new GraphQLList(queryGenerator.toGraphQLInputType(getElementType(javaType), abstractTypes, buildContext));
     }
 
     @Override
     public boolean supports(AnnotatedType type) {
         return GenericTypeReflector.isSuperType(Collection.class, type.getType());
+    }
+    
+    private AnnotatedType getElementType(AnnotatedType javaType) {
+        return GenericTypeReflector.getTypeParameter(javaType, Collection.class.getTypeParameters()[0]);
     }
 }

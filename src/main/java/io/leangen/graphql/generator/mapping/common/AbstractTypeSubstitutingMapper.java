@@ -4,10 +4,9 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.Set;
 
-import graphql.Scalars;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
-import io.leangen.graphql.annotations.RelayId;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.mapping.TypeMapper;
@@ -15,20 +14,21 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class RelayIdMapper implements TypeMapper {
+//The substitute type S is reflectively accessed by the default #getSubstituteType impl
+@SuppressWarnings("unused")
+public abstract class AbstractTypeSubstitutingMapper<S> implements TypeMapper {
 
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return Scalars.GraphQLID;
+        return queryGenerator.toGraphQLType(getSubstituteType(javaType), abstractTypes, buildContext);
     }
 
     @Override
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return Scalars.GraphQLID;
+        return queryGenerator.toGraphQLInputType(getSubstituteType(javaType), abstractTypes, buildContext);
     }
 
-    @Override
-    public boolean supports(AnnotatedType type) {
-        return type.isAnnotationPresent(RelayId.class);
+    public AnnotatedType getSubstituteType(AnnotatedType original) {
+        return GenericTypeReflector.getTypeParameter(getClass().getAnnotatedSuperclass(), AbstractTypeSubstitutingMapper.class.getTypeParameters()[0]);
     }
 }

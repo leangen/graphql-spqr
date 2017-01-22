@@ -1,9 +1,9 @@
 package io.leangen.graphql.util;
 
-import io.leangen.graphql.metadata.strategy.input.GsonInputDeserializerFactory;
-import io.leangen.graphql.metadata.strategy.input.InputDeserializerFactory;
-import io.leangen.graphql.metadata.strategy.input.JacksonInputDeserializerFactory;
-import io.leangen.graphql.metadata.strategy.input.ScalarOnlyInputDeserializerFactory;
+import io.leangen.graphql.metadata.strategy.value.GsonValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.JacksonValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.ScalarOnlyValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 
 public class Defaults {
 
@@ -27,11 +27,11 @@ public class Defaults {
         throw new IllegalStateException("No JSON deserialization library found on classpath");
     }
     
-    public static InputDeserializerFactory inputDeserializerFactory() {
+    public static ValueMapperFactory valueMapperFactory() {
         switch (jsonLibrary()) {
-            case GSON: return new GsonInputDeserializerFactory();
-            case JACKSON: return new JacksonInputDeserializerFactory();
-            default: return new ScalarOnlyInputDeserializerFactory();
+            case GSON: return new GsonValueMapperFactory();
+            case JACKSON: return new JacksonValueMapperFactory();
+            default: return new ScalarOnlyValueMapperFactory();
         }
     }
 }

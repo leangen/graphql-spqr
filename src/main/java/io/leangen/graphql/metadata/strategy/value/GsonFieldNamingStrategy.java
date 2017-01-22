@@ -1,4 +1,4 @@
-package io.leangen.graphql.metadata.strategy.input;
+package io.leangen.graphql.metadata.strategy.value;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.FieldNamingStrategy;

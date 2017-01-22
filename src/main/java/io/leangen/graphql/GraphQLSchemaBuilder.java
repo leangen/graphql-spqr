@@ -15,12 +15,17 @@ import io.leangen.graphql.generator.QuerySourceRepository;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
 import io.leangen.graphql.generator.mapping.InputConverter;
+import io.leangen.graphql.generator.mapping.InputValueProvider;
+import io.leangen.graphql.generator.mapping.InputValueProviderRepository;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.mapping.common.ArrayMapper;
 import io.leangen.graphql.generator.mapping.common.CollectionToListOutputConverter;
+import io.leangen.graphql.generator.mapping.common.ConnectionRequestProvider;
+import io.leangen.graphql.generator.mapping.common.ContextInputProvider;
 import io.leangen.graphql.generator.mapping.common.EnumMapper;
+import io.leangen.graphql.generator.mapping.common.InputValueDeserializer;
 import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
 import io.leangen.graphql.generator.mapping.common.ListMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
@@ -29,19 +34,20 @@ import io.leangen.graphql.generator.mapping.common.ObjectScalarAdapter;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.PageMapper;
-import io.leangen.graphql.generator.mapping.common.RelayIdMapper;
+import io.leangen.graphql.generator.mapping.common.RelayIdAdapter;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
+import io.leangen.graphql.generator.mapping.common.SourceProvider;
 import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
 import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
 import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
-import io.leangen.graphql.metadata.strategy.input.InputDeserializerFactory;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
 import io.leangen.graphql.metadata.strategy.query.DefaultQueryBuilder;
 import io.leangen.graphql.metadata.strategy.query.QueryBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
+import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.Defaults;
 
 import static graphql.schema.GraphQLObjectType.newObject;
@@ -90,11 +96,12 @@ public class GraphQLSchemaBuilder {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
     private QueryBuilder queryBuilder = new DefaultQueryBuilder();
-    private InputDeserializerFactory inputDeserializerFactory = Defaults.inputDeserializerFactory();
+    private ValueMapperFactory valueMapperFactory = Defaults.valueMapperFactory();
     private final QuerySourceRepository querySourceRepository = new QuerySourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
-    private final ConverterRepository converterRepository = new ConverterRepository();
     private final TypeMapperRepository typeMappers = new TypeMapperRepository();
+    private final ConverterRepository converterRepository = new ConverterRepository();
+    private final InputValueProviderRepository inputProviders = new InputValueProviderRepository();
 
     /**
      * Default constructor
@@ -308,7 +315,8 @@ public class GraphQLSchemaBuilder {
     public GraphQLSchemaBuilder withDefaults() {
         return withDefaultResolverExtractors()
                 .withDefaultMappers()
-                .withDefaultConverters();
+                .withDefaultConverters()
+                .withDefaultInputProviders();
     }
 
     /**
@@ -335,10 +343,10 @@ public class GraphQLSchemaBuilder {
     public GraphQLSchemaBuilder withDefaultMappers() {
         ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
         return withTypeMappers(
-                new NonNullMapper(), new RelayIdMapper(), new ScalarMapper(), new ObjectScalarAdapter(),
+                new NonNullMapper(), new RelayIdAdapter(), new ScalarMapper(), new ObjectScalarAdapter(),
                 new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(), new UnionInlineMapper(),
                 new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
-                new ListMapper(), new PageMapper(), new OptionalAdapter(), 
+                new ListMapper(), new PageMapper(), new OptionalAdapter(),
                 new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
     }
 
@@ -349,11 +357,17 @@ public class GraphQLSchemaBuilder {
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
     public GraphQLSchemaBuilder withDefaultConverters() {
-        return withInputConverters(new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter())
-                .withOutputConverters(new ObjectScalarAdapter(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
+        return withInputConverters( new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter())
+                .withOutputConverters(new RelayIdAdapter(), new ObjectScalarAdapter(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
                         new CollectionToListOutputConverter(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
     }
 
+    public GraphQLSchemaBuilder withDefaultInputProviders() {
+        return withInputValueProviders(
+                new ConnectionRequestProvider(), new RelayIdAdapter(), new ContextInputProvider(),
+                new SourceProvider(), new InputValueDeserializer());
+    }
+    
     /**
      * Registers custom {@link TypeMapper}s to be used for mapping Java type to GraphQL types.
      * <p><b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type
@@ -431,11 +445,16 @@ public class GraphQLSchemaBuilder {
         return withTypeMappers((TypeMapper[]) typeAdapters);
     }
 
-    public GraphQLSchemaBuilder withInputDeseriazlierFactory(InputDeserializerFactory inputDeserializerFactory) {
-        this.inputDeserializerFactory = inputDeserializerFactory;
+    public GraphQLSchemaBuilder withInputValueProviders(InputValueProvider... inputValueProviders) {
+        this.inputProviders.registerProviders(inputValueProviders);
         return this;
     }
     
+    public GraphQLSchemaBuilder withValueMapperFactory(ValueMapperFactory valueMapperFactory) {
+        this.valueMapperFactory = valueMapperFactory;
+        return this;
+    }
+
     /**
      * Registers custom schema processors that can perform arbitrary transformations on the schema just before it is built.
      *
@@ -465,6 +484,9 @@ public class GraphQLSchemaBuilder {
         if (converterRepository.isEmpty()) {
             withDefaultConverters();
         }
+        if (inputProviders.isEmpty()) {
+            withDefaultInputProviders();
+        }
     }
 
     /**
@@ -478,7 +500,7 @@ public class GraphQLSchemaBuilder {
         init();
 
         QueryRepository queryRepository = new QueryRepository(querySourceRepository, queryBuilder);
-        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converterRepository, interfaceStrategy, inputDeserializerFactory);
+        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converterRepository, inputProviders, interfaceStrategy, valueMapperFactory);
         QueryGenerator queryGenerator = new QueryGenerator(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
