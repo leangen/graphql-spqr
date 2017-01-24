@@ -15,7 +15,7 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.QueryGenerator;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.GraphQLUtils;
+import io.leangen.graphql.util.Scalars;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -46,7 +46,7 @@ public abstract class AbstractionCollectingMapper implements TypeMapper {
 
     protected Set<Type> collectAbstract(AnnotatedType javaType, Set<Type> seen, BuildContext buildContext) {
         javaType = buildContext.globalContext.converters.getMappableType(javaType);
-        if (GraphQLUtils.isScalar(javaType.getType())) {
+        if (Scalars.isScalar(javaType.getType())) {
             return Collections.emptySet();
         }
         if (GenericTypeReflector.isSuperType(Collection.class, javaType.getType())) {

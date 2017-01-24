@@ -1,9 +1,15 @@
 package io.leangen.graphql.util;
 
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -19,7 +25,28 @@ import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.GraphQLScalarType;
 
+import static graphql.Scalars.GraphQLBigDecimal;
+import static graphql.Scalars.GraphQLBigInteger;
+import static graphql.Scalars.GraphQLBoolean;
+import static graphql.Scalars.GraphQLByte;
+import static graphql.Scalars.GraphQLChar;
+import static graphql.Scalars.GraphQLFloat;
+import static graphql.Scalars.GraphQLInt;
+import static graphql.Scalars.GraphQLLong;
+import static graphql.Scalars.GraphQLShort;
+import static graphql.Scalars.GraphQLString;
+
 public class Scalars {
+
+    private static final Map<Type, GraphQLScalarType> SCALAR_MAPPING = getScalarMapping();
+
+    public static boolean isScalar(Type javaType) {
+        return SCALAR_MAPPING.containsKey(javaType);
+    }
+    
+    public static GraphQLScalarType toGraphQLScalarType(Type javaType) {
+        return SCALAR_MAPPING.get(javaType);
+    }
 
     public static GraphQLScalarType GraphQLUuid = new GraphQLScalarType("UUID", "Built-in UUID", new Coercing() {
         @Override
@@ -156,5 +183,33 @@ public class Scalars {
                 throw new IllegalArgumentException("Unsupported scalar value type: " + value.getClass().getName());
             }
         });
+    }
+
+    private static Map<Type, GraphQLScalarType> getScalarMapping() {
+        Map<Type, GraphQLScalarType> scalarMapping = new HashMap<>();
+        scalarMapping.put(Character.class, GraphQLChar);
+        scalarMapping.put(char.class, GraphQLChar);
+        scalarMapping.put(String.class, GraphQLString);
+        scalarMapping.put(Byte.class, GraphQLByte);
+        scalarMapping.put(byte.class, GraphQLByte);
+        scalarMapping.put(Short.class, GraphQLShort);
+        scalarMapping.put(short.class, GraphQLShort);
+        scalarMapping.put(Integer.class, GraphQLInt);
+        scalarMapping.put(int.class, GraphQLInt);
+        scalarMapping.put(Long.class, GraphQLLong);
+        scalarMapping.put(long.class, GraphQLLong);
+        scalarMapping.put(Float.class, GraphQLFloat);
+        scalarMapping.put(float.class, GraphQLFloat);
+        scalarMapping.put(Double.class, GraphQLFloat);
+        scalarMapping.put(double.class, GraphQLFloat);
+        scalarMapping.put(BigInteger.class, GraphQLBigInteger);
+        scalarMapping.put(BigDecimal.class, GraphQLBigDecimal);
+        scalarMapping.put(Number.class, GraphQLBigDecimal);
+        scalarMapping.put(Boolean.class, GraphQLBoolean);
+        scalarMapping.put(boolean.class, GraphQLBoolean);
+        scalarMapping.put(UUID.class, GraphQLUuid);
+        scalarMapping.put(URI.class, GraphQLUri);
+        scalarMapping.put(Date.class, GraphQLISODate);
+        return Collections.unmodifiableMap(scalarMapping);
     }
 }

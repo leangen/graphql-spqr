@@ -140,10 +140,6 @@ public class QueryResolver {
         return queryDescription;
     }
 
-    public boolean isRelayId() {
-        return relayId;
-    }
-
     /**
      * Get the fingerprint of this resolver. Fingerprint uniquely identifies a resolver within a query.
      * It is based on the name of the query and all parameters this specific resolver accepts.

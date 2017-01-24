@@ -357,7 +357,7 @@ public class GraphQLSchemaBuilder {
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
     public GraphQLSchemaBuilder withDefaultConverters() {
-        return withInputConverters( new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter())
+        return withInputConverters(new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter())
                 .withOutputConverters(new RelayIdAdapter(), new ObjectScalarAdapter(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
                         new CollectionToListOutputConverter(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
     }

@@ -1,13 +1,13 @@
 package io.leangen.graphql.domain;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import io.leangen.graphql.query.relay.Edge;
 import io.leangen.graphql.query.relay.Page;
 import io.leangen.graphql.query.relay.PageInfo;
 import io.leangen.graphql.query.relay.generic.GenericPageInfo;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created by bojan.tomic on 4/6/16.
@@ -23,7 +23,7 @@ public class AddressPage implements Page<Address> {
     }
 
     @Override
-    public Iterable<Edge<Address>> getEdges() {
+    public List<Edge<Address>> getEdges() {
         return edges;
     }
 

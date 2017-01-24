@@ -104,13 +104,14 @@ public class GenericsTest {
         assertListOf(addManyItems.getArgument("items").getType(), Scalars.GraphQLID);
 
         GraphQL graphQL = new GraphQL(schemaWithDateIds);
-        ExecutionResult result = graphQL.execute("{ contains(item: \"bnVsbDoxMDAw\") }");
+        String base64 = "UVVFUllfUk9PVDoiSmFuIDEsIDE5NzAgMTowMDowMSBBTSI=";
+        ExecutionResult result = graphQL.execute("{ contains(item: \"" + base64+ "\") }");
         assertTrue(result.getErrors().isEmpty());
-        assertEquals("bnVsbDoxMDAw", ((Map<String, Object>) result.getData()).get("contains"));
+        assertEquals(base64, ((Map<String, Object>) result.getData()).get("contains"));
         //Search again but using raw (non Relay encoded) ID this time. For now, this is supported.
-        result = graphQL.execute("{ contains(item: \"1000\") }");
+        result = graphQL.execute("{ contains(item: \"'Jan 1, 1970 1:00:01 AM'\") }");
         assertTrue(result.getErrors().isEmpty());
-        assertEquals("bnVsbDoxMDAw", ((Map<String, Object>) result.getData()).get("contains"));
+        assertEquals(base64, ((Map<String, Object>) result.getData()).get("contains"));
     }
 
     @Test
