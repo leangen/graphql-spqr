@@ -1,10 +1,12 @@
-package io.leangen.graphql.metadata.strategy.value;
+package io.leangen.graphql.metadata.strategy.value.gson;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 public class GsonValueMapper implements ValueMapper {
 

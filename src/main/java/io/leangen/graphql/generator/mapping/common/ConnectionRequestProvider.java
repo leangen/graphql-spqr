@@ -15,7 +15,11 @@ public class ConnectionRequestProvider implements InputValueProvider {
     
     @Override
     public Object getInputValue(Object rawInput, AnnotatedType type, ResolutionContext resolutionContext) {
-        return resolutionContext.connectionRequest;
+        if (GenericTypeReflector.isSuperType(ConnectionRequest.class, type.getType())) {
+            return resolutionContext.connectionRequest;
+        } else {
+            return resolutionContext.connectionRequest.getParameter(type.getAnnotation(RelayConnectionRequest.class).value());
+        }
     }
 
     @Override

@@ -1,4 +1,4 @@
-package io.leangen.graphql.metadata.strategy.value;
+package io.leangen.graphql.metadata.strategy.value.jackson;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 public class JacksonValueMapper implements ValueMapper {
 

@@ -20,14 +20,14 @@ public class ResolutionContext {
     public final Object source;
     public final Object context;
     public final ValueMapper valueMapper;
-    public final Object connectionRequest;
+    public final ConnectionRequest connectionRequest;
     public final GlobalContext globalContext;
     public final List<Field> fields;
     public final GraphQLOutputType fieldType;
     public final GraphQLType parentType;
     public final GraphQLSchema graphQLSchema;
 
-    public ResolutionContext(DataFetchingEnvironment env, Object connectionRequest, ValueMapper valueMapper, GlobalContext globalContext) {
+    public ResolutionContext(DataFetchingEnvironment env, ConnectionRequest connectionRequest, ValueMapper valueMapper, GlobalContext globalContext) {
         
         this.source = env.getSource();
         this.context = env.getContext();

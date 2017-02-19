@@ -1,4 +1,4 @@
-package io.leangen.graphql.metadata.strategy.value;
+package io.leangen.graphql.metadata.strategy.value.simple;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

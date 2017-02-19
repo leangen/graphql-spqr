@@ -1,9 +1,9 @@
 package io.leangen.graphql.util;
 
-import io.leangen.graphql.metadata.strategy.value.GsonValueMapperFactory;
-import io.leangen.graphql.metadata.strategy.value.JacksonValueMapperFactory;
-import io.leangen.graphql.metadata.strategy.value.ScalarOnlyValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.simple.ScalarOnlyValueMapperFactory;
 
 public class Defaults {
 

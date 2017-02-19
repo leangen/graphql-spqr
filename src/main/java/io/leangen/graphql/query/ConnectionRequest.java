@@ -49,4 +49,15 @@ public class ConnectionRequest {
     public BackwardPageRequest getBackwardPageRequest() {
         return backwardPageRequest;
     }
+    
+    public Object getParameter(String name) {
+        switch (name) {
+            case FIRST: return getForwardPageRequest().getFirst();
+            case AFTER: return getForwardPageRequest().getAfter();
+            case LAST: return getBackwardPageRequest().getLast();
+            case BEFORE: return getBackwardPageRequest().getBefore();
+            case ORDER_BY: return this.sortFields;
+            default: throw new IllegalArgumentException("Parameter " + name + " is not a valid connection request parameter");
+        }
+    }
 }

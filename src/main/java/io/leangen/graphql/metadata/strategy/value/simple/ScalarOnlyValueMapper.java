@@ -1,7 +1,9 @@
-package io.leangen.graphql.metadata.strategy.value;
+package io.leangen.graphql.metadata.strategy.value.simple;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 public class ScalarOnlyValueMapper implements ValueMapper {
 

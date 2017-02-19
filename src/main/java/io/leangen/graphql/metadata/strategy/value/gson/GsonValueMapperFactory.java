@@ -1,4 +1,4 @@
-package io.leangen.graphql.metadata.strategy.value;
+package io.leangen.graphql.metadata.strategy.value.gson;
 
 import com.google.gson.FieldNamingStrategy;
 import com.google.gson.GsonBuilder;
@@ -8,6 +8,8 @@ import java.lang.reflect.Type;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
 
 /**
@@ -20,7 +22,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory {
     private final ValueMapper defaultValueMapper;
 
     public GsonValueMapperFactory() {
-        this(new GsonFieldNamingStrategy(), new AbstractAdapterConfigurer());
+        this(new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
     }
 
     public GsonValueMapperFactory(FieldNamingStrategy fieldNamingStrategy, BiConsumer<GsonBuilder, Set<Type>> configurer) {
@@ -42,7 +44,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory {
         return new GsonValueMapper(gsonBuilder.create());
     }
 
-    public static class AbstractAdapterConfigurer implements BiConsumer<GsonBuilder, Set<Type>> {
+    public static class AbstractClassAdapterConfigurer implements BiConsumer<GsonBuilder, Set<Type>> {
 
         @Override
         public void accept(GsonBuilder gsonBuilder, Set<Type> abstractTypes) {

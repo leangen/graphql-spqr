@@ -38,17 +38,7 @@ import static graphql.Scalars.GraphQLString;
 
 public class Scalars {
 
-    private static final Map<Type, GraphQLScalarType> SCALAR_MAPPING = getScalarMapping();
-
-    public static boolean isScalar(Type javaType) {
-        return SCALAR_MAPPING.containsKey(javaType);
-    }
-    
-    public static GraphQLScalarType toGraphQLScalarType(Type javaType) {
-        return SCALAR_MAPPING.get(javaType);
-    }
-
-    public static GraphQLScalarType GraphQLUuid = new GraphQLScalarType("UUID", "Built-in UUID", new Coercing() {
+    public static final GraphQLScalarType GraphQLUuid = new GraphQLScalarType("UUID", "Built-in UUID", new Coercing() {
         @Override
         public Object serialize(Object input) {
             if (input instanceof String) {
@@ -72,7 +62,7 @@ public class Scalars {
         }
     });
 
-    public static GraphQLScalarType GraphQLUri = new GraphQLScalarType("URI", "Built-in URI", new Coercing() {
+    public static final GraphQLScalarType GraphQLUri = new GraphQLScalarType("URI", "Built-in URI", new Coercing() {
         @Override
         public Object serialize(Object input) {
             if (input instanceof URI) {
@@ -96,7 +86,7 @@ public class Scalars {
         }
     });
 
-    public static GraphQLScalarType GraphQLISODate = new GraphQLScalarType("Date", "Built-in date", new Coercing() {
+    public static final GraphQLScalarType GraphQLISODate = new GraphQLScalarType("Date", "Built-in date", new Coercing() {
         private String toISODateString(Date date) {
             return date.toInstant().toString();
         }
@@ -135,7 +125,7 @@ public class Scalars {
         }
     });
 
-    public static GraphQLScalarType graphQLObjectScalar(String name) {
+    public static final GraphQLScalarType graphQLObjectScalar(String name) {
         return new GraphQLScalarType(name, "Built-in object scalar", new Coercing() {
 
             @Override
@@ -185,6 +175,16 @@ public class Scalars {
         });
     }
 
+    private static final Map<Type, GraphQLScalarType> SCALAR_MAPPING = getScalarMapping();
+
+    public static boolean isScalar(Type javaType) {
+        return SCALAR_MAPPING.containsKey(javaType);
+    }
+
+    public static GraphQLScalarType toGraphQLScalarType(Type javaType) {
+        return SCALAR_MAPPING.get(javaType);
+    }
+    
     private static Map<Type, GraphQLScalarType> getScalarMapping() {
         Map<Type, GraphQLScalarType> scalarMapping = new HashMap<>();
         scalarMapping.put(Character.class, GraphQLChar);

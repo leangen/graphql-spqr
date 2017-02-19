@@ -40,6 +40,7 @@ import io.leangen.graphql.util.classpath.SubclassClassFilter;
 
 import static io.leangen.geantyref.GenericTypeReflector.annotate;
 import static io.leangen.geantyref.GenericTypeReflector.capture;
+import static io.leangen.geantyref.GenericTypeReflector.merge;
 import static java.util.Arrays.stream;
 
 public class ClassUtils {
@@ -317,6 +318,11 @@ public class ClassUtils {
                 .toArray(Annotation[]::new);
     }
 
+    public static AnnotatedType addAnnotations(AnnotatedType type, Annotation[] annotations) {
+        if (type == null || annotations == null || annotations.length == 0) return type;
+        return GenericTypeReflector.updateAnnotations(type, merge(type.getAnnotations(), annotations));
+    }
+    
     /**
      * Recursively replaces all bounded types found within the structure of the given {@link AnnotatedType} with their first bound.
      * I.e.

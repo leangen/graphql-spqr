@@ -1,4 +1,4 @@
-package io.leangen.graphql.metadata.strategy.value;
+package io.leangen.graphql.metadata.strategy.value.gson;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.FieldNamingStrategy;
@@ -6,6 +6,8 @@ import com.google.gson.FieldNamingStrategy;
 import java.lang.reflect.Field;
 import java.util.Optional;
 
+import io.leangen.graphql.metadata.strategy.value.AnnotationBasedFieldNameGenerator;
+import io.leangen.graphql.metadata.strategy.value.FieldNameGenerator;
 import io.leangen.graphql.util.ClassUtils;
 
 public class GsonFieldNamingStrategy implements FieldNamingStrategy {

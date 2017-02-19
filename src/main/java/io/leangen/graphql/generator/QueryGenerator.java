@@ -19,13 +19,17 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLType;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryArgument;
 import io.leangen.graphql.metadata.QueryArgumentDefaultValue;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.query.GlobalContext;
+import io.leangen.graphql.query.QueryRunner;
+import io.leangen.graphql.util.GraphQLUtils;
 
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -68,19 +72,25 @@ public class QueryGenerator {
         Collection<Query> rootQueries = buildContext.queryRepository.getQueries();
 
         List<GraphQLFieldDefinition> queries = new ArrayList<>(rootQueries.size() + 1);
-        Map<String, Query> nodeQueriesByType = new HashMap<>();
+        Map<String, String> nodeQueriesByType = new HashMap<>();
 
         for (Query query : rootQueries) {
             GraphQLFieldDefinition graphQlQuery = toGraphQLQuery(query, buildContext);
             queries.add(graphQlQuery);
 
-            nodeQueriesByType.put(graphQlQuery.getType().getName(), query);
+            if (query.hasPrimaryResolver()) {
+                GraphQLType unwrappedQueryType = GraphQLUtils.unwrapNonNull(graphQlQuery.getType());
+                if (unwrappedQueryType instanceof GraphQLObjectType
+                        && ((GraphQLObjectType) unwrappedQueryType).getInterfaces().contains(this.node)) {
+                    nodeQueriesByType.put(unwrappedQueryType.getName(), query.getName());
+                }
+            }
         }
 
         //TODO Shouldn't this check if the return type has relayID? Also, why add queries without primary resolver?
         //Add support for Relay Node query only if Relay-enabled resolvers exist
-        if (nodeQueriesByType.values().stream().anyMatch(Query::hasPrimaryResolver)) {
-            queries.add(buildContext.relay.nodeField(node, createNodeResolver(nodeQueriesByType, buildContext.relay, buildContext.globalContext)));
+        if (!nodeQueriesByType.isEmpty()) {
+            queries.add(buildContext.relay.nodeField(node, createNodeResolver(nodeQueriesByType, buildContext.relay)));
         }
         return queries;
     }
@@ -189,15 +199,16 @@ public class QueryGenerator {
 
     /**
      * Creates a generic resolver for the given query.
-     * @implSpec This resolver simply invokes {@link Query#resolve(DataFetchingEnvironment, ValueMapper, GlobalContext)}
+     * @implSpec This resolver simply invokes {@link QueryRunner#run(DataFetchingEnvironment)}
      *
      * @param query The query for which the resolver is being created
+     * @param valueMapper Mapper to be used to deserialize raw argument values
      * @param globalContext The shared context containing all the global information needed for query resolution
      *
      * @return The resolver for the given query
      */
     private DataFetcher createResolver(Query query, ValueMapper valueMapper, GlobalContext globalContext) {
-        return env -> query.resolve(env, valueMapper, globalContext);
+        return new QueryRunner(query, valueMapper, globalContext)::run;
     }
 
     /**
@@ -208,13 +219,12 @@ public class QueryGenerator {
      * @param nodeQueriesByType A map of all queries whose return types implement the <em>Node</em> interface, keyed
      *                          by their corresponding GraphQL type name
      * @param relay Relay helper
-     * @param globalContext The shared context containing all the global information needed for query resolution
      *
      * @return The node query resolver
      */
     //TODO should this maybe just delegate?
     //e.g. return ((GraphQLObjectType)env.getGraphQLSchema().getType("")).getFieldDefinition("").getDataFetcher().get(env);
-    private DataFetcher createNodeResolver(Map<String, Query> nodeQueriesByType, Relay relay, GlobalContext globalContext) {
+    private DataFetcher createNodeResolver(Map<String, String> nodeQueriesByType, Relay relay) {
         return env -> {
             String typeName;
             try {
@@ -223,12 +233,9 @@ public class QueryGenerator {
                 throw new IllegalArgumentException(env.getArguments().get(RELAY_ID) + " is not a valid Relay node ID");
             }
             if (!nodeQueriesByType.containsKey(typeName)) {
-                throw new IllegalArgumentException(typeName + " is not a known type");
+                throw new IllegalArgumentException(typeName + " is not a Relay node type or no registered query can fetch it by ID");
             }
-            if (!nodeQueriesByType.get(typeName).hasPrimaryResolver()) {
-                throw new IllegalArgumentException("Query '" + nodeQueriesByType.get(typeName).getName() + "' has no primary resolver");
-            }
-            return nodeQueriesByType.get(typeName).resolve(env, null, globalContext);
+            return env.getGraphQLSchema().getQueryType().getFieldDefinition(nodeQueriesByType.get(typeName)).getDataFetcher().get(env);
         };
     }
 

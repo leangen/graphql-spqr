@@ -6,16 +6,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import graphql.GraphQLException;
-import graphql.schema.DataFetchingEnvironment;
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.metadata.strategy.value.ValueMapper;
-import io.leangen.graphql.query.ConnectionRequest;
-import io.leangen.graphql.query.GlobalContext;
-import io.leangen.graphql.query.ResolutionContext;
-import io.leangen.graphql.util.ClassUtils;
 
 import static java.util.Arrays.stream;
 
@@ -50,47 +44,17 @@ public class Query {
         return resolversByFingerprint;
     }
 
-    public Object resolve(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalContext globalContext) {
-        Map<String, Object> queryArguments = new HashMap<>();
-        Map<String, Object> connectionArguments = new HashMap<>();
-
-        env.getArguments().entrySet().forEach(arg -> {
-            if (arg.getValue() != null) {
-                if (ConnectionRequest.isConnectionArgumentName(arg.getKey())) {
-                    connectionArguments.put(arg.getKey(), arg.getValue());
-                } else {
-                    queryArguments.put(arg.getKey(), arg.getValue());
-                }
-            }
-        });
-        
-        ResolutionContext resolutionContext = new ResolutionContext(env, new ConnectionRequest(connectionArguments), valueMapper, globalContext);
-
-        QueryResolver resolver = resolversByFingerprint.get(getFingerprint(queryArguments));
-        try {
-            if (resolver == null) {
-                if (queryArguments.size() == 0 && env.getSource() != null) {
-                    return ClassUtils.getFieldValue(env.getSource(), name);
-                } else {
-                    //TODO implement simple filtering here
-                }
-            } else {
-                Object result = resolver.resolve(resolutionContext, queryArguments);
-                return resolutionContext.convertOutput(result, resolver.getReturnType());
-            }
-            throw new GraphQLException("Resolver for query " + name + " accepting arguments: " + env.getArguments().keySet() + " not implemented");
-        } catch (Exception e) {
-            throw new GraphQLException("Query resolution exception", e);
-        }
+    public QueryResolver getResolver(Set<String> argumentNames) {
+        return resolversByFingerprint.get(getFingerprint(argumentNames));
     }
 
     public boolean isEmbeddableForType(Type type) {
         return this.sourceTypes.stream().anyMatch(sourceType -> GenericTypeReflector.isSuperType(sourceType, type));
     }
 
-    private String getFingerprint(Map<String, Object> arguments) {
+    private String getFingerprint(Set<String> argumentNames) {
         StringBuilder fingerPrint = new StringBuilder();
-        arguments.keySet().stream().sorted().forEach(fingerPrint::append);
+        argumentNames.stream().sorted().forEach(fingerPrint::append);
         return fingerPrint.toString();
     }
 

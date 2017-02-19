@@ -47,6 +47,4 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
     public boolean supports(AnnotatedType type) {
         return type.isAnnotationPresent(GraphQLScalar.class);
     }
-
-    
 }

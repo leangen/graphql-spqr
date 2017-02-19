@@ -7,13 +7,11 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.graphql.annotations.RelayConnectionRequest;
 import io.leangen.graphql.query.ConnectionRequest;
-import io.leangen.graphql.query.ResolutionContext;
 import io.leangen.graphql.query.execution.Executable;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -85,28 +83,19 @@ public class QueryResolver {
     }
 
     /**
-     * Prepares the parameters by mapping/parsing the input and/or source object and invokes the underlying resolver method/field
+     * Calls the underlying resolver  method/field
      *
-     * @param resolutionContext An object containing all contextual information needed during query resolution
+     * @param source The object on which the method/field is to be called
+     * @param args Arguments to the underlying method (empty if the underlying resolver is a field)
      *
-     * @return The result returned by the underlying method/field, potentially proxied and wrapped
+     * @return The result returned by the underlying method/field
      *
      * @throws InvocationTargetException If a reflective invocation of the underlying method/field fails
      * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
      */
     @SuppressWarnings("unchecked")
-    public Object resolve(ResolutionContext resolutionContext, Map<String, Object> arguments) throws InvocationTargetException, IllegalAccessException {
-
-        int queryArgumentsCount = queryArguments.size();
-
-        Object[] args = new Object[queryArgumentsCount];
-        for (int i = 0; i < queryArgumentsCount; i++) {
-            QueryArgument argDescriptor =  queryArguments.get(i);
-            Object argValue = arguments.get(argDescriptor.getName());
-
-            args[i] = resolutionContext.getInputValue(argValue, argDescriptor.getJavaType());
-        }
-        return executable.execute(resolutionContext.source, args);
+    public Object resolve(Object source, Object[] args) throws InvocationTargetException, IllegalAccessException {
+        return executable.execute(source, args);
     }
 
     public boolean supportsConnectionRequests() {

@@ -25,6 +25,7 @@ public class AnnotatedArgumentExtractor implements QueryResolverArgumentExtracto
             GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
             ClassUtils.checkIfResolvable(parameterTypes[i], resolverMethod); //checks if the type is resolvable
             AnnotatedType parameterType = ClassUtils.stripBounds(parameterTypes[i]);
+            parameterType = ClassUtils.addAnnotations(parameterType, parameter.getAnnotations());
             try {
                 queryArguments.add(new QueryArgument(
                         parameterType,
