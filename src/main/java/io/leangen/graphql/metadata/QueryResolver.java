@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.graphql.annotations.RelayConnectionRequest;
+import io.leangen.graphql.metadata.execution.Executable;
 import io.leangen.graphql.query.ConnectionRequest;
-import io.leangen.graphql.query.execution.Executable;
 import io.leangen.graphql.util.ClassUtils;
 
 /**

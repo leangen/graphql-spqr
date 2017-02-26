@@ -13,9 +13,9 @@ import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.metadata.QueryResolver;
-import io.leangen.graphql.query.execution.FieldAccessor;
-import io.leangen.graphql.query.execution.MethodInvoker;
-import io.leangen.graphql.query.execution.SingletonMethodInvoker;
+import io.leangen.graphql.metadata.execution.FieldAccessor;
+import io.leangen.graphql.metadata.execution.MethodInvoker;
+import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
 import io.leangen.graphql.util.ClassUtils;
 
 public class AnnotatedResolverExtractor implements ResolverExtractor {

@@ -1,10 +1,14 @@
 package io.leangen.graphql.domain;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
-
-import java.util.*;
 
 /**
  * Created by bojan.tomic on 7/25/16.

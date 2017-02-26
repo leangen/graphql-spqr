@@ -1,4 +1,4 @@
-package io.leangen.graphql.query.execution;
+package io.leangen.graphql.metadata.execution;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;

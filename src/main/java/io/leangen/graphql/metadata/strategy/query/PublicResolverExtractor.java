@@ -9,8 +9,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.leangen.graphql.metadata.QueryResolver;
-import io.leangen.graphql.query.execution.MethodInvoker;
-import io.leangen.graphql.query.execution.SingletonMethodInvoker;
+import io.leangen.graphql.metadata.execution.MethodInvoker;
+import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
 import io.leangen.graphql.util.ClassUtils;
 
 /**

@@ -31,8 +31,6 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import io.leangen.graphql.GraphQLSchemaBuilder;
-
 import static java.util.Arrays.stream;
 
 /**
@@ -171,8 +169,8 @@ public class ClassFinder {
         return add(files.toArray(array));
     }
 
-    public ClassFinder add(String... packages) {
-        ClassLoader[] classLoaders = new ClassLoader[] {Thread.currentThread().getContextClassLoader(), GraphQLSchemaBuilder.class.getClassLoader()};
+    public ClassFinder add(ClassLoader classLoader, String... packages) {
+        ClassLoader[] classLoaders = new ClassLoader[] {Thread.currentThread().getContextClassLoader(), classLoader};
         Set<File> files = Arrays.stream(packages)
                 .map(pckg -> pckg.replace(".", "/").replace("\\", "/"))
                 .map(path -> path.startsWith("/") ? path.substring(1) : path)

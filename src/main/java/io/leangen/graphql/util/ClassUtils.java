@@ -226,10 +226,11 @@ public class ClassUtils {
      */
     public static Collection<AnnotatedType> findImplementations(AnnotatedType superType, String... packages) {
         try {
+            Class<?> rawType = getRawType(superType.getType());
             ClassFinder classFinder = new ClassFinder();
-            classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(packages);
+            classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(rawType.getClassLoader(), packages);
             return classFinder
-                    .findClasses(new SubclassClassFilter(getRawType(superType.getType()))).stream()
+                    .findClasses(new SubclassClassFilter(rawType)).stream()
                     .map(classInfo -> loadClass(classInfo.getClassName()))
                     .map(raw -> GenericTypeReflector.getExactSubType(superType, raw))
                     .filter(Objects::nonNull)
@@ -242,7 +243,7 @@ public class ClassUtils {
     public static Collection<Class> findImplementations(Class superType, String... packages) {
         try {
             ClassFinder classFinder = new ClassFinder();
-            classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(packages);
+            classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(superType.getClassLoader(), packages);
             return classFinder
                     .findClasses(new SubclassClassFilter(superType)).stream()
                     .map(classInfo -> loadClass(classInfo.getClassName()))
