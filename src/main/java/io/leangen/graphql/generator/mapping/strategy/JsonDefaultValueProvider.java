@@ -4,6 +4,7 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
 
 import io.leangen.graphql.metadata.QueryArgumentDefaultValue;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
 import io.leangen.graphql.util.Defaults;
 
 /**
@@ -16,7 +17,9 @@ public class JsonDefaultValueProvider implements DefaultValueProvider {
         if (initialValue.isEmpty()) {
             return initialValue;
         } else {
-            return new QueryArgumentDefaultValue(Defaults.valueMapperFactory().getValueMapper().fromString(initialValue.get(), parameterType));
+            return new QueryArgumentDefaultValue(
+                    Defaults.valueMapperFactory(new DefaultTypeMetaDataGenerator())
+                            .getValueMapper().fromString(initialValue.get(), parameterType));
         }
     }
 }

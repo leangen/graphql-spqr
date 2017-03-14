@@ -5,9 +5,11 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapterFactory;
 
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
@@ -18,17 +20,19 @@ import io.leangen.graphql.util.ClassUtils;
 public class GsonValueMapperFactory implements ValueMapperFactory {
 
     private final FieldNamingStrategy fieldNamingStrategy;
-    private final BiConsumer<GsonBuilder, Set<Type>> configurer;
+    private final TypeMetaDataGenerator metaDataGenerator;
+    private final Configurer configurer;
     private final ValueMapper defaultValueMapper;
 
-    public GsonValueMapperFactory() {
-        this(new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
+    public GsonValueMapperFactory(TypeMetaDataGenerator metaDataGenerator) {
+        this(metaDataGenerator, new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
     }
 
-    public GsonValueMapperFactory(FieldNamingStrategy fieldNamingStrategy, BiConsumer<GsonBuilder, Set<Type>> configurer) {
+    public GsonValueMapperFactory(TypeMetaDataGenerator metaDataGenerator, FieldNamingStrategy fieldNamingStrategy, Configurer configurer) {
         this.fieldNamingStrategy = fieldNamingStrategy;
+        this.metaDataGenerator = metaDataGenerator;
         this.configurer = configurer;
-        this.defaultValueMapper = new GsonValueMapper(new GsonBuilder().setFieldNamingStrategy(fieldNamingStrategy).create());
+        this.defaultValueMapper = new GsonValueMapper(initBuilder(fieldNamingStrategy, Collections.emptySet(), configurer).create());
     }
 
     @Override
@@ -37,33 +41,42 @@ public class GsonValueMapperFactory implements ValueMapperFactory {
             return defaultValueMapper;
         }
 
-        GsonBuilder gsonBuilder = new GsonBuilder()
-                .setFieldNamingStrategy(fieldNamingStrategy);
-        configurer.accept(gsonBuilder, abstractTypes);
-
-        return new GsonValueMapper(gsonBuilder.create());
+        return new GsonValueMapper(initBuilder(this.fieldNamingStrategy, abstractTypes, this.configurer).create());
     }
 
-    public static class AbstractClassAdapterConfigurer implements BiConsumer<GsonBuilder, Set<Type>> {
+    private GsonBuilder initBuilder(FieldNamingStrategy fieldNamingStrategy, Set<Type> abstractTypes, Configurer configurer) {
+        GsonBuilder gsonBuilder = new GsonBuilder()
+                .setFieldNamingStrategy(fieldNamingStrategy);
+        return configurer.configure(gsonBuilder, abstractTypes, this.metaDataGenerator);
+    }
+    
+    public static class AbstractClassAdapterConfigurer implements Configurer {
 
         @Override
-        public void accept(GsonBuilder gsonBuilder, Set<Type> abstractTypes) {
+        public GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, TypeMetaDataGenerator metaDataGen) {
             abstractTypes.stream()
                     .map(ClassUtils::getRawType)
                     .distinct()
-                    .map(GsonValueMapperFactory::adapterFor)
+                    .map(abstractType -> adapterFor(abstractType, metaDataGen))
                     .forEach(gsonBuilder::registerTypeAdapterFactory);
+            
+            return gsonBuilder;
+        }
+
+        @SuppressWarnings("unchecked")
+        private TypeAdapterFactory adapterFor(Class superClass, TypeMetaDataGenerator metaDataGen) {
+            RuntimeTypeAdapterFactory adapterFactory = RuntimeTypeAdapterFactory.of(superClass, "_type_");
+
+            ClassUtils.findImplementations(superClass).stream()
+                    .filter(impl -> !ClassUtils.isAbstract(impl))
+                    .forEach(impl -> adapterFactory.registerSubtype(impl, metaDataGen.generateTypeName(GenericTypeReflector.annotate(impl))));
+
+            return adapterFactory;
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static TypeAdapterFactory adapterFor(Class superClass) {
-        RuntimeTypeAdapterFactory adapterFactory = RuntimeTypeAdapterFactory.of(superClass, "_type_");
-
-        ClassUtils.findImplementations(superClass).stream()
-                .filter(impl -> !ClassUtils.isAbstract(impl))
-                .forEach(adapterFactory::registerSubtype);
-
-        return adapterFactory;
+    @FunctionalInterface
+    public interface Configurer {
+        GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, TypeMetaDataGenerator metaDataGen);
     }
 }

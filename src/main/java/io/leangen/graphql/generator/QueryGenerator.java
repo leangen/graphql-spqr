@@ -23,6 +23,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Query;
 import io.leangen.graphql.metadata.QueryArgument;
 import io.leangen.graphql.metadata.QueryArgumentDefaultValue;
@@ -152,18 +153,18 @@ public class QueryGenerator {
     }
 
     /**
-     * Maps a single query (representing a ('getter') method on a domain object) to a GraphQL input field.
+     * Maps a single field/property to a GraphQL input field.
      *
-     * @param query The query to map to a GraphQL input field
+     * @param inputField The field/property to map to a GraphQL input field
      * @param buildContext The shared context containing all the global information needed for mapping
      *
-     * @return GraphQL input field representing the given query
+     * @return GraphQL input field representing the given field/property
      */
-    public GraphQLInputObjectField toGraphQLInputField(Query query, Set<Type> abstractTypes, BuildContext buildContext) {
+    public GraphQLInputObjectField toGraphQLInputField(InputField inputField, Set<Type> abstractTypes, BuildContext buildContext) {
         GraphQLInputObjectField.Builder builder = newInputObjectField()
-                .name(query.getName())
-                .description(query.getDescription())
-                .type(toGraphQLInputType(query.getJavaType(), abstractTypes, buildContext));
+                .name(inputField.getName())
+                .description(inputField.getDescription())
+                .type(toGraphQLInputType(inputField.getJavaType(), abstractTypes, buildContext));
         return builder.build();
     }
 

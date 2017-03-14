@@ -1,5 +1,6 @@
 package io.leangen.graphql.util;
 
+import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -27,10 +28,10 @@ public class Defaults {
         throw new IllegalStateException("No JSON deserialization library found on classpath");
     }
     
-    public static ValueMapperFactory valueMapperFactory() {
+    public static ValueMapperFactory valueMapperFactory(TypeMetaDataGenerator metaDataGenerator) {
         switch (jsonLibrary()) {
-            case GSON: return new GsonValueMapperFactory();
-            case JACKSON: return new JacksonValueMapperFactory();
+            case GSON: return new GsonValueMapperFactory(metaDataGenerator);
+            case JACKSON: return new JacksonValueMapperFactory(metaDataGenerator);
             default: return new ScalarOnlyValueMapperFactory();
         }
     }

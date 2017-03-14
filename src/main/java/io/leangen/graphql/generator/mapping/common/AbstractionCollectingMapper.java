@@ -75,7 +75,7 @@ public abstract class AbstractionCollectingMapper implements TypeMapper {
         if (ClassUtils.isAbstract(javaType)) {
             abstractTypes.add(javaType.getType());
         }
-        buildContext.queryRepository.getInputDomainQueries(javaType)
+        buildContext.inputFieldStrategy.getInputFields(javaType)
                 .forEach(childQuery -> abstractTypes.addAll(collectAbstract(childQuery.getJavaType(), seen, buildContext)));
         buildContext.abstractComponentTypes.put(javaType.getType(), abstractTypes);
         return abstractTypes;

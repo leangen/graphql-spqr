@@ -47,6 +47,9 @@ import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverExtractor;
 import io.leangen.graphql.metadata.strategy.query.DefaultQueryBuilder;
 import io.leangen.graphql.metadata.strategy.query.QueryBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverExtractor;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.Defaults;
 
@@ -96,7 +99,9 @@ public class GraphQLSchemaBuilder {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
     private QueryBuilder queryBuilder = new DefaultQueryBuilder();
-    private ValueMapperFactory valueMapperFactory = Defaults.valueMapperFactory();
+    private ValueMapperFactory valueMapperFactory;
+    private InputFieldDiscoveryStrategy inputFieldStrategy;
+    private TypeMetaDataGenerator metaDataGenerator = new DefaultTypeMetaDataGenerator();
     private final QuerySourceRepository querySourceRepository = new QuerySourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final TypeMapperRepository typeMappers = new TypeMapperRepository();
@@ -450,11 +455,21 @@ public class GraphQLSchemaBuilder {
         return this;
     }
     
+    public GraphQLSchemaBuilder withTypeMetaDataGenerator(TypeMetaDataGenerator metaDataGenerator) {
+        this.metaDataGenerator = metaDataGenerator;
+        return this;
+    }
+    
     public GraphQLSchemaBuilder withValueMapperFactory(ValueMapperFactory valueMapperFactory) {
         this.valueMapperFactory = valueMapperFactory;
         return this;
     }
 
+    public GraphQLSchemaBuilder withInputFieldDiscoveryStrategy(InputFieldDiscoveryStrategy inputFieldStrategy) {
+        this.inputFieldStrategy = inputFieldStrategy;
+        return this;
+    }
+    
     /**
      * Registers custom schema processors that can perform arbitrary transformations on the schema just before it is built.
      *
@@ -473,7 +488,7 @@ public class GraphQLSchemaBuilder {
      */
     private void init() {
         if (querySourceRepository.isEmpty()) {
-            throw new IllegalStateException("At least one (non-domain) query source must be registered");
+            throw new IllegalStateException("At least one top-level query source must be registered");
         }
         if (!querySourceRepository.hasGlobalExtractors()) {
             withDefaultResolverExtractors();
@@ -486,6 +501,12 @@ public class GraphQLSchemaBuilder {
         }
         if (inputProviders.isEmpty()) {
             withDefaultInputProviders();
+        }
+        if (valueMapperFactory == null) {
+            valueMapperFactory = Defaults.valueMapperFactory(metaDataGenerator);
+        }
+        if (inputFieldStrategy == null) {
+            inputFieldStrategy = (InputFieldDiscoveryStrategy) Defaults.valueMapperFactory(metaDataGenerator).getValueMapper();
         }
     }
 
@@ -500,7 +521,8 @@ public class GraphQLSchemaBuilder {
         init();
 
         QueryRepository queryRepository = new QueryRepository(querySourceRepository, queryBuilder);
-        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converterRepository, inputProviders, interfaceStrategy, valueMapperFactory);
+        BuildContext buildContext = new BuildContext(queryRepository, typeMappers, converterRepository, 
+                inputProviders, interfaceStrategy, metaDataGenerator, valueMapperFactory, inputFieldStrategy);
         QueryGenerator queryGenerator = new QueryGenerator(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();

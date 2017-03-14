@@ -11,6 +11,7 @@ import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.AnnotatedTypeVariable;
 import java.lang.reflect.AnnotatedWildcardType;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Member;
@@ -124,18 +125,18 @@ public class ClassUtils {
     }
 
     /**
-     * Returns the exact annotated parameters types of the method declared by the given type, with type variables resolved (if possible)
+     * Returns the exact annotated parameter types of the executable declared by the given type, with type variables resolved (if possible)
      *
-     * @param method        The method whose parameter types are to be resolved
-     * @param declaringType The declaring annotated type against which to resolve the types of the parameters of the given method
-     * @return The resolved annotated types of the parameters of the given method
+     * @param executable    The executable whose parameter types are to be resolved
+     * @param declaringType The declaring annotated type against which to resolve the types of the parameters of the given executable
+     * @return The resolved annotated types of the parameters of the given executable
      */
-    public static AnnotatedType[] getParameterTypes(Method method, AnnotatedType declaringType) {
-        AnnotatedType exactDeclaringType = GenericTypeReflector.getExactSuperType(capture(declaringType), method.getDeclaringClass());
+    public static AnnotatedType[] getParameterTypes(Executable executable, AnnotatedType declaringType) {
+        AnnotatedType exactDeclaringType = GenericTypeReflector.getExactSuperType(capture(declaringType), executable.getDeclaringClass());
         if (GenericTypeReflector.isMissingTypeParameters(exactDeclaringType.getType())) {
-            return method.getAnnotatedParameterTypes();
+            return executable.getAnnotatedParameterTypes();
         }
-        return GenericTypeReflector.getExactParameterTypes(method, declaringType);
+        return GenericTypeReflector.getExactParameterTypes(executable, declaringType);
     }
 
     public static Class<?> getRawType(Type type) {
@@ -203,11 +204,14 @@ public class ClassUtils {
         return type.getMethod("is" + capitalize(fieldName));
     }
 
+    public static Method findSetter(Class<?> type, String fieldName, Class<?> fieldType) throws NoSuchMethodException {
+        return type.getMethod("set" + capitalize(fieldName), fieldType);
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> T getFieldValue(Object source, String fieldName) {
         try {
             try {
-                //TODO handle "is" for booleans
                 return (T) findGetter(source.getClass(), fieldName).invoke(source);
             } catch (NoSuchMethodException e) {
                 return (T) source.getClass().getField(fieldName).get(source);
@@ -239,7 +243,7 @@ public class ClassUtils {
             throw new RuntimeException(e);
         }
     }
-    
+
     public static Collection<Class> findImplementations(Class superType, String... packages) {
         try {
             ClassFinder classFinder = new ClassFinder();
@@ -257,12 +261,12 @@ public class ClassUtils {
     public static boolean isAbstract(AnnotatedType type) {
         return isAbstract(getRawType(type.getType()));
     }
-    
+
     public static boolean isAbstract(Class<?> type) {
-        return (type.isInterface() || Modifier.isAbstract(type.getModifiers())) && 
+        return (type.isInterface() || Modifier.isAbstract(type.getModifiers())) &&
                 !type.isPrimitive() && !type.isArray();
     }
-    
+
     public static boolean isAssignable(Type superType, Type subType) {
         return (((superType instanceof ParameterizedType
                 && Arrays.stream(((ParameterizedType) superType).getActualTypeArguments())
@@ -284,7 +288,7 @@ public class ClassUtils {
     public static String toString(AnnotatedType type) {
         return type.getType().getTypeName() + "(" + Arrays.toString(type.getAnnotations()) + ")";
     }
-    
+
     public static boolean containsAnnotation(AnnotatedType type, Class<? extends Annotation> annotation) {
         if (type.isAnnotationPresent(annotation)) {
             return true;
@@ -323,7 +327,7 @@ public class ClassUtils {
         if (type == null || annotations == null || annotations.length == 0) return type;
         return GenericTypeReflector.updateAnnotations(type, merge(type.getAnnotations(), annotations));
     }
-    
+
     /**
      * Recursively replaces all bounded types found within the structure of the given {@link AnnotatedType} with their first bound.
      * I.e.

@@ -68,11 +68,8 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 .name(typeName)
                 .description(buildContext.typeMetaDataGenerator.generateInputTypeDescription(javaType));
 
-        buildContext.queryRepository.getInputDomainQueries(javaType).stream()
-                .filter(query -> query.getArguments().size() == 0)
-                .forEach(
-                        field -> typeBuilder.field(queryGenerator.toGraphQLInputField(field, abstractTypes, buildContext))
-                );
+        buildContext.inputFieldStrategy.getInputFields(javaType).forEach(
+                field -> typeBuilder.field(queryGenerator.toGraphQLInputField(field, abstractTypes, buildContext)));
 
         if (ClassUtils.isAbstract(javaType)) {
             typeBuilder.field(newInputObjectField()
@@ -82,7 +79,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         }
         return typeBuilder.build();
     }
-    
+
     @Override
     public boolean supports(AnnotatedType type) {
         return true;

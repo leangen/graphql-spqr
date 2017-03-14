@@ -60,11 +60,6 @@ public class QueryRepository {
         return assembleDomainQueries(domainSource);
     }
 
-    public Set<Query> getInputDomainQueries(AnnotatedType domainType) {
-        QuerySource domainSource = querySourceRepository.domainSourceForType(domainType);
-        return assembleDomainQueries(domainSource);
-    }
-
     public Collection<Query> getChildQueries(AnnotatedType domainType) {
         Map<String, Query> children = new HashMap<>();
 
