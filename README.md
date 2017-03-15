@@ -1,8 +1,10 @@
-#GraphQL SPQR
+# GraphQL SPQR
 
 GraphQL SPQR (GraphQL Schema Publisher & Query Resolver) is a simple to use library for rapid development of GraphQL APIs in Java.
 
-##Example
+[![Join the chat at https://gitter.im/leangen/Lobby](https://badges.gitter.im/leangen/Lobby.svg)](https://gitter.im/leangen/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+## Example
 
 The example will use annotations provided by GraphQL SPQR itself, but these are optional and the mapping is completely configurable,
 enabling existing services to be exposed through GraphQL without modification.
