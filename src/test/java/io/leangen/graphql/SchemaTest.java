@@ -14,7 +14,7 @@ import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.User;
 import io.leangen.graphql.domain.UserService;
 import io.leangen.graphql.query.relay.Page;
-import io.leangen.graphql.util.GraphQLUtils;
+import io.leangen.graphql.query.relay.generic.PageFactory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -90,12 +90,12 @@ public class SchemaTest {
     @Test
     public void testSchema() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         GraphQLSchema schema = new GraphQLSchemaBuilder().withDefaults()
-                .withSingletonQuerySource(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getType())
+                .withQuerySourceSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getType())
                 .build();
 
         List<String> context = Arrays.asList("xxx", "zzz", "yyy");
         GraphQL exe = new GraphQL(schema);
-        ExecutionResult result = null;
+        ExecutionResult result;
 
         result = exe.execute(complexGenericInputQuery, context);
         assertTrue(result.getErrors().isEmpty());
@@ -106,17 +106,9 @@ public class SchemaTest {
     }
 
     @Test
-    public void testIdBasedPageCreation() {
-        List<User<String>> users = new UserService<Education>().getUsersById(null, 1);
-        Page<User<String>> userPage = GraphQLUtils.createIdBasedPage(users, 1, 99);
-        assertTrue(userPage.getPageInfo().isHasNextPage());
-        assertFalse(userPage.getPageInfo().isHasPreviousPage());
-    }
-
-    @Test
     public void testOffsetBasedPageCreation() {
         List<User<String>> users = new UserService<String>().getUsersById(null, 1);
-        Page<User<String>> userPage = GraphQLUtils.createOffsetBasedPage(users, 5, 0);
+        Page<User<String>> userPage = PageFactory.createOffsetBasedPage(users, 5, 0);
         assertTrue(userPage.getPageInfo().isHasNextPage());
         assertFalse(userPage.getPageInfo().isHasPreviousPage());
     }

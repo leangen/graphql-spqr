@@ -48,7 +48,7 @@ Exposing the service:
 
     UserService userService = new UserService(); //could also be injected by Spring or another framework
     GraphQLSchema schema = new GraphQLSchemaBuilder()
-        .withSingletonQuerySource(userService) //more services can be added the same way
+        .withQuerySourceSingleton(userService) //more services can be added the same way
         .build();
     GraphQL graphQL = new GraphQL(schema);
     

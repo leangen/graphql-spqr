@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator.proxy;
+package io.leangen.graphql.generator;
 
 import graphql.TypeResolutionEnvironment;
 

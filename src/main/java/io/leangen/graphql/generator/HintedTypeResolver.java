@@ -15,7 +15,6 @@ import graphql.schema.TypeResolver;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLTypeHintProvider;
 import io.leangen.graphql.generator.exceptions.UnresolvableTypeException;
-import io.leangen.graphql.generator.proxy.TypeHintProvider;
 import io.leangen.graphql.generator.types.MappedGraphQLType;
 import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
 import io.leangen.graphql.util.ClassUtils;

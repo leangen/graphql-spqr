@@ -16,7 +16,7 @@ import io.leangen.graphql.annotations.GraphQLTypeHintProvider;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
-import io.leangen.graphql.generator.proxy.TypeHintProvider;
+import io.leangen.graphql.generator.TypeHintProvider;
 
 import static io.leangen.graphql.assertions.QueryResultAssertions.assertPathEquals;
 import static org.junit.Assert.assertTrue;
@@ -29,7 +29,7 @@ public class TypeResolverTest {
     @Test
     public void testTypeHintProvider() {
         GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withSingletonQuerySource(new RepoService())
+                .withQuerySourceSingleton(new RepoService())
                 .build();
 
         GraphQL exe = new GraphQL(schema);

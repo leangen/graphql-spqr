@@ -35,7 +35,7 @@ public class UnionTest {
         InlineUnionService unionService = new InlineUnionService();
 
         GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withSingletonQuerySource(unionService)
+                .withQuerySourceSingleton(unionService)
                 .build();
 
         GraphQLOutputType fieldType = schema.getQueryType().getFieldDefinition("union").getType();
@@ -59,7 +59,7 @@ public class UnionTest {
         ExplicitUnionClassService unionService = new ExplicitUnionClassService();
 
         GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withSingletonQuerySource(unionService)
+                .withQuerySourceSingleton(unionService)
                 .build();
 
         GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
@@ -73,7 +73,7 @@ public class UnionTest {
         ExplicitUnionInterfaceService unionService = new ExplicitUnionInterfaceService();
 
         GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withSingletonQuerySource(unionService)
+                .withQuerySourceSingleton(unionService)
                 .build();
 
         GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
@@ -87,7 +87,7 @@ public class UnionTest {
         AutoDiscoveredUnionService unionService = new AutoDiscoveredUnionService();
 
         GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withSingletonQuerySource(unionService)
+                .withQuerySourceSingleton(unionService)
                 .build();
 
         GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();

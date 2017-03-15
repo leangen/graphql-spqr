@@ -80,8 +80,8 @@ import static java.util.Collections.addAll;
  * {@code
  * UserService userService = new UserService(); //could also be injected by a framework
  * GraphQLSchema schema = new GraphQLSchemaBuilder()
- *      .withSingletonQuerySource(userService) //register a query source and use the default extractor
- *      .withDomainQuerySource(User.class, new BeanResolverExtractor()) //customize how queries are extracted from User.class
+ *      .withQuerySourceSingleton(userService) //register a query source and use the default extractor
+ *      .withQuerySourceType(User.class, new BeanResolverExtractor()) //customize how queries are extracted from User.class
  *      .build();
  * GraphQL graphQL = new GraphQL(schema);
  *
@@ -115,13 +115,13 @@ public class GraphQLSchemaBuilder {
 
     /**
      * Construct with {@code querySourceBeans} as singleton query sources with default extractors
-     * <p>Equivalent to: {@code new GraphQLSchemaBuilder().withSingletonQuerySources(querySourceBeans)}</p>
-     * <p>See {@link #withSingletonQuerySources(Object...)}</p>
+     * <p>Equivalent to: {@code new GraphQLSchemaBuilder().withQuerySourceSingletons(querySourceBeans)}</p>
+     * <p>See {@link #withQuerySourceSingletons(Object...)}</p>
      *
      * @param querySourceBeans Singletons to register as query sources
      */
     public GraphQLSchemaBuilder(Object... querySourceBeans) {
-        this.withSingletonQuerySources(querySourceBeans);
+        this.withQuerySourceSingletons(querySourceBeans);
     }
 
     /**
@@ -137,14 +137,14 @@ public class GraphQLSchemaBuilder {
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withSingletonQuerySource(Object querySourceBean) {
-        return withSingletonQuerySource(querySourceBean, querySourceBean.getClass());
+    public GraphQLSchemaBuilder withQuerySourceSingleton(Object querySourceBean) {
+        return withQuerySourceSingleton(querySourceBean, querySourceBean.getClass());
     }
 
     /**
      * Register {@code querySourceBean} as a singleton {@link io.leangen.graphql.generator.QuerySource},
      * with {@code beanType} as its runtime type and with the globally registered {@link ResolverExtractor}s.
-     * <p>See {@link #withSingletonQuerySource(Object)}</p>
+     * <p>See {@link #withQuerySourceSingleton(Object)}</p>
      *
      * @param querySourceBean The singleton bean whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -156,12 +156,12 @@ public class GraphQLSchemaBuilder {
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withSingletonQuerySource(Object querySourceBean, Type beanType) {
-        return withSingletonQuerySource(querySourceBean, GenericTypeReflector.annotate(beanType));
+    public GraphQLSchemaBuilder withQuerySourceSingleton(Object querySourceBean, Type beanType) {
+        return withQuerySourceSingleton(querySourceBean, GenericTypeReflector.annotate(beanType));
     }
 
     /**
-     * Same as {@link #withSingletonQuerySource(Object, Type)}, except that an {@link AnnotatedType} is used as
+     * Same as {@link #withQuerySourceSingleton(Object, Type)}, except that an {@link AnnotatedType} is used as
      * {@code querySourceBean}'s runtime type. Needed when type annotations such as {@link io.leangen.graphql.annotations.NonNull}
      * not directly declared on the class should be captured.
      *
@@ -174,13 +174,13 @@ public class GraphQLSchemaBuilder {
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withSingletonQuerySource(Object querySourceBean, AnnotatedType beanType) {
-        this.querySourceRepository.registerSingletonQuerySource(querySourceBean, beanType);
+    public GraphQLSchemaBuilder withQuerySourceSingleton(Object querySourceBean, AnnotatedType beanType) {
+        this.querySourceRepository.registerQuerySource(querySourceBean, beanType);
         return this;
     }
 
     /**
-     * Same as {@link #withSingletonQuerySource(Object, Type)} except that custom {@link ResolverExtractor}s will be used
+     * Same as {@link #withQuerySourceSingleton(Object, Type)} except that custom {@link ResolverExtractor}s will be used
      * to look through {@code beanType} for methods to be exposed.
      *
      * @param querySourceBean The singleton bean whose type is to be scanned for query/mutation methods and on which
@@ -194,12 +194,12 @@ public class GraphQLSchemaBuilder {
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withSingletonQuerySource(Object querySourceBean, Type beanType, ResolverExtractor... extractors) {
-        return withSingletonQuerySource(querySourceBean, GenericTypeReflector.annotate(beanType), extractors);
+    public GraphQLSchemaBuilder withQuerySourceSingleton(Object querySourceBean, Type beanType, ResolverExtractor... extractors) {
+        return withQuerySourceSingleton(querySourceBean, GenericTypeReflector.annotate(beanType), extractors);
     }
 
     /**
-     * Same as {@link #withSingletonQuerySource(Object, AnnotatedType)} except that custom {@link ResolverExtractor}s will be used
+     * Same as {@link #withQuerySourceSingleton(Object, AnnotatedType)} except that custom {@link ResolverExtractor}s will be used
      * to look through {@code beanType} for methods to be exposed.
      *
      * @param querySourceBean The singleton bean whose type is to be scanned for query/mutation methods and on which
@@ -212,89 +212,88 @@ public class GraphQLSchemaBuilder {
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withSingletonQuerySource(Object querySourceBean, AnnotatedType beanType, ResolverExtractor... extractors) {
-        this.querySourceRepository.registerSingletonQuerySource(querySourceBean, beanType, Arrays.asList(extractors));
+    public GraphQLSchemaBuilder withQuerySourceSingleton(Object querySourceBean, AnnotatedType beanType, ResolverExtractor... extractors) {
+        this.querySourceRepository.registerQuerySource(querySourceBean, beanType, Arrays.asList(extractors));
         return this;
     }
 
     /**
-     * Same as {@link #withSingletonQuerySource(Object)} except that multiple beans can be registered at the same time.
+     * Same as {@link #withQuerySourceSingleton(Object)} except that multiple beans can be registered at the same time.
      *
      * @param querySourceBeans Singleton beans whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withSingletonQuerySources(Object... querySourceBeans) {
-        Arrays.stream(querySourceBeans).forEach(this::withSingletonQuerySource);
+    public GraphQLSchemaBuilder withQuerySourceSingletons(Object... querySourceBeans) {
+        Arrays.stream(querySourceBeans).forEach(this::withQuerySourceSingleton);
         return this;
     }
 
     /**
-     * Register {@code domainQuerySource} type to be scanned for exposed methods, using the globally registered extractors.
+     * Register {@code querySourceType} type to be scanned for exposed methods, using the globally registered extractors.
      * This is not normally required as domain types will be discovered dynamically and globally registered extractors
      * will be used anyway. Only needed when no exposed method refers to this domain type directly
-     * (relying exclusively on interfaces instead) and the type should still be mapped and listed in the resulting schema.
-     * <p><b>Note: Interface mapping is not yet fully implemented!</b></p>
+     * (relying exclusively on interfaces or super-types instead) and the type should still be mapped and listed in the resulting schema.
      *
-     * @param domainQuerySource The domain type that is to be scanned for query/mutation methods
+     * @param querySourceType The domain type that is to be scanned for query/mutation methods
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withDomainQuerySource(Type domainQuerySource) {
-        return withDomainQuerySource(GenericTypeReflector.annotate(domainQuerySource));
+    public GraphQLSchemaBuilder withQuerySourceType(Type querySourceType) {
+        return withQuerySourceType(GenericTypeReflector.annotate(querySourceType));
     }
 
     /**
-     * The same as {@link #withDomainQuerySource(Type)} except that an {@link AnnotatedType} is used,
+     * The same as {@link #withQuerySourceType(Type)} except that an {@link AnnotatedType} is used,
      * so any extra annotations on the type (not only those directly on the class) are kept.
      *
-     * @param domainQuerySource The domain type that is to be scanned for query/mutation methods
+     * @param querySourceType The domain type that is to be scanned for query/mutation methods
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withDomainQuerySource(AnnotatedType domainQuerySource) {
-        this.querySourceRepository.registerDomainQuerySource(domainQuerySource);
+    public GraphQLSchemaBuilder withQuerySourceType(AnnotatedType querySourceType) {
+        this.querySourceRepository.registerQuerySources(querySourceType);
         return this;
     }
 
     /**
-     * Register {@code domainQuerySource} type to be scanned for exposed methods, using the provided {@link ResolverExtractor}s.
+     * Register {@code querySourceType} type to be scanned for exposed methods, using the provided {@link ResolverExtractor}s.
      * Domain types are discovered dynamically, when referred to by an exposed method (either as its parameter type or return type).
      * This method gives a way to customize how the discovered domain type will be analyzed.
      *
-     * @param domainQuerySource The domain type that is to be scanned for query/mutation methods
-     * @param extractors Custom extractors to use when analyzing {@code domainQuerySource} type
+     * @param querySourceType The domain type that is to be scanned for query/mutation methods
+     * @param extractors Custom extractors to use when analyzing {@code querySourceType} type
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withDomainQuerySource(Type domainQuerySource, ResolverExtractor... extractors) {
-        return withDomainQuerySource(GenericTypeReflector.annotate(domainQuerySource), extractors);
+    public GraphQLSchemaBuilder withQuerySourceType(Type querySourceType, ResolverExtractor... extractors) {
+        return withQuerySourceType(GenericTypeReflector.annotate(querySourceType), extractors);
     }
 
     /**
-     * Same as {@link #withDomainQuerySource(Type, ResolverExtractor...)} except that an {@link AnnotatedType} is used
+     * Same as {@link #withQuerySourceType(Type, ResolverExtractor...)} except that an {@link AnnotatedType} is used
      * so any extra annotations on the type (not only those directly on the class) are kept.
      *
-     * @param domainQuerySource The annotated domain type that is to be scanned for query/mutation methods
-     * @param extractors Custom extractors to use when analyzing {@code domainQuerySource} type
+     * @param querySourceType The annotated domain type that is to be scanned for query/mutation methods
+     * @param extractors Custom extractors to use when analyzing {@code querySourceType} type
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withDomainQuerySource(AnnotatedType domainQuerySource, ResolverExtractor... extractors) {
-        this.querySourceRepository.registerDomainQuerySource(domainQuerySource, Arrays.asList(extractors));
+    public GraphQLSchemaBuilder withQuerySourceType(AnnotatedType querySourceType, ResolverExtractor... extractors) {
+        this.querySourceRepository.registerQuerySources(querySourceType, Arrays.asList(extractors));
         return this;
     }
 
     /**
-     * Same as {@link #withDomainQuerySource(Type)} except that multiple types can be registered at the same time
+     * Same as {@link #withQuerySourceType(Type)} except that multiple types can be registered at the same time
      *
-     * @param domainQuerySources The domain types that are to be scanned for query/mutation methods
+     * @param querySourceTypes The domain types that are to be scanned for query/mutation methods
      *
      * @return This {@link GraphQLSchemaBuilder} instance, to allow method chaining
      */
-    public GraphQLSchemaBuilder withDomainQuerySources(Type... domainQuerySources) {
-        Arrays.stream(domainQuerySources).forEach(this::withDomainQuerySource);
+    public GraphQLSchemaBuilder withQuerySourceTypes(Type... querySourceTypes) {
+        Arrays.stream(querySourceTypes).forEach(this::withQuerySourceType);
         return this;
     }
 

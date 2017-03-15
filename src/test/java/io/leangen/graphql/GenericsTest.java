@@ -54,7 +54,7 @@ public class GenericsTest {
         nonNullStringService.addItem("booze", "Fire-water");
 
         GraphQLSchema schemaWithNonNullGenerics = new GraphQLSchemaBuilder()
-                .withSingletonQuerySource(nonNullStringService, nonNullString)
+                .withQuerySourceSingleton(nonNullStringService, nonNullString)
                 .withDefaults()
                 .build();
 
@@ -87,7 +87,7 @@ public class GenericsTest {
         dateIdService.addItem("secondEvent", new Date(2000));
 
         GraphQLSchema schemaWithDateIds = new GraphQLSchemaBuilder()
-                .withSingletonQuerySource(dateIdService, dateId)
+                .withQuerySourceSingleton(dateIdService, dateId)
                 .withDefaults()
                 .build();
 
@@ -121,7 +121,7 @@ public class GenericsTest {
         wildcardNumberService.addItem("player2", Arrays.asList(new BigDecimal("12.56"), 14.78));
 
         GraphQLSchema schemaWithGenerics = new GraphQLSchemaBuilder()
-                .withSingletonQuerySource(wildcardNumberService, listOfWildcardNumbers)
+                .withQuerySourceSingleton(wildcardNumberService, listOfWildcardNumbers)
                 .withDefaults()
                 .build();
 
@@ -157,7 +157,7 @@ public class GenericsTest {
         arrayNumberService.addItem("scores2", array2);
 
         GraphQLSchema schemaWithGenerics = new GraphQLSchemaBuilder()
-                .withSingletonQuerySource(arrayNumberService, arrayOfListsOfNumbers)
+                .withQuerySourceSingleton(arrayNumberService, arrayOfListsOfNumbers)
                 .withDefaults()
                 .build();
 

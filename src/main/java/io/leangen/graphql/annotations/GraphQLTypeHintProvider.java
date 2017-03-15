@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import io.leangen.graphql.generator.proxy.TypeHintProvider;
+import io.leangen.graphql.generator.TypeHintProvider;
 
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)

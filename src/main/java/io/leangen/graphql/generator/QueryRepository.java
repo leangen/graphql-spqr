@@ -64,6 +64,9 @@ public class QueryRepository {
         Map<String, Query> children = new HashMap<>();
 
         Map<String, Query> domainQueries = getDomainQueries(domainType).stream().collect(Collectors.toMap(Query::getName, Function.identity()));
+        /*TODO check if any domain query has a @QuerySource field of type different then domainType.
+        If so, throw an error early, as such a query will be impossible to invoke, unless they're static!
+        Not sure about @RootContext*/
         Map<String, Query> embeddableQueries = getEmbeddableQueries(domainType.getType()).stream().collect(Collectors.toMap(Query::getName, Function.identity()));
         children.putAll(domainQueries);
         children.putAll(embeddableQueries);

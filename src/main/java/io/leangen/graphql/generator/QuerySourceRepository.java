@@ -20,19 +20,19 @@ public class QuerySourceRepository {
     private final Collection<QuerySource> querySources = new HashSet<>();
     private final Map<AnnotatedType, QuerySource> domainQuerySources = new HashMap<>();
 
-    public void registerSingletonQuerySource(Object querySourceBean, AnnotatedType beanType) {
+    public void registerQuerySource(Object querySourceBean, AnnotatedType beanType) {
         this.querySources.add(new QuerySource(querySourceBean, beanType, resolverExtractors));
     }
 
-    public void registerSingletonQuerySource(Object querySourceBean, AnnotatedType beanType, Collection<ResolverExtractor> extractors) {
+    public void registerQuerySource(Object querySourceBean, AnnotatedType beanType, Collection<ResolverExtractor> extractors) {
         this.querySources.add(new QuerySource(querySourceBean, beanType, extractors));
     }
 
-    public void registerDomainQuerySource(AnnotatedType domainType) {
+    public void registerQuerySources(AnnotatedType domainType) {
         this.domainQuerySources.put(domainType, new QuerySource(domainType, resolverExtractors));
     }
 
-    public void registerDomainQuerySource(AnnotatedType domainType, Collection<ResolverExtractor> extractors) {
+    public void registerQuerySources(AnnotatedType domainType, Collection<ResolverExtractor> extractors) {
         this.domainQuerySources.put(domainType, new QuerySource(domainType, extractors));
     }
 
