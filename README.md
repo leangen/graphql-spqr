@@ -3,6 +3,7 @@
 GraphQL SPQR (GraphQL Schema Publisher & Query Resolver) is a simple to use library for rapid development of GraphQL APIs in Java.
 
 [![Join the chat at https://gitter.im/leangen/Lobby](https://badges.gitter.im/leangen/Lobby.svg)](https://gitter.im/leangen/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/leangen/graphql-spqr.svg?branch=master)](https://travis-ci.org/leangen/graphql-spqr)
 
 ## Example
 
