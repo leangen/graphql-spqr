@@ -9,7 +9,7 @@ import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 
@@ -20,8 +20,9 @@ import static graphql.schema.GraphQLUnionType.newUnionType;
  */
 public abstract class UnionMapper implements TypeMapper {
 
+    @SuppressWarnings("WeakerAccess")
     protected GraphQLUnionType toGraphQLUnion(String name, String description, List<AnnotatedType> possibleJavaTypes,
-                                              Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+                                              Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
 
         GraphQLUnionType.Builder builder = newUnionType()
                 .name(name)
@@ -29,7 +30,7 @@ public abstract class UnionMapper implements TypeMapper {
                 .typeResolver(buildContext.typeResolver);
 
         possibleJavaTypes.stream()
-                .map(pos -> queryGenerator.toGraphQLType(pos, abstractTypes, buildContext))
+                .map(pos -> operationMapper.toGraphQLType(pos, abstractTypes, buildContext))
                 .forEach(type -> {
                     if (type instanceof GraphQLObjectType) {
                         builder.possibleType((GraphQLObjectType) type);
@@ -47,7 +48,7 @@ public abstract class UnionMapper implements TypeMapper {
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         throw new UnsupportedOperationException("GraphQL union type can not be used as input type");
     }
 }

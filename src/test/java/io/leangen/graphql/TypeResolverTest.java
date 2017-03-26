@@ -28,9 +28,9 @@ public class TypeResolverTest {
 
     @Test
     public void testTypeHintProvider() {
-        GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withQuerySourceSingleton(new RepoService())
-                .build();
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(new RepoService())
+                .generate();
 
         GraphQL exe = new GraphQL(schema);
         String queryTemplate = "{repo(id: %d) {" +

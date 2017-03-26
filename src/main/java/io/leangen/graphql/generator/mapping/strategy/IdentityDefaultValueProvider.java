@@ -3,21 +3,21 @@ package io.leangen.graphql.generator.mapping.strategy;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
 
-import io.leangen.graphql.metadata.QueryArgumentDefaultValue;
+import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
 public class IdentityDefaultValueProvider implements DefaultValueProvider {
 
-    public final QueryArgumentDefaultValue value;
+    public final OperationArgumentDefaultValue value;
 
-    public IdentityDefaultValueProvider(QueryArgumentDefaultValue value) {
+    public IdentityDefaultValueProvider(OperationArgumentDefaultValue value) {
         this.value = value;
     }
 
     @Override
-    public QueryArgumentDefaultValue getDefaultValue(Parameter parameter, AnnotatedType parameterType, QueryArgumentDefaultValue initialValue) {
+    public OperationArgumentDefaultValue getDefaultValue(Parameter parameter, AnnotatedType parameterType, OperationArgumentDefaultValue initialValue) {
         return initialValue;
     }
 }

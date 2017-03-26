@@ -1,10 +1,10 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.NonNull;
-
 import java.net.URI;
 import java.net.URISyntaxException;
+
+import io.leangen.graphql.annotations.GraphQLNonNull;
+import io.leangen.graphql.annotations.GraphQLQuery;
 
 /**
  * Created by bojan.tomic on 3/21/16.
@@ -20,7 +20,7 @@ public class Street {
     }
 
     @GraphQLQuery(name = "name", description = "Street name")
-    public @NonNull String getName() {
+    public @GraphQLNonNull String getName() {
         return name;
     }
 

@@ -2,8 +2,8 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 
+import io.leangen.graphql.execution.ResolutionContext;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
-import io.leangen.graphql.query.ResolutionContext;
 
 /**
  * @author Bojan Tomic (kaqqao)

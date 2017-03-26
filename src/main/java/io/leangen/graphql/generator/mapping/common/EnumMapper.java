@@ -9,7 +9,7 @@ import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -21,7 +21,7 @@ import static graphql.schema.GraphQLEnumType.newEnum;
 public class EnumMapper implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(buildContext.typeMetaDataGenerator.generateTypeName(javaType))
                 .description(buildContext.typeMetaDataGenerator.generateTypeDescription(javaType));
@@ -30,7 +30,7 @@ public class EnumMapper implements TypeMapper {
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(buildContext.typeMetaDataGenerator.generateInputTypeName(javaType))
                 .description(buildContext.typeMetaDataGenerator.generateInputTypeDescription(javaType));

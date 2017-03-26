@@ -28,6 +28,10 @@ public class FieldAccessor extends Executable {
         return ClassUtils.getFieldType(((Field) delegate), enclosingType);
     }
 
+    /**
+     * {@inheritDoc}
+     * Always 0 for @{FieldAccessor}
+     */
     @Override
     public int getParameterCount() {
         return 0;

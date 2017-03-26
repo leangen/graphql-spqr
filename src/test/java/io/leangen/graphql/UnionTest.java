@@ -6,15 +6,14 @@ import java.util.List;
 import java.util.Map;
 
 import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.NonNull;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
@@ -34,13 +33,13 @@ public class UnionTest {
     public void testInlineUnion() {
         InlineUnionService unionService = new InlineUnionService();
 
-        GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withQuerySourceSingleton(unionService)
-                .build();
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(unionService)
+                .generate();
 
         GraphQLOutputType fieldType = schema.getQueryType().getFieldDefinition("union").getType();
         assertNonNull(fieldType, GraphQLList.class);
-        GraphQLType list = ((GraphQLNonNull) fieldType).getWrappedType();
+        GraphQLType list = ((graphql.schema.GraphQLNonNull) fieldType).getWrappedType();
         assertListOf(list, GraphQLList.class);
         GraphQLType map = ((GraphQLList) list).getWrappedType();
         assertMapOf(map, GraphQLUnionType.class, GraphQLUnionType.class);
@@ -58,9 +57,9 @@ public class UnionTest {
     public void testExplicitUnionClass() {
         ExplicitUnionClassService unionService = new ExplicitUnionClassService();
 
-        GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withQuerySourceSingleton(unionService)
-                .build();
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(unionService)
+                .generate();
 
         GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
         assertUnionOf(union, schema.getType("C1"), schema.getType("C2"));
@@ -72,9 +71,9 @@ public class UnionTest {
     public void testExplicitUnionInterface() {
         ExplicitUnionInterfaceService unionService = new ExplicitUnionInterfaceService();
 
-        GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withQuerySourceSingleton(unionService)
-                .build();
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(unionService)
+                .generate();
 
         GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
         assertUnionOf(union, schema.getType("I1"), schema.getType("I2"));
@@ -86,9 +85,9 @@ public class UnionTest {
     public void testAutoDiscoveredUnionInterface() {
         AutoDiscoveredUnionService unionService = new AutoDiscoveredUnionService();
 
-        GraphQLSchema schema = new GraphQLSchemaBuilder()
-                .withQuerySourceSingleton(unionService)
-                .build();
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(unionService)
+                .generate();
 
         GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
         assertUnionOf(union, schema.getType("A1"), schema.getType("A2"));
@@ -103,7 +102,7 @@ public class UnionTest {
         }
 
         @GraphQLQuery(name = "union")
-        public @NonNull List<Map<@io.leangen.graphql.annotations.GraphQLUnion(name = "Simple_One_Two") ? extends SimpleTwo, @io.leangen.graphql.annotations.GraphQLUnion(name = "Education_Street") Education>> union2(@GraphQLArgument(name = "id") int id) {
+        public @GraphQLNonNull List<Map<@io.leangen.graphql.annotations.GraphQLUnion(name = "Simple_One_Two") ? extends SimpleTwo, @io.leangen.graphql.annotations.GraphQLUnion(name = "Education_Street") Education>> union2(@GraphQLArgument(name = "id") int id) {
             return null;
         }
 

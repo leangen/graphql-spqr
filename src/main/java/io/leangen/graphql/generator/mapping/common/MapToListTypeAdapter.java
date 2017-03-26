@@ -13,10 +13,10 @@ import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
+import io.leangen.graphql.execution.ResolutionContext;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
-import io.leangen.graphql.query.ResolutionContext;
 
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
@@ -49,19 +49,19 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     }
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         return new GraphQLList(
                 mapEntry(
-                        queryGenerator.toGraphQLType(getElementType(javaType, 0), abstractTypes, buildContext),
-                        queryGenerator.toGraphQLType(getElementType(javaType, 1), abstractTypes, buildContext)));
+                        operationMapper.toGraphQLType(getElementType(javaType, 0), abstractTypes, buildContext),
+                        operationMapper.toGraphQLType(getElementType(javaType, 1), abstractTypes, buildContext)));
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         return new GraphQLList(
                 mapEntry(
-                        queryGenerator.toGraphQLInputType(getElementType(javaType, 0), abstractTypes, buildContext),
-                        queryGenerator.toGraphQLInputType(getElementType(javaType, 1), abstractTypes, buildContext)));
+                        operationMapper.toGraphQLInputType(getElementType(javaType, 0), abstractTypes, buildContext),
+                        operationMapper.toGraphQLInputType(getElementType(javaType, 1), abstractTypes, buildContext)));
     }
 
     private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType) {

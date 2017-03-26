@@ -2,7 +2,7 @@ package io.leangen.graphql.generator.mapping;
 
 import java.lang.reflect.AnnotatedType;
 
-import io.leangen.graphql.query.ResolutionContext;
+import io.leangen.graphql.execution.ResolutionContext;
 
 /**
  * @param <T> The actual argument type of an exposed method

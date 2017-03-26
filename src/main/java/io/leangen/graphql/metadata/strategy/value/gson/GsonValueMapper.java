@@ -68,7 +68,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
                 AnnotatedType fieldType = ClassUtils.getFieldType(field, type);
                 String fieldName = gson.fieldNamingStrategy().translateName(field);
                 if (!inputFields.add(new InputField(fieldName, "", fieldType))) {
-                    throw new IllegalArgumentException(raw + " declares multiple JSON fields named " + fieldName);
+                    throw new IllegalArgumentException(raw + " declares multiple input fields named " + fieldName);
                 }
             }
             raw = raw.getSuperclass();

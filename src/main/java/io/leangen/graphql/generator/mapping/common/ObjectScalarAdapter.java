@@ -10,10 +10,10 @@ import java.util.Set;
 import graphql.schema.GraphQLScalarType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLScalar;
+import io.leangen.graphql.execution.ResolutionContext;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.OutputConverter;
-import io.leangen.graphql.query.ResolutionContext;
 import io.leangen.graphql.util.Scalars;
 
 /**
@@ -24,13 +24,13 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
     private final AnnotatedType MAP = GenericTypeReflector.annotate(LinkedHashMap.class);
 
     @Override
-    public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         return Scalars.graphQLObjectScalar(typeName);
     }
     
     @Override
-    public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return toGraphQLType(typeName, javaType, abstractTypes, queryGenerator, buildContext);
+    public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+        return toGraphQLType(typeName, javaType, abstractTypes, operationMapper, buildContext);
     }
 
     @Override

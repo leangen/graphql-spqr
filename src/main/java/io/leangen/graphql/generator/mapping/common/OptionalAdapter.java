@@ -4,8 +4,8 @@ import java.lang.reflect.AnnotatedType;
 import java.util.Optional;
 
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.execution.ResolutionContext;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
-import io.leangen.graphql.query.ResolutionContext;
 
 /**
  * @author Bojan Tomic (kaqqao)

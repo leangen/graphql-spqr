@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.execution.ResolutionContext;
 import io.leangen.graphql.generator.mapping.OutputConverter;
-import io.leangen.graphql.query.ResolutionContext;
 
 /**
  * Converts outputs of non-list collection types into lists. Needed because graphql-java always expects a list

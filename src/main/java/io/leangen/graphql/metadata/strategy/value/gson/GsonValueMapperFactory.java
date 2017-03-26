@@ -10,19 +10,18 @@ import java.util.Set;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
-import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class GsonValueMapperFactory implements ValueMapperFactory {
+public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMapper> {
 
     private final FieldNamingStrategy fieldNamingStrategy;
     private final TypeMetaDataGenerator metaDataGenerator;
     private final Configurer configurer;
-    private final ValueMapper defaultValueMapper;
+    private final GsonValueMapper defaultValueMapper;
 
     public GsonValueMapperFactory(TypeMetaDataGenerator metaDataGenerator) {
         this(metaDataGenerator, new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
@@ -36,7 +35,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory {
     }
 
     @Override
-    public ValueMapper getValueMapper(Set<Type> abstractTypes) {
+    public GsonValueMapper getValueMapper(Set<Type> abstractTypes) {
         if (abstractTypes.isEmpty()) {
             return defaultValueMapper;
         }

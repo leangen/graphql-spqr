@@ -15,12 +15,11 @@ import graphql.GraphQL;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.NonNull;
+import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.domain.GenericItemRepo;
 
@@ -38,25 +37,25 @@ public class GenericsTest {
     // IMPORTANT! All type declarations have to stay outside of tests (can not be inlined)
     // as the annotation parser treats them differently and discards the annotations otherwise.
     // This is JDK8 bug: http://stackoverflow.com/questions/39952812
-    private static final AnnotatedType nonNullString = new TypeToken<GenericItemRepo<@NonNull String>>() {
+    private static final AnnotatedType nonNullString = new TypeToken<GenericItemRepo<@GraphQLNonNull String>>() {
     }.getAnnotatedType();
     private static final AnnotatedType dateId = new TypeToken<GenericItemRepo<@RelayId Date>>() {
     }.getAnnotatedType();
-    private static final AnnotatedType listOfWildcardNumbers = new TypeToken<GenericItemRepo<@NonNull List<? extends Number>>>() {
+    private static final AnnotatedType listOfWildcardNumbers = new TypeToken<GenericItemRepo<@GraphQLNonNull List<? extends Number>>>() {
     }.getAnnotatedType();
-    private static final AnnotatedType arrayOfListsOfNumbers = new TypeToken<GenericItemRepo<@NonNull List<Number> @NonNull[]>>() {
+    private static final AnnotatedType arrayOfListsOfNumbers = new TypeToken<GenericItemRepo<@GraphQLNonNull List<Number> @GraphQLNonNull []>>() {
     }.getAnnotatedType();
 
     @Test
     public void testNonNullGenerics() {
-        GenericItemRepo<@NonNull String> nonNullStringService = new GenericItemRepo<>();
+        GenericItemRepo<@GraphQLNonNull String> nonNullStringService = new GenericItemRepo<>();
         nonNullStringService.addItem("pooch", "Strudel, the poodle");
         nonNullStringService.addItem("booze", "Fire-water");
 
-        GraphQLSchema schemaWithNonNullGenerics = new GraphQLSchemaBuilder()
-                .withQuerySourceSingleton(nonNullStringService, nonNullString)
+        GraphQLSchema schemaWithNonNullGenerics = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(nonNullStringService, nonNullString)
                 .withDefaults()
-                .build();
+                .generate();
 
         GraphQLOutputType itemType = schemaWithNonNullGenerics.getQueryType().getFieldDefinition("getItem").getType();
         assertNonNull(itemType, Scalars.GraphQLString);
@@ -86,10 +85,10 @@ public class GenericsTest {
         dateIdService.addItem("firstEvent", new Date(1000));
         dateIdService.addItem("secondEvent", new Date(2000));
 
-        GraphQLSchema schemaWithDateIds = new GraphQLSchemaBuilder()
-                .withQuerySourceSingleton(dateIdService, dateId)
+        GraphQLSchema schemaWithDateIds = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(dateIdService, dateId)
                 .withDefaults()
-                .build();
+                .generate();
 
         GraphQLOutputType itemType = schemaWithDateIds.getQueryType().getFieldDefinition("getItem").getType();
         assertEquals(Scalars.GraphQLID, itemType);
@@ -116,27 +115,27 @@ public class GenericsTest {
 
     @Test
     public void testWildcardGenerics() {
-        GenericItemRepo<@NonNull List<? extends Number>> wildcardNumberService = new GenericItemRepo<>();
+        GenericItemRepo<@GraphQLNonNull List<? extends Number>> wildcardNumberService = new GenericItemRepo<>();
         wildcardNumberService.addItem("player1", Arrays.asList(12, 13.4, new BigDecimal("4000")));
         wildcardNumberService.addItem("player2", Arrays.asList(new BigDecimal("12.56"), 14.78));
 
-        GraphQLSchema schemaWithGenerics = new GraphQLSchemaBuilder()
-                .withQuerySourceSingleton(wildcardNumberService, listOfWildcardNumbers)
+        GraphQLSchema schemaWithGenerics = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(wildcardNumberService, listOfWildcardNumbers)
                 .withDefaults()
-                .build();
+                .generate();
 
         GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("getItem").getType();
         assertNonNull(itemType, GraphQLList.class);
-        assertListOf(((GraphQLNonNull) itemType).getWrappedType(), Scalars.GraphQLBigDecimal);
+        assertListOf(((graphql.schema.GraphQLNonNull) itemType).getWrappedType(), Scalars.GraphQLBigDecimal);
 
         GraphQLOutputType itemCollectionType = schemaWithGenerics.getQueryType().getFieldDefinition("getAllItems").getType();
         assertListOfNonNull(itemCollectionType, GraphQLList.class);
-        assertListOf(((GraphQLNonNull) ((GraphQLList) itemCollectionType).getWrappedType()).getWrappedType(), Scalars.GraphQLBigDecimal);
+        assertListOf(((graphql.schema.GraphQLNonNull) ((GraphQLList) itemCollectionType).getWrappedType()).getWrappedType(), Scalars.GraphQLBigDecimal);
 
         GraphQLFieldDefinition addOneItem = schemaWithGenerics.getMutationType().getFieldDefinition("addItem");
         GraphQLType itemArgType = addOneItem.getArgument("item").getType();
         assertNonNull(itemArgType, GraphQLList.class);
-        assertListOf(((GraphQLNonNull) itemArgType).getWrappedType(), Scalars.GraphQLBigDecimal);
+        assertListOf(((graphql.schema.GraphQLNonNull) itemArgType).getWrappedType(), Scalars.GraphQLBigDecimal);
 
         GraphQL graphQL = new GraphQL(schemaWithGenerics);
         ExecutionResult result = graphQL.execute("{ getAllItems }");
@@ -148,7 +147,7 @@ public class GenericsTest {
 
     @Test
     public void testArrayGenerics() {
-        GenericItemRepo<@NonNull List<Number> @NonNull[]> arrayNumberService = new GenericItemRepo<>();
+        GenericItemRepo<@GraphQLNonNull List<Number> @GraphQLNonNull []> arrayNumberService = new GenericItemRepo<>();
         List<Number>[] array1 = (List<Number>[]) new List[1];
         array1[0] = Arrays.asList(12, 13.4, new BigDecimal("4000"));
         List<Number>[] array2 = (List<Number>[]) new List[1];
@@ -156,24 +155,24 @@ public class GenericsTest {
         arrayNumberService.addItem("scores1", array1);
         arrayNumberService.addItem("scores2", array2);
 
-        GraphQLSchema schemaWithGenerics = new GraphQLSchemaBuilder()
-                .withQuerySourceSingleton(arrayNumberService, arrayOfListsOfNumbers)
+        GraphQLSchema schemaWithGenerics = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(arrayNumberService, arrayOfListsOfNumbers)
                 .withDefaults()
-                .build();
+                .generate();
 
         GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("getItem").getType();
         assertNonNull(itemType, GraphQLList.class);
-        GraphQLType inner = ((GraphQLNonNull) itemType).getWrappedType();
-        assertListOf(inner, GraphQLNonNull.class);
-        inner = ((GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
+        GraphQLType inner = ((graphql.schema.GraphQLNonNull) itemType).getWrappedType();
+        assertListOf(inner, graphql.schema.GraphQLNonNull.class);
+        inner = ((graphql.schema.GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
         assertListOf(inner, Scalars.GraphQLBigDecimal);
 
         GraphQLFieldDefinition addOneItem = schemaWithGenerics.getMutationType().getFieldDefinition("addItem");
         GraphQLType itemArgType = addOneItem.getArgument("item").getType();
         assertNonNull(itemArgType, GraphQLList.class);
-        inner = ((GraphQLNonNull) itemType).getWrappedType();
-        assertListOf(inner, GraphQLNonNull.class);
-        inner = ((GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
+        inner = ((graphql.schema.GraphQLNonNull) itemType).getWrappedType();
+        assertListOf(inner, graphql.schema.GraphQLNonNull.class);
+        inner = ((graphql.schema.GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
         assertListOf(inner, Scalars.GraphQLBigDecimal);
 
         GraphQL graphQL = new GraphQL(schemaWithGenerics);

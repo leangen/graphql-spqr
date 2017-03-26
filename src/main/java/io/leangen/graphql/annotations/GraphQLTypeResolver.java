@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import io.leangen.graphql.query.AbstractTypeResolver;
+import io.leangen.graphql.execution.AbstractTypeResolver;
 
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)

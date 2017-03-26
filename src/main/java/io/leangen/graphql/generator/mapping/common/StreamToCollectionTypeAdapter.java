@@ -7,8 +7,8 @@ import java.util.stream.Stream;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
+import io.leangen.graphql.execution.ResolutionContext;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
-import io.leangen.graphql.query.ResolutionContext;
 
 /**
  * @author Bojan Tomic (kaqqao)

@@ -4,17 +4,17 @@ import java.lang.reflect.AnnotatedType;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.RelayConnectionRequest;
-import io.leangen.graphql.generator.mapping.InputValueProvider;
-import io.leangen.graphql.query.ConnectionRequest;
-import io.leangen.graphql.query.ResolutionContext;
+import io.leangen.graphql.execution.ConnectionRequest;
+import io.leangen.graphql.execution.ResolutionContext;
+import io.leangen.graphql.generator.mapping.ArgumentInjector;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class ConnectionRequestProvider implements InputValueProvider {
+public class ConnectionRequestProvider implements ArgumentInjector {
     
     @Override
-    public Object getInputValue(Object rawInput, AnnotatedType type, ResolutionContext resolutionContext) {
+    public Object getArgumentValue(Object rawInput, AnnotatedType type, ResolutionContext resolutionContext) {
         if (GenericTypeReflector.isSuperType(ConnectionRequest.class, type.getType())) {
             return resolutionContext.connectionRequest;
         } else {

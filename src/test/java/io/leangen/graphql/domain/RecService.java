@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLContext;
+import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLResolverSource;
-import io.leangen.graphql.annotations.NonNull;
 import io.leangen.graphql.annotations.RelayId;
 
 /**
@@ -20,7 +20,7 @@ public class RecService {
     }
 
     @GraphQLQuery(name = "user")
-    public SimpleUser getByFriends(@GraphQLArgument(name = "friends") @NonNull List<@NonNull SimpleUser> friends) {
+    public SimpleUser getByFriends(@GraphQLArgument(name = "friends") @GraphQLNonNull List<@GraphQLNonNull SimpleUser> friends) {
         return new SimpleUser("Friendly McFriend", friends.get(0));
     }
 
@@ -30,19 +30,19 @@ public class RecService {
     }
 
     @GraphQLQuery(name = "educations")
-    public @NonNull List<@NonNull Education> getEdus(@GraphQLArgument(name = "user") @NonNull SimpleUser user) {
+    public @GraphQLNonNull List<@GraphQLNonNull Education> getEdus(@GraphQLArgument(name = "user") @GraphQLNonNull SimpleUser user) {
         List<Education> edus = new ArrayList<>();
         edus.add(new Education("aaa", 12, 12));
         return edus;
     }
 
     @GraphQLQuery(name = "extra")
-    public String extra(@GraphQLResolverSource @GraphQLArgument(name = "education") Education source) {
+    public String extra(@GraphQLContext @GraphQLArgument(name = "education") Education source) {
         return "zmajs";
     }
 
 //	@GraphQLQuery(name = "phreak", parentQueries = "user.education")
-//	public String freak(@GraphQLResolverSource @GraphQLArgument(name = "education") Education source) {
+//	public String freak(@GraphQLContext @GraphQLArgument(name = "education") Education source) {
 //		return "phreak";
 //	}
 }

@@ -7,7 +7,7 @@ import java.util.Set;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInterfaceType;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.generator.types.MappedGraphQLInterfaceType;
 
@@ -27,21 +27,21 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
     }
 
     @Override
-    public GraphQLInterfaceType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLInterfaceType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLInterfaceType.Builder typeBuilder = newInterface()
                 .name(typeName)
                 .description(buildContext.typeMetaDataGenerator.generateTypeDescription(javaType));
 
-        buildContext.queryRepository.getChildQueries(javaType)
-                .forEach(childQuery -> typeBuilder.field(queryGenerator.toGraphQLQuery(childQuery, buildContext)));
+        buildContext.operationRepository.getChildQueries(javaType)
+                .forEach(childQuery -> typeBuilder.field(operationMapper.toGraphQLOperation(childQuery, buildContext)));
 
         typeBuilder.typeResolver(buildContext.typeResolver);
         return new MappedGraphQLInterfaceType(typeBuilder.build(), javaType);
     }
 
     @Override
-    public GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return objectTypeMapper.toGraphQLInputType(typeName, javaType, abstractTypes, queryGenerator, buildContext);
+    public GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+        return objectTypeMapper.toGraphQLInputType(typeName, javaType, abstractTypes, operationMapper, buildContext);
     }
 
     @Override

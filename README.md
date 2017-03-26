@@ -50,13 +50,13 @@ Domain class:
 Exposing the service:
 
     UserService userService = new UserService(); //could also be injected by Spring or another framework
-    GraphQLSchema schema = new GraphQLSchemaBuilder()
+    GraphQLSchemaGenerator schema = new GraphQLSchemaGenerator()
         .withQuerySourceSingleton(userService) //more services can be added the same way
-        .build();
+        .generate();
     GraphQL graphQL = new GraphQL(schema);
     
     //keep the reference to GraphQL instance and execute queries against it.
-    //this query selects a user by ID and requests name and regDate fields only
+    //this operation selects a user by ID and requests name and regDate fields only
     ExecutionResult result = graphQL.execute(   
         "{ user (id: 123) {
             name,

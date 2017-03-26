@@ -1,10 +1,10 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.GraphQLQuery;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import io.leangen.graphql.annotations.GraphQLQuery;
 
 /**
  * Created by bojan.tomic on 3/14/16.
@@ -16,7 +16,7 @@ public class Address {
 
     @GraphQLQuery(name = "owner", description = "The landlord")
     public User<String> getOwner() {
-        User<String> owner = new User<String>();
+        User<String> owner = new User<>();
         owner.id = 666;
         owner.name = "The Man (TM)";
         Address address1 = new Address();

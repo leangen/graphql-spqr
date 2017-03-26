@@ -13,8 +13,10 @@ import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.User;
 import io.leangen.graphql.domain.UserService;
-import io.leangen.graphql.query.relay.Page;
-import io.leangen.graphql.query.relay.generic.PageFactory;
+import io.leangen.graphql.execution.relay.Page;
+import io.leangen.graphql.execution.relay.generic.PageFactory;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -89,9 +91,10 @@ public class SchemaTest {
 
     @Test
     public void testSchema() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        GraphQLSchema schema = new GraphQLSchemaBuilder().withDefaults()
-                .withQuerySourceSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getType())
-                .build();
+        GraphQLSchema schema = new GraphQLSchemaGenerator().withDefaults()
+                .withValueMapperFactory(new JacksonValueMapperFactory(new DefaultTypeMetaDataGenerator()))
+                .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
+                .generate();
 
         List<String> context = Arrays.asList("xxx", "zzz", "yyy");
         GraphQL exe = new GraphQL(schema);

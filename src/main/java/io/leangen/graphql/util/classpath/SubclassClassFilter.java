@@ -96,7 +96,7 @@ public class SubclassClassFilter implements ClassFilter {
      * <tt>false</tt> if it doesn't
      */
     public boolean accept(ClassInfo classInfo, ClassFinder classFinder) {
-        Map<String, ClassInfo> superClasses = new HashMap<String, ClassInfo>();
+        Map<String, ClassInfo> superClasses = new HashMap<>();
 
         if (baseClass.isInterface())
             classFinder.findAllInterfaces(classInfo, superClasses);

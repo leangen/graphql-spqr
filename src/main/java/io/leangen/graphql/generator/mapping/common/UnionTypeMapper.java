@@ -12,7 +12,7 @@ import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -22,10 +22,10 @@ import io.leangen.graphql.util.ClassUtils;
 public class UnionTypeMapper extends UnionMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLUnion annotation = javaType.getAnnotation(GraphQLUnion.class);
         List<AnnotatedType> possibleJavaTypes = getPossibleJavaTypes(javaType);
-        return toGraphQLUnion(annotation.name(), annotation.description(), possibleJavaTypes, abstractTypes, queryGenerator, buildContext);
+        return toGraphQLUnion(annotation.name(), annotation.description(), possibleJavaTypes, abstractTypes, operationMapper, buildContext);
     }
 
     @Override
@@ -34,7 +34,7 @@ public class UnionTypeMapper extends UnionMapper {
                 || ClassUtils.getRawType(type.getType()).isAnnotationPresent(GraphQLUnion.class);
     }
 
-    protected List<AnnotatedType> getPossibleJavaTypes(AnnotatedType javaType) {
+    private List<AnnotatedType> getPossibleJavaTypes(AnnotatedType javaType) {
         GraphQLUnion annotation = javaType.getAnnotation(GraphQLUnion.class);
         List<AnnotatedType> possibleTypes = Collections.emptyList();
         if (annotation.possibleTypes().length > 0) {

@@ -7,11 +7,11 @@ import java.util.Set;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public interface ValueMapperFactory {
+public interface ValueMapperFactory<T extends ValueMapper> {
     
-    default ValueMapper getValueMapper() {
+    default T getValueMapper() {
         return getValueMapper(Collections.emptySet());
     }
     
-    ValueMapper getValueMapper(Set<Type> abstractTypes);
+    T getValueMapper(Set<Type> abstractTypes);
 }

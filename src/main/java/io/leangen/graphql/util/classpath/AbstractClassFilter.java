@@ -13,14 +13,14 @@
       this list of conditions and the following disclaimer.
 
   2.  The end-user documentation included with the redistribution, if any,
-      must include the following acknowlegement:
+      must include the following acknowledgement:
 
         "This product includes software developed by Brian M. Clapper
         (bmc@clapper.org, http://www.clapper.org/bmc/). That software is
         copyright (c) 2004-2007 Brian M. Clapper."
 
-      Alternately, this acknowlegement may appear in the software itself,
-      if wherever such third-party acknowlegements normally appear.
+      Alternately, this acknowledgement may appear in the software itself,
+      if wherever such third-party acknowledgements normally appear.
 
   3.  Neither the names "clapper.org", "clapper.org Java Utility Library",
       nor any of the names of the project contributors may be used to

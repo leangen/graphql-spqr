@@ -12,11 +12,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLResolverSource;
 import io.leangen.graphql.annotations.RelayId;
-import io.leangen.graphql.query.ConnectionRequest;
+import io.leangen.graphql.execution.ConnectionRequest;
 
 /**
  * Created by bojan.tomic on 3/5/16.
@@ -87,14 +87,14 @@ public class UserService<T> {
     }
 
     @GraphQLMutation(name = "updateUsername")
-    public User<String> updateUsername(@GraphQLResolverSource User<String> user, @GraphQLArgument(name = "username") String username) {
+    public User<String> updateUsername(@GraphQLContext User<String> user, @GraphQLArgument(name = "username") String username) {
         user.name = username;
         return user;
     }
 
     //TODO figure out how to deal with void returns :: return source object instead?
 //	@GraphQLMutation(name="user")
-//	public void updateTitle(@GraphQLResolverSource User user, String title) {
+//	public void updateTitle(@GraphQLContext User user, String title) {
 //		user.title = title;
 //	}
 
@@ -131,7 +131,7 @@ public class UserService<T> {
 //	}
 //
 //    @GraphQLQuery(name = "addresses", description = "Service :: 1st override")
-//    public Page<Address> getByType(ConnectionRequest context, @GraphQLResolverSource User<String> owner, @GraphQLArgument(name = "type") String type) {
+//    public Page<Address> getByType(ConnectionRequest context, @GraphQLContext User<String> owner, @GraphQLArgument(name = "type") String type) {
 //        List<Address> addresses = owner.getAddresses().stream()
 //                .filter(address -> address.getTypes().contains(type))
 //                .collect(Collectors.toList());
@@ -141,29 +141,29 @@ public class UserService<T> {
 
     //
     @GraphQLQuery(name = "zmajs")
-    public Collection<String> extraFieldAll(@GraphQLResolverSource User<String> source) {
+    public Collection<String> extraFieldAll(@GraphQLContext User<String> source) {
         return Arrays.asList("zmaj", "azdaha");
     }
 //
 //	@GraphQLQuery(name = "zmajs", parentQueries = {"user","users"})
-//	public Collection<String> extraFieldFiltered(@GraphQLResolverSource User source, @GraphQLArgument(name = "type") String type) {
+//	public Collection<String> extraFieldFiltered(@GraphQLContext User source, @GraphQLArgument(name = "type") String type) {
 //		return Arrays.asList("zmaj");
 //	}
 //
 //	@GraphQLQuery(name = "addresses", parentQueries = "users")
-//	public Collection<Address> getAll(ConnectionRequest context, @GraphQLResolverSource User<String> source) {
+//	public Collection<Address> getAll(ConnectionRequest context, @GraphQLContext User<String> source) {
 //		return source.addresses;
 //	}
 //
 //	@GraphQLQuery(name = "streets", parentQueries = {"user.addresses"}) // or just "addresses" if there's no ambiguity
-//	public Collection<Street> getByStreetName(ConnectionRequest context, @GraphQLResolverSource Address source, @GraphQLArgument(name = "name") String name) {
+//	public Collection<Street> getByStreetName(ConnectionRequest context, @GraphQLContext Address source, @GraphQLArgument(name = "name") String name) {
 //		return source.getStreets().stream()
 //				.filter(street -> street.getName().equals(name))
 //				.collect(Collectors.toList());
 //	}
 
 //	@GraphQLQuery(name = "addresses", parentQueries = {"addresses.owner"})
-//	public Collection<Address> getLandlordAddressByType(@GraphQLResolverSource User<String> source, @GraphQLArgument(name = "type") String type) {
+//	public Collection<Address> getLandlordAddressByType(@GraphQLContext User<String> source, @GraphQLArgument(name = "type") String type) {
 //		return source.getAddresses().stream()
 //				.filter(address -> address.getTypes().contains(type))
 //				.collect(Collectors.toList());

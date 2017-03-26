@@ -12,7 +12,7 @@ import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Scalars;
@@ -23,20 +23,20 @@ import io.leangen.graphql.util.Scalars;
 public abstract class AbstractionCollectingMapper implements TypeMapper {
     
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         registerAbstract(javaType, abstractTypes, buildContext);
-        return graphQLType(javaType, abstractTypes, queryGenerator, buildContext);
+        return graphQLType(javaType, abstractTypes, operationMapper, buildContext);
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         registerAbstract(javaType, abstractTypes, buildContext);
-        return graphQLInputType(javaType, abstractTypes, queryGenerator, buildContext);
+        return graphQLInputType(javaType, abstractTypes, operationMapper, buildContext);
     }
 
-    protected abstract GraphQLOutputType graphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext);
+    protected abstract GraphQLOutputType graphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext);
     
-    protected abstract GraphQLInputType graphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext);
+    protected abstract GraphQLInputType graphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext);
     
     protected void registerAbstract(AnnotatedType type, Set<Type> abstractTypes, BuildContext buildContext) {
         if (ClassUtils.isAbstract(type)) {

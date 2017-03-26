@@ -7,7 +7,7 @@ import java.util.Set;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 
 /**
  * A {@code TypeMapper} is used to map annotated Java types to a GraphQL input or output types, modeled by
@@ -17,8 +17,8 @@ import io.leangen.graphql.generator.QueryGenerator;
  */
 public interface TypeMapper {
 
-    GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext);
-    GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext);
+    GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext);
+    GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext);
 
     boolean supports(AnnotatedType type);
 }

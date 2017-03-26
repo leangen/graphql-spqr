@@ -8,12 +8,11 @@ import java.util.Collection;
 import java.util.Set;
 
 import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.NonNull;
+import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 
 /**
@@ -22,24 +21,24 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 public class NonNullMapper implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return new GraphQLNonNull(queryGenerator.toGraphQLType(removeNonNull(javaType), abstractTypes, buildContext));
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper OperationMapper, BuildContext buildContext) {
+        return new graphql.schema.GraphQLNonNull(OperationMapper.toGraphQLType(removeNonNull(javaType), abstractTypes, buildContext));
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
-        return new GraphQLNonNull(queryGenerator.toGraphQLInputType(removeNonNull(javaType), abstractTypes, buildContext));
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper OperationMapper, BuildContext buildContext) {
+        return new graphql.schema.GraphQLNonNull(OperationMapper.toGraphQLInputType(removeNonNull(javaType), abstractTypes, buildContext));
     }
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return type.isAnnotationPresent(NonNull.class);
+        return type.isAnnotationPresent(GraphQLNonNull.class);
     }
 
     private AnnotatedType removeNonNull(AnnotatedType type) {
         Collection<Annotation> keptAnnotations = new ArrayList<>(type.getAnnotations().length - 1);
         for (Annotation annotation : type.getAnnotations()) {
-            if (annotation.annotationType() != NonNull.class) {
+            if (annotation.annotationType() != GraphQLNonNull.class) {
                 keptAnnotations.add(annotation);
             }
         }

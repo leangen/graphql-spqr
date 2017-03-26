@@ -11,7 +11,7 @@ import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.union.Union;
 
 /**
@@ -20,10 +20,10 @@ import io.leangen.graphql.generator.union.Union;
 public class UnionInlineMapper extends UnionMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLUnion annotation = javaType.getAnnotation(GraphQLUnion.class);
         List<AnnotatedType> possibleJavaTypes = Arrays.asList(((AnnotatedParameterizedType) javaType).getAnnotatedActualTypeArguments());
-        return toGraphQLUnion(annotation.name(), annotation.description(), possibleJavaTypes, abstractTypes, queryGenerator, buildContext);
+        return toGraphQLUnion(annotation.name(), annotation.description(), possibleJavaTypes, abstractTypes, operationMapper, buildContext);
     }
 
     @Override

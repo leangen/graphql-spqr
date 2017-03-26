@@ -8,19 +8,20 @@ import java.util.Set;
 
 import graphql.relay.Relay;
 import graphql.schema.TypeResolver;
+import io.leangen.graphql.execution.GlobalContext;
+import io.leangen.graphql.generator.mapping.ArgumentInjectorRepository;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
-import io.leangen.graphql.generator.mapping.InputValueProviderRepository;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
-import io.leangen.graphql.query.GlobalContext;
 
+@SuppressWarnings("WeakerAccess")
 public class BuildContext {
 
     public final GlobalContext globalContext;
-    public final QueryRepository queryRepository;
+    public final OperationRepository operationRepository;
     public final TypeRepository typeRepository;
     public final TypeMapperRepository typeMappers;
     public final Relay relay;
@@ -36,16 +37,16 @@ public class BuildContext {
 
     /**
      *
-     * @param queryRepository Repository that can be used to fetch all known (singleton and domain) queries
+     * @param operationRepository Repository that can be used to fetch all known (singleton and domain) queries
      * @param typeMappers Repository of all registered {@link io.leangen.graphql.generator.mapping.TypeMapper}s
      * @param converters Repository of all registered {@link io.leangen.graphql.generator.mapping.InputConverter}s
      *                   and {@link io.leangen.graphql.generator.mapping.OutputConverter}s
      */
-    public BuildContext(QueryRepository queryRepository, TypeMapperRepository typeMappers, ConverterRepository converters,
-                        InputValueProviderRepository inputProviders, InterfaceMappingStrategy interfaceStrategy,
+    public BuildContext(OperationRepository operationRepository, TypeMapperRepository typeMappers, ConverterRepository converters,
+                        ArgumentInjectorRepository inputProviders, InterfaceMappingStrategy interfaceStrategy,
                         TypeMetaDataGenerator typeMetaDataGenerator, ValueMapperFactory valueMapperFactory,
                         InputFieldDiscoveryStrategy inputFieldStrategy) {
-        this.queryRepository = queryRepository;
+        this.operationRepository = operationRepository;
         this.typeRepository = new TypeRepository();
         this.typeMappers = typeMappers;
         this.typeMetaDataGenerator = typeMetaDataGenerator;

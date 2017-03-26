@@ -2,8 +2,8 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 
-import io.leangen.graphql.annotations.GraphQLResolverSource;
-import io.leangen.graphql.query.ResolutionContext;
+import io.leangen.graphql.annotations.GraphQLContext;
+import io.leangen.graphql.execution.ResolutionContext;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -11,12 +11,12 @@ import io.leangen.graphql.query.ResolutionContext;
 public class SourceProvider extends InputValueDeserializer {
     
     @Override
-    public Object getInputValue(Object input, AnnotatedType type, ResolutionContext resolutionContext) {
-        return input == null ? resolutionContext.source : super.getInputValue(input, type, resolutionContext);
+    public Object getArgumentValue(Object input, AnnotatedType type, ResolutionContext resolutionContext) {
+        return input == null ? resolutionContext.source : super.getArgumentValue(input, type, resolutionContext);
     }
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return type.isAnnotationPresent(GraphQLResolverSource.class);
+        return type.isAnnotationPresent(GraphQLContext.class);
     }
 }

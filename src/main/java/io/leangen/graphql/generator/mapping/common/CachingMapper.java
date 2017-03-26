@@ -13,7 +13,7 @@ import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.QueryGenerator;
+import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
 
 /**
@@ -22,28 +22,28 @@ import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
 public abstract class CachingMapper<O extends GraphQLOutputType, I extends GraphQLInputType> extends AbstractionCollectingMapper {
     
     @Override
-    public GraphQLOutputType graphQLType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLOutputType graphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         String typeName = getTypeName(javaType, buildContext);
         if (buildContext.knownTypes.contains(typeName)) {
             return getReferenceFor(typeName);
         }
         buildContext.knownTypes.add(typeName);
-        return toGraphQLType(typeName, javaType, abstractTypes, queryGenerator, buildContext);
+        return toGraphQLType(typeName, javaType, abstractTypes, operationMapper, buildContext);
     }
 
     @Override
-    public GraphQLInputType graphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext) {
+    public GraphQLInputType graphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         String typeName = getInputTypeName(javaType, buildContext);
         if (buildContext.knownInputTypes.contains(typeName)) {
             return getInputReferenceFor(typeName);
         }
         buildContext.knownInputTypes.add(typeName);
-        return toGraphQLInputType(typeName, javaType, abstractTypes, queryGenerator, buildContext);
+        return toGraphQLInputType(typeName, javaType, abstractTypes, operationMapper, buildContext);
     }
     
-    protected abstract O toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext);
+    protected abstract O toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext);
 
-    protected abstract I toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, QueryGenerator queryGenerator, BuildContext buildContext);
+    protected abstract I toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext);
     
     protected String getTypeName(AnnotatedType type, BuildContext buildContext) {
         return getTypeName(type, getTypeArguments(0), buildContext.typeMetaDataGenerator);

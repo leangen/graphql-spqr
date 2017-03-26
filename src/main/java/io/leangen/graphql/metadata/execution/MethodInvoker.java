@@ -12,8 +12,8 @@ import io.leangen.graphql.util.ClassUtils;
  */
 public class MethodInvoker extends Executable {
 
-    protected AnnotatedType enclosingType;
-    protected AnnotatedType returnType;
+    private AnnotatedType enclosingType;
+    private AnnotatedType returnType;
 
     public MethodInvoker(Method resolverMethod, AnnotatedType enclosingType) {
         this.delegate = resolverMethod;
@@ -32,10 +32,14 @@ public class MethodInvoker extends Executable {
     }
 
 
-    public AnnotatedType resolveReturnType(AnnotatedType enclosingType) {
+    private AnnotatedType resolveReturnType(AnnotatedType enclosingType) {
         return ClassUtils.getReturnType(((Method) delegate), enclosingType);
     }
 
+    /**
+     * {@inheritDoc}
+     * @see java.lang.reflect.Executable#getParameterCount
+     */
     @Override
     public int getParameterCount() {
         return ((Method) delegate).getParameterCount();
