@@ -2,7 +2,6 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,25 +25,25 @@ import static graphql.schema.GraphQLObjectType.newObject;
 /**
  * Created by bojan.tomic on 9/21/16.
  */
-public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, List<AbstractMap.SimpleEntry<K,V>>> {
+public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, List<MapToListTypeAdapter.MapEntry<K,V>>> {
 
     @Override
-    public List<AbstractMap.SimpleEntry<K,V>> convertOutput(Map<K, V> original, AnnotatedType type, ResolutionContext resolutionContext) {
+    public List<MapToListTypeAdapter.MapEntry<K,V>> convertOutput(Map<K, V> original, AnnotatedType type, ResolutionContext resolutionContext) {
         return original.entrySet().stream()
-                .map(entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue()))
+                .map(entry -> new MapToListTypeAdapter.MapEntry<>(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Map<K,V> convertInput(List<AbstractMap.SimpleEntry<K, V>> original, AnnotatedType type, ResolutionContext resolutionContext) {
-        return original.stream().collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
+    public Map<K,V> convertInput(List<MapToListTypeAdapter.MapEntry<K, V>> original, AnnotatedType type, ResolutionContext resolutionContext) {
+        return original.stream().collect(Collectors.toMap(MapToListTypeAdapter.MapEntry::getKey, MapToListTypeAdapter.MapEntry::getValue));
     }
 
     @Override
     public AnnotatedType getSubstituteType(AnnotatedType original) {
         AnnotatedType keyType = getElementType(original, 0);
         AnnotatedType valueType = getElementType(original, 1);
-        Type entryType = TypeFactory.parameterizedClass(AbstractMap.SimpleEntry.class, keyType.getType(), valueType.getType());
+        Type entryType = TypeFactory.parameterizedClass(MapToListTypeAdapter.MapEntry.class, keyType.getType(), valueType.getType());
         return GenericTypeReflector.annotate(TypeFactory.parameterizedClass(List.class, entryType), original.getAnnotations());
     }
 
@@ -100,5 +99,34 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
 
     private AnnotatedType getElementType(AnnotatedType javaType, int index) {
         return GenericTypeReflector.getTypeParameter(javaType, Map.class.getTypeParameters()[index]);
+    }
+
+    public static class MapEntry<K, V> {
+        private K key;
+        private V value;
+
+        public MapEntry() {
+        }
+
+        public MapEntry(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        public K getKey() {
+            return key;
+        }
+
+        public void setKey(K key) {
+            this.key = key;
+        }
+
+        public V getValue() {
+            return value;
+        }
+
+        public void setValue(V value) {
+            this.value = value;
+        }
     }
 }

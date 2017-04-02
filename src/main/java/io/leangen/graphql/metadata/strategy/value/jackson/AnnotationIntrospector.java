@@ -75,7 +75,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     @Override
     public TypeResolverBuilder<?> findTypeResolver(MapperConfig<?> config, AnnotatedClass ac, JavaType baseType) {
         TypeResolverBuilder<?> original = super.findTypeResolver(config, ac, baseType);
-        return original == null ? typeResolverBuilder : original;
+        return original == null && typeMap.containsKey(ac.getRawType()) ? typeResolverBuilder : original;
     }
     
     @Override

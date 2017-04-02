@@ -78,4 +78,9 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
     public interface Configurer {
         GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, TypeMetaDataGenerator metaDataGen);
     }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + " with " + metaDataGenerator.getClass().getSimpleName();
+    }
 }

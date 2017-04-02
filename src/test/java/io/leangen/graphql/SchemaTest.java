@@ -2,7 +2,6 @@ package io.leangen.graphql;
 
 import org.junit.Test;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -90,7 +89,7 @@ public class SchemaTest {
             "}}";
 
     @Test
-    public void testSchema() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void testSchema() {
         GraphQLSchema schema = new GraphQLSchemaGenerator().withDefaults()
                 .withValueMapperFactory(new JacksonValueMapperFactory(new DefaultTypeMetaDataGenerator()))
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())

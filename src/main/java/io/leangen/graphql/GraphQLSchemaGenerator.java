@@ -5,8 +5,13 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
+import graphql.schema.GraphQLType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.generator.BuildContext;
@@ -111,6 +116,7 @@ public class GraphQLSchemaGenerator {
     private final TypeMapperRepository typeMappers = new TypeMapperRepository();
     private final ConverterRepository converterRepository = new ConverterRepository();
     private final ArgumentInjectorRepository inputProviders = new ArgumentInjectorRepository();
+    private final Set<GraphQLType> knownTypes = new HashSet<>();
 
     /**
      * Default constructor
@@ -512,6 +518,11 @@ public class GraphQLSchemaGenerator {
         return this;
     }
     
+    public GraphQLSchemaGenerator withKnownTypes(Set<GraphQLType> knownTypes) {
+        this.knownTypes.addAll(knownTypes);
+        return this;
+    }
+    
     /**
      * Registers custom schema processors that can perform arbitrary transformations on the schema just before it is built.
      *
@@ -561,35 +572,45 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
-     * Builds the GraphQL schema based on the results of analysis of the registered sources. All exposed methods will be mapped
-     * as queries or mutation and all Java types referred to by those methods will be mapped to corresponding GraphQL types.
+     * Generates a GraphQL schema based on the results of analysis of the registered sources. All exposed methods will be mapped
+     * as queries or mutations and all Java types referred to by those methods will be mapped to corresponding GraphQL types.
      * Such schema can then be used to construct {@link graphql.GraphQL} instances. See the example in the description of this class.
      *
-     * @return The finished GraphQL schema
+     * @return A GraphQL schema
      */
     public GraphQLSchema generate() {
         init();
 
+        Set<String> knownTypeNames = this.knownTypes.stream()
+                .filter(type -> type instanceof GraphQLOutputType)
+                .map(GraphQLType::getName)
+                .collect(Collectors.toSet());
+
+        Set<String> knownInputTypeNames = this.knownTypes.stream()
+                .filter(type -> type instanceof GraphQLInputType)
+                .map(GraphQLType::getName)
+                .collect(Collectors.toSet());
+        
         OperationRepository operationRepository = new OperationRepository(operationSourceRepository, operationBuilder);
-        BuildContext buildContext = new BuildContext(operationRepository, typeMappers, converterRepository, 
-                inputProviders, interfaceStrategy, metaDataGenerator, valueMapperFactory, inputFieldStrategy);
+        BuildContext buildContext = new BuildContext(operationRepository, typeMappers, converterRepository, inputProviders, 
+                interfaceStrategy, metaDataGenerator, valueMapperFactory, inputFieldStrategy, knownTypeNames, knownInputTypeNames);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
         builder
                 .query(newObject()
                         .name("QUERY_ROOT")
-                        .description("Enclosing type for queries")
+                        .description("Query root type")
                         .fields(operationMapper.getQueries())
                         .build())
                 .mutation(newObject()
                         .name("MUTATION_ROOT")
-                        .description("Enclosing type for mutations")
+                        .description("Mutation root type")
                         .fields(operationMapper.getMutations())
                         .build());
         applyProcessors(builder);
 
-        return builder.build();
+        return builder.build(knownTypes);
     }
 
     private void applyProcessors(GraphQLSchema.Builder builder) {

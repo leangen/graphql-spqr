@@ -1,5 +1,8 @@
 package io.leangen.graphql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.leangen.graphql.annotations.GraphQLQuery;
 
 /**
@@ -20,7 +23,10 @@ public class Education {
     @GraphQLQuery(name = "tier", description = "The school tier")
     public Tier tier;
 
-    public Education(String schoolName, int startYear, int endYear) {
+    @JsonCreator
+    public Education(@JsonProperty("schoolName") String schoolName, 
+                     @JsonProperty("startYear") int startYear, 
+                     @JsonProperty("endYear") int endYear) {
         this.schoolName = schoolName;
         this.startYear = startYear;
         this.endYear = endYear;

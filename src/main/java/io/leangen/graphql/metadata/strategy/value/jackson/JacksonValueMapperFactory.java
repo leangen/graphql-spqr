@@ -73,4 +73,9 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
     public interface Configurer {
         ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, TypeMetaDataGenerator metaDataGen);
     }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName() + " with " + metaDataGenerator.getClass().getSimpleName();
+    }
 }

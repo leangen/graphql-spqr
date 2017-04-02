@@ -2,7 +2,6 @@ package io.leangen.graphql.generator;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,8 +30,8 @@ public class BuildContext {
     public final InputFieldDiscoveryStrategy inputFieldStrategy;
     public final TypeMetaDataGenerator typeMetaDataGenerator;
 
-    public final Set<String> knownTypes = new HashSet<>();
-    public final Set<String> knownInputTypes = new HashSet<>();
+    public final Set<String> knownTypes;
+    public final Set<String> knownInputTypes;
     public final Map<Type, Set<Type>> abstractComponentTypes = new HashMap<>();
 
     /**
@@ -45,7 +44,7 @@ public class BuildContext {
     public BuildContext(OperationRepository operationRepository, TypeMapperRepository typeMappers, ConverterRepository converters,
                         ArgumentInjectorRepository inputProviders, InterfaceMappingStrategy interfaceStrategy,
                         TypeMetaDataGenerator typeMetaDataGenerator, ValueMapperFactory valueMapperFactory,
-                        InputFieldDiscoveryStrategy inputFieldStrategy) {
+                        InputFieldDiscoveryStrategy inputFieldStrategy, Set<String> knownTypes, Set<String> knownInputTypes) {
         this.operationRepository = operationRepository;
         this.typeRepository = new TypeRepository();
         this.typeMappers = typeMappers;
@@ -56,5 +55,7 @@ public class BuildContext {
         this.valueMapperFactory = valueMapperFactory;
         this.inputFieldStrategy = inputFieldStrategy;
         this.globalContext = new GlobalContext(relay, typeRepository, converters, inputProviders);
+        this.knownTypes = knownTypes;
+        this.knownInputTypes = knownInputTypes;
     }
 }

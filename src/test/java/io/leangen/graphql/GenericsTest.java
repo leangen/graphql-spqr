@@ -1,6 +1,8 @@
 package io.leangen.graphql;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.lang.reflect.AnnotatedType;
 import java.math.BigDecimal;
@@ -13,6 +15,7 @@ import java.util.Map;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
+import graphql.relay.Relay;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLOutputType;
@@ -22,6 +25,10 @@ import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.domain.GenericItemRepo;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 
 import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertArgumentsPresent;
 import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOf;
@@ -32,8 +39,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
+@RunWith(Parameterized.class)
 public class GenericsTest {
 
+    @Parameterized.Parameters(name = "{index}: {0}")
+    public static Object[] data() {
+        return new Object[] { new JacksonValueMapperFactory(new DefaultTypeMetaDataGenerator()), new GsonValueMapperFactory(new DefaultTypeMetaDataGenerator())};
+    }
+    
     // IMPORTANT! All type declarations have to stay outside of tests (can not be inlined)
     // as the annotation parser treats them differently and discards the annotations otherwise.
     // This is JDK8 bug: http://stackoverflow.com/questions/39952812
@@ -46,6 +59,11 @@ public class GenericsTest {
     private static final AnnotatedType arrayOfListsOfNumbers = new TypeToken<GenericItemRepo<@GraphQLNonNull List<Number> @GraphQLNonNull []>>() {
     }.getAnnotatedType();
 
+    @Parameterized.Parameter
+    public ValueMapperFactory valueMapperFactory;
+    
+    private static final String ERRORS = "Error(s) during query resolution";
+
     @Test
     public void testNonNullGenerics() {
         GenericItemRepo<@GraphQLNonNull String> nonNullStringService = new GenericItemRepo<>();
@@ -54,6 +72,7 @@ public class GenericsTest {
 
         GraphQLSchema schemaWithNonNullGenerics = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(nonNullStringService, nonNullString)
+                .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
                 .generate();
 
@@ -75,18 +94,21 @@ public class GenericsTest {
 
         GraphQL graphQL = new GraphQL(schemaWithNonNullGenerics);
         ExecutionResult result = graphQL.execute("{ getAllItems }");
-        assertTrue(result.getErrors().isEmpty());
+        assertTrue(ERRORS, result.getErrors().isEmpty());
         assertEquals(new ArrayList<>(nonNullStringService.getAllItems()), ((Map<String, Object>) result.getData()).get("getAllItems"));
     }
 
     @Test
     public void testRelayIdGenerics() {
         GenericItemRepo<@RelayId Date> dateIdService = new GenericItemRepo<>();
-        dateIdService.addItem("firstEvent", new Date(1000));
-        dateIdService.addItem("secondEvent", new Date(2000));
+        final Date firstEvent = new Date(1000);
+        final Date secondEvent = new Date(2000);
+        dateIdService.addItem("firstEvent", firstEvent);
+        dateIdService.addItem("secondEvent", secondEvent);
 
         GraphQLSchema schemaWithDateIds = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(dateIdService, dateId)
+                .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
                 .generate();
 
@@ -101,16 +123,17 @@ public class GenericsTest {
 
         GraphQLFieldDefinition addManyItems = schemaWithDateIds.getMutationType().getFieldDefinition("addItems");
         assertListOf(addManyItems.getArgument("items").getType(), Scalars.GraphQLID);
-
+        
         GraphQL graphQL = new GraphQL(schemaWithDateIds);
-        String base64 = "UVVFUllfUk9PVDoiSmFuIDEsIDE5NzAgMTowMDowMSBBTSI=";
-        ExecutionResult result = graphQL.execute("{ contains(item: \"" + base64+ "\") }");
-        assertTrue(result.getErrors().isEmpty());
-        assertEquals(base64, ((Map<String, Object>) result.getData()).get("contains"));
+        String jsonDate = valueMapperFactory.getValueMapper().toString(firstEvent);
+        String relayId = new Relay().toGlobalId("QUERY_ROOT", jsonDate);
+        ExecutionResult result = graphQL.execute("{ contains(item: \"" + relayId+ "\") }");
+        assertTrue(ERRORS, result.getErrors().isEmpty());
+        assertEquals(relayId, ((Map<String, Object>) result.getData()).get("contains"));
         //Search again but using raw (non Relay encoded) ID this time. For now, this is supported.
-        result = graphQL.execute("{ contains(item: \"'Jan 1, 1970 1:00:01 AM'\") }");
-        assertTrue(result.getErrors().isEmpty());
-        assertEquals(base64, ((Map<String, Object>) result.getData()).get("contains"));
+        result = graphQL.execute("{ contains(item: \"" + jsonDate.replace("\"", "\\\"") + "\") }");
+        assertTrue(ERRORS, result.getErrors().isEmpty());
+        assertEquals(relayId, ((Map<String, Object>) result.getData()).get("contains"));
     }
 
     @Test
@@ -121,6 +144,7 @@ public class GenericsTest {
 
         GraphQLSchema schemaWithGenerics = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(wildcardNumberService, listOfWildcardNumbers)
+                .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
                 .generate();
 
@@ -139,7 +163,7 @@ public class GenericsTest {
 
         GraphQL graphQL = new GraphQL(schemaWithGenerics);
         ExecutionResult result = graphQL.execute("{ getAllItems }");
-        assertTrue(result.getErrors().isEmpty());
+        assertTrue(ERRORS, result.getErrors().isEmpty());
         Object[] expected = wildcardNumberService.getAllItems().toArray();
         Object[] actual = wildcardNumberService.getAllItems().toArray();
         assertArrayEquals(expected, actual);
@@ -157,6 +181,7 @@ public class GenericsTest {
 
         GraphQLSchema schemaWithGenerics = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(arrayNumberService, arrayOfListsOfNumbers)
+                .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
                 .generate();
 
@@ -177,7 +202,7 @@ public class GenericsTest {
 
         GraphQL graphQL = new GraphQL(schemaWithGenerics);
         ExecutionResult result = graphQL.execute("{ getAllItems }");
-        assertTrue(result.getErrors().isEmpty());
+        assertTrue(ERRORS, result.getErrors().isEmpty());
         Object[] expected = arrayNumberService.getAllItems().toArray();
         Object[] actual = arrayNumberService.getAllItems().toArray();
         assertArrayEquals(expected, actual);

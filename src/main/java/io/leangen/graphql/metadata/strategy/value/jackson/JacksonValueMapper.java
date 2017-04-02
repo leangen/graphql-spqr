@@ -60,7 +60,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
         BeanDescription desc = objectMapper.getSerializationConfig().introspect(javaType);
         return desc.findProperties().stream()
                 .filter(BeanPropertyDefinition::couldDeserialize)
-                .map(prop -> new InputField(prop.getName(), prop.getMetadata().getDescription(), getType(type, prop)))
+                .map(def -> new InputField(def.getName(), def.getMetadata().getDescription(), getType(type, def)))
                 .collect(Collectors.toSet());
     }
 
