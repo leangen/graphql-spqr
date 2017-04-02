@@ -40,7 +40,7 @@ public class Operation {
 
     private Map<String, Resolver> collectResolversByFingerprint(List<Resolver> resolvers) {
         Map<String, Resolver> resolversByFingerprint = new HashMap<>();
-        resolvers.forEach(resolver -> resolver.getFingerprints().forEach(fingerprint -> resolversByFingerprint.put(fingerprint, resolver)));
+        resolvers.forEach(resolver -> resolver.getFingerprints().forEach(fingerprint -> resolversByFingerprint.putIfAbsent(fingerprint, resolver)));
         return resolversByFingerprint;
     }
 
