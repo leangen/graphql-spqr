@@ -30,7 +30,7 @@ public class Resolver {
     private final List<OperationArgument> arguments;
     private final List<Parameter> connectionRequestArguments;
     private final AnnotatedType returnType;
-    private final Set<OperationArgument> sourceArguments;
+    private final Set<OperationArgument> contextArguments;
     private final Executable executable;
 
     public Resolver(String operationName, String operationDescription, Executable executable, List<OperationArgument> arguments) {
@@ -40,21 +40,21 @@ public class Resolver {
         this.arguments = arguments;
         this.connectionRequestArguments = resolveConnectionRequestArguments();
         this.returnType = ClassUtils.stripBounds(executable.getReturnType());
-        this.sourceArguments = resolveSources(arguments);
+        this.contextArguments = resolveContexts(arguments);
     }
 
     /**
-     * Finds the argument representing the query source (object returned by the parent query), if it exists.
-     * Operation source argument will (potentially) exist only for the resolvers of nestable queries.
-     * Even then, not all resolvers of such queries necessarily accept a source object.
+     * Finds the argument representing the query context (object returned by the parent query), if it exists.
+     * Query context arguments potentially exist only for the resolvers of nestable queries.
+     * Even then, not all resolvers of such queries necessarily accept a context object.
      *
      * @param arguments All arguments that this resolver accepts
-     * @return The arguments representing possible query sources for this resolver
-     * (object returned by the parent query), or null if this resolver doesn't accept a query source
+     * @return The arguments representing possible query contexts for this resolver
+     * (object returned by the parent query), or null if this resolver doesn't accept a query context
      */
-    private Set<OperationArgument> resolveSources(List<OperationArgument> arguments) {
+    private Set<OperationArgument> resolveContexts(List<OperationArgument> arguments) {
         return arguments.stream()
-                .filter(OperationArgument::isResolverSource)
+                .filter(OperationArgument::isContext)
                 .collect(Collectors.toSet());
     }
 
@@ -116,7 +116,7 @@ public class Resolver {
      * @return The generic Java type of the source object, or null if this resolver does not accept one.
      */
     public Set<Type> getSourceTypes() {
-        return sourceArguments.stream().map(arg -> arg.getJavaType().getType()).collect(Collectors.toSet());
+        return contextArguments.stream().map(arg -> arg.getJavaType().getType()).collect(Collectors.toSet());
     }
 
     public String getOperationName() {
@@ -135,8 +135,8 @@ public class Resolver {
      * @return The unique "fingerprint" string identifying this resolver
      */
     public Set<String> getFingerprints() {
-        Set<String> fingerprints = new HashSet<>(sourceArguments.size() + 1);
-        sourceArguments.forEach(source -> fingerprints.add(fingerprint(source)));
+        Set<String> fingerprints = new HashSet<>(contextArguments.size() + 1);
+        contextArguments.forEach(context -> fingerprints.add(fingerprint(context)));
         fingerprints.add(fingerprint(null));
         return fingerprints;
     }
@@ -153,7 +153,7 @@ public class Resolver {
         StringBuilder fingerprint = new StringBuilder();
         arguments.stream()
                 .filter(arg -> arg != ignoredResolverSource)
-                .filter(arg -> !arg.isRelayConnection() && !arg.isContext())
+                .filter(arg -> !arg.isRelayConnection() && !arg.isRootContext())
                 .map(OperationArgument::getName)
                 .sorted()
                 .forEach(fingerprint::append);

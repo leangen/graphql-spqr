@@ -18,21 +18,21 @@ public class Operation {
     private final String name;
     private final String description;
     private final AnnotatedType javaType;
-    private final List<Type> sourceTypes;
+    private final List<Type> contextTypes;
     private final Map<String, Resolver> resolversByFingerprint;
     private final List<OperationArgument> arguments;
     private final List<OperationArgument> sortableArguments;
 
     private boolean hasPrimaryResolver;
 
-    public Operation(String name, AnnotatedType javaType, List<Type> sourceTypes, List<OperationArgument> arguments,
+    public Operation(String name, AnnotatedType javaType, List<Type> contextTypes, List<OperationArgument> arguments,
                      List<OperationArgument> sortableArguments, List<Resolver> resolvers) {
         
         this.name = name;
         this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
         this.hasPrimaryResolver = resolvers.stream().anyMatch(Resolver::isPrimaryResolver);
         this.javaType = javaType;
-        this.sourceTypes = sourceTypes;
+        this.contextTypes = contextTypes;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
         this.sortableArguments = sortableArguments;
@@ -49,7 +49,7 @@ public class Operation {
     }
 
     public boolean isEmbeddableForType(Type type) {
-        return this.sourceTypes.stream().anyMatch(sourceType -> GenericTypeReflector.isSuperType(sourceType, type));
+        return this.contextTypes.stream().anyMatch(contextType -> GenericTypeReflector.isSuperType(contextType, type));
     }
 
     private String getFingerprint(Set<String> argumentNames) {

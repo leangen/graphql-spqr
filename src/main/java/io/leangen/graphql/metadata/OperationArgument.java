@@ -45,7 +45,7 @@ public class OperationArgument {
         return this.defaultValue;
     }
 
-    public boolean isResolverSource() {
+    public boolean isContext() {
         return resolverSource;
     }
 
@@ -57,7 +57,7 @@ public class OperationArgument {
         return javaType;
     }
 
-    public boolean isContext() {
+    public boolean isRootContext() {
         return context;
     }
 

@@ -11,7 +11,7 @@ import io.leangen.graphql.generator.mapping.ArgumentInjector;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class ConnectionRequestProvider implements ArgumentInjector {
+public class ConnectionRequestInjector implements ArgumentInjector {
     
     @Override
     public Object getArgumentValue(Object rawInput, AnnotatedType type, ResolutionContext resolutionContext) {

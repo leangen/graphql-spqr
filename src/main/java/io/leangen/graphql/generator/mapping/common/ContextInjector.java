@@ -8,7 +8,7 @@ import io.leangen.graphql.execution.ResolutionContext;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class SourceProvider extends InputValueDeserializer {
+public class ContextInjector extends InputValueDeserializer {
     
     @Override
     public Object getArgumentValue(Object input, AnnotatedType type, ResolutionContext resolutionContext) {

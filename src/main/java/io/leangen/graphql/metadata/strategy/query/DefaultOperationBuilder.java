@@ -92,8 +92,8 @@ public class DefaultOperationBuilder implements OperationBuilder {
                         argumentsByName.get(argName).stream().map(OperationArgument::getDescription).filter(Objects::nonNull).findFirst().orElse(""),
 //						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRequired),
                         argumentsByName.get(argName).stream().map(OperationArgument::getDefaultValue).filter(def -> def != OperationArgumentDefaultValue.EMPTY).findFirst().orElse(OperationArgumentDefaultValue.EMPTY),
-                        argumentsByName.get(argName).stream().anyMatch(OperationArgument::isResolverSource),
                         argumentsByName.get(argName).stream().anyMatch(OperationArgument::isContext),
+                        argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRootContext),
                         argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRelayConnection)
                 ))
                 .collect(Collectors.toList());

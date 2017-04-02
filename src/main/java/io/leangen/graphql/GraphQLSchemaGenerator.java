@@ -29,8 +29,8 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.mapping.common.ArrayMapper;
 import io.leangen.graphql.generator.mapping.common.CollectionToListOutputConverter;
-import io.leangen.graphql.generator.mapping.common.ConnectionRequestProvider;
-import io.leangen.graphql.generator.mapping.common.ContextInputProvider;
+import io.leangen.graphql.generator.mapping.common.ConnectionRequestInjector;
+import io.leangen.graphql.generator.mapping.common.ContextInjector;
 import io.leangen.graphql.generator.mapping.common.EnumMapper;
 import io.leangen.graphql.generator.mapping.common.InputValueDeserializer;
 import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
@@ -42,8 +42,8 @@ import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.PageMapper;
 import io.leangen.graphql.generator.mapping.common.RelayIdAdapter;
+import io.leangen.graphql.generator.mapping.common.RootContextInjector;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
-import io.leangen.graphql.generator.mapping.common.SourceProvider;
 import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
 import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
@@ -417,8 +417,8 @@ public class GraphQLSchemaGenerator {
 
     public GraphQLSchemaGenerator withDefaultInputProviders() {
         return withInputValueProviders(
-                new ConnectionRequestProvider(), new RelayIdAdapter(), new ContextInputProvider(),
-                new SourceProvider(), new InputValueDeserializer());
+                new ConnectionRequestInjector(), new RelayIdAdapter(), new RootContextInjector(),
+                new ContextInjector(), new InputValueDeserializer());
     }
     
     /**
