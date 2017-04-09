@@ -1,6 +1,8 @@
 package io.leangen.graphql;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.List;
@@ -8,6 +10,7 @@ import java.util.List;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
+import io.leangen.geantyref.AnnotationFormatException;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.User;
@@ -15,6 +18,8 @@ import io.leangen.graphql.domain.UserService;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 
 import static org.junit.Assert.assertFalse;
@@ -23,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by bojan.tomic on 3/5/16.
  */
+@RunWith(Parameterized.class)
 public class SchemaTest {
 
     private static final String nodeQuery = "{node(id: \"dXNlcjox\") {... on user {" +
@@ -93,10 +99,18 @@ public class SchemaTest {
             "   value" +
             "}}";
 
+    @Parameterized.Parameter
+    public ValueMapperFactory valueMapperFactory;
+
+    @Parameterized.Parameters(name = "{index}: {0}")
+    public static Object[] data() {
+        return new Object[] { new JacksonValueMapperFactory(new DefaultTypeMetaDataGenerator()), new GsonValueMapperFactory(new DefaultTypeMetaDataGenerator())};
+    }
+    
     @Test
-    public void testSchema() {
+    public void testSchema() throws NoSuchFieldException, AnnotationFormatException {
         GraphQLSchema schema = new GraphQLSchemaGenerator().withDefaults()
-                .withValueMapperFactory(new JacksonValueMapperFactory(new DefaultTypeMetaDataGenerator()))
+                .withValueMapperFactory(valueMapperFactory)
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .generate();
 
