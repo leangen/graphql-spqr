@@ -21,12 +21,11 @@ public class Operation {
     private final List<Type> contextTypes;
     private final Map<String, Resolver> resolversByFingerprint;
     private final List<OperationArgument> arguments;
-    private final List<OperationArgument> sortableArguments;
 
     private boolean hasPrimaryResolver;
 
-    public Operation(String name, AnnotatedType javaType, List<Type> contextTypes, List<OperationArgument> arguments,
-                     List<OperationArgument> sortableArguments, List<Resolver> resolvers) {
+    public Operation(String name, AnnotatedType javaType, List<Type> contextTypes, 
+                     List<OperationArgument> arguments, List<Resolver> resolvers) {
         
         this.name = name;
         this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
@@ -35,7 +34,6 @@ public class Operation {
         this.contextTypes = contextTypes;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
-        this.sortableArguments = sortableArguments;
     }
 
     private Map<String, Resolver> collectResolversByFingerprint(List<Resolver> resolvers) {

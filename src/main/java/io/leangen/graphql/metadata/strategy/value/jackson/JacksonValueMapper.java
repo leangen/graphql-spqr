@@ -11,9 +11,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -57,23 +54,28 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
     @Override
     public Set<InputField> getInputFields(AnnotatedType type) {
         JavaType javaType = objectMapper.getTypeFactory().constructType(type.getType());
-        BeanDescription desc = objectMapper.getSerializationConfig().introspect(javaType);
+        BeanDescription desc = objectMapper.getDeserializationConfig().introspect(javaType);
         return desc.findProperties().stream()
                 .filter(BeanPropertyDefinition::couldDeserialize)
-                .map(def -> new InputField(def.getName(), def.getMetadata().getDescription(), getType(type, def)))
+                .map(def -> new InputField(def.getName(), def.getMetadata().getDescription(), getInputFieldType(type, def)))
                 .collect(Collectors.toSet());
     }
 
-    private AnnotatedType getType(AnnotatedType type, BeanPropertyDefinition propertyDefinition) {
+    private AnnotatedType getInputFieldType(AnnotatedType type, BeanPropertyDefinition propertyDefinition) {
         AnnotatedParameter ctorParam = propertyDefinition.getConstructorParameter();
         if (ctorParam != null) {
             Constructor<?> constructor = (Constructor<?>) ctorParam.getOwner().getMember();
             return ClassUtils.getParameterTypes(constructor, type)[ctorParam.getIndex()];
         }
-        Member member = propertyDefinition.getPrimaryMember().getMember();
-        if (member instanceof Field) {
-            return ClassUtils.getFieldType((Field) member, type);
+        if (propertyDefinition.getSetter() != null) {
+            return ClassUtils.getParameterTypes(propertyDefinition.getSetter().getAnnotated(), type)[0];
         }
-        return ClassUtils.getReturnType((Method) member, type);
+        if (propertyDefinition.getGetter() != null) {
+            return ClassUtils.getReturnType(propertyDefinition.getGetter().getAnnotated(), type);
+        }
+        if (propertyDefinition.getField() != null) {
+            return ClassUtils.getFieldType(propertyDefinition.getField().getAnnotated(), type);
+        }
+        throw new UnsupportedOperationException("Unknown input field mapping style encountered");
     }
 }

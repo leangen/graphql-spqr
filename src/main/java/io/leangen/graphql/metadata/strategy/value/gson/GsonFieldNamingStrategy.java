@@ -9,6 +9,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.annotations.GraphQLQuery;
@@ -26,29 +27,26 @@ public class GsonFieldNamingStrategy implements FieldNamingStrategy {
     public GsonFieldNamingStrategy(FieldNamingStrategy fallback) {
         this.fallback = fallback;
     }
-    
+
     @Override
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public String translateName(Field field) {
-        return getNamedCandidates(field).stream()
-                .map(this::getPropertyName)
-                .reduce(Utils::or)
-                .map(opt -> opt.orElse(fallback.translateName(field)))
-                .get();
+        return getPropertyName(getNamedCandidates(field))
+                .orElse(fallback.translateName(field));
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
-    private Optional<String> getPropertyName(AnnotatedElement annotated) {
-        List<Optional<String>> explicitNames = new ArrayList<>();
-        explicitNames.add(Optional.ofNullable(annotated.getAnnotation(GraphQLInputField.class))
-                .map(GraphQLInputField::name));
-        explicitNames.add(Optional.ofNullable(annotated.getAnnotation(GraphQLQuery.class))
-                .map(GraphQLQuery::name));
-        explicitNames.add(Optional.ofNullable(annotated.getAnnotation(SerializedName.class))
-                .map(SerializedName::value));
-        return explicitNames.stream()
+    private Optional<String> getPropertyName(List<AnnotatedElement> candidates) {
+        Stream<Optional<String>> explicit = candidates.stream()
+                .map(element -> Optional.ofNullable(element.getAnnotation(GraphQLInputField.class))
+                        .map(GraphQLInputField::name));
+        Stream<Optional<String>> queryImplicit = candidates.stream()
+                .map(element -> Optional.ofNullable(element.getAnnotation(GraphQLQuery.class))
+                        .map(GraphQLQuery::name));
+        Stream<Optional<String>> gsonExplicit = candidates.stream()
+                .map(element -> Optional.ofNullable(element.getAnnotation(SerializedName.class))
+                        .map(SerializedName::value));
+        return Utils.concat(explicit, queryImplicit, gsonExplicit)
                 .map(opt -> opt.filter(Utils::notEmpty))
-                .reduce(Utils::or).get();
+                .reduce(Utils::or).orElse(Optional.empty());
     }
 
     private List<AnnotatedElement> getNamedCandidates(Field field) {

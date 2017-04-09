@@ -1,8 +1,9 @@
 package io.leangen.graphql.execution;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import graphql.GraphQLException;
 import graphql.schema.DataFetchingEnvironment;
@@ -11,7 +12,6 @@ import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
-import io.leangen.graphql.util.ClassUtils;
 
 /**
  * Created by bojan.tomic on 1/29/17.
@@ -29,36 +29,26 @@ public class OperationExecutor {
     }
 
     public Object execute(DataFetchingEnvironment env) {
-        Map<String, Object> queryArguments = new HashMap<>();
-        Map<String, Object> connectionArguments = new HashMap<>();
+        Resolver resolver;
+        if (this.operation.getResolvers().size() == 1) {
+            resolver = this.operation.getResolvers().iterator().next();
+        } else {
+            Set<String> nonNullArgumentNames = env.getArguments().entrySet().stream()
+                    .filter(arg -> arg.getValue() != null)
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toSet());
 
-        env.getArguments().forEach((key, value) -> {
-            if (value != null) {
-                if (ConnectionRequest.isConnectionArgumentName(key)) {
-                    connectionArguments.put(key, value);
-                } else {
-                    queryArguments.put(key, value);
-                }
-            }
-        });
-
-        ResolutionContext resolutionContext = new ResolutionContext(
-                env, new ConnectionRequest(connectionArguments), this.valueMapper, this.globalContext);
-
-        Resolver resolver = this.operation.getResolver(queryArguments.keySet());
+            resolver = this.operation.getResolver(nonNullArgumentNames);
+        }
         try {
             if (resolver == null) {
-                if (queryArguments.size() == 0 && env.getSource() != null) {
-                    return ClassUtils.getFieldValue(env.getSource(), operation.getName());
-                } else {
-                    //TODO implement simple filtering here
-                }
+                throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
+                        + env.getArguments().keySet() + " not implemented");
             } else {
-                Object result = execute(resolver, resolutionContext, queryArguments);
+                ResolutionContext resolutionContext = new ResolutionContext(env, this.valueMapper, this.globalContext);
+                Object result = execute(resolver, resolutionContext, env.getArguments());
                 return resolutionContext.convertOutput(result, resolver.getReturnType());
             }
-            throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: " 
-                    + env.getArguments().keySet() + " not implemented");
         } catch (Exception e) {
             throw new GraphQLException("Operation resolution exception", e);
         }
@@ -77,7 +67,7 @@ public class OperationExecutor {
      * @throws InvocationTargetException If a reflective invocation of the underlying method/field fails
      * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
      */
-    private Object execute(Resolver resolver, ResolutionContext resolutionContext, Map<String, Object> rawArguments) 
+    private Object execute(Resolver resolver, ResolutionContext resolutionContext, Map<String, Object> rawArguments)
             throws InvocationTargetException, IllegalAccessException {
 
         int queryArgumentsCount = resolver.getArguments().size();

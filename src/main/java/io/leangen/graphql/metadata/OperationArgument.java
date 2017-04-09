@@ -14,10 +14,9 @@ public class OperationArgument {
     private final boolean resolverSource;
     private final boolean context;
     private final boolean relayId;
-    private final boolean relayConnection;
 
     public OperationArgument(AnnotatedType javaType, String name, String description, OperationArgumentDefaultValue defaultValue,
-                             boolean resolverSource, boolean context, boolean relayConnection) {
+                             boolean resolverSource, boolean context) {
         
         Objects.requireNonNull(javaType);
         Objects.requireNonNull(name);
@@ -30,7 +29,6 @@ public class OperationArgument {
         this.resolverSource = resolverSource;
         this.context = context;
         this.relayId = javaType.isAnnotationPresent(RelayId.class);
-        this.relayConnection = relayConnection;
     }
 
     public String getName() {
@@ -60,9 +58,4 @@ public class OperationArgument {
     public boolean isRootContext() {
         return context;
     }
-
-    public boolean isRelayConnection() {
-        return relayConnection;
-    }
-
 }

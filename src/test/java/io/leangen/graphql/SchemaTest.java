@@ -37,6 +37,11 @@ public class SchemaTest {
             "id, name, title, zmajs, addresses {" +
             "types" +
             "}}}";
+    
+    private static final String simpleQueryWithNullInput = "{usersByDate {" +
+            "id, name, title, zmajs, addresses {" +
+            "types" +
+            "}}}";
 
     private static final String connectionQuery = "{user(id: \"dXNlcjox\") {" +
             "id, name, addresses(after:\"azx\" first:6 type:\"office\") {" +
@@ -103,13 +108,15 @@ public class SchemaTest {
         assertTrue(result.getErrors().isEmpty());
         result = exe.execute(simpleQuery, context);
         assertTrue(result.getErrors().isEmpty());
+        result = exe.execute(simpleQueryWithNullInput, context);
+        assertTrue(result.getErrors().isEmpty());
         result = exe.execute(mapInputMutation, context);
         assertTrue(result.getErrors().isEmpty());
     }
 
     @Test
     public void testOffsetBasedPageCreation() {
-        List<User<String>> users = new UserService<String>().getUsersById(null, 1);
+        List<User<String>> users = new UserService<String>().getUsersById(1);
         Page<User<String>> userPage = PageFactory.createOffsetBasedPage(users, 5, 0);
         assertTrue(userPage.getPageInfo().isHasNextPage());
         assertFalse(userPage.getPageInfo().isHasPreviousPage());

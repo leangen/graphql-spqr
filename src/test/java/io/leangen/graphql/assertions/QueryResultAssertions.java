@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class QueryResultAssertions {
 
-    public static void assertPathEquals(Object expected, ExecutionResult result, String path) {
+    public static void assertValueAtPathEquals(Object expected, ExecutionResult result, String path) {
         assertEquals(expected, get(new LinkedList<>(Arrays.asList(path.split("\\."))), result.getData()));
     }
 

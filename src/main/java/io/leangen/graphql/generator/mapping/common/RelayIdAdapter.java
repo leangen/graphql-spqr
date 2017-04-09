@@ -42,6 +42,9 @@ public class RelayIdAdapter extends AbstractionCollectingMapper implements Argum
 
     @Override
     public Object getArgumentValue(Object input, AnnotatedType type, ResolutionContext resolutionContext) {
+        if (input == null) {
+            return null;
+        }
         String rawId = input.toString();
         String id = rawId;
         try {

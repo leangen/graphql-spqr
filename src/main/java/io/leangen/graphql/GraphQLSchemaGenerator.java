@@ -29,7 +29,6 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.mapping.common.ArrayMapper;
 import io.leangen.graphql.generator.mapping.common.CollectionToListOutputConverter;
-import io.leangen.graphql.generator.mapping.common.ConnectionRequestInjector;
 import io.leangen.graphql.generator.mapping.common.ContextInjector;
 import io.leangen.graphql.generator.mapping.common.EnumMapper;
 import io.leangen.graphql.generator.mapping.common.InputValueDeserializer;
@@ -118,6 +117,9 @@ public class GraphQLSchemaGenerator {
     private final ArgumentInjectorRepository inputProviders = new ArgumentInjectorRepository();
     private final Set<GraphQLType> knownTypes = new HashSet<>();
 
+    private static final String QUERY_ROOT = "QUERY_ROOT";
+    private static final String MUTATION_ROOT = "MUTATION_ROOT";
+    
     /**
      * Default constructor
      */
@@ -417,8 +419,7 @@ public class GraphQLSchemaGenerator {
 
     public GraphQLSchemaGenerator withDefaultInputProviders() {
         return withInputValueProviders(
-                new ConnectionRequestInjector(), new RelayIdAdapter(), new RootContextInjector(),
-                new ContextInjector(), new InputValueDeserializer());
+                new RelayIdAdapter(), new RootContextInjector(), new ContextInjector(), new InputValueDeserializer());
     }
     
     /**
@@ -518,8 +519,10 @@ public class GraphQLSchemaGenerator {
         return this;
     }
     
-    public GraphQLSchemaGenerator withKnownTypes(Set<GraphQLType> knownTypes) {
-        this.knownTypes.addAll(knownTypes);
+    public GraphQLSchemaGenerator withKnownTypes(Collection<GraphQLType> knownTypes) {
+       knownTypes.stream()
+               .filter(type -> !isInternalType(type))
+               .forEach(this.knownTypes::add);
         return this;
     }
     
@@ -599,12 +602,12 @@ public class GraphQLSchemaGenerator {
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
         builder
                 .query(newObject()
-                        .name("QUERY_ROOT")
+                        .name(QUERY_ROOT)
                         .description("Query root type")
                         .fields(operationMapper.getQueries())
                         .build())
                 .mutation(newObject()
-                        .name("MUTATION_ROOT")
+                        .name(MUTATION_ROOT)
                         .description("Mutation root type")
                         .fields(operationMapper.getMutations())
                         .build());
@@ -617,5 +620,9 @@ public class GraphQLSchemaGenerator {
         for (GraphQLSchemaProcessor processor : processors) {
             processor.process(builder);
         }
+    }
+    
+    private boolean isInternalType(GraphQLType type) {
+        return !type.getName().startsWith("__") && !type.getName().equals(QUERY_ROOT) && !type.getName().equals(MUTATION_ROOT);
     }
 }

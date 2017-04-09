@@ -173,7 +173,8 @@ public class ClassUtils {
      * @see ClassUtils#isSetter(Method)
      */
     public static boolean isGetter(Method getter) {
-        return getter.getName().startsWith("get") ||
+        return getter.getParameterCount() == 0 && getter.getReturnType() != void.class
+                && getter.getReturnType() != Void.class && getter.getName().startsWith("get") ||
                 ((getter.getReturnType() == Boolean.class || getter.getReturnType() == boolean.class)
                         && getter.getName().startsWith("is"));
     }
@@ -186,7 +187,7 @@ public class ClassUtils {
      * @see ClassUtils#isGetter(Method)
      */
     public static boolean isSetter(Method setter) {
-        return setter.getName().startsWith("set");
+        return setter.getName().startsWith("set") && setter.getParameterCount() == 1;
     }
 
     public static String getFieldNameFromGetter(Method getter) {
@@ -289,29 +290,29 @@ public class ClassUtils {
         return type.getType().getTypeName() + "(" + Arrays.toString(type.getAnnotations()) + ")";
     }
 
-    public static boolean containsAnnotation(AnnotatedType type, Class<? extends Annotation> annotation) {
+    public static boolean containsTypeAnnotation(AnnotatedType type, Class<? extends Annotation> annotation) {
         if (type.isAnnotationPresent(annotation)) {
             return true;
         }
         if (type instanceof AnnotatedParameterizedType) {
             AnnotatedParameterizedType parameterizedType = ((AnnotatedParameterizedType) type);
             return Arrays.stream(parameterizedType.getAnnotatedActualTypeArguments())
-                    .anyMatch(param -> containsAnnotation(param, annotation));
+                    .anyMatch(param -> containsTypeAnnotation(param, annotation));
         }
         if (type instanceof AnnotatedTypeVariable) {
             AnnotatedTypeVariable variable = ((AnnotatedTypeVariable) type);
             return Arrays.stream(variable.getAnnotatedBounds())
-                    .anyMatch(bound -> containsAnnotation(bound, annotation));
+                    .anyMatch(bound -> containsTypeAnnotation(bound, annotation));
         }
         if (type instanceof AnnotatedWildcardType) {
             AnnotatedWildcardType wildcard = ((AnnotatedWildcardType) type);
             return Stream.concat(
                     Arrays.stream(wildcard.getAnnotatedLowerBounds()),
                     Arrays.stream(wildcard.getAnnotatedUpperBounds()))
-                    .anyMatch(param -> containsAnnotation(param, annotation));
+                    .anyMatch(param -> containsTypeAnnotation(param, annotation));
         }
         if (type instanceof AnnotatedArrayType) {
-            return containsAnnotation(((AnnotatedArrayType) type).getAnnotatedGenericComponentType(), annotation);
+            return containsTypeAnnotation(((AnnotatedArrayType) type).getAnnotatedGenericComponentType(), annotation);
         }
         return false;
     }

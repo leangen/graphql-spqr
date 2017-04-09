@@ -18,7 +18,7 @@ import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.generator.TypeHintProvider;
 
-import static io.leangen.graphql.assertions.QueryResultAssertions.assertPathEquals;
+import static io.leangen.graphql.assertions.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -39,12 +39,12 @@ public class TypeResolverTest {
                 "... on SessionRepo_Education {school: item {schoolName}}}}";
         ExecutionResult result = exe.execute(String.format(queryTemplate, 2));
         assertTrue(result.getErrors().isEmpty());
-        assertPathEquals("Baker street", result, "repo.0.0.street.name");
+        assertValueAtPathEquals("Baker street", result, "repo.0.0.street.name");
 //        exe.execute("{repo(id: 3) {key {identifier  ... on SessionRepo_Street {street: item {name}} ... on SessionRepo_Education {school: item {schoolName}}}}}}", new HashMap<>());
 //        result = exe.execute("{repo(id: 3) {identifier  ... on SessionRepo_Street {street: item {name}} }}");
         result = exe.execute(String.format(queryTemplate, 3));
         assertTrue(result.getErrors().isEmpty());
-        assertPathEquals("Alma Mater", result, "repo.0.0.school.schoolName");
+        assertValueAtPathEquals("Alma Mater", result, "repo.0.0.school.schoolName");
     }
 
     public static class RepoService {

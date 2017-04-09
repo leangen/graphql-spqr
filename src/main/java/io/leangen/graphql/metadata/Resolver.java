@@ -2,16 +2,12 @@ package io.leangen.graphql.metadata;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.leangen.graphql.annotations.RelayConnectionRequest;
-import io.leangen.graphql.execution.ConnectionRequest;
 import io.leangen.graphql.metadata.execution.Executable;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -28,7 +24,6 @@ public class Resolver {
     private final String operationName;
     private final String operationDescription;
     private final List<OperationArgument> arguments;
-    private final List<Parameter> connectionRequestArguments;
     private final AnnotatedType returnType;
     private final Set<OperationArgument> contextArguments;
     private final Executable executable;
@@ -38,7 +33,6 @@ public class Resolver {
         this.operationName = operationName;
         this.operationDescription = operationDescription;
         this.arguments = arguments;
-        this.connectionRequestArguments = resolveConnectionRequestArguments();
         this.returnType = ClassUtils.stripBounds(executable.getReturnType());
         this.contextArguments = resolveContexts(arguments);
     }
@@ -59,28 +53,6 @@ public class Resolver {
     }
 
     /**
-     * Finds all method parameters used for Relay connection-style pagination. Should support arbitrary parameter mapping,
-     * but currently only parameters of type {@link ConnectionRequest} or those annotated with {@link RelayConnectionRequest}
-     * (but still with no mapping applied) are recognized.
-     *
-     * @return The parameters used for Relay connection-style pagination
-     */
-    private List<Parameter> resolveConnectionRequestArguments() {
-        List<Parameter> queryContextArguments = new ArrayList<>();
-        for (int i = 0; i < executable.getParameterCount(); i++) {
-            Parameter parameter = executable.getParameters()[i];
-            if (isConnectionRequestArgument(parameter)) {
-                queryContextArguments.add(parameter);
-            }
-        }
-        return queryContextArguments;
-    }
-
-    private boolean isConnectionRequestArgument(Parameter parameter) {
-        return parameter.isAnnotationPresent(RelayConnectionRequest.class) || ConnectionRequest.class.isAssignableFrom(parameter.getType());
-    }
-
-    /**
      * Calls the underlying resolver  method/field
      *
      * @param source The object on which the method/field is to be called
@@ -94,10 +66,6 @@ public class Resolver {
     @SuppressWarnings("unchecked")
     public Object resolve(Object source, Object[] args) throws InvocationTargetException, IllegalAccessException {
         return executable.execute(source, args);
-    }
-
-    public boolean supportsConnectionRequests() {
-        return !connectionRequestArguments.isEmpty();
     }
 
     /**
@@ -153,7 +121,7 @@ public class Resolver {
         StringBuilder fingerprint = new StringBuilder();
         arguments.stream()
                 .filter(arg -> arg != ignoredResolverSource)
-                .filter(arg -> !arg.isRelayConnection() && !arg.isRootContext())
+                .filter(arg -> !arg.isRootContext())
                 .map(OperationArgument::getName)
                 .sorted()
                 .forEach(fingerprint::append);

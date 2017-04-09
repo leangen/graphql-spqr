@@ -9,7 +9,6 @@ import java.util.List;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLRootContext;
-import io.leangen.graphql.annotations.RelayConnectionRequest;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.util.ClassUtils;
@@ -33,8 +32,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
                         meta != null ? meta.description() : null,
                         defaultValue(parameter, parameterType),
                         parameter.isAnnotationPresent(GraphQLContext.class),
-                        parameter.isAnnotationPresent(GraphQLRootContext.class),
-                        parameter.isAnnotationPresent(RelayConnectionRequest.class) || isExplicitRelayConnectionArgument(parameter)
+                        parameter.isAnnotationPresent(GraphQLRootContext.class)
                 ));
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new IllegalArgumentException(

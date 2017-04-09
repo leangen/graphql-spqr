@@ -31,13 +31,9 @@ public class DefaultOperationBuilder implements OperationBuilder {
     public Operation buildQuery(List<Resolver> resolvers) {
         String name = resolveName(resolvers);
         AnnotatedType javaType = resolveJavaType(name, resolvers);
-        List<Type> sourceTypes = resolveSourceTypes(resolvers);
+        List<Type> contextTypes = resolveContextTypes(resolvers);
         List<OperationArgument> arguments = collectArguments(resolvers);
-        List<OperationArgument> sortableArguments = collectArguments(
-                resolvers.stream()
-                        .filter(Resolver::supportsConnectionRequests)
-                        .collect(Collectors.toList()));
-        return new Operation(name, javaType, sourceTypes, arguments, sortableArguments, resolvers);
+        return new Operation(name, javaType, contextTypes, arguments, resolvers);
     }
 
     @Override
@@ -54,7 +50,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
                 .map(Resolver::getReturnType)
                 .collect(Collectors.toList());
 
-        if (resolvers.stream().anyMatch(resolver -> ClassUtils.containsAnnotation(resolver.getReturnType(), GraphQLUnion.class))) {
+        if (resolvers.stream().anyMatch(resolver -> ClassUtils.containsTypeAnnotation(resolver.getReturnType(), GraphQLUnion.class))) {
             return unionize(returnTypes.toArray(new AnnotatedType[returnTypes.size()]));
         }
 
@@ -69,7 +65,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
         return GenericTypeReflector.replaceAnnotations(mostSpecificSuperType, aggregatedAnnotations);
     }
 
-    protected List<Type> resolveSourceTypes(List<Resolver> resolvers) {
+    protected List<Type> resolveContextTypes(List<Resolver> resolvers) {
         Set<Type> sourceTypes = resolvers.get(0).getSourceTypes();
         boolean allSame = resolvers.stream().map(Resolver::getSourceTypes)
                 .allMatch(types -> types.size() == sourceTypes.size() && types.containsAll(sourceTypes));
@@ -93,8 +89,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
 //						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRequired),
                         argumentsByName.get(argName).stream().map(OperationArgument::getDefaultValue).filter(def -> def != OperationArgumentDefaultValue.EMPTY).findFirst().orElse(OperationArgumentDefaultValue.EMPTY),
                         argumentsByName.get(argName).stream().anyMatch(OperationArgument::isContext),
-                        argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRootContext),
-                        argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRelayConnection)
+                        argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRootContext)
                 ))
                 .collect(Collectors.toList());
     }

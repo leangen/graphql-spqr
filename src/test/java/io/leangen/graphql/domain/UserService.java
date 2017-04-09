@@ -16,7 +16,6 @@ import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.RelayId;
-import io.leangen.graphql.execution.ConnectionRequest;
 
 /**
  * Created by bojan.tomic on 3/5/16.
@@ -43,7 +42,7 @@ public class UserService<T> {
     }
 
     @GraphQLQuery(name = "users")
-    public List<User<String>> getUsersById(ConnectionRequest context, @GraphQLArgument(name = "id") @RelayId Integer id) {
+    public List<User<String>> getUsersById(@GraphQLArgument(name = "id") @RelayId Integer id) {
         User<String> user = new User<>();
         user.id = id;
         user.name = "Tatko";
@@ -61,7 +60,7 @@ public class UserService<T> {
 
     @GraphQLQuery(name = "users")
     public List<User<String>> getUsersByEducation(@GraphQLArgument(name = "education") Education education) {
-        return getUsersById(null, 1);
+        return getUsersById(1);
     }
 
 //	@GraphQLQuery(name = "user")
@@ -71,19 +70,26 @@ public class UserService<T> {
 
     @GraphQLQuery(name = "users")
     public List<User<String>> getUsersByAnyEducation(@GraphQLArgument(name = "educations") List<? super T> educations) {
-        return getUsersById(null, 1);
+        return getUsersById(1);
     }
 
     @GraphQLQuery(name = "usersArr")
     @SuppressWarnings("unchecked")
     public User<String>[] getUsersByAnyEducationArray(@GraphQLArgument(name = "educations") T[] educations) {
-        List<User<String>> users = getUsersById(null, 1);
+        List<User<String>> users = getUsersById(1);
         return users.toArray(new User[users.size()]);
     }
 
     @GraphQLQuery(name = "users")
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public List<User<String>> getUsersByRegDate(@GraphQLArgument(name = "regDate") Optional<Date> date) {
-        return getUsersById(null, 1);
+        return getUsersById(1);
+    }
+    
+    @GraphQLQuery(name = "usersByDate")
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    public List<User<String>> getUsersByDate(@GraphQLArgument(name = "regDate") Optional<Date> date) {
+        return getUsersById(1);
     }
 
     @GraphQLMutation(name = "updateUsername")
@@ -112,7 +118,7 @@ public class UserService<T> {
 
     @GraphQLQuery(name = "users")
     public List<User<String>> getUserByUuid(@GraphQLArgument(name = "uuid") UUID uuid) {
-        return getUsersById(null, 1);
+        return getUsersById(1);
     }
 
     //
@@ -131,7 +137,7 @@ public class UserService<T> {
 //	}
 //
 //    @GraphQLQuery(name = "addresses", description = "Service :: 1st override")
-//    public Page<Address> getByType(ConnectionRequest context, @GraphQLContext User<String> owner, @GraphQLArgument(name = "type") String type) {
+//    public Page<Address> getByType(@GraphQLContext User<String> owner, @GraphQLArgument(name = "type") String type) {
 //        List<Address> addresses = owner.getAddresses().stream()
 //                .filter(address -> address.getTypes().contains(type))
 //                .collect(Collectors.toList());
@@ -151,12 +157,12 @@ public class UserService<T> {
 //	}
 //
 //	@GraphQLQuery(name = "addresses", parentQueries = "users")
-//	public Collection<Address> getAll(ConnectionRequest context, @GraphQLContext User<String> source) {
+//	public Collection<Address> getAll(@GraphQLContext User<String> source) {
 //		return source.addresses;
 //	}
 //
 //	@GraphQLQuery(name = "streets", parentQueries = {"user.addresses"}) // or just "addresses" if there's no ambiguity
-//	public Collection<Street> getByStreetName(ConnectionRequest context, @GraphQLContext Address source, @GraphQLArgument(name = "name") String name) {
+//	public Collection<Street> getByStreetName(@GraphQLContext Address source, @GraphQLArgument(name = "name") String name) {
 //		return source.getStreets().stream()
 //				.filter(street -> street.getName().equals(name))
 //				.collect(Collectors.toList());
