@@ -6,12 +6,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import io.leangen.graphql.execution.AbstractTypeResolver;
+import io.leangen.graphql.execution.TypeResolver;
 
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface GraphQLTypeResolver {
 
-    Class<? extends AbstractTypeResolver> value();
+    Class<? extends TypeResolver> value();
 }

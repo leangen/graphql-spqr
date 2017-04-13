@@ -56,7 +56,7 @@ public class OperationMapper {
      * @param buildContext The shared context containing all the global information needed for mapping
      */
     public OperationMapper(BuildContext buildContext) {
-        this.node = buildContext.relay.nodeInterface(new RelayNodeTypeResolver());
+        this.node = buildContext.relay.nodeInterface(new RelayNodeTypeResolver(buildContext.typeRepository, buildContext.typeMetaDataGenerator));
         this.queries = generateQueries(buildContext);
         this.mutations = generateMutations(buildContext);
     }

@@ -115,7 +115,7 @@ public class SchemaTest {
                 .generate();
 
         List<String> context = Arrays.asList("xxx", "zzz", "yyy");
-        GraphQL exe = new GraphQL(schema);
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
         ExecutionResult result;
 
         result = exe.execute(complexGenericInputQuery, context);

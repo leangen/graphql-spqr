@@ -8,15 +8,18 @@ import java.util.stream.Stream;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import graphql.TypeResolutionEnvironment;
+import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLTypeHintProvider;
+import io.leangen.graphql.annotations.GraphQLTypeResolver;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
-import io.leangen.graphql.generator.TypeHintProvider;
+import io.leangen.graphql.execution.TypeResolver;
+import io.leangen.graphql.generator.TypeRepository;
+import io.leangen.graphql.generator.exceptions.UnresolvableTypeException;
+import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
 
 import static io.leangen.graphql.assertions.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +35,7 @@ public class TypeResolverTest {
                 .withOperationsFromSingleton(new RepoService())
                 .generate();
 
-        GraphQL exe = new GraphQL(schema);
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
         String queryTemplate = "{repo(id: %d) {" +
                 "identifier  " +
                 "... on SessionRepo_Street {street: item {name}} " +
@@ -85,7 +88,7 @@ public class TypeResolverTest {
         String identifier();
     }
 
-    @GraphQLTypeHintProvider(RepoTypeHintProvier.class)
+    @GraphQLTypeResolver(RepoTypeHintProvier.class)
     public static class SessionRepo<T> implements GenericRepo {
 
         private T item;
@@ -106,11 +109,15 @@ public class TypeResolverTest {
         }
     }
 
-    public static class RepoTypeHintProvier implements TypeHintProvider {
+    public static class RepoTypeHintProvier implements TypeResolver {
 
         @Override
-        public String getGraphQLTypeHint(Object result, TypeResolutionEnvironment env) {
-            return "SessionRepo_" + ((SessionRepo) result).getStoredItem().getClass().getSimpleName();
+        public GraphQLObjectType resolveType(TypeRepository typeRepository, TypeMetaDataGenerator typeMetaDataGenerator, Object result) {
+            String typeName = "SessionRepo_" + ((SessionRepo) result).getStoredItem().getClass().getSimpleName();
+            return typeRepository.getOutputTypes(result.getClass()).stream()
+                    .filter(mappedType -> mappedType.graphQLType.getName().equals(typeName))
+                    .map(mappedType -> (GraphQLObjectType) mappedType.graphQLType)
+                    .findFirst().orElseThrow(() -> new UnresolvableTypeException(result));
         }
     }
 }
