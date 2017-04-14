@@ -40,7 +40,7 @@ public class TypeRepository {
     }
 
     /**
-     * This nonsense is need because of https://github.com/graphql-java/graphql-java/issues/122
+     * Needed because of https://github.com/graphql-java/graphql-java/issues/122
      * 
      * Finds the mapped types (AnnotatedType-GraphQLType pairs) matching the given class
      * @param objectType The class for which mapped GraphQLType candidates are to be found
