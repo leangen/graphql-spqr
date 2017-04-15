@@ -12,7 +12,7 @@ import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.execution.ResolutionContext;
+import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
@@ -28,14 +28,14 @@ import static graphql.schema.GraphQLObjectType.newObject;
 public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, List<MapToListTypeAdapter.MapEntry<K,V>>> {
 
     @Override
-    public List<MapToListTypeAdapter.MapEntry<K,V>> convertOutput(Map<K, V> original, AnnotatedType type, ResolutionContext resolutionContext) {
+    public List<MapToListTypeAdapter.MapEntry<K,V>> convertOutput(Map<K, V> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         return original.entrySet().stream()
                 .map(entry -> new MapToListTypeAdapter.MapEntry<>(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Map<K,V> convertInput(List<MapToListTypeAdapter.MapEntry<K, V>> original, AnnotatedType type, ResolutionContext resolutionContext) {
+    public Map<K,V> convertInput(List<MapToListTypeAdapter.MapEntry<K, V>> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         return original.stream().collect(Collectors.toMap(MapToListTypeAdapter.MapEntry::getKey, MapToListTypeAdapter.MapEntry::getValue));
     }
 

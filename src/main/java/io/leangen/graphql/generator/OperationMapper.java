@@ -22,7 +22,7 @@ import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
-import io.leangen.graphql.execution.GlobalContext;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.InputField;
@@ -134,7 +134,7 @@ public class OperationMapper {
             queryBuilder.argument(buildContext.relay.getConnectionFieldArguments());
         }
         ValueMapper valueMapper = buildContext.valueMapperFactory.getValueMapper(abstractTypes);
-        queryBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalContext));
+        queryBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
 
         return queryBuilder.build();
     }
@@ -205,12 +205,12 @@ public class OperationMapper {
      *
      * @param operation The operation for which the resolver is being created
      * @param valueMapper Mapper to be used to deserialize raw argument values
-     * @param globalContext The shared context containing all the global information needed for operation resolution
+     * @param globalEnvironment The shared context containing all the global information needed for operation resolution
      *
      * @return The resolver for the given operation
      */
-    private DataFetcher createResolver(Operation operation, ValueMapper valueMapper, GlobalContext globalContext) {
-        return new OperationExecutor(operation, valueMapper, globalContext)::execute;
+    private DataFetcher createResolver(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
+        return new OperationExecutor(operation, valueMapper, globalEnvironment)::execute;
     }
 
     /**

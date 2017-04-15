@@ -3,6 +3,7 @@ package io.leangen.graphql.execution;
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
 
+import graphql.execution.ExecutionContext;
 import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLOutputType;
@@ -16,27 +17,29 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapper;
  * @author Bojan Tomic (kaqqao)
  */
 @SuppressWarnings("WeakerAccess")
-public class ResolutionContext {
+public class ResolutionEnvironment {
 
-    public final Object source;
     public final Object context;
+    public final Object rootContext;
     public final ValueMapper valueMapper;
-    public final GlobalContext globalContext;
+    public final GlobalEnvironment globalEnvironment;
     public final List<Field> fields;
     public final GraphQLOutputType fieldType;
     public final GraphQLType parentType;
     public final GraphQLSchema graphQLSchema;
+    public final FieldNameCollector fieldCollector;
 
-    public ResolutionContext(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalContext globalContext) {
+    public ResolutionEnvironment(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment, ExecutionContext executionContext) {
         
-        this.source = env.getSource();
-        this.context = env.getContext();
+        this.context = env.getSource();
+        this.rootContext = env.getContext();
         this.valueMapper = valueMapper;
-        this.globalContext = globalContext;
+        this.globalEnvironment = globalEnvironment;
         this.fields = env.getFields();
         this.fieldType = env.getFieldType();
         this.parentType = env.getParentType();
         this.graphQLSchema = env.getGraphQLSchema();
+        this.fieldCollector = executionContext == null ? null : new FieldNameCollector(executionContext);
     }
 
     @SuppressWarnings("unchecked")
@@ -44,25 +47,25 @@ public class ResolutionContext {
         if (output == null) {
             return null;
         }
-        OutputConverter outputConverter = this.globalContext.converters.getOutputConverter(type);
+        OutputConverter outputConverter = this.globalEnvironment.converters.getOutputConverter(type);
         return outputConverter == null ? output : outputConverter.convertOutput(output, type, this);
     }
 
     @SuppressWarnings("unchecked")
-    public Object convertInput(Object input, AnnotatedType type, ResolutionContext resolutionContext) {
+    public Object convertInput(Object input, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         if (input == null) {
             return null;
         }
-        InputConverter inputConverter = this.globalContext.converters.getInputConverter(type);
-        return inputConverter == null ? input : inputConverter.convertInput(input, type, resolutionContext);
+        InputConverter inputConverter = this.globalEnvironment.converters.getInputConverter(type);
+        return inputConverter == null ? input : inputConverter.convertInput(input, type, resolutionEnvironment);
     }
 
     public Object getInputValue(Object input, AnnotatedType type) {
-        Object in = this.globalContext.injectors.getInjector(type).getArgumentValue(input, type, this);
+        Object in = this.globalEnvironment.injectors.getInjector(type).getArgumentValue(input, type, this);
         return convertInput(in, type, this);
     }
     
     public AnnotatedType getMappableType(AnnotatedType type) {
-        return this.globalContext.converters.getMappableType(type);
+        return this.globalEnvironment.converters.getMappableType(type);
     }
 }

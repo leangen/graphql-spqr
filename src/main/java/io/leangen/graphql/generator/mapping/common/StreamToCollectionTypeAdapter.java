@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.execution.ResolutionContext;
+import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 
 /**
@@ -16,15 +16,15 @@ import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 public class StreamToCollectionTypeAdapter extends AbstractTypeAdapter<Stream<?>, List<?>> {
 
     @Override
-    public List<?> convertOutput(Stream<?> original, AnnotatedType type, ResolutionContext resolutionContext) {
+    public List<?> convertOutput(Stream<?> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         return original
-                .map(item -> resolutionContext.convertOutput(item, getElementType(type)))
+                .map(item -> resolutionEnvironment.convertOutput(item, getElementType(type)))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Stream<?> convertInput(List<?> substitute, AnnotatedType type, ResolutionContext resolutionContext) {
-        return substitute.stream().map(item -> resolutionContext.convertInput(item, getElementType(type), resolutionContext));
+    public Stream<?> convertInput(List<?> substitute, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        return substitute.stream().map(item -> resolutionEnvironment.convertInput(item, getElementType(type), resolutionEnvironment));
     }
 
     @Override

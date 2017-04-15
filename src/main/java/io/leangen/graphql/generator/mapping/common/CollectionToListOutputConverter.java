@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.execution.ResolutionContext;
+import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 
 /**
@@ -17,10 +17,10 @@ import io.leangen.graphql.generator.mapping.OutputConverter;
 public class CollectionToListOutputConverter implements OutputConverter<Collection<?>, List<?>> {
 
     @Override
-    public List<?> convertOutput(Collection<?> original, AnnotatedType type, ResolutionContext resolutionContext) {
+    public List<?> convertOutput(Collection<?> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         AnnotatedType inner = GenericTypeReflector.getTypeParameter(type, Collection.class.getTypeParameters()[0]);
         return original.stream()
-                .map(item -> resolutionContext.convertOutput(item, inner))
+                .map(item -> resolutionEnvironment.convertOutput(item, inner))
                 .collect(Collectors.toList());
     }
 

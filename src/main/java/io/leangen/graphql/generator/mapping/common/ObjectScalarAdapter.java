@@ -10,7 +10,7 @@ import java.util.Set;
 import graphql.schema.GraphQLScalarType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLScalar;
-import io.leangen.graphql.execution.ResolutionContext;
+import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.OutputConverter;
@@ -39,8 +39,8 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
     }
 
     @Override
-    public Map<String, ?> convertOutput(Object original, AnnotatedType type, ResolutionContext resolutionContext) {
-        return resolutionContext.valueMapper.fromInput(original, type.getType(), MAP);
+    public Map<String, ?> convertOutput(Object original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        return resolutionEnvironment.valueMapper.fromInput(original, type.getType(), MAP);
     }
 
     @Override

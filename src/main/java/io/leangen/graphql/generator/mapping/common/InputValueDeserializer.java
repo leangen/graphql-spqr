@@ -2,7 +2,7 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 
-import io.leangen.graphql.execution.ResolutionContext;
+import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 
 /**
@@ -11,12 +11,12 @@ import io.leangen.graphql.generator.mapping.ArgumentInjector;
 public class InputValueDeserializer implements ArgumentInjector {
     
     @Override
-    public Object getArgumentValue(Object input, AnnotatedType type, ResolutionContext resolutionContext) {
+    public Object getArgumentValue(Object input, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         if (input == null) {
             return null;
         }
-        AnnotatedType argValueType = resolutionContext.getMappableType(type);
-        return resolutionContext.valueMapper.fromInput(input, argValueType);
+        AnnotatedType argValueType = resolutionEnvironment.getMappableType(type);
+        return resolutionEnvironment.valueMapper.fromInput(input, argValueType);
     }
 
     @Override

@@ -1,0 +1,66 @@
+package io.leangen.graphql.generator.mapping.common;
+
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Set;
+
+import graphql.language.Field;
+import graphql.language.Node;
+import graphql.schema.GraphQLObjectType;
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.geantyref.TypeToken;
+import io.leangen.graphql.annotations.GraphQLEnvironment;
+import io.leangen.graphql.execution.ExecutionContextPropagationInstrumentation;
+import io.leangen.graphql.execution.ResolutionEnvironment;
+import io.leangen.graphql.generator.mapping.ArgumentInjector;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+
+/**
+ * Created by bojan.tomic on 4/14/17.
+ */
+public class EnvironmentInjector implements ArgumentInjector {
+    
+    private static final Type listOfFields = new TypeToken<List<Field>>(){}.getType();
+    private static final Type setOfStrings = new TypeToken<Set<String>>(){}.getType();
+    
+    @Override
+    public Object getArgumentValue(Object rawInput, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        if (GenericTypeReflector.isSuperType(setOfStrings, type.getType()) && resolutionEnvironment.fieldType instanceof GraphQLObjectType) {
+            if (resolutionEnvironment.fieldCollector == null) {
+                throw new IllegalStateException(ExecutionContextPropagationInstrumentation.class.getSimpleName() + " must be registered for field name injection to work");
+            }
+            return resolutionEnvironment.fieldCollector.getSelectedFieldNames((GraphQLObjectType) resolutionEnvironment.fieldType, resolutionEnvironment.fields.get(0).getSelectionSet());
+        }
+        Class raw = GenericTypeReflector.erase(type.getType());
+        if (Field.class.equals(raw)) {
+            return resolutionEnvironment.fields.get(0);
+        }
+        if (GenericTypeReflector.isSuperType(listOfFields, type.getType())) {
+            return resolutionEnvironment.fields;
+        }
+        if (ValueMapper.class.isAssignableFrom(raw)) {
+            return resolutionEnvironment.valueMapper;
+        }
+        if (ResolutionEnvironment.class.isAssignableFrom(raw)) {
+            return resolutionEnvironment;
+        }
+        throw new IllegalArgumentException("Argument of type " + raw.getName() 
+                + " can not be injected via @" + EnvironmentInjector.class.getSimpleName());
+    }
+
+    @Override
+    public boolean supports(AnnotatedType type) {
+        return type.isAnnotationPresent(GraphQLEnvironment.class);
+    }
+    
+    private void collectFieldNames(List<? extends Node> selections, List<String> fieldNames) {
+        selections.forEach(s -> {
+            if (s instanceof Field) {
+                fieldNames.add(((Field) s).getName());
+            } else {
+                collectFieldNames(s.getChildren(), fieldNames);
+            }
+        });
+    }
+}

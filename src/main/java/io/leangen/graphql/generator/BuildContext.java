@@ -7,7 +7,7 @@ import java.util.Set;
 
 import graphql.relay.Relay;
 import graphql.schema.TypeResolver;
-import io.leangen.graphql.execution.GlobalContext;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRepository;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
@@ -19,7 +19,7 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 @SuppressWarnings("WeakerAccess")
 public class BuildContext {
 
-    public final GlobalContext globalContext;
+    public final GlobalEnvironment globalEnvironment;
     public final OperationRepository operationRepository;
     public final TypeRepository typeRepository;
     public final TypeMapperRepository typeMappers;
@@ -54,7 +54,7 @@ public class BuildContext {
         this.interfaceStrategy = interfaceStrategy;
         this.valueMapperFactory = valueMapperFactory;
         this.inputFieldStrategy = inputFieldStrategy;
-        this.globalContext = new GlobalContext(relay, typeRepository, converters, inputProviders);
+        this.globalEnvironment = new GlobalEnvironment(relay, typeRepository, converters, inputProviders);
         this.knownTypes = knownTypes;
         this.knownInputTypes = knownInputTypes;
     }

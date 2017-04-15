@@ -33,6 +33,7 @@ import io.leangen.graphql.generator.mapping.common.ArrayMapper;
 import io.leangen.graphql.generator.mapping.common.CollectionToListOutputConverter;
 import io.leangen.graphql.generator.mapping.common.ContextInjector;
 import io.leangen.graphql.generator.mapping.common.EnumMapper;
+import io.leangen.graphql.generator.mapping.common.EnvironmentInjector;
 import io.leangen.graphql.generator.mapping.common.InputValueDeserializer;
 import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
 import io.leangen.graphql.generator.mapping.common.ListMapper;
@@ -546,7 +547,7 @@ public class GraphQLSchemaGenerator {
 
     public GraphQLSchemaGenerator withDefaultArgumentInjectors() {
         return withArgumentInjectors(
-                new RelayIdAdapter(), new RootContextInjector(), new ContextInjector(), new InputValueDeserializer());
+                new RelayIdAdapter(), new RootContextInjector(), new ContextInjector(), new EnvironmentInjector(), new InputValueDeserializer());
     }
 
     /**

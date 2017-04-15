@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import graphql.GraphQLException;
+import graphql.execution.ExecutionContext;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.metadata.Operation;
@@ -18,18 +19,19 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapper;
  */
 public class OperationExecutor {
 
-    private Operation operation;
-    private ValueMapper valueMapper;
-    private GlobalContext globalContext;
+    private final Operation operation;
+    private final ValueMapper valueMapper;
+    private final GlobalEnvironment globalEnvironment;
 
-    public OperationExecutor(Operation operation, ValueMapper valueMapper, GlobalContext globalContext) {
+    public OperationExecutor(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
         this.operation = operation;
         this.valueMapper = valueMapper;
-        this.globalContext = globalContext;
+        this.globalEnvironment = globalEnvironment;
     }
 
     public Object execute(DataFetchingEnvironment env) {
         Resolver resolver;
+        ExecutionContext executionContext = (ExecutionContext) env.getArguments().remove(ExecutionContextPropagationInstrumentation.EXECUTION_CONTEXT_KEY);
         if (this.operation.getResolvers().size() == 1) {
             resolver = this.operation.getResolvers().iterator().next();
         } else {
@@ -45,9 +47,9 @@ public class OperationExecutor {
                 throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
                         + env.getArguments().keySet() + " not implemented");
             } else {
-                ResolutionContext resolutionContext = new ResolutionContext(env, this.valueMapper, this.globalContext);
-                Object result = execute(resolver, resolutionContext, env.getArguments());
-                return resolutionContext.convertOutput(result, resolver.getReturnType());
+                ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(env, this.valueMapper, this.globalEnvironment, executionContext);
+                Object result = execute(resolver, resolutionEnvironment, env.getArguments());
+                return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
             }
         } catch (Exception e) {
             throw new GraphQLException("Operation resolution exception", e);
@@ -59,7 +61,7 @@ public class OperationExecutor {
      * and invokes the underlying resolver method/field
      *
      * @param resolver The resolver to be invoked once the arguments are prepared
-     * @param resolutionContext An object containing all contextual information needed during operation resolution
+     * @param resolutionEnvironment An object containing all contextual information needed during operation resolution
      * @param rawArguments Raw input arguments provided by the client
      *
      * @return The result returned by the underlying method/field, potentially proxied and wrapped
@@ -67,7 +69,7 @@ public class OperationExecutor {
      * @throws InvocationTargetException If a reflective invocation of the underlying method/field fails
      * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
      */
-    private Object execute(Resolver resolver, ResolutionContext resolutionContext, Map<String, Object> rawArguments)
+    private Object execute(Resolver resolver, ResolutionEnvironment resolutionEnvironment, Map<String, Object> rawArguments)
             throws InvocationTargetException, IllegalAccessException {
 
         int queryArgumentsCount = resolver.getArguments().size();
@@ -77,8 +79,8 @@ public class OperationExecutor {
             OperationArgument argDescriptor =  resolver.getArguments().get(i);
             Object rawArgValue = rawArguments.get(argDescriptor.getName());
 
-            args[i] = resolutionContext.getInputValue(rawArgValue, argDescriptor.getJavaType());
+            args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor.getJavaType());
         }
-        return resolver.resolve(resolutionContext.source, args);
+        return resolver.resolve(resolutionEnvironment.context, args);
     }
 }

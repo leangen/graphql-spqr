@@ -9,7 +9,7 @@ import graphql.Scalars;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.annotations.RelayId;
-import io.leangen.graphql.execution.ResolutionContext;
+import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
@@ -36,21 +36,21 @@ public class RelayIdAdapter extends AbstractionCollectingMapper implements Argum
     }
     
     @Override
-    public Object convertOutput(Object original, AnnotatedType type, ResolutionContext resolutionContext) {
-        return resolutionContext.globalContext.relay.toGlobalId(resolutionContext.parentType.getName(), resolutionContext.valueMapper.toString(original));
+    public Object convertOutput(Object original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        return resolutionEnvironment.globalEnvironment.relay.toGlobalId(resolutionEnvironment.parentType.getName(), resolutionEnvironment.valueMapper.toString(original));
     }
 
     @Override
-    public Object getArgumentValue(Object input, AnnotatedType type, ResolutionContext resolutionContext) {
+    public Object getArgumentValue(Object input, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         if (input == null) {
             return null;
         }
         String rawId = input.toString();
         String id = rawId;
         try {
-            id = resolutionContext.globalContext.relay.fromGlobalId(rawId).getId();
+            id = resolutionEnvironment.globalEnvironment.relay.fromGlobalId(rawId).getId();
         } catch (Exception e) {/*no-op*/}
-        return resolutionContext.valueMapper.fromString(id, type);
+        return resolutionEnvironment.valueMapper.fromString(id, type);
     }
 
     @Override
