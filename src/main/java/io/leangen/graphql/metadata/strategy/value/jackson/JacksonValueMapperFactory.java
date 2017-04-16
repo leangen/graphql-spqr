@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
@@ -24,6 +25,10 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
     private final Configurer configurer;
     private final TypeMetaDataGenerator metaDataGenerator;
     private final JacksonValueMapper defaultValueMapper;
+
+    public JacksonValueMapperFactory() {
+        this(new DefaultTypeMetaDataGenerator());
+    }
 
     public JacksonValueMapperFactory(TypeMetaDataGenerator metaDataGenerator) {
         this(metaDataGenerator, new AbstractClassAdapterConfigurer());

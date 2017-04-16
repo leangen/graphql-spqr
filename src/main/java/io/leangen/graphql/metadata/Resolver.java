@@ -121,7 +121,7 @@ public class Resolver {
         StringBuilder fingerprint = new StringBuilder();
         arguments.stream()
                 .filter(arg -> arg != ignoredResolverSource)
-                .filter(arg -> !arg.isRootContext())
+                .filter(OperationArgument::isMappable)
                 .map(OperationArgument::getName)
                 .sorted()
                 .forEach(fingerprint::append);

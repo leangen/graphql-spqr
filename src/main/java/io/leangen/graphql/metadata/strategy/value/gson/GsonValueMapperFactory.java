@@ -9,7 +9,9 @@ import java.util.Collections;
 import java.util.Set;
 
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -22,6 +24,10 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
     private final TypeMetaDataGenerator metaDataGenerator;
     private final Configurer configurer;
     private final GsonValueMapper defaultValueMapper;
+
+    public GsonValueMapperFactory() {
+        this(new DefaultTypeMetaDataGenerator());
+    }
 
     public GsonValueMapperFactory(TypeMetaDataGenerator metaDataGenerator) {
         this(metaDataGenerator, new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
@@ -64,7 +70,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
 
         @SuppressWarnings("unchecked")
         private TypeAdapterFactory adapterFor(Class superClass, TypeMetaDataGenerator metaDataGen) {
-            RuntimeTypeAdapterFactory adapterFactory = RuntimeTypeAdapterFactory.of(superClass, "_type_");
+            RuntimeTypeAdapterFactory adapterFactory = RuntimeTypeAdapterFactory.of(superClass, ValueMapper.TYPE_METADATA_FIELD_NAME);
 
             ClassUtils.findImplementations(superClass).stream()
                     .filter(impl -> !ClassUtils.isAbstract(impl))

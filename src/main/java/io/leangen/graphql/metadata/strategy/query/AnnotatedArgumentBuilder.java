@@ -4,11 +4,12 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
-import io.leangen.graphql.annotations.GraphQLRootContext;
+import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.util.ClassUtils;
@@ -32,7 +33,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
                         meta != null ? meta.description() : null,
                         defaultValue(parameter, parameterType),
                         parameter.isAnnotationPresent(GraphQLContext.class),
-                        parameter.isAnnotationPresent(GraphQLRootContext.class)
+                        isMappable(parameter)
                 ));
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new IllegalArgumentException(
@@ -56,5 +57,10 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
             return OperationArgumentDefaultValue.NULL;
         }
         return new OperationArgumentDefaultValue(value);
+    }
+    
+    private boolean isMappable(Parameter parameter) {
+        return Arrays.stream(parameter.getAnnotations())
+                .noneMatch(ann -> ann.annotationType().isAnnotationPresent(GraphQLIgnore.class));
     }
 }

@@ -17,7 +17,6 @@ import io.leangen.graphql.domain.User;
 import io.leangen.graphql.domain.UserService;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -25,9 +24,6 @@ import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFact
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by bojan.tomic on 3/5/16.
- */
 @RunWith(Parameterized.class)
 public class SchemaTest {
 
@@ -104,12 +100,12 @@ public class SchemaTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Object[] data() {
-        return new Object[] { new JacksonValueMapperFactory(new DefaultTypeMetaDataGenerator()), new GsonValueMapperFactory(new DefaultTypeMetaDataGenerator())};
+        return new Object[] { new JacksonValueMapperFactory(), new GsonValueMapperFactory() };
     }
     
     @Test
     public void testSchema() throws NoSuchFieldException, AnnotationFormatException {
-        GraphQLSchema schema = new GraphQLSchemaGenerator().withDefaults()
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .generate();

@@ -11,12 +11,12 @@ public class OperationArgument {
     private final String name;
     private final String description;
     private final OperationArgumentDefaultValue defaultValue;
-    private final boolean resolverSource;
     private final boolean context;
     private final boolean relayId;
+    private final boolean mappable;
 
     public OperationArgument(AnnotatedType javaType, String name, String description, OperationArgumentDefaultValue defaultValue,
-                             boolean resolverSource, boolean context) {
+                             boolean context, boolean mappable) {
         
         Objects.requireNonNull(javaType);
         Objects.requireNonNull(name);
@@ -26,9 +26,9 @@ public class OperationArgument {
         this.name = name;
         this.description = description;
         this.defaultValue = defaultValue;
-        this.resolverSource = resolverSource;
         this.context = context;
         this.relayId = javaType.isAnnotationPresent(RelayId.class);
+        this.mappable = mappable;
     }
 
     public String getName() {
@@ -44,7 +44,7 @@ public class OperationArgument {
     }
 
     public boolean isContext() {
-        return resolverSource;
+        return context;
     }
 
     public boolean isRelayId() {
@@ -55,7 +55,7 @@ public class OperationArgument {
         return javaType;
     }
 
-    public boolean isRootContext() {
-        return context;
+    public boolean isMappable() {
+        return mappable;
     }
 }

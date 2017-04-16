@@ -15,6 +15,7 @@ import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.metadata.Operation;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
@@ -52,7 +53,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
         if (ClassUtils.isAbstract(javaType)) {
             typeBuilder.field(newFieldDefinition()
-                    .name("_type_")
+                    .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
                     .type(Scalars.GraphQLString)
                     .dataFetcher(env -> env.getSource() == null ? null : env.getSource().getClass().getSimpleName())
                     .build());
@@ -73,7 +74,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
         if (ClassUtils.isAbstract(javaType)) {
             typeBuilder.field(newInputObjectField()
-                    .name("_type_")
+                    .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
                     .type(Scalars.GraphQLString)
                     .build());
         }

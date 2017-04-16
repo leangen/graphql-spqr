@@ -9,7 +9,7 @@ import io.leangen.graphql.metadata.strategy.value.simple.ScalarOnlyValueMapperFa
 public class Defaults {
 
     private enum JsonLib {
-        GSON("com.google.gson.Gson"), JACKSON("com.fasterxml.jackson.databind.ObjectMapper"), SCALAR("java.lang.Object");
+        JACKSON("com.fasterxml.jackson.databind.ObjectMapper"), GSON("com.google.gson.Gson"), SCALAR("java.lang.Object");
         
         public final String requiredClass;
         

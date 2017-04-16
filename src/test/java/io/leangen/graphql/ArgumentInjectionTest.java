@@ -20,12 +20,12 @@ import static org.junit.Assert.assertTrue;
  * Tests whether various argument injectors are doing their job
  */
 public class ArgumentInjectionTest {
-    
+
     private static final SimpleService SIMPLE = new SimpleService();
     private static final String TARGET_VALUE = "a surprising string!";
     private static final String ECHO = "echo";
     private static final String ECHO_QUERY = "{echo}";
-    
+
     @Test
     @SuppressWarnings("unchecked")
     public void testMapRootContextInjection() {
@@ -34,7 +34,7 @@ public class ArgumentInjectionTest {
         ExecutionResult result = getApi(SIMPLE).execute(ECHO_QUERY, context);
         assertValueAtPathEquals(TARGET_VALUE, result, ECHO);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
     public void testObjectRootContextInjection() {
@@ -42,7 +42,7 @@ public class ArgumentInjectionTest {
         ExecutionResult result = getApi(SIMPLE).execute(ECHO_QUERY, context);
         assertValueAtPathEquals(TARGET_VALUE, result, ECHO);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
     public void testTrickyRootContextInjection() {
@@ -50,7 +50,7 @@ public class ArgumentInjectionTest {
         ExecutionResult result = getApi(SIMPLE).execute(ECHO_QUERY, context);
         assertValueAtPathEquals(TARGET_VALUE, result, ECHO);
     }
-    
+
     @Test
     @SuppressWarnings("unchecked")
     public void testNullArgument() {
@@ -58,13 +58,15 @@ public class ArgumentInjectionTest {
         assertTrue(result.getErrors().isEmpty());
         assertValueAtPathEquals(null, result, ECHO);
     }
-    
+
     private GraphQL getApi(Object service) {
-        return new GraphQL(new GraphQLSchemaGenerator()
-                .withOperationsFromSingleton(service)
-                .generate());
+        return GraphQL.newGraphQL(
+                new GraphQLSchemaGenerator()
+                        .withOperationsFromSingleton(service)
+                        .generate())
+                .build();
     }
-    
+
     public static class SimpleService {
         @GraphQLQuery(name = ECHO)
         public String echoRootContext(@GraphQLRootContext("target") String target) {
@@ -78,7 +80,7 @@ public class ArgumentInjectionTest {
             return street;
         }
     }
-    
+
     public static class RootContext {
         private String target;
 
@@ -90,7 +92,7 @@ public class ArgumentInjectionTest {
             return target;
         }
     }
-    
+
     public static class TrickyRootContext extends RootContext {
 
         TrickyRootContext(String target) {

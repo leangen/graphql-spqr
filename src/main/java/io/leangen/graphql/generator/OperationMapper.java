@@ -128,7 +128,7 @@ public class OperationMapper {
                 .description(operation.getName())
                 .type(type);
         operation.getArguments().stream()
-                .filter(argument -> !argument.isRootContext())
+                .filter(OperationArgument::isMappable)
                 .forEach(argument -> queryBuilder.argument(toGraphQLArgument(argument, abstractTypes, buildContext)));
         if (type.getName() != null && !type.getName().equals("Connection") && type.getName().endsWith("Connection")) {
             queryBuilder.argument(buildContext.relay.getConnectionFieldArguments());

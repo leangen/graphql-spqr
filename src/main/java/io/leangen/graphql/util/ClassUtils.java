@@ -1,7 +1,5 @@
 package io.leangen.graphql.util;
 
-import sun.misc.Unsafe;
-
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -27,8 +25,10 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,17 +46,7 @@ import static java.util.Arrays.stream;
 
 public class ClassUtils {
 
-    private static Unsafe unsafe;
-
-    static {
-        try {
-            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
-            theUnsafe.setAccessible(true);
-            unsafe = (Unsafe) theUnsafe.get(null);
-        } catch (Exception e) {
-            //TODO log warning
-        }
-    }
+    private static Map<Class, Collection<Class>> implementationCache = new ConcurrentHashMap<>();
 
     /**
      * Retrieves all public methods on the given class (same as {@link Class#getMethods()}) annotated by the given annotation
@@ -230,30 +220,26 @@ public class ClassUtils {
      * @throws RuntimeException If a class file could not be parsed or a class could not be loaded
      */
     public static Collection<AnnotatedType> findImplementations(AnnotatedType superType, String... packages) {
-        try {
-            Class<?> rawType = getRawType(superType.getType());
-            ClassFinder classFinder = new ClassFinder();
-            classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(rawType.getClassLoader(), packages);
-            return classFinder
-                    .findClasses(new SubclassClassFilter(rawType)).stream()
-                    .map(classInfo -> loadClass(classInfo.getClassName()))
-                    .map(raw -> GenericTypeReflector.getExactSubType(superType, raw))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-        } catch (ClassReadingException e) {
-            throw new RuntimeException(e);
-        }
+        Class<?> rawType = getRawType(superType.getType());
+        return findImplementations(rawType, packages).stream()
+                .map(raw -> GenericTypeReflector.getExactSubType(superType, raw))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     public static Collection<Class> findImplementations(Class superType, String... packages) {
+        if (implementationCache.containsKey(superType)) {
+            return implementationCache.get(superType);
+        }
         try {
             ClassFinder classFinder = new ClassFinder();
             classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(superType.getClassLoader(), packages);
-            return classFinder
+            Collection<Class> implementations = classFinder
                     .findClasses(new SubclassClassFilter(superType)).stream()
                     .map(classInfo -> loadClass(classInfo.getClassName()))
-                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
+            implementationCache.putIfAbsent(superType, implementations);
+            return implementations;
         } catch (ClassReadingException e) {
             throw new RuntimeException(e);
         }
@@ -417,24 +403,6 @@ public class ClassUtils {
             }
         } while (!nextLevel.isEmpty());
         return classes;
-    }
-
-    /**
-     * Allocates an instance of the required class, skipping all constructors. To be used only when no other option is available.
-     *
-     * @param type The class representation of the instance type
-     * @param <T>  The instance type
-     *
-     * @return Bare instance, potentially not fully initialized
-     *
-     * @throws InstantiationException If an instance of {@link Unsafe} could not be acquired
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> T allocateInstance(Class<T> type) throws InstantiationException {
-        if (unsafe == null) {
-            throw new InstantiationException("Unsafe is unavailable. Instance allocation failed.");
-        }
-        return (T) unsafe.allocateInstance(type);
     }
 
     private static String capitalize(final String str) {
