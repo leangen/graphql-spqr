@@ -5,7 +5,7 @@
     <groupId>io.leangen.graphql</groupId>
     <artifactId>spqr</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0.rc2</version>
+    <version>0.7.0</version>
 
     <inceptionYear>2016</inceptionYear>
     <name>GraphQL SPQR</name>
