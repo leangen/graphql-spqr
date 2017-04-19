@@ -23,8 +23,8 @@ public class EnumMapper implements TypeMapper {
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLEnumType.Builder enumBuilder = newEnum()
-                .name(buildContext.typeMetaDataGenerator.generateTypeName(javaType))
-                .description(buildContext.typeMetaDataGenerator.generateTypeDescription(javaType));
+                .name(buildContext.typeInfoGenerator.generateTypeName(javaType))
+                .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
         addOptions(enumBuilder, ClassUtils.getRawType(javaType.getType()));
         return enumBuilder.build();
     }
@@ -32,8 +32,8 @@ public class EnumMapper implements TypeMapper {
     @Override
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLEnumType.Builder enumBuilder = newEnum()
-                .name(buildContext.typeMetaDataGenerator.generateInputTypeName(javaType))
-                .description(buildContext.typeMetaDataGenerator.generateInputTypeDescription(javaType));
+                .name(buildContext.typeInfoGenerator.generateInputTypeName(javaType))
+                .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType));
         addOptions(enumBuilder, ClassUtils.getRawType(javaType.getType()));
         return enumBuilder.build();
     }

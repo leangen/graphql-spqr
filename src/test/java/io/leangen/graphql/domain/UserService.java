@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
+import io.leangen.graphql.annotations.GraphQLID;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.RelayId;
@@ -42,7 +43,7 @@ public class UserService<T> {
     }
 
     @GraphQLQuery(name = "users")
-    public List<User<String>> getUsersById(@GraphQLArgument(name = "id") @RelayId Integer id) {
+    public List<User<String>> getUsersById(@GraphQLArgument(name = "id") @GraphQLID Integer id) {
         User<String> user = new User<>();
         user.id = id;
         user.name = "Tatko";
@@ -105,7 +106,7 @@ public class UserService<T> {
 //	}
 
     @GraphQLQuery(name = "user")
-    public User<String> getUserById(@GraphQLArgument(name = "id") @RelayId Integer id) {
+    public User<String> getUserById(@RelayId Integer wonkyName) {
         User<String> user = new User<>();
         user.id = 1;
         user.name = "One Dude";

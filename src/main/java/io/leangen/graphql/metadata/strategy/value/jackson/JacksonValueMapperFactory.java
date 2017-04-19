@@ -12,8 +12,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
-import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -23,22 +23,22 @@ import io.leangen.graphql.util.ClassUtils;
 public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValueMapper> {
 
     private final Configurer configurer;
-    private final TypeMetaDataGenerator metaDataGenerator;
+    private final TypeInfoGenerator typeInfoGenerator;
     private final JacksonValueMapper defaultValueMapper;
 
     public JacksonValueMapperFactory() {
-        this(new DefaultTypeMetaDataGenerator());
+        this(new DefaultTypeInfoGenerator());
     }
 
-    public JacksonValueMapperFactory(TypeMetaDataGenerator metaDataGenerator) {
-        this(metaDataGenerator, new AbstractClassAdapterConfigurer());
+    public JacksonValueMapperFactory(TypeInfoGenerator typeInfoGenerator) {
+        this(typeInfoGenerator, new AbstractClassAdapterConfigurer());
     }
 
-    public JacksonValueMapperFactory(TypeMetaDataGenerator metaDataGenerator, Configurer configurer) {
+    public JacksonValueMapperFactory(TypeInfoGenerator typeInfoGenerator, Configurer configurer) {
         this.configurer = configurer;
-        this.metaDataGenerator = metaDataGenerator;
+        this.typeInfoGenerator = typeInfoGenerator;
         this.defaultValueMapper = new JacksonValueMapper(
-                this.configurer.configure(new ObjectMapper(), Collections.emptySet(), metaDataGenerator));
+                this.configurer.configure(new ObjectMapper(), Collections.emptySet(), typeInfoGenerator));
     }
 
     @Override
@@ -46,18 +46,18 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         if (abstractTypes.isEmpty()) {
             return this.defaultValueMapper;
         }
-        ObjectMapper objectMapper = this.configurer.configure(new ObjectMapper(), abstractTypes, this.metaDataGenerator);
+        ObjectMapper objectMapper = this.configurer.configure(new ObjectMapper(), abstractTypes, this.typeInfoGenerator);
         return new JacksonValueMapper(objectMapper);
     }
 
     public static class AbstractClassAdapterConfigurer implements Configurer {
 
         @Override
-        public ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, TypeMetaDataGenerator metaDataGen) {
+        public ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, TypeInfoGenerator metaDataGen) {
             return objectMapper.setAnnotationIntrospector(new AnnotationIntrospector(collectSubtypes(abstractTypes, metaDataGen)));
         }
 
-        private Map<Type, List<NamedType>> collectSubtypes(Set<Type> abstractTypes, TypeMetaDataGenerator metaDataGen) {
+        private Map<Type, List<NamedType>> collectSubtypes(Set<Type> abstractTypes, TypeInfoGenerator metaDataGen) {
             Map<Type, List<NamedType>> types = new HashMap<>();
             Set<Class<?>> abstractClasses = abstractTypes.stream()
                     .map(ClassUtils::getRawType)
@@ -76,11 +76,11 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
     @FunctionalInterface
     public interface Configurer {
-        ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, TypeMetaDataGenerator metaDataGen);
+        ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, TypeInfoGenerator metaDataGen);
     }
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + " with " + metaDataGenerator.getClass().getSimpleName();
+        return this.getClass().getSimpleName() + " with " + typeInfoGenerator.getClass().getSimpleName();
     }
 }

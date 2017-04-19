@@ -19,7 +19,7 @@ import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.execution.TypeResolver;
 import io.leangen.graphql.generator.TypeRepository;
 import io.leangen.graphql.generator.exceptions.UnresolvableTypeException;
-import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 
 import static io.leangen.graphql.assertions.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertTrue;
@@ -112,7 +112,7 @@ public class TypeResolverTest {
     public static class RepoTypeHintProvier implements TypeResolver {
 
         @Override
-        public GraphQLObjectType resolveType(TypeRepository typeRepository, TypeMetaDataGenerator typeMetaDataGenerator, Object result) {
+        public GraphQLObjectType resolveType(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator, Object result) {
             String typeName = "SessionRepo_" + ((SessionRepo) result).getStoredItem().getClass().getSimpleName();
             return typeRepository.getOutputTypes(result.getClass()).stream()
                     .filter(mappedType -> mappedType.graphQLType.getName().equals(typeName))

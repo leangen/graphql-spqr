@@ -9,8 +9,8 @@ import java.util.Collections;
 import java.util.Set;
 
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
-import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
@@ -21,21 +21,21 @@ import io.leangen.graphql.util.ClassUtils;
 public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMapper> {
 
     private final FieldNamingStrategy fieldNamingStrategy;
-    private final TypeMetaDataGenerator metaDataGenerator;
+    private final TypeInfoGenerator typeInfoGenerator;
     private final Configurer configurer;
     private final GsonValueMapper defaultValueMapper;
 
     public GsonValueMapperFactory() {
-        this(new DefaultTypeMetaDataGenerator());
+        this(new DefaultTypeInfoGenerator());
     }
 
-    public GsonValueMapperFactory(TypeMetaDataGenerator metaDataGenerator) {
-        this(metaDataGenerator, new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
+    public GsonValueMapperFactory(TypeInfoGenerator typeInfoGenerator) {
+        this(typeInfoGenerator, new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
     }
 
-    public GsonValueMapperFactory(TypeMetaDataGenerator metaDataGenerator, FieldNamingStrategy fieldNamingStrategy, Configurer configurer) {
+    public GsonValueMapperFactory(TypeInfoGenerator typeInfoGenerator, FieldNamingStrategy fieldNamingStrategy, Configurer configurer) {
         this.fieldNamingStrategy = fieldNamingStrategy;
-        this.metaDataGenerator = metaDataGenerator;
+        this.typeInfoGenerator = typeInfoGenerator;
         this.configurer = configurer;
         this.defaultValueMapper = new GsonValueMapper(initBuilder(fieldNamingStrategy, Collections.emptySet(), configurer).create());
     }
@@ -52,13 +52,13 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
     private GsonBuilder initBuilder(FieldNamingStrategy fieldNamingStrategy, Set<Type> abstractTypes, Configurer configurer) {
         GsonBuilder gsonBuilder = new GsonBuilder()
                 .setFieldNamingStrategy(fieldNamingStrategy);
-        return configurer.configure(gsonBuilder, abstractTypes, this.metaDataGenerator);
+        return configurer.configure(gsonBuilder, abstractTypes, this.typeInfoGenerator);
     }
     
     public static class AbstractClassAdapterConfigurer implements Configurer {
 
         @Override
-        public GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, TypeMetaDataGenerator metaDataGen) {
+        public GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, TypeInfoGenerator metaDataGen) {
             abstractTypes.stream()
                     .map(ClassUtils::getRawType)
                     .distinct()
@@ -69,7 +69,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
         }
 
         @SuppressWarnings("unchecked")
-        private TypeAdapterFactory adapterFor(Class superClass, TypeMetaDataGenerator metaDataGen) {
+        private TypeAdapterFactory adapterFor(Class superClass, TypeInfoGenerator metaDataGen) {
             RuntimeTypeAdapterFactory adapterFactory = RuntimeTypeAdapterFactory.of(superClass, ValueMapper.TYPE_METADATA_FIELD_NAME);
 
             ClassUtils.findImplementations(superClass).stream()
@@ -82,11 +82,11 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
 
     @FunctionalInterface
     public interface Configurer {
-        GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, TypeMetaDataGenerator metaDataGen);
+        GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, TypeInfoGenerator metaDataGen);
     }
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + " with " + metaDataGenerator.getClass().getSimpleName();
+        return this.getClass().getSimpleName() + " with " + typeInfoGenerator.getClass().getSimpleName();
     }
 }

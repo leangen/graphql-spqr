@@ -6,7 +6,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.annotations.GraphQLTypeResolver;
 import io.leangen.graphql.generator.exceptions.UnresolvableTypeException;
-import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 
 /**
  * Created by bojan.tomic on 5/7/16.
@@ -14,16 +14,16 @@ import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
 public class HintedTypeResolver implements TypeResolver {
 
     private final TypeRepository typeRepository;
-    private final TypeMetaDataGenerator typeMetaDataGenerator;
+    private final TypeInfoGenerator typeInfoGenerator;
     private final String abstractTypeName;
 
-    public HintedTypeResolver(TypeRepository typeRepository, TypeMetaDataGenerator typeMetaDataGenerator) {
-        this(null, typeRepository, typeMetaDataGenerator);
+    public HintedTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
+        this(null, typeRepository, typeInfoGenerator);
     }
 
-    public HintedTypeResolver(String abstractTypeName, TypeRepository typeRepository, TypeMetaDataGenerator typeMetaDataGenerator) {
+    public HintedTypeResolver(String abstractTypeName, TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
         this.typeRepository = typeRepository;
-        this.typeMetaDataGenerator = typeMetaDataGenerator;
+        this.typeInfoGenerator = typeInfoGenerator;
         this.abstractTypeName = abstractTypeName;
     }
     
@@ -34,7 +34,7 @@ public class HintedTypeResolver implements TypeResolver {
         if (type.isAnnotationPresent(GraphQLTypeResolver.class)) {
             try {
                 return type.getAnnotation(GraphQLTypeResolver.class).value().newInstance()
-                        .resolveType(typeRepository, typeMetaDataGenerator, result);
+                        .resolveType(typeRepository, typeInfoGenerator, result);
             } catch (ReflectiveOperationException e) {
                 throw new UnresolvableTypeException(result, e);
             }

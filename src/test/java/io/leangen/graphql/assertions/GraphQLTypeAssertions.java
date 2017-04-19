@@ -13,6 +13,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
+import io.leangen.graphql.util.GraphQLUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -54,6 +55,11 @@ public class GraphQLTypeAssertions {
         assertEquals(wrappedType, ((GraphQLList) wrapperType).getWrappedType().getClass());
     }
 
+    public static void assertListOfRelayIds(GraphQLType type) {
+        assertEquals(GraphQLList.class, type.getClass());
+        assertTrue(GraphQLUtils.isRelayId(((GraphQLList) type).getWrappedType()));
+    }
+    
     public static void assertMapOf(GraphQLType mapType, Class<? extends GraphQLType> keyType, Class<? extends GraphQLType> valueType) {
         assertEquals(GraphQLList.class, mapType.getClass());
         GraphQLType entry = ((GraphQLList) mapType).getWrappedType();

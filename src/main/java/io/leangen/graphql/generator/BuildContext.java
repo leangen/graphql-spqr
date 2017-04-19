@@ -12,7 +12,7 @@ import io.leangen.graphql.generator.mapping.ArgumentInjectorRepository;
 import io.leangen.graphql.generator.mapping.ConverterRepository;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
-import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 
@@ -28,7 +28,7 @@ public class BuildContext {
     public final InterfaceMappingStrategy interfaceStrategy;
     public final ValueMapperFactory valueMapperFactory;
     public final InputFieldDiscoveryStrategy inputFieldStrategy;
-    public final TypeMetaDataGenerator typeMetaDataGenerator;
+    public final TypeInfoGenerator typeInfoGenerator;
 
     public final Set<String> knownTypes;
     public final Set<String> knownInputTypes;
@@ -43,14 +43,14 @@ public class BuildContext {
      */
     public BuildContext(OperationRepository operationRepository, TypeMapperRepository typeMappers, ConverterRepository converters,
                         ArgumentInjectorRepository inputProviders, InterfaceMappingStrategy interfaceStrategy,
-                        TypeMetaDataGenerator typeMetaDataGenerator, ValueMapperFactory valueMapperFactory,
+                        TypeInfoGenerator typeInfoGenerator, ValueMapperFactory valueMapperFactory,
                         InputFieldDiscoveryStrategy inputFieldStrategy, Set<String> knownTypes, Set<String> knownInputTypes) {
         this.operationRepository = operationRepository;
         this.typeRepository = new TypeRepository();
         this.typeMappers = typeMappers;
-        this.typeMetaDataGenerator = typeMetaDataGenerator;
+        this.typeInfoGenerator = typeInfoGenerator;
         this.relay = new Relay();
-        this.typeResolver = new HintedTypeResolver(this.typeRepository, typeMetaDataGenerator);
+        this.typeResolver = new HintedTypeResolver(this.typeRepository, typeInfoGenerator);
         this.interfaceStrategy = interfaceStrategy;
         this.valueMapperFactory = valueMapperFactory;
         this.inputFieldStrategy = inputFieldStrategy;

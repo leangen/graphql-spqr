@@ -69,15 +69,6 @@ public class Resolver {
     }
 
     /**
-     * Checks whether this resolver is the primary. Primary resolver is the one accepting nothing but the Relay ID.
-     *
-     * @return Boolean indicating whether this resolver is the primary resolver for this query
-     */
-    public boolean isPrimaryResolver() {
-        return arguments.size() == 1 && arguments.get(0).isRelayId();
-    }
-
-    /**
      * Gets the generic Java types of the source objects (object returned by the parent query),
      * if one is accepted by this resolver. Used to decide if this query can be nested inside another.
      *

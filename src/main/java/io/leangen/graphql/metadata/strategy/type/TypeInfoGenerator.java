@@ -5,7 +5,7 @@ import java.lang.reflect.AnnotatedType;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public interface TypeMetaDataGenerator {
+public interface TypeInfoGenerator {
 
     String INPUT_SUFFIX = "_input";
     String SCALAR_SUFFIX = "_scalar";
@@ -13,7 +13,7 @@ public interface TypeMetaDataGenerator {
     String generateTypeName(AnnotatedType type);
 
     String generateTypeDescription(AnnotatedType type);
-    
+
     default String generateInputTypeName(AnnotatedType type) {
         return generateTypeName(type) + INPUT_SUFFIX;
     }

@@ -25,7 +25,7 @@ import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.domain.GenericItemRepo;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -33,7 +33,9 @@ import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFact
 import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertArgumentsPresent;
 import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOf;
 import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOfNonNull;
+import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOfRelayIds;
 import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertNonNull;
+import static io.leangen.graphql.util.GraphQLUtils.isRelayId;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -44,7 +46,7 @@ public class GenericsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Object[] data() {
-        return new Object[] { new JacksonValueMapperFactory(new DefaultTypeMetaDataGenerator()), new GsonValueMapperFactory(new DefaultTypeMetaDataGenerator())};
+        return new Object[] { new JacksonValueMapperFactory(new DefaultTypeInfoGenerator()), new GsonValueMapperFactory(new DefaultTypeInfoGenerator())};
     }
     
     // IMPORTANT! All type declarations have to stay outside of tests (can not be inlined)
@@ -113,25 +115,25 @@ public class GenericsTest {
                 .generate();
 
         GraphQLOutputType itemType = schemaWithDateIds.getQueryType().getFieldDefinition("getItem").getType();
-        assertEquals(Scalars.GraphQLID, itemType);
+        assertTrue(isRelayId(itemType));
 
         GraphQLOutputType itemCollectionType = schemaWithDateIds.getQueryType().getFieldDefinition("getAllItems").getType();
-        assertListOf(itemCollectionType, Scalars.GraphQLID);
+        assertListOfRelayIds(itemCollectionType);
 
         GraphQLFieldDefinition addOneItem = schemaWithDateIds.getMutationType().getFieldDefinition("addItem");
-        assertEquals(addOneItem.getArgument("item").getType(), Scalars.GraphQLID);
+        assertTrue(isRelayId(addOneItem.getArgument("id")));
 
         GraphQLFieldDefinition addManyItems = schemaWithDateIds.getMutationType().getFieldDefinition("addItems");
-        assertListOf(addManyItems.getArgument("items").getType(), Scalars.GraphQLID);
+        assertListOfRelayIds(addManyItems.getArgument("items").getType());
         
-        GraphQL graphQL = new GraphQL(schemaWithDateIds);
+        GraphQL graphQL = GraphQL.newGraphQL(schemaWithDateIds).build();
         String jsonDate = valueMapperFactory.getValueMapper().toString(firstEvent);
         String relayId = new Relay().toGlobalId("QUERY_ROOT", jsonDate);
-        ExecutionResult result = graphQL.execute("{ contains(item: \"" + relayId+ "\") }");
+        ExecutionResult result = graphQL.execute("{ contains(id: \"" + relayId+ "\") }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
         assertEquals(relayId, ((Map<String, Object>) result.getData()).get("contains"));
         //Search again but using raw (non Relay encoded) ID this time. For now, this is supported.
-        result = graphQL.execute("{ contains(item: \"" + jsonDate.replace("\"", "\\\"") + "\") }");
+        result = graphQL.execute("{ contains(id: \"" + jsonDate.replace("\"", "\\\"") + "\") }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
         assertEquals(relayId, ((Map<String, Object>) result.getData()).get("contains"));
     }

@@ -29,18 +29,18 @@ public class OperationRepository {
         this.operationBuilder = operationBuilder;
         Collection<Resolver> resolvers = buildQueryResolvers(operationSourceRepository.getOperationSources());
         Collection<Resolver> mutationResolvers = buildMutationResolvers(operationSourceRepository.getOperationSources());
-        rootQueries = assembleQueries(resolvers);
-        mutations = assembleMutations(mutationResolvers);
+        rootQueries = buildQueries(resolvers);
+        mutations = buildMutations(mutationResolvers);
     }
 
-    private Set<Operation> assembleQueries(Collection<Resolver> resolvers) {
+    private Set<Operation> buildQueries(Collection<Resolver> resolvers) {
         return resolvers.stream()
                 .collect(Collectors.groupingBy(Resolver::getOperationName)).entrySet().stream()
                 .map(entry -> operationBuilder.buildQuery(entry.getValue()))
                 .collect(Collectors.toSet());
     }
 
-    private Set<Operation> assembleMutations(Collection<Resolver> resolvers) {
+    private Set<Operation> buildMutations(Collection<Resolver> resolvers) {
         return resolvers.stream()
                 .collect(Collectors.groupingBy(Resolver::getOperationName)).entrySet().stream()
                 .map(entry -> operationBuilder.buildMutation(entry.getValue()))
@@ -55,15 +55,15 @@ public class OperationRepository {
         return mutations;
     }
 
-    public Set<Operation> getDomainQueries(AnnotatedType domainType) {
+    public Set<Operation> getNestedQueries(AnnotatedType domainType) {
         OperationSource domainSource = operationSourceRepository.nestedSourceForType(domainType);
-        return assembleDomainQueries(domainSource);
+        return buildNestedQueries(domainSource);
     }
 
     public Collection<Operation> getChildQueries(AnnotatedType domainType) {
         Map<String, Operation> children = new HashMap<>();
 
-        Map<String, Operation> domainQueries = getDomainQueries(domainType).stream().collect(Collectors.toMap(Operation::getName, Function.identity()));
+        Map<String, Operation> domainQueries = getNestedQueries(domainType).stream().collect(Collectors.toMap(Operation::getName, Function.identity()));
         /*TODO check if any domain query has a @GraphQLContext field of type different then domainType.
         If so, throw an error early, as such an operation will be impossible to invoke, unless they're static!
         Not sure about @RootContext*/
@@ -79,8 +79,8 @@ public class OperationRepository {
                 .collect(Collectors.toSet());
     }
 
-    private Set<Operation> assembleDomainQueries(OperationSource operationSource) {
-        return assembleQueries(buildQueryResolvers(Collections.singleton(operationSource)));
+    private Set<Operation> buildNestedQueries(OperationSource operationSource) {
+        return buildQueries(buildQueryResolvers(Collections.singleton(operationSource)));
     }
 
     private Collection<Resolver> buildQueryResolvers(Collection<OperationSource> operationSources) {

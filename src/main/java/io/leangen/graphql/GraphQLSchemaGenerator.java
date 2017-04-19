@@ -34,6 +34,7 @@ import io.leangen.graphql.generator.mapping.common.CollectionToListOutputConvert
 import io.leangen.graphql.generator.mapping.common.ContextInjector;
 import io.leangen.graphql.generator.mapping.common.EnumMapper;
 import io.leangen.graphql.generator.mapping.common.EnvironmentInjector;
+import io.leangen.graphql.generator.mapping.common.IdAdapter;
 import io.leangen.graphql.generator.mapping.common.InputValueDeserializer;
 import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
 import io.leangen.graphql.generator.mapping.common.ListMapper;
@@ -57,8 +58,8 @@ import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.DefaultOperationBuilder;
 import io.leangen.graphql.metadata.strategy.query.OperationBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
-import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
@@ -112,7 +113,7 @@ public class GraphQLSchemaGenerator {
     private OperationBuilder operationBuilder = new DefaultOperationBuilder();
     private ValueMapperFactory valueMapperFactory;
     private InputFieldDiscoveryStrategy inputFieldStrategy;
-    private TypeMetaDataGenerator metaDataGenerator = new DefaultTypeMetaDataGenerator();
+    private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
     private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final List<TypeMapper> typeMappers = new ArrayList<>();
@@ -475,8 +476,8 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withTypeMetaDataGenerator(TypeMetaDataGenerator metaDataGenerator) {
-        this.metaDataGenerator = metaDataGenerator;
+    public GraphQLSchemaGenerator withMetaDataGenerator(TypeInfoGenerator typeInfoGenerator) {
+        this.typeInfoGenerator = typeInfoGenerator;
         return this;
     }
 
@@ -518,10 +519,10 @@ public class GraphQLSchemaGenerator {
     public GraphQLSchemaGenerator withDefaultMappers() {
         ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
         return withTypeMappers(
-                new NonNullMapper(), new RelayIdAdapter(), new ScalarMapper(), new ObjectScalarAdapter(),
-                new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(), new UnionInlineMapper(),
-                new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
-                new ListMapper(), new PageMapper(), new OptionalAdapter(),
+                new NonNullMapper(), new RelayIdAdapter(), new IdAdapter(), new ScalarMapper(),
+                new ObjectScalarAdapter(), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
+                new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(),
+                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
                 new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
     }
 
@@ -530,8 +531,9 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withDefaultOutputConverters() {
-        return withOutputConverters(new RelayIdAdapter(), new ObjectScalarAdapter(), new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(),
-                new CollectionToListOutputConverter(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+        return withOutputConverters(new RelayIdAdapter(), new IdAdapter(), new ObjectScalarAdapter(),
+                new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter(),
+                new OptionalAdapter(), new StreamToCollectionTypeAdapter());
     }
 
     /**
@@ -547,7 +549,8 @@ public class GraphQLSchemaGenerator {
 
     public GraphQLSchemaGenerator withDefaultArgumentInjectors() {
         return withArgumentInjectors(
-                new RelayIdAdapter(), new RootContextInjector(), new ContextInjector(), new EnvironmentInjector(), new InputValueDeserializer());
+                new RelayIdAdapter(), new IdAdapter(), new RootContextInjector(), new ContextInjector(),
+                new EnvironmentInjector(), new InputValueDeserializer());
     }
 
     /**
@@ -577,14 +580,14 @@ public class GraphQLSchemaGenerator {
             withDefaultArgumentInjectors();
         }
         if (valueMapperFactory == null) {
-            valueMapperFactory = Defaults.valueMapperFactory(metaDataGenerator);
+            valueMapperFactory = Defaults.valueMapperFactory(typeInfoGenerator);
         }
         if (inputFieldStrategy == null) {
             ValueMapper def = valueMapperFactory.getValueMapper();
             if (def instanceof InputFieldDiscoveryStrategy) {
                 inputFieldStrategy = (InputFieldDiscoveryStrategy) def;
             } else {
-                inputFieldStrategy = (InputFieldDiscoveryStrategy) Defaults.valueMapperFactory(metaDataGenerator).getValueMapper();
+                inputFieldStrategy = (InputFieldDiscoveryStrategy) Defaults.valueMapperFactory(typeInfoGenerator).getValueMapper();
             }
         }
     }
@@ -614,7 +617,7 @@ public class GraphQLSchemaGenerator {
                 new TypeMapperRepository(typeMappers),
                 new ConverterRepository(inputConverters, outputConverters),
                 new ArgumentInjectorRepository(argumentInjectors),
-                interfaceStrategy, metaDataGenerator, valueMapperFactory, inputFieldStrategy,
+                interfaceStrategy, typeInfoGenerator, valueMapperFactory, inputFieldStrategy,
                 knownTypeNames, knownInputTypeNames);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 

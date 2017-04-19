@@ -14,7 +14,7 @@ import io.leangen.graphql.util.Utils;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class DefaultTypeMetaDataGenerator implements TypeMetaDataGenerator {
+public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
 
     @Override
     public String generateTypeName(AnnotatedType type) {

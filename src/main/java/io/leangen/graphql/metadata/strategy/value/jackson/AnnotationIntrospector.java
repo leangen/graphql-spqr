@@ -13,6 +13,9 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -37,6 +40,8 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
 
     private static TypeResolverBuilder<?> typeResolverBuilder;
     private Map<Type, List<NamedType>> typeMap;
+
+    private final Logger log = LoggerFactory.getLogger(AnnotationIntrospector.class);
 
     static {
         typeResolverBuilder = new StdTypeResolverBuilder()
@@ -110,7 +115,8 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
                         .findFirst()
                         .ifPresent(prop -> addPropertyMethods(propertyElements, prop));
             } catch (IntrospectionException e) {
-                /*TODO log*/
+                log.warn("Introspection of {} failed. GraphQL input fields might be incorrectly mapped.",
+                        field.getDeclaringClass());
             }
             propertyElements.add(annotated.getAnnotated());
         } else if (annotated instanceof AnnotatedMethod) {
@@ -121,7 +127,8 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
                         .findFirst()
                         .ifPresent(prop -> addPropertyMethods(propertyElements, prop));
             } catch (IntrospectionException e) {
-                /*TODO log*/
+                log.warn("Introspection of {} failed. GraphQL input fields might be incorrectly mapped.",
+                        setter.getDeclaringClass());
             }
         }
         return propertyElements;

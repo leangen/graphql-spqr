@@ -3,8 +3,6 @@ package io.leangen.graphql.metadata;
 import java.lang.reflect.AnnotatedType;
 import java.util.Objects;
 
-import io.leangen.graphql.annotations.RelayId;
-
 public class OperationArgument {
 
     private final AnnotatedType javaType;
@@ -12,7 +10,6 @@ public class OperationArgument {
     private final String description;
     private final OperationArgumentDefaultValue defaultValue;
     private final boolean context;
-    private final boolean relayId;
     private final boolean mappable;
 
     public OperationArgument(AnnotatedType javaType, String name, String description, OperationArgumentDefaultValue defaultValue,
@@ -27,7 +24,6 @@ public class OperationArgument {
         this.description = description;
         this.defaultValue = defaultValue;
         this.context = context;
-        this.relayId = javaType.isAnnotationPresent(RelayId.class);
         this.mappable = mappable;
     }
 
@@ -45,10 +41,6 @@ public class OperationArgument {
 
     public boolean isContext() {
         return context;
-    }
-
-    public boolean isRelayId() {
-        return relayId;
     }
 
     public AnnotatedType getJavaType() {

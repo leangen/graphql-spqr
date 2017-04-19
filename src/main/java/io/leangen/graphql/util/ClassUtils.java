@@ -131,9 +131,10 @@ public class ClassUtils {
 
     public static Class<?> getRawType(Type type) {
         Class<?> erased = GenericTypeReflector.erase(type);
-        //TODO This should preferably be a warning, not an exception, or have customizable behavior
         if (erased == Object.class && type != Object.class) {
-            throw new IllegalArgumentException("Type " + type.getTypeName() + " is lost due to erasure");
+            throw new TypeMappingException("Type of " + type.getTypeName() + " is lost to erasure. " +
+                    "Consider explicitly providing the type to GraphQLSchemaGenerator#withOperationsFrom... " +
+                    "methods, or customizing the mapping process.");
         }
         return erased;
     }

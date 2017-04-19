@@ -2,11 +2,11 @@ package io.leangen.graphql.metadata;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
@@ -22,14 +22,11 @@ public class Operation {
     private final Map<String, Resolver> resolversByFingerprint;
     private final List<OperationArgument> arguments;
 
-    private boolean hasPrimaryResolver;
-
     public Operation(String name, AnnotatedType javaType, List<Type> contextTypes, 
                      List<OperationArgument> arguments, List<Resolver> resolvers) {
         
         this.name = name;
         this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
-        this.hasPrimaryResolver = resolvers.stream().anyMatch(Resolver::isPrimaryResolver);
         this.javaType = javaType;
         this.contextTypes = contextTypes;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
@@ -42,7 +39,7 @@ public class Operation {
         return resolversByFingerprint;
     }
 
-    public Resolver getResolver(Set<String> argumentNames) {
+    public Resolver getResolver(String... argumentNames) {
         return resolversByFingerprint.get(getFingerprint(argumentNames));
     }
 
@@ -50,14 +47,10 @@ public class Operation {
         return this.contextTypes.stream().anyMatch(contextType -> GenericTypeReflector.isSuperType(contextType, type));
     }
 
-    private String getFingerprint(Set<String> argumentNames) {
+    private String getFingerprint(String... argumentNames) {
         StringBuilder fingerPrint = new StringBuilder();
-        argumentNames.stream().sorted().forEach(fingerPrint::append);
+        Arrays.stream(argumentNames).sorted().forEach(fingerPrint::append);
         return fingerPrint.toString();
-    }
-
-    public boolean hasPrimaryResolver() {
-        return hasPrimaryResolver;
     }
 
     public String getName() {

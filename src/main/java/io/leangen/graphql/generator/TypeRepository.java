@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLObjectType;
 import io.leangen.graphql.util.ClassUtils;
 
 /**
@@ -21,13 +21,9 @@ public class TypeRepository {
 
     private Map<String, Set<MappedType>> covariantOutputTypes = new ConcurrentHashMap<>();
 
-    public void registerCovariantTypes(String compositeTypeName, AnnotatedType javaSubType, GraphQLOutputType subType) {
+    public void registerCovariantTypes(String compositeTypeName, AnnotatedType javaSubType, GraphQLObjectType subType) {
         this.covariantOutputTypes.putIfAbsent(compositeTypeName, new HashSet<>());
         this.covariantOutputTypes.get(compositeTypeName).add(new MappedType(javaSubType, subType));
-    }
-
-    public void registerCovariantTypes(Collection<String> compositeTypeNames, AnnotatedType javaSubType, GraphQLOutputType subType) {
-        compositeTypeNames.forEach(typeName -> registerCovariantTypes(typeName, javaSubType, subType));
     }
 
     public List<MappedType> getOutputTypes(String compositeTypeName, Class objectType) {
@@ -39,6 +35,10 @@ public class TypeRepository {
                 .collect(Collectors.toList());
     }
 
+    public List<MappedType> getOutputTypes(String compositeTypeName) {
+        return new ArrayList<>(this.covariantOutputTypes.get(compositeTypeName));
+    }
+    
     /**
      * Needed because of https://github.com/graphql-java/graphql-java/issues/122
      * 

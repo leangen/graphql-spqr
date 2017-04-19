@@ -22,6 +22,8 @@ import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLUnionType;
+import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.generator.mapping.TypeMapper;
@@ -49,14 +51,12 @@ public class OperationMapper {
     private List<GraphQLFieldDefinition> mutations; //The list of all mapped mutations
     public GraphQLInterfaceType node; //Node interface, as defined by the Relay GraphQL spec
 
-    private static final String RELAY_ID = "id"; //The name of the ID field, as defined by the Node interface
-
     /**
      *
      * @param buildContext The shared context containing all the global information needed for mapping
      */
     public OperationMapper(BuildContext buildContext) {
-        this.node = buildContext.relay.nodeInterface(new RelayNodeTypeResolver(buildContext.typeRepository, buildContext.typeMetaDataGenerator));
+        this.node = buildContext.relay.nodeInterface(new RelayNodeTypeResolver(buildContext.typeRepository, buildContext.typeInfoGenerator));
         this.queries = generateQueries(buildContext);
         this.mutations = generateMutations(buildContext);
     }
@@ -70,25 +70,12 @@ public class OperationMapper {
      * @return A list of {@link GraphQLFieldDefinition}s representing all top-level queries
      */
     private List<GraphQLFieldDefinition> generateQueries(BuildContext buildContext) {
-        Collection<Operation> rootQueries = buildContext.operationRepository.getQueries();
+        List<Operation> rootQueries = new ArrayList<>(buildContext.operationRepository.getQueries());
+        List<GraphQLFieldDefinition> queries = rootQueries.stream()
+                .map(query -> toGraphQLOperation(query, buildContext))
+                .collect(Collectors.toList());
 
-        List<GraphQLFieldDefinition> queries = new ArrayList<>(rootQueries.size() + 1);
-        Map<String, String> nodeQueriesByType = new HashMap<>();
-
-        for (Operation operation : rootQueries) {
-            GraphQLFieldDefinition graphQlQuery = toGraphQLOperation(operation, buildContext);
-            queries.add(graphQlQuery);
-
-            if (operation.hasPrimaryResolver()) {
-                GraphQLType unwrappedQueryType = GraphQLUtils.unwrapNonNull(graphQlQuery.getType());
-                if (unwrappedQueryType instanceof GraphQLObjectType
-                        && ((GraphQLObjectType) unwrappedQueryType).getInterfaces().contains(this.node)) {
-                    nodeQueriesByType.put(unwrappedQueryType.getName(), operation.getName());
-                }
-            }
-        }
-
-        //TODO Shouldn't this check if the return type has relayID? Also, why add queries without primary resolver?
+        Map<String, String> nodeQueriesByType = getNodeQueriesByType(rootQueries, queries, buildContext.typeRepository);
         //Add support for Relay Node query only if Relay-enabled resolvers exist
         if (!nodeQueriesByType.isEmpty()) {
             queries.add(buildContext.relay.nodeField(node, createNodeResolver(nodeQueriesByType, buildContext.relay)));
@@ -224,21 +211,51 @@ public class OperationMapper {
      *
      * @return The node query resolver
      */
-    //TODO should this maybe just delegate?
-    //e.g. return ((GraphQLObjectType)env.getGraphQLSchema().getType("")).getFieldDefinition("").getDataFetcher().get(env);
     private DataFetcher createNodeResolver(Map<String, String> nodeQueriesByType, Relay relay) {
         return env -> {
             String typeName;
             try {
-                typeName = relay.fromGlobalId((String) env.getArguments().get(RELAY_ID)).getType();
+                typeName = relay.fromGlobalId((String) env.getArguments().get(RelayId.FIELD_NAME)).getType();
             } catch (Exception e) {
-                throw new IllegalArgumentException(env.getArguments().get(RELAY_ID) + " is not a valid Relay node ID");
+                throw new IllegalArgumentException(env.getArguments().get(RelayId.FIELD_NAME) + " is not a valid Relay node ID");
             }
             if (!nodeQueriesByType.containsKey(typeName)) {
                 throw new IllegalArgumentException(typeName + " is not a Relay node type or no registered query can fetch it by ID");
             }
             return env.getGraphQLSchema().getQueryType().getFieldDefinition(nodeQueriesByType.get(typeName)).getDataFetcher().get(env);
         };
+    }
+
+    private Map<String, String> getNodeQueriesByType(List<Operation> queries,
+                                                     List<GraphQLFieldDefinition> graphQlQueries,
+                                                     TypeRepository typeRepository) {
+        
+        Map<String, String> nodeQueriesByType = new HashMap<>();
+        Map<String, String> directNodeQueriesByType = new HashMap<>();
+
+        for (int i = 0; i < queries.size(); i++) {
+            Operation query = queries.get(i);
+            GraphQLFieldDefinition graphQlQuery = graphQlQueries.get(i);
+
+            if (graphQlQuery.getArgument(RelayId.FIELD_NAME) != null
+                    && GraphQLUtils.isRelayId(graphQlQuery.getArgument(RelayId.FIELD_NAME))
+                    && query.getResolver(RelayId.FIELD_NAME) != null) {
+
+                GraphQLType unwrappedQueryType = GraphQLUtils.unwrapNonNull(graphQlQuery.getType());
+                if (unwrappedQueryType instanceof GraphQLObjectType
+                        && ((GraphQLObjectType) unwrappedQueryType).getInterfaces().contains(this.node)) {
+                    directNodeQueriesByType.put(unwrappedQueryType.getName(), query.getName());
+                } else if (unwrappedQueryType instanceof GraphQLInterfaceType || unwrappedQueryType instanceof GraphQLUnionType) {
+                    typeRepository.getOutputTypes(unwrappedQueryType.getName()).stream()
+                            .map(mappedType -> mappedType.graphQLType)
+                            .filter(implementation -> implementation.getInterfaces().contains(this.node))
+                            .forEach(nodeType -> nodeQueriesByType.put(nodeType.getName(), query.getName()));
+                }
+            }
+        }
+        //this way more precise queries (returning node types directly) override interface/union queries
+        nodeQueriesByType.putAll(directNodeQueriesByType);
+        return nodeQueriesByType;
     }
 
     /**

@@ -2,39 +2,30 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.HashSet;
 import java.util.Set;
 
-import graphql.Scalars;
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLNonNull;
 import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.generator.mapping.ArgumentInjector;
-import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.util.Scalars;
 
 /**
- * @author Bojan Tomic (kaqqao)
+ * Maps, converts and injects global Relay spec compliant GraphQL IDs
  */
-public class RelayIdAdapter extends AbstractionCollectingMapper implements ArgumentInjector, OutputConverter {
+public class RelayIdAdapter extends IdAdapter {
 
     @Override
-    public GraphQLOutputType graphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
-        return Scalars.GraphQLID;
+    public GraphQLNonNull graphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+        return Scalars.RelayId;
     }
 
     @Override
-    public GraphQLInputType graphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
-        return Scalars.GraphQLID;
+    public GraphQLNonNull graphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+        return Scalars.RelayId;
     }
 
-    @Override
-    protected void registerAbstract(AnnotatedType type, Set<Type> abstractTypes, BuildContext buildContext) {
-        abstractTypes.addAll(collectAbstract(type, new HashSet<>(), buildContext));
-    }
-    
     @Override
     public Object convertOutput(Object original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         return resolutionEnvironment.globalEnvironment.relay.toGlobalId(resolutionEnvironment.parentType.getName(), resolutionEnvironment.valueMapper.toString(original));

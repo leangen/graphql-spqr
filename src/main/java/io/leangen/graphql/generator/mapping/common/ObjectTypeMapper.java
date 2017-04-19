@@ -2,21 +2,21 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import graphql.Scalars;
+import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
-import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.GraphQLUtils;
 
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
@@ -27,39 +27,18 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
     @Override
     public GraphQLObjectType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
-        //TODO remove the reference to @RelayId here. Instead, check for mapped fields of type GraphQLID
-        Optional<Operation> relayId = buildContext.operationRepository.getDomainQueries(javaType).stream()
-                .filter(query -> query.getJavaType().isAnnotationPresent(RelayId.class))
-                .findFirst();
-
         GraphQLObjectType.Builder typeBuilder = newObject()
                 .name(typeName)
-                .description(buildContext.typeMetaDataGenerator.generateTypeDescription(javaType));
+                .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
 
-        buildContext.operationRepository.getChildQueries(javaType)
-                .forEach(childQuery -> typeBuilder.field(operationMapper.toGraphQLOperation(childQuery, buildContext)));
+        List<GraphQLFieldDefinition> fields = getFields(javaType, buildContext, operationMapper);
+        fields.forEach(typeBuilder::field);
 
-        Set<String> interfaceNames = new HashSet<>();
-        if (relayId.isPresent()) {
-            typeBuilder.withInterface(operationMapper.node);
-            interfaceNames.add(operationMapper.node.getName());
-        }
-        buildContext.interfaceStrategy.getInterfaces(javaType).forEach(
-                inter -> {
-                    GraphQLOutputType graphQLInterface = operationMapper.toGraphQLType(inter, abstractTypes, buildContext);
-                    typeBuilder.withInterface((GraphQLInterfaceType) graphQLInterface);
-                    interfaceNames.add(graphQLInterface.getName());
-                });
-
-        if (ClassUtils.isAbstract(javaType)) {
-            typeBuilder.field(newFieldDefinition()
-                    .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
-                    .type(Scalars.GraphQLString)
-                    .dataFetcher(env -> env.getSource() == null ? null : env.getSource().getClass().getSimpleName())
-                    .build());
-        }
+        List<GraphQLInterfaceType> interfaces = getInterfaces(javaType, abstractTypes, fields, buildContext, operationMapper);
+        interfaces.forEach(typeBuilder::withInterface);
+        
         GraphQLObjectType type = typeBuilder.build();
-        buildContext.typeRepository.registerCovariantTypes(interfaceNames, javaType, type);
+        interfaces.forEach(inter -> buildContext.typeRepository.registerCovariantTypes(inter.getName(), javaType, type));
         return type;
     }
 
@@ -67,7 +46,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     public GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLInputObjectType.Builder typeBuilder = newInputObject()
                 .name(typeName)
-                .description(buildContext.typeMetaDataGenerator.generateInputTypeDescription(javaType));
+                .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType));
 
         buildContext.inputFieldStrategy.getInputFields(javaType).forEach(
                 field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, abstractTypes, buildContext)));
@@ -84,5 +63,34 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     @Override
     public boolean supports(AnnotatedType type) {
         return true;
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    protected List<GraphQLFieldDefinition> getFields(AnnotatedType javaType, BuildContext buildContext, OperationMapper operationMapper) {
+        List<GraphQLFieldDefinition> fields = buildContext.operationRepository.getChildQueries(javaType).stream()
+                .map(childQuery -> operationMapper.toGraphQLOperation(childQuery, buildContext))
+                .collect(Collectors.toList());
+        if (ClassUtils.isAbstract(javaType)) {
+            fields.add(newFieldDefinition()
+                    .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
+                    .type(Scalars.GraphQLString)
+                    .dataFetcher(env -> env.getSource() == null ? null : env.getSource().getClass().getSimpleName())
+                    .build());
+        }
+        return fields;
+    }
+    
+    @SuppressWarnings("WeakerAccess")
+    protected List<GraphQLInterfaceType> getInterfaces(AnnotatedType javaType, Set<Type> abstractTypes,
+                                                       List<GraphQLFieldDefinition> fields, BuildContext buildContext, OperationMapper operationMapper) {
+
+        List<GraphQLInterfaceType> interfaces = new ArrayList<>();
+        if (fields.stream().anyMatch(GraphQLUtils::isRelayId)) {
+            interfaces.add(operationMapper.node);
+        }
+        buildContext.interfaceStrategy.getInterfaces(javaType).forEach(
+                inter -> interfaces.add((GraphQLInterfaceType) operationMapper.toGraphQLType(inter, abstractTypes, buildContext)));
+        
+        return interfaces;
     }
 }

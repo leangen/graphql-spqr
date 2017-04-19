@@ -23,6 +23,7 @@ import graphql.language.ObjectValue;
 import graphql.language.StringValue;
 import graphql.language.Value;
 import graphql.schema.Coercing;
+import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLScalarType;
 
 import static graphql.Scalars.GraphQLBigDecimal;
@@ -36,8 +37,11 @@ import static graphql.Scalars.GraphQLLong;
 import static graphql.Scalars.GraphQLShort;
 import static graphql.Scalars.GraphQLString;
 
+@SuppressWarnings("WeakerAccess")
 public class Scalars {
 
+    public static final GraphQLNonNull RelayId = new GraphQLNonNull(graphql.Scalars.GraphQLID);
+    
     public static final GraphQLScalarType GraphQLUuid = new GraphQLScalarType("UUID", "Built-in UUID", new Coercing() {
         @Override
         public Object serialize(Object input) {
@@ -125,7 +129,7 @@ public class Scalars {
         }
     });
 
-    public static final GraphQLScalarType graphQLObjectScalar(String name) {
+    public static GraphQLScalarType graphQLObjectScalar(String name) {
         return new GraphQLScalarType(name, "Built-in object scalar", new Coercing() {
 
             @Override

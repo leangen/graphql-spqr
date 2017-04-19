@@ -2,8 +2,6 @@ package io.leangen.graphql.execution;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import graphql.GraphQLException;
 import graphql.execution.ExecutionContext;
@@ -35,10 +33,10 @@ public class OperationExecutor {
         if (this.operation.getResolvers().size() == 1) {
             resolver = this.operation.getResolvers().iterator().next();
         } else {
-            Set<String> nonNullArgumentNames = env.getArguments().entrySet().stream()
+            String[] nonNullArgumentNames = env.getArguments().entrySet().stream()
                     .filter(arg -> arg.getValue() != null)
                     .map(Map.Entry::getKey)
-                    .collect(Collectors.toSet());
+                    .toArray(String[]::new);
 
             resolver = this.operation.getResolver(nonNullArgumentNames);
         }

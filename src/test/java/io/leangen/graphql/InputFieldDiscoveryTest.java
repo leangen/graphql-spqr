@@ -8,7 +8,7 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.metadata.InputField;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapper;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapper;
@@ -19,9 +19,9 @@ import static org.junit.Assert.assertTrue;
 
 public class InputFieldDiscoveryTest {
 
-    private JacksonValueMapper jackson = new JacksonValueMapperFactory(new DefaultTypeMetaDataGenerator())
+    private JacksonValueMapper jackson = new JacksonValueMapperFactory(new DefaultTypeInfoGenerator())
             .getValueMapper();
-    private GsonValueMapper gson = new GsonValueMapperFactory(new DefaultTypeMetaDataGenerator())
+    private GsonValueMapper gson = new GsonValueMapperFactory(new DefaultTypeInfoGenerator())
             .getValueMapper();
 
     private static final String[] expectedDefaultFieldNames = {"field1", "field2", "field3"};

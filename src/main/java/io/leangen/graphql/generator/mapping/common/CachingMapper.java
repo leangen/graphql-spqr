@@ -14,7 +14,7 @@ import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.metadata.strategy.type.TypeMetaDataGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -46,11 +46,11 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
     protected abstract I toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext);
     
     protected String getTypeName(AnnotatedType type, BuildContext buildContext) {
-        return getTypeName(type, getTypeArguments(0), buildContext.typeMetaDataGenerator);
+        return getTypeName(type, getTypeArguments(0), buildContext.typeInfoGenerator);
     }
     
     protected String getInputTypeName(AnnotatedType type, BuildContext buildContext) {
-        return getTypeName(type, getTypeArguments(1), buildContext.typeMetaDataGenerator);
+        return getTypeName(type, getTypeArguments(1), buildContext.typeInfoGenerator);
     }
     
     protected GraphQLOutputType getReferenceFor(String name) {
@@ -78,14 +78,14 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
         return new GraphQLTypeReference(typeName);
     }
     
-    private String getTypeName(AnnotatedType javaType, AnnotatedType graphQLType, TypeMetaDataGenerator metaDataGenerator) {
+    private String getTypeName(AnnotatedType javaType, AnnotatedType graphQLType, TypeInfoGenerator typeInfoGenerator) {
         if (GenericTypeReflector.isSuperType(GraphQLScalarType.class, graphQLType.getType())) {
-            return metaDataGenerator.generateScalarTypeName(javaType);
+            return typeInfoGenerator.generateScalarTypeName(javaType);
         }
         if (GenericTypeReflector.isSuperType(GraphQLInputType.class, graphQLType.getType())) {
-            return metaDataGenerator.generateInputTypeName(javaType);
+            return typeInfoGenerator.generateInputTypeName(javaType);
         }
-        return metaDataGenerator.generateTypeName(javaType);
+        return typeInfoGenerator.generateTypeName(javaType);
     }
     
     private AnnotatedType getTypeArguments(int index) {
