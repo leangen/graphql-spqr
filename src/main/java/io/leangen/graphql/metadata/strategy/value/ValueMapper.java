@@ -5,7 +5,7 @@ import java.lang.reflect.Type;
 
 public interface ValueMapper {
 
-    String TYPE_METADATA_FIELD_NAME = "@type";
+    String TYPE_METADATA_FIELD_NAME = "_type_";
     
     default <T> T fromInput(Object graphQlInput, AnnotatedType type) {
         return fromInput(graphQlInput, graphQlInput.getClass(), type);

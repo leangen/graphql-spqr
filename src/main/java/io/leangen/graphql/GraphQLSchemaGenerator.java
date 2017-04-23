@@ -44,7 +44,6 @@ import io.leangen.graphql.generator.mapping.common.ObjectScalarAdapter;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.PageMapper;
-import io.leangen.graphql.generator.mapping.common.RelayIdAdapter;
 import io.leangen.graphql.generator.mapping.common.RootContextInjector;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
 import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
@@ -519,7 +518,7 @@ public class GraphQLSchemaGenerator {
     public GraphQLSchemaGenerator withDefaultMappers() {
         ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
         return withTypeMappers(
-                new NonNullMapper(), new RelayIdAdapter(), new IdAdapter(), new ScalarMapper(),
+                new NonNullMapper(), new IdAdapter(), new ScalarMapper(),
                 new ObjectScalarAdapter(), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
                 new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(),
                 new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
@@ -527,12 +526,14 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withDefaultInputConverters() {
-        return withInputConverters(new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+        return withInputConverters(
+                new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
     }
 
     public GraphQLSchemaGenerator withDefaultOutputConverters() {
-        return withOutputConverters(new RelayIdAdapter(), new IdAdapter(), new ObjectScalarAdapter(),
-                new MapToListTypeAdapter<>(), new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter(),
+        return withOutputConverters(
+                new IdAdapter(), new ObjectScalarAdapter(), new MapToListTypeAdapter<>(),
+                new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter(),
                 new OptionalAdapter(), new StreamToCollectionTypeAdapter());
     }
 
@@ -549,7 +550,7 @@ public class GraphQLSchemaGenerator {
 
     public GraphQLSchemaGenerator withDefaultArgumentInjectors() {
         return withArgumentInjectors(
-                new RelayIdAdapter(), new IdAdapter(), new RootContextInjector(), new ContextInjector(),
+                new IdAdapter(), new RootContextInjector(), new ContextInjector(),
                 new EnvironmentInjector(), new InputValueDeserializer());
     }
 

@@ -4,8 +4,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
 
+import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.RelayId;
 
 /**
  * Created by bojan.tomic on 3/5/16.
@@ -17,7 +17,7 @@ public class User<T> implements Person {
     @GraphQLQuery(name = "title", description = "A person's title")
     public String title;
 
-    @RelayId
+    @GraphQLId(relayId = true)
     @GraphQLQuery(name = "id", description = "A person's id")
     public Integer id;
 

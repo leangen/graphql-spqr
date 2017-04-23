@@ -6,11 +6,12 @@ import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
+import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLIgnore;
-import io.leangen.graphql.annotations.RelayId;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.util.ClassUtils;
@@ -39,8 +40,8 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
     }
 
     protected String getArgumentName(Parameter parameter, AnnotatedType parameterType) {
-        if (parameterType.isAnnotationPresent(RelayId.class)) {
-            return RelayId.FIELD_NAME;
+        if (Optional.ofNullable(parameterType.getAnnotation(GraphQLId.class)).filter(GraphQLId::relayId).isPresent()) {
+            return GraphQLId.RELAY_ID_FIELD_NAME;
         }
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
         return meta != null && !meta.name().isEmpty() ? meta.name() : parameter.getName();

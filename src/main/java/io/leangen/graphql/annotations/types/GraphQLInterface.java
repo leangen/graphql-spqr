@@ -15,4 +15,8 @@ public @interface GraphQLInterface {
     String name();
 
     String description() default "";
+
+    boolean implementationAutoDiscovery() default false;
+
+    String[] scanPackages() default {};
 }

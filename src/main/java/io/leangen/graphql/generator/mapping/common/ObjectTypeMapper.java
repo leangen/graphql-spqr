@@ -70,7 +70,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         List<GraphQLFieldDefinition> fields = buildContext.operationRepository.getChildQueries(javaType).stream()
                 .map(childQuery -> operationMapper.toGraphQLOperation(childQuery, buildContext))
                 .collect(Collectors.toList());
-        if (ClassUtils.isAbstract(javaType)) {
+        if (ClassUtils.isAbstract(javaType) || !buildContext.interfaceStrategy.getInterfaces(javaType).isEmpty()) {
             fields.add(newFieldDefinition()
                     .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
                     .type(Scalars.GraphQLString)

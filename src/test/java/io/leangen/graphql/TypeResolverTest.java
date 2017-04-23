@@ -37,7 +37,8 @@ public class TypeResolverTest {
 
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         String queryTemplate = "{repo(id: %d) {" +
-                "identifier  " +
+                "identifier,  " +
+                "_type_ " +
                 "... on SessionRepo_Street {street: item {name}} " +
                 "... on SessionRepo_Education {school: item {schoolName}}}}";
         ExecutionResult result = exe.execute(String.format(queryTemplate, 2));

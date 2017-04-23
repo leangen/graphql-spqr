@@ -4,7 +4,6 @@ import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedArrayType;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.AnnotatedTypeVariable;
@@ -19,9 +18,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,7 +45,7 @@ import static java.util.Arrays.stream;
 
 public class ClassUtils {
 
-    private static Map<Class, Collection<Class>> implementationCache = new ConcurrentHashMap<>();
+    private static Map<Class, List<Class>> implementationCache = new ConcurrentHashMap<>();
 
     /**
      * Retrieves all public methods on the given class (same as {@link Class#getMethods()}) annotated by the given annotation
@@ -56,7 +55,12 @@ public class ClassUtils {
      * @return All annotated methods
      */
     public static Set<Method> getAnnotatedMethods(final Class<?> type, final Class<? extends Annotation> annotation) {
-        return getAnnotatedElements(type.getMethods(), annotation);
+        Set<Method> methods = new HashSet<>();
+        collectPublicAbstractMethods(type, methods);
+        Collections.addAll(methods, type.getMethods());
+        return methods.stream()
+                .filter(element -> element.isAnnotationPresent(annotation))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -67,13 +71,22 @@ public class ClassUtils {
      * @return All annotated fields
      */
     public static Set<Field> getAnnotatedFields(final Class<?> type, final Class<? extends Annotation> annotation) {
-        return getAnnotatedElements(type.getFields(), annotation);
-    }
-
-    private static <T extends AnnotatedElement> Set<T> getAnnotatedElements(final T[] annotatedElements, final Class<? extends Annotation> annotation) {
-        return stream(annotatedElements)
+        return stream(type.getFields())
                 .filter(element -> element.isAnnotationPresent(annotation))
                 .collect(Collectors.toSet());
+    }
+
+    private static void collectPublicAbstractMethods(Class type, Set<Method> methods) {
+        if (type == null || type.equals(Object.class)) {
+            return;
+        }
+        if (isAbstract(type)) {
+            Arrays.stream(type.getDeclaredMethods())
+                    .filter(method -> Modifier.isPublic(method.getModifiers()))
+                    .filter(method -> Modifier.isAbstract(method.getModifiers()))
+                    .forEach(methods::add);
+        }
+        collectPublicAbstractMethods(type.getSuperclass(), methods);
     }
 
     /**
@@ -220,7 +233,7 @@ public class ClassUtils {
      * @return A collection of {@link AnnotatedType}s found on the classpath that are implementations/subtypes of {@code superType}
      * @throws RuntimeException If a class file could not be parsed or a class could not be loaded
      */
-    public static Collection<AnnotatedType> findImplementations(AnnotatedType superType, String... packages) {
+    public static List<AnnotatedType> findImplementations(AnnotatedType superType, String... packages) {
         Class<?> rawType = getRawType(superType.getType());
         return findImplementations(rawType, packages).stream()
                 .map(raw -> GenericTypeReflector.getExactSubType(superType, raw))
@@ -228,14 +241,14 @@ public class ClassUtils {
                 .collect(Collectors.toList());
     }
 
-    public static Collection<Class> findImplementations(Class superType, String... packages) {
+    public static List<Class> findImplementations(Class superType, String... packages) {
         if (implementationCache.containsKey(superType)) {
             return implementationCache.get(superType);
         }
         try {
             ClassFinder classFinder = new ClassFinder();
             classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(superType.getClassLoader(), packages);
-            Collection<Class> implementations = classFinder
+            List<Class> implementations = classFinder
                     .findClasses(new SubclassClassFilter(superType)).stream()
                     .map(classInfo -> loadClass(classInfo.getClassName()))
                     .collect(Collectors.toList());

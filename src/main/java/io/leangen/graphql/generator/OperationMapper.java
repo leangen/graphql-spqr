@@ -23,7 +23,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
-import io.leangen.graphql.annotations.RelayId;
+import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.generator.mapping.TypeMapper;
@@ -215,9 +215,9 @@ public class OperationMapper {
         return env -> {
             String typeName;
             try {
-                typeName = relay.fromGlobalId((String) env.getArguments().get(RelayId.FIELD_NAME)).getType();
+                typeName = relay.fromGlobalId((String) env.getArguments().get(GraphQLId.RELAY_ID_FIELD_NAME)).getType();
             } catch (Exception e) {
-                throw new IllegalArgumentException(env.getArguments().get(RelayId.FIELD_NAME) + " is not a valid Relay node ID");
+                throw new IllegalArgumentException(env.getArguments().get(GraphQLId.RELAY_ID_FIELD_NAME) + " is not a valid Relay node ID");
             }
             if (!nodeQueriesByType.containsKey(typeName)) {
                 throw new IllegalArgumentException(typeName + " is not a Relay node type or no registered query can fetch it by ID");
@@ -237,9 +237,9 @@ public class OperationMapper {
             Operation query = queries.get(i);
             GraphQLFieldDefinition graphQlQuery = graphQlQueries.get(i);
 
-            if (graphQlQuery.getArgument(RelayId.FIELD_NAME) != null
-                    && GraphQLUtils.isRelayId(graphQlQuery.getArgument(RelayId.FIELD_NAME))
-                    && query.getResolver(RelayId.FIELD_NAME) != null) {
+            if (graphQlQuery.getArgument(GraphQLId.RELAY_ID_FIELD_NAME) != null
+                    && GraphQLUtils.isRelayId(graphQlQuery.getArgument(GraphQLId.RELAY_ID_FIELD_NAME))
+                    && query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME) != null) {
 
                 GraphQLType unwrappedQueryType = GraphQLUtils.unwrapNonNull(graphQlQuery.getType());
                 if (unwrappedQueryType instanceof GraphQLObjectType

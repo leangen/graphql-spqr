@@ -10,7 +10,6 @@ import java.util.List;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
-import io.leangen.geantyref.AnnotationFormatException;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.User;
@@ -102,9 +101,9 @@ public class SchemaTest {
     public static Object[] data() {
         return new Object[] { new JacksonValueMapperFactory(), new GsonValueMapperFactory() };
     }
-    
+
     @Test
-    public void testSchema() throws NoSuchFieldException, AnnotationFormatException {
+    public void testSchema() {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())

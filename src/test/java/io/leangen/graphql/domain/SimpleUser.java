@@ -1,7 +1,7 @@
 package io.leangen.graphql.domain;
 
+import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.RelayId;
 
 /**
  * Created by bojan.tomic on 6/24/16.
@@ -24,7 +24,7 @@ public class SimpleUser {
     }
 
     @GraphQLQuery(name = "fullName", description = "A person's name")
-    public @RelayId String getFullName() {
+    public @GraphQLId(relayId = true) String getFullName() {
         return fullName;
     }
 

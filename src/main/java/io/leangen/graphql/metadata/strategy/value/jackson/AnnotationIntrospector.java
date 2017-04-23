@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.Utils;
 
 import static io.leangen.graphql.util.Utils.or;
@@ -46,7 +47,8 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     static {
         typeResolverBuilder = new StdTypeResolverBuilder()
                 .init(JsonTypeInfo.Id.NAME, null)
-                .inclusion(JsonTypeInfo.As.PROPERTY);
+                .inclusion(JsonTypeInfo.As.PROPERTY)
+                .typeProperty(ValueMapper.TYPE_METADATA_FIELD_NAME);
     }
 
     public AnnotationIntrospector(Map<Type, List<NamedType>> typeMap) {
@@ -129,6 +131,9 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
             } catch (IntrospectionException e) {
                 log.warn("Introspection of {} failed. GraphQL input fields might be incorrectly mapped.",
                         setter.getDeclaringClass());
+            }
+            if (propertyElements.isEmpty()) {
+                propertyElements.add(setter);
             }
         }
         return propertyElements;

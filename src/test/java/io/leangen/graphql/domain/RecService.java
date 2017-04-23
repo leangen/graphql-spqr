@@ -5,9 +5,9 @@ import java.util.List;
 
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
+import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.RelayId;
 
 /**
  * Created by bojan.tomic on 6/24/16.
@@ -15,7 +15,7 @@ import io.leangen.graphql.annotations.RelayId;
 public class RecService {
 
     @GraphQLQuery(name = "user")
-    public SimpleUser getByName(@GraphQLArgument(name = "name") @RelayId String name) {
+    public SimpleUser getByName(@GraphQLArgument(name = "name") @GraphQLId(relayId = true) String name) {
         return new SimpleUser(name);
     }
 
