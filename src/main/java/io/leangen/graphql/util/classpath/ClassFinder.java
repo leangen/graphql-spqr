@@ -127,7 +127,7 @@ public class ClassFinder {
         String javaHome = System.getProperty("java.home");
 
         return add(stream(path.split(File.pathSeparator))
-                .filter(part -> !stream(libPaths).anyMatch(part::startsWith) && !part.startsWith(javaHome)));
+                .filter(part -> stream(libPaths).noneMatch(part::startsWith) && !part.startsWith(javaHome)));
     }
 
     /**

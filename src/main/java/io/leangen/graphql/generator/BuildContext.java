@@ -29,6 +29,7 @@ public class BuildContext {
     public final ValueMapperFactory valueMapperFactory;
     public final InputFieldDiscoveryStrategy inputFieldStrategy;
     public final TypeInfoGenerator typeInfoGenerator;
+    public final RelayMappingConfig relayMappingConfig;
 
     public final Set<String> knownTypes;
     public final Set<String> knownInputTypes;
@@ -41,21 +42,23 @@ public class BuildContext {
      * @param converters Repository of all registered {@link io.leangen.graphql.generator.mapping.InputConverter}s
      *                   and {@link io.leangen.graphql.generator.mapping.OutputConverter}s
      */
-    public BuildContext(OperationRepository operationRepository, TypeMapperRepository typeMappers, ConverterRepository converters,
-                        ArgumentInjectorRepository inputProviders, InterfaceMappingStrategy interfaceStrategy,
-                        TypeInfoGenerator typeInfoGenerator, ValueMapperFactory valueMapperFactory,
-                        InputFieldDiscoveryStrategy inputFieldStrategy, Set<String> knownTypes, Set<String> knownInputTypes) {
+    public BuildContext(OperationRepository operationRepository, TypeMapperRepository typeMappers,
+                        ConverterRepository converters, ArgumentInjectorRepository inputProviders,
+                        InterfaceMappingStrategy interfaceStrategy, TypeInfoGenerator typeInfoGenerator,
+                        ValueMapperFactory valueMapperFactory, InputFieldDiscoveryStrategy inputFieldStrategy,
+                        Set<String> knownTypes, Set<String> knownInputTypes, RelayMappingConfig relayMappingConfig) {
         this.operationRepository = operationRepository;
         this.typeRepository = new TypeRepository();
         this.typeMappers = typeMappers;
         this.typeInfoGenerator = typeInfoGenerator;
         this.relay = new Relay();
-        this.typeResolver = new HintedTypeResolver(this.typeRepository, typeInfoGenerator);
+        this.typeResolver = new DelegatingTypeResolver(this.typeRepository, typeInfoGenerator);
         this.interfaceStrategy = interfaceStrategy;
         this.valueMapperFactory = valueMapperFactory;
         this.inputFieldStrategy = inputFieldStrategy;
         this.globalEnvironment = new GlobalEnvironment(relay, typeRepository, converters, inputProviders);
         this.knownTypes = knownTypes;
         this.knownInputTypes = knownInputTypes;
+        this.relayMappingConfig = relayMappingConfig;
     }
 }

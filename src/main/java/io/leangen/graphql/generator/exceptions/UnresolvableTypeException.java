@@ -1,16 +1,16 @@
 package io.leangen.graphql.generator.exceptions;
 
-import graphql.schema.GraphQLType;
+import graphql.GraphQLException;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class UnresolvableTypeException extends IllegalStateException {
+public class UnresolvableTypeException extends GraphQLException {
 
-    public UnresolvableTypeException(GraphQLType fieldType, Object result) {
+    public UnresolvableTypeException(String fieldType, Object result) {
         super(String.format(
                 "Exact GraphQL type for %s is unresolvable for an object of type %s",
-                fieldType.getName(), result.getClass().getName()));
+                fieldType, result.getClass().getName()));
     }
 
     public UnresolvableTypeException(Object result) {

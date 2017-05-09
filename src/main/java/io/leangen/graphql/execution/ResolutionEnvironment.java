@@ -3,7 +3,6 @@ package io.leangen.graphql.execution;
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
 
-import graphql.execution.ExecutionContext;
 import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLOutputType;
@@ -27,9 +26,8 @@ public class ResolutionEnvironment {
     public final GraphQLOutputType fieldType;
     public final GraphQLType parentType;
     public final GraphQLSchema graphQLSchema;
-    public final FieldNameCollector fieldCollector;
 
-    public ResolutionEnvironment(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment, ExecutionContext executionContext) {
+    public ResolutionEnvironment(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
         
         this.context = env.getSource();
         this.rootContext = env.getContext();
@@ -39,7 +37,6 @@ public class ResolutionEnvironment {
         this.fieldType = env.getFieldType();
         this.parentType = env.getParentType();
         this.graphQLSchema = env.getGraphQLSchema();
-        this.fieldCollector = executionContext == null ? null : new FieldNameCollector(executionContext);
     }
 
     @SuppressWarnings("unchecked")

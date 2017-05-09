@@ -2,7 +2,6 @@ package io.leangen.graphql.generator;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -37,22 +36,5 @@ public class TypeRepository {
 
     public List<MappedType> getOutputTypes(String compositeTypeName) {
         return new ArrayList<>(this.covariantOutputTypes.get(compositeTypeName));
-    }
-    
-    /**
-     * Needed because of https://github.com/graphql-java/graphql-java/issues/122
-     * 
-     * Finds the mapped types (AnnotatedType-GraphQLType pairs) matching the given class
-     * @param objectType The class for which mapped GraphQLType candidates are to be found
-     * @return The mapped type (AnnotatedType-GraphQLType pair) matching the given class
-     */
-    public List<MappedType> getOutputTypes(Class objectType) {
-        if (objectType == null || this.covariantOutputTypes.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return this.covariantOutputTypes.values().stream()
-                .flatMap(Collection::stream)
-                .filter(mappedType -> ClassUtils.getRawType(mappedType.javaType.getType()).isAssignableFrom(objectType))
-                .collect(Collectors.toList());
     }
 }

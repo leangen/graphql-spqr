@@ -21,6 +21,7 @@ import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.OperationRepository;
 import io.leangen.graphql.generator.OperationSource;
 import io.leangen.graphql.generator.OperationSourceRepository;
+import io.leangen.graphql.generator.RelayMappingConfig;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRepository;
@@ -115,6 +116,7 @@ public class GraphQLSchemaGenerator {
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
     private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
+    private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final List<TypeMapper> typeMappers = new ArrayList<>();
     private final List<InputConverter> inputConverters = new ArrayList<>();
     private final List<OutputConverter> outputConverters = new ArrayList<>();
@@ -510,6 +512,29 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
+     * Sets a flag that all mutations should be mapped in a Relay-compliant way,
+     * using the default name and description for output wrapper fields.
+     * 
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withRelayCompliantMutations() {
+        return withRelayCompliantMutations("result", "Mutation result");
+    }
+
+    /**
+     * Sets a flag that all mutations should be mapped in a Relay-compliant way,
+     * using the default name and description for output wrapper fields.
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withRelayCompliantMutations(String wrapperFieldName, String wrapperFieldDescription) {
+        this.relayMappingConfig.relayCompliantMutations = true;
+        this.relayMappingConfig.wrapperFieldName = wrapperFieldName;
+        this.relayMappingConfig.wrapperFieldDescription = wrapperFieldDescription;
+        return this;
+    }
+    
+    /**
      * Registers all built-in {@link TypeMapper}s
      * <p>See {@link #withTypeMappers(TypeMapper...)}</p>
      *
@@ -619,7 +644,7 @@ public class GraphQLSchemaGenerator {
                 new ConverterRepository(inputConverters, outputConverters),
                 new ArgumentInjectorRepository(argumentInjectors),
                 interfaceStrategy, typeInfoGenerator, valueMapperFactory, inputFieldStrategy,
-                knownTypeNames, knownInputTypeNames);
+                knownTypeNames, knownInputTypeNames, relayMappingConfig);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema()

@@ -16,10 +16,8 @@ import io.leangen.graphql.annotations.GraphQLTypeResolver;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
+import io.leangen.graphql.execution.TypeResolutionEnvironment;
 import io.leangen.graphql.execution.TypeResolver;
-import io.leangen.graphql.generator.TypeRepository;
-import io.leangen.graphql.generator.exceptions.UnresolvableTypeException;
-import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 
 import static io.leangen.graphql.assertions.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertTrue;
@@ -89,7 +87,7 @@ public class TypeResolverTest {
         String identifier();
     }
 
-    @GraphQLTypeResolver(RepoTypeHintProvier.class)
+    @GraphQLTypeResolver(RepoTypeResolver.class)
     public static class SessionRepo<T> implements GenericRepo {
 
         private T item;
@@ -110,15 +108,12 @@ public class TypeResolverTest {
         }
     }
 
-    public static class RepoTypeHintProvier implements TypeResolver {
+    public static class RepoTypeResolver implements TypeResolver {
 
         @Override
-        public GraphQLObjectType resolveType(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator, Object result) {
-            String typeName = "SessionRepo_" + ((SessionRepo) result).getStoredItem().getClass().getSimpleName();
-            return typeRepository.getOutputTypes(result.getClass()).stream()
-                    .filter(mappedType -> mappedType.graphQLType.getName().equals(typeName))
-                    .map(mappedType -> (GraphQLObjectType) mappedType.graphQLType)
-                    .findFirst().orElseThrow(() -> new UnresolvableTypeException(result));
+        public GraphQLObjectType resolveType(TypeResolutionEnvironment env) {
+            String typeName = "SessionRepo_" + ((SessionRepo) env.getObject()).getStoredItem().getClass().getSimpleName();
+            return (GraphQLObjectType) env.getSchema().getType(typeName);
         }
     }
 }

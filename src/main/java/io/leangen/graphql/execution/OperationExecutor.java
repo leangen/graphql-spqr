@@ -4,8 +4,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import graphql.GraphQLException;
-import graphql.execution.ExecutionContext;
 import graphql.schema.DataFetchingEnvironment;
+import io.leangen.graphql.GraphQLRuntime;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
@@ -29,7 +29,13 @@ public class OperationExecutor {
 
     public Object execute(DataFetchingEnvironment env) {
         Resolver resolver;
-        ExecutionContext executionContext = (ExecutionContext) env.getArguments().remove(ExecutionContextPropagationInstrumentation.EXECUTION_CONTEXT_KEY);
+        if (env.getContext() instanceof GraphQLRuntime.ContextWrapper) {
+            GraphQLRuntime.ContextWrapper context = env.getContext();
+            if (env.getArguments().get("clientMutationId") != null) {
+                context.putExtension("clientMutationId", env.getArguments().get("clientMutationId"));
+            }
+        }
+        
         if (this.operation.getResolvers().size() == 1) {
             resolver = this.operation.getResolvers().iterator().next();
         } else {
@@ -45,7 +51,7 @@ public class OperationExecutor {
                 throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
                         + env.getArguments().keySet() + " not implemented");
             } else {
-                ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(env, this.valueMapper, this.globalEnvironment, executionContext);
+                ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(env, this.valueMapper, this.globalEnvironment);
                 Object result = execute(resolver, resolutionEnvironment, env.getArguments());
                 return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
             }

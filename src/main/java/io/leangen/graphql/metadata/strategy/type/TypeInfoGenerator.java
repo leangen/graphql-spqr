@@ -7,8 +7,8 @@ import java.lang.reflect.AnnotatedType;
  */
 public interface TypeInfoGenerator {
 
-    String INPUT_SUFFIX = "_input";
-    String SCALAR_SUFFIX = "_scalar";
+    String INPUT_SUFFIX = "Input";
+    String SCALAR_SUFFIX = "Scalar";
     
     String generateTypeName(AnnotatedType type);
 

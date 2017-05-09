@@ -2,6 +2,7 @@ package io.leangen.graphql.util;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -14,6 +15,11 @@ public class Utils {
         return left.isPresent() ? left : right;
     }
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    public static <T> Optional<T> or(Optional<T> left, Supplier<Optional<T>> right) {
+        return left.isPresent() ? left : right.get();
+    }
+    
     public static boolean notEmpty(String string) {
         return string != null && !string.isEmpty();
     }

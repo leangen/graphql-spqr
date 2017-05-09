@@ -17,12 +17,16 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
+import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
+import graphql.schema.PropertyDataFetcher;
+import io.leangen.graphql.GraphQLRuntime;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
@@ -34,9 +38,12 @@ import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.GraphQLUtils;
 
+import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
+import static graphql.schema.GraphQLInputObjectType.newInputObject;
+import static graphql.schema.GraphQLObjectType.newObject;
 
 /**
  * <p>Drives the work of mapping Java structures into their GraphQL representations.</p>
@@ -95,7 +102,9 @@ public class OperationMapper {
     private List<GraphQLFieldDefinition> generateMutations(BuildContext buildContext) {
         Collection<Operation> mutations = buildContext.operationRepository.getMutations();
         return mutations.stream()
-                .map(mutation -> toGraphQLOperation(mutation, buildContext))
+                .map(mutation -> buildContext.relayMappingConfig.relayCompliantMutations
+                        ? toRelayMutation(toGraphQLOperation(mutation, buildContext), buildContext.relayMappingConfig)
+                        : toGraphQLOperation(mutation, buildContext))
                 .collect(Collectors.toList());
     }
 
@@ -186,6 +195,70 @@ public class OperationMapper {
         return argument.build();
     }
 
+    private GraphQLFieldDefinition toRelayMutation(GraphQLFieldDefinition mutation, RelayMappingConfig relayMappingConfig) {
+        
+        List<GraphQLFieldDefinition> outputFields;
+        if (mutation.getType() instanceof GraphQLObjectType) {
+            outputFields = ((GraphQLObjectType) mutation.getType()).getFieldDefinitions();
+        } else {
+            outputFields = new ArrayList<>();
+            outputFields.add(GraphQLFieldDefinition.newFieldDefinition()
+                    .name(relayMappingConfig.wrapperFieldName)
+                    .description(relayMappingConfig.wrapperFieldDescription)
+                    .type(mutation.getType())
+                    .dataFetcher(DataFetchingEnvironment::getSource)
+                    .build());
+        }
+        List<GraphQLInputObjectField> inputFields = mutation.getArguments().stream()
+                .map(arg -> GraphQLInputObjectField.newInputObjectField()
+                        .name(arg.getName())
+                        .description(arg.getDescription())
+                        .type(arg.getType())
+                        .defaultValue(arg.getDefaultValue())
+                        .build())
+                .collect(Collectors.toList());
+        GraphQLInputObjectType inputObjectType = newInputObject()
+                .name(mutation.getName() + "Input")
+                .field(newInputObjectField()
+                        .name("clientMutationId")
+                        .type(new GraphQLNonNull(GraphQLString)))
+                .fields(inputFields)
+                .build();
+        GraphQLObjectType outputType = newObject()
+                .name(mutation.getName() + "Payload")
+                .field(newFieldDefinition()
+                        .name("clientMutationId")
+                        .type(new GraphQLNonNull(GraphQLString))
+                        .dataFetcher(env -> env.getContext() instanceof GraphQLRuntime.ContextWrapper
+                                ? ((GraphQLRuntime.ContextWrapper) env.getContext()).getExtension("clientMutationId")
+                                : new PropertyDataFetcher("clientMutationId")))
+                .fields(outputFields)
+                .build();
+
+        return newFieldDefinition()
+                .name(mutation.getName())
+                .type(outputType)
+                .argument(newArgument()
+                        .name("input")
+                        .type(new GraphQLNonNull(inputObjectType)))
+                .dataFetcher(env -> {
+                    Map<String, Object> input = (Map<String, Object>) env.getArguments().get("input");
+                    env.getArguments().clear();
+                    env.getArguments().putAll(input);
+                    if (env.getContext() instanceof GraphQLRuntime.ContextWrapper) {
+                        GraphQLRuntime.ContextWrapper context = env.getContext();
+                        context.putExtension("clientMutationId", env.getArgument("clientMutationId"));
+//                        if (!(mutation.getType() instanceof GraphQLObjectType)) {
+//                            Object result = mutation.getDataFetcher().get(env);
+//                            context.putExtension("result", result);
+//                            return result;
+//                        }
+                    }
+                    return mutation.getDataFetcher().get(env);
+                })
+                .build();
+    }
+
     /**
      * Creates a generic resolver for the given operation.
      * @implSpec This resolver simply invokes {@link OperationExecutor#execute(DataFetchingEnvironment)}
@@ -229,7 +302,7 @@ public class OperationMapper {
     private Map<String, String> getNodeQueriesByType(List<Operation> queries,
                                                      List<GraphQLFieldDefinition> graphQlQueries,
                                                      TypeRepository typeRepository) {
-        
+
         Map<String, String> nodeQueriesByType = new HashMap<>();
         Map<String, String> directNodeQueriesByType = new HashMap<>();
 

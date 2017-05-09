@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
@@ -52,7 +53,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
         return new GraphQLList(
                 mapEntry(
                         operationMapper.toGraphQLType(getElementType(javaType, 0), abstractTypes, buildContext),
-                        operationMapper.toGraphQLType(getElementType(javaType, 1), abstractTypes, buildContext)));
+                        operationMapper.toGraphQLType(getElementType(javaType, 1), abstractTypes, buildContext), buildContext));
     }
 
     @Override
@@ -63,9 +64,15 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
                         operationMapper.toGraphQLInputType(getElementType(javaType, 1), abstractTypes, buildContext)));
     }
 
-    private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType) {
+    private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType, BuildContext buildContext) {
+        String typeName = "mapEntry_" + keyType.getName() + "_" + valueType.getName();
+        if (buildContext.knownTypes.contains(typeName)) {
+            return GraphQLObjectType.reference(typeName);
+        }
+        buildContext.knownTypes.add(typeName);
+        
         return newObject()
-                .name("mapEntry_" + keyType.getName() + "_" + valueType.getName())
+                .name(typeName)
                 .description("Map entry")
                 .field(newFieldDefinition()
                         .name("key")
