@@ -19,7 +19,6 @@ import graphql.execution.instrumentation.parameters.ValidationParameters;
 import graphql.language.Document;
 import graphql.schema.GraphQLSchema;
 import graphql.validation.ValidationError;
-import io.leangen.graphql.execution.ComplexityInstrumentation;
 
 /**
  * Created by bojan.tomic on 4/23/17.
@@ -58,7 +57,7 @@ public class GraphQLRuntime extends GraphQL {
         }
         
         public Builder maximumQueryComplexity(double limit) {
-            this.instrumentations.add(new ComplexityInstrumentation());
+//            this.instrumentations.add(new ComplexityInstrumentation());
             return this;
         }
 
