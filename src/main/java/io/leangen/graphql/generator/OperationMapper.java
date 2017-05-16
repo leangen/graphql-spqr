@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import graphql.execution.batched.BatchedDataFetcher;
 import graphql.relay.Relay;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -35,6 +36,7 @@ import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
+import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.GraphQLUtils;
 
@@ -56,14 +58,12 @@ public class OperationMapper {
 
     private List<GraphQLFieldDefinition> queries; //The list of all mapped queries
     private List<GraphQLFieldDefinition> mutations; //The list of all mapped mutations
-    public GraphQLInterfaceType node; //Node interface, as defined by the Relay GraphQL spec
 
     /**
      *
      * @param buildContext The shared context containing all the global information needed for mapping
      */
     public OperationMapper(BuildContext buildContext) {
-        this.node = buildContext.relay.nodeInterface(new RelayNodeTypeResolver(buildContext.typeRepository, buildContext.typeInfoGenerator));
         this.queries = generateQueries(buildContext);
         this.mutations = generateMutations(buildContext);
     }
@@ -82,10 +82,11 @@ public class OperationMapper {
                 .map(query -> toGraphQLOperation(query, buildContext))
                 .collect(Collectors.toList());
 
-        Map<String, String> nodeQueriesByType = getNodeQueriesByType(rootQueries, queries, buildContext.typeRepository);
+        buildContext.typeRepository.replaceTypeReferences();
+        Map<String, String> nodeQueriesByType = getNodeQueriesByType(rootQueries, queries, buildContext.typeRepository, buildContext.node);
         //Add support for Relay Node query only if Relay-enabled resolvers exist
         if (!nodeQueriesByType.isEmpty()) {
-            queries.add(buildContext.relay.nodeField(node, createNodeResolver(nodeQueriesByType, buildContext.relay)));
+            queries.add(buildContext.relay.nodeField(buildContext.node, createNodeResolver(nodeQueriesByType, buildContext.relay)));
         }
         return queries;
     }
@@ -270,6 +271,14 @@ public class OperationMapper {
      * @return The resolver for the given operation
      */
     private DataFetcher createResolver(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
+        if (operation.getResolvers().stream().anyMatch(Resolver::isBatched)) {
+            return new BatchedDataFetcher() {
+                @Override
+                public Object get(DataFetchingEnvironment environment) {
+                    return new OperationExecutor(operation, valueMapper, globalEnvironment).execute(environment);
+                }
+            };
+        }
         return new OperationExecutor(operation, valueMapper, globalEnvironment)::execute;
     }
 
@@ -301,7 +310,7 @@ public class OperationMapper {
 
     private Map<String, String> getNodeQueriesByType(List<Operation> queries,
                                                      List<GraphQLFieldDefinition> graphQlQueries,
-                                                     TypeRepository typeRepository) {
+                                                     TypeRepository typeRepository, GraphQLInterfaceType node) {
 
         Map<String, String> nodeQueriesByType = new HashMap<>();
         Map<String, String> directNodeQueriesByType = new HashMap<>();
@@ -316,12 +325,12 @@ public class OperationMapper {
 
                 GraphQLType unwrappedQueryType = GraphQLUtils.unwrapNonNull(graphQlQuery.getType());
                 if (unwrappedQueryType instanceof GraphQLObjectType
-                        && ((GraphQLObjectType) unwrappedQueryType).getInterfaces().contains(this.node)) {
+                        && ((GraphQLObjectType) unwrappedQueryType).getInterfaces().contains(node)) {
                     directNodeQueriesByType.put(unwrappedQueryType.getName(), query.getName());
                 } else if (unwrappedQueryType instanceof GraphQLInterfaceType || unwrappedQueryType instanceof GraphQLUnionType) {
                     typeRepository.getOutputTypes(unwrappedQueryType.getName()).stream()
-                            .map(mappedType -> mappedType.graphQLType)
-                            .filter(implementation -> implementation.getInterfaces().contains(this.node))
+                            .map(MappedType::getAsObjectType)
+                            .filter(implementation -> implementation.getInterfaces().contains(node))
                             .forEach(nodeType -> nodeQueriesByType.put(nodeType.getName(), query.getName()));
                 }
             }

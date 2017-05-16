@@ -61,7 +61,7 @@ public class ArgumentInjectionTest {
 
     private GraphQL getApi(Object service) {
         return GraphQL.newGraphQL(
-                new GraphQLSchemaGenerator()
+                new PreconfiguredSchemaGenerator()
                         .withOperationsFromSingleton(service)
                         .generate())
                 .build();

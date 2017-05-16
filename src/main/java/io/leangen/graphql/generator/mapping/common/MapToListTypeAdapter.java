@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.execution.ResolutionEnvironment;
@@ -67,7 +67,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType, BuildContext buildContext) {
         String typeName = "mapEntry_" + keyType.getName() + "_" + valueType.getName();
         if (buildContext.knownTypes.contains(typeName)) {
-            return GraphQLObjectType.reference(typeName);
+            return new GraphQLTypeReference(typeName);
         }
         buildContext.knownTypes.add(typeName);
         

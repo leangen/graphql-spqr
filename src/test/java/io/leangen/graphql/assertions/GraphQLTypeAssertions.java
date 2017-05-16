@@ -63,11 +63,11 @@ public class GraphQLTypeAssertions {
     public static void assertMapOf(GraphQLType mapType, Class<? extends GraphQLType> keyType, Class<? extends GraphQLType> valueType) {
         assertEquals(GraphQLList.class, mapType.getClass());
         GraphQLType entry = ((GraphQLList) mapType).getWrappedType();
-        assertEquals(GraphQLObjectType.class, entry.getClass());
+        assertTrue(entry instanceof GraphQLObjectType);
         GraphQLOutputType key = ((GraphQLObjectType) entry).getFieldDefinition("key").getType();
         GraphQLOutputType value = ((GraphQLObjectType) entry).getFieldDefinition("value").getType();
-        assertEquals(keyType, key.getClass());
-        assertEquals(valueType, value.getClass());
+        assertTrue(keyType.isAssignableFrom(key.getClass()));
+        assertTrue(valueType.isAssignableFrom(value.getClass()));
     }
 
     public static void assertUnionOf(GraphQLType unionType, GraphQLType... members) {

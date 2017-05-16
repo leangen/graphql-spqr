@@ -56,7 +56,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
 
         AnnotatedType mostSpecificSuperType = ClassUtils.getCommonSuperType(returnTypes);
         if (mostSpecificSuperType.getType() == Object.class || mostSpecificSuperType.getType() == Cloneable.class || mostSpecificSuperType.getType() == Serializable.class) {
-            throw new IllegalArgumentException("Resolvers for query " + queryName + " do not return compatible types");
+            throw new IllegalArgumentException("Resolvers for query " + queryName + " do not return compatible types, or the types were lost to erasure");
         }
         Annotation[] aggregatedAnnotations = resolvers.stream()
                 .flatMap(resolver -> stream(resolver.getReturnType().getAnnotations()))

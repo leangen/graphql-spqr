@@ -9,6 +9,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.metadata.Resolver;
@@ -40,6 +41,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(method -> new Resolver(
                         operationNameGenerator.generateQueryName(method, beanType),
                         method.getAnnotation(GraphQLQuery.class).description(),
+                        method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         argumentExtractor.buildResolverArguments(method, beanType)
                 ));
@@ -48,6 +50,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(field -> new Resolver(
                         operationNameGenerator.generateQueryName(field, beanType),
                         field.getAnnotation(GraphQLQuery.class).description(),
+                        false,
                         new FieldAccessor(field, beanType),
                         Collections.emptyList()
                 ));
@@ -61,6 +64,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(method -> new Resolver(
                         operationNameGenerator.generateMutationName(method, beanType),
                         method.getAnnotation(GraphQLMutation.class).description(),
+                        method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         argumentExtractor.buildResolverArguments(method, beanType)
                 )).collect(Collectors.toSet());

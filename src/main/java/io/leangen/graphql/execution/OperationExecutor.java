@@ -1,5 +1,8 @@
 package io.leangen.graphql.execution;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
@@ -21,6 +24,8 @@ public class OperationExecutor {
     private final ValueMapper valueMapper;
     private final GlobalEnvironment globalEnvironment;
 
+    private static final Logger log = LoggerFactory.getLogger(OperationExecutor.class); 
+    
     public OperationExecutor(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
         this.operation = operation;
         this.valueMapper = valueMapper;
@@ -56,6 +61,7 @@ public class OperationExecutor {
                 return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
             }
         } catch (Exception e) {
+            log.error("Operation resolution exception", e);
             throw new GraphQLException("Operation resolution exception", e);
         }
     }

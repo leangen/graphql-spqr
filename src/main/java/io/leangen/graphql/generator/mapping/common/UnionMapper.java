@@ -7,11 +7,14 @@ import java.util.Set;
 
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.types.MappedGraphQLUnionType;
 
 import static graphql.schema.GraphQLUnionType.newUnionType;
 
@@ -21,9 +24,13 @@ import static graphql.schema.GraphQLUnionType.newUnionType;
 public abstract class UnionMapper implements TypeMapper {
 
     @SuppressWarnings("WeakerAccess")
-    protected GraphQLUnionType toGraphQLUnion(String name, String description, List<AnnotatedType> possibleJavaTypes,
-                                              Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    protected GraphQLOutputType toGraphQLUnion(String name, String description, AnnotatedType javaType, List<AnnotatedType> possibleJavaTypes,
+                                               Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
 
+        if (buildContext.knownTypes.contains(name)) {
+            return new GraphQLTypeReference(name);
+        }
+        buildContext.knownTypes.add(name);
         GraphQLUnionType.Builder builder = newUnionType()
                 .name(name)
                 .description(description)
@@ -34,13 +41,15 @@ public abstract class UnionMapper implements TypeMapper {
                 .forEach(type -> {
                     if (type instanceof GraphQLObjectType) {
                         builder.possibleType((GraphQLObjectType) type);
+                    } else if (type instanceof GraphQLTypeReference) {
+                        builder.possibleType((GraphQLTypeReference) type);
                     } else {
                         throw new TypeMappingException(type.getClass().getSimpleName() +
                                 " is not a valid GraphQL union member. Only object types can be unionized.");
                     }
                 });
 
-        GraphQLUnionType union = builder.build();
+        GraphQLUnionType union = new MappedGraphQLUnionType(builder.build(), javaType);
         for (int i = 0; i < possibleJavaTypes.size(); i++) {
             buildContext.typeRepository.registerCovariantTypes(union.getName(), possibleJavaTypes.get(i), union.getTypes().get(i));
         }
@@ -49,6 +58,6 @@ public abstract class UnionMapper implements TypeMapper {
 
     @Override
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
-        throw new UnsupportedOperationException("GraphQL union type can not be used as input type");
+        throw new UnsupportedOperationException("GraphQL union type can not be used as an input type");
     }
 }

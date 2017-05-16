@@ -1,4 +1,4 @@
-package io.leangen.graphql.domain;
+package io.leangen.graphql.services;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +16,10 @@ import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.domain.Address;
+import io.leangen.graphql.domain.Education;
+import io.leangen.graphql.domain.Street;
+import io.leangen.graphql.domain.User;
 
 /**
  * Created by bojan.tomic on 3/5/16.

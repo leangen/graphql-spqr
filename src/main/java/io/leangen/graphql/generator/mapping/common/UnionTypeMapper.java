@@ -15,6 +15,7 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Utils;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -24,8 +25,8 @@ public class UnionTypeMapper extends UnionMapper {
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLUnion annotation = javaType.getAnnotation(GraphQLUnion.class);
-        List<AnnotatedType> possibleJavaTypes = getPossibleJavaTypes(javaType);
-        return toGraphQLUnion(annotation.name(), annotation.description(), possibleJavaTypes, abstractTypes, operationMapper, buildContext);
+        List<AnnotatedType> possibleJavaTypes = getPossibleJavaTypes(javaType, buildContext);
+        return toGraphQLUnion(annotation.name(), annotation.description(), javaType, possibleJavaTypes, abstractTypes, operationMapper, buildContext);
     }
 
     @Override
@@ -34,7 +35,7 @@ public class UnionTypeMapper extends UnionMapper {
                 || ClassUtils.getRawType(type.getType()).isAnnotationPresent(GraphQLUnion.class);
     }
 
-    private List<AnnotatedType> getPossibleJavaTypes(AnnotatedType javaType) {
+    private List<AnnotatedType> getPossibleJavaTypes(AnnotatedType javaType, BuildContext buildContext) {
         GraphQLUnion annotation = javaType.getAnnotation(GraphQLUnion.class);
         List<AnnotatedType> possibleTypes = Collections.emptyList();
         if (annotation.possibleTypes().length > 0) {
@@ -51,7 +52,11 @@ public class UnionTypeMapper extends UnionMapper {
             }
         }
         if (possibleTypes.isEmpty() && annotation.possibleTypeAutoDiscovery()) {
-            possibleTypes = ClassUtils.findImplementations(javaType, annotation.scanPackages()).stream()
+            String[] scanPackages = annotation.scanPackages();
+            if (scanPackages.length == 0 && Utils.notEmpty(buildContext.basePackage)) {
+                scanPackages = new String[] {buildContext.basePackage};
+            }
+            possibleTypes = ClassUtils.findImplementations(javaType, scanPackages).stream()
                     .peek(impl -> {
                         if (GenericTypeReflector.isMissingTypeParameters(impl.getType())) {
                             throw new TypeMappingException(javaType.getType(), impl.getType());

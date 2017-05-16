@@ -17,6 +17,7 @@ import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.generator.types.MappedGraphQLInterfaceType;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Utils;
 
 import static graphql.schema.GraphQLInterfaceType.newInterface;
 
@@ -48,7 +49,11 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
         if (javaType.isAnnotationPresent(GraphQLInterface.class)) {
             GraphQLInterface meta = javaType.getAnnotation(GraphQLInterface.class);
             if (meta.implementationAutoDiscovery()) {
-                ClassUtils.findImplementations(javaType, meta.scanPackages()).forEach(impl ->
+                String[] scanPackages = meta.scanPackages();
+                if (scanPackages.length == 0 && Utils.notEmpty(buildContext.basePackage)) {
+                    scanPackages = new String[] {buildContext.basePackage};
+                }
+                ClassUtils.findImplementations(javaType, scanPackages).forEach(impl ->
                         getImplementingType(impl, abstractTypes, operationMapper, buildContext)
                                 .ifPresent(implType -> buildContext.typeRepository.registerCovariantTypes(type.getName(), impl, implType)));
 

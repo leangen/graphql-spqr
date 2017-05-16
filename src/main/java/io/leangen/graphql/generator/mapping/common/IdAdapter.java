@@ -56,6 +56,9 @@ public class IdAdapter extends AbstractionCollectingMapper implements ArgumentIn
                 id = resolutionEnvironment.globalEnvironment.relay.fromGlobalId(id).getId();
             } catch (Exception e) {/*no-op*/}
         }
+        if (type.getType().equals(String.class)) {
+            id = "\"" + id + "\"";
+        }
         return resolutionEnvironment.valueMapper.fromString(id, type);
     }
 

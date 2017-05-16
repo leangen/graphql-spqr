@@ -8,10 +8,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -114,13 +111,20 @@ public class GraphQLSchemaGenerator {
     private ValueMapperFactory valueMapperFactory;
     private InputFieldDiscoveryStrategy inputFieldStrategy;
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
-    private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
-    private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
-    private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
+    private String basePackage;
+    private boolean defaultTypeMappers = false;
+    private boolean defaultOutputConverters = false;
+    private boolean defaultInputConverters = false;
+    private boolean defaultArgumentInjectors = false;
+    private boolean defaultResolverBuilders = false;
+    private boolean defaultNestedResolverBuilders = false;
     private final List<TypeMapper> typeMappers = new ArrayList<>();
     private final List<InputConverter> inputConverters = new ArrayList<>();
     private final List<OutputConverter> outputConverters = new ArrayList<>();
     private final List<ArgumentInjector> argumentInjectors = new ArrayList<>();
+    private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
+    private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
+    private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Set<GraphQLType> additionalTypes = new HashSet<>();
 
     private static final String QUERY_ROOT = "QUERY_ROOT";
@@ -197,6 +201,20 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    /**
+     * Same as {@link #withOperationsFromSingleton(Object)} except that custom {@link ResolverBuilder}s will be used
+     * to look through {@code beanType} for methods to be exposed.
+     *
+     * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
+     *                        those methods will be invoked in query/mutation execution time
+     * @param builders Custom strategy to use when analyzing {@code beanType}
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, ResolverBuilder... builders) {
+        return withOperationsFromSingleton(serviceSingleton, serviceSingleton.getClass(), builders);
+    }
+    
     /**
      * Same as {@link #withOperationsFromSingleton(Object, Type)} except that custom {@link ResolverBuilder}s will be used
      * to look through {@code beanType} for methods to be exposed.
@@ -356,42 +374,13 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    /**
-     * Registers all built-in {@link TypeMapper}s, {@link InputConverter}s and {@link OutputConverter}s
-     * <p>Equivalent to calling {@code withDefaultResolverBuilders().withDefaultMappers().withDefaultConverters()}</p>
-     * <p>See {@link #withDefaultMappers()} and {@link #withDefaultConverters()}</p>
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withDefaults() {
-        return withDefaultResolverBuilders()
-                .withDefaultMappers()
-                .withDefaultConverters()
-                .withDefaultArgumentInjectors();
-    }
-
-    /**
-     * Registers default resolver builders. Currently this only includes {@link AnnotatedResolverBuilder}.
-     * <p>See {@link #withResolverBuilders(ResolverBuilder...)}</p>
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withDefaultResolverBuilders() {
-        return withResolverBuilders(new AnnotatedResolverBuilder());
-    }
-
-    /**
-     * Registers default resolver builders. Currently this only includes {@link AnnotatedResolverBuilder}.
-     * <p>See {@link #withResolverBuilders(ResolverBuilder...)}</p>
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withDefaultNestedResolverBuilders() {
-        return withNestedResolverBuilders(new AnnotatedResolverBuilder(), new BeanResolverBuilder());
-    }
-
     public GraphQLSchemaGenerator withInterfaceMappingStrategy(InterfaceMappingStrategy interfaceStrategy) {
         this.interfaceStrategy = interfaceStrategy;
+        return this;
+    }
+    
+    public GraphQLSchemaGenerator withBasePackage(String basePackage) {
+        this.basePackage = basePackage;
         return this;
     }
 
@@ -500,21 +489,9 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
-     * Registers custom schema processors that can perform arbitrary transformations on the schema just before it is built.
-     *
-     * @param processors Custom processors to call right before the GraphQL schema is built
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withSchemaProcessors(GraphQLSchemaProcessor... processors) {
-        addAll(this.processors, processors);
-        return this;
-    }
-
-    /**
      * Sets a flag that all mutations should be mapped in a Relay-compliant way,
      * using the default name and description for output wrapper fields.
-     * 
+     *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withRelayCompliantMutations() {
@@ -533,7 +510,34 @@ public class GraphQLSchemaGenerator {
         this.relayMappingConfig.wrapperFieldDescription = wrapperFieldDescription;
         return this;
     }
+
+    /**
+     * Registers custom schema processors that can perform arbitrary transformations on the schema just before it is built.
+     *
+     * @param processors Custom processors to call right before the GraphQL schema is built
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withSchemaProcessors(GraphQLSchemaProcessor... processors) {
+        addAll(this.processors, processors);
+        return this;
+    }
     
+    /**
+     * Registers all built-in {@link TypeMapper}s, {@link InputConverter}s and {@link OutputConverter}s
+     * <p>Equivalent to calling {@code withDefaultResolverBuilders().withDefaultMappers().withDefaultConverters()}</p>
+     * <p>See {@link #withDefaultMappers()} and {@link #withDefaultConverters()}</p>
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withDefaults() {
+        return withDefaultResolverBuilders()
+                .withDefaultNestedResolverBuilders()
+                .withDefaultMappers()
+                .withDefaultConverters()
+                .withDefaultArgumentInjectors();
+    }
+
     /**
      * Registers all built-in {@link TypeMapper}s
      * <p>See {@link #withTypeMappers(TypeMapper...)}</p>
@@ -541,25 +545,18 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withDefaultMappers() {
-        ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
-        return withTypeMappers(
-                new NonNullMapper(), new IdAdapter(), new ScalarMapper(),
-                new ObjectScalarAdapter(), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
-                new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(),
-                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
-                new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
+        this.defaultTypeMappers = true;
+        return this;
     }
 
     public GraphQLSchemaGenerator withDefaultInputConverters() {
-        return withInputConverters(
-                new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+        this.defaultInputConverters = true;
+        return this;
     }
 
     public GraphQLSchemaGenerator withDefaultOutputConverters() {
-        return withOutputConverters(
-                new IdAdapter(), new ObjectScalarAdapter(), new MapToListTypeAdapter<>(),
-                new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter(),
-                new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+        this.defaultOutputConverters = true;
+        return this;
     }
 
     /**
@@ -570,13 +567,34 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withDefaultConverters() {
-        return withDefaultInputConverters().withOutputConverters();
+        return withDefaultInputConverters().withDefaultOutputConverters();
     }
 
     public GraphQLSchemaGenerator withDefaultArgumentInjectors() {
-        return withArgumentInjectors(
-                new IdAdapter(), new RootContextInjector(), new ContextInjector(),
-                new EnvironmentInjector(), new InputValueDeserializer());
+        this.defaultArgumentInjectors = true;
+        return this;
+    }
+
+    /**
+     * Registers default resolver builders. Currently this only includes {@link AnnotatedResolverBuilder}.
+     * <p>See {@link #withResolverBuilders(ResolverBuilder...)}</p>
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withDefaultResolverBuilders() {
+        this.defaultResolverBuilders = true;
+        return this;
+    }
+
+    /**
+     * Registers default resolver builders. Currently this only includes {@link AnnotatedResolverBuilder}.
+     * <p>See {@link #withResolverBuilders(ResolverBuilder...)}</p>
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withDefaultNestedResolverBuilders() {
+        this.defaultNestedResolverBuilders = true;
+        return this;
     }
 
     /**
@@ -587,33 +605,45 @@ public class GraphQLSchemaGenerator {
         if (operationSourceRepository.isEmpty()) {
             throw new IllegalStateException("At least one top-level query source must be registered");
         }
-        if (!operationSourceRepository.hasGlobalResolverBuilders()) {
-            withDefaultResolverBuilders();
+        if (!operationSourceRepository.hasGlobalResolverBuilders() || this.defaultResolverBuilders) {
+            withResolverBuilders(new AnnotatedResolverBuilder());
         }
-        if (!operationSourceRepository.hasGlobalNestedResolverBuilders()) {
-            withDefaultNestedResolverBuilders();
+        if (!operationSourceRepository.hasGlobalNestedResolverBuilders() || this.defaultNestedResolverBuilders) {
+            withNestedResolverBuilders(new AnnotatedResolverBuilder(), new BeanResolverBuilder(this.basePackage));
         }
-        if (typeMappers.isEmpty()) {
-            withDefaultMappers();
+        if (typeMappers.isEmpty() || this.defaultTypeMappers) {
+            ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
+            withTypeMappers(
+                    new NonNullMapper(), new IdAdapter(), new ScalarMapper(),
+                    new ObjectScalarAdapter(), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
+                    new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(),
+                    new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
+                    new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         }
-        if (outputConverters.isEmpty()) {
-            withDefaultOutputConverters();
+        if (outputConverters.isEmpty() || this.defaultOutputConverters) {
+            withOutputConverters(
+                    new IdAdapter(), new ObjectScalarAdapter(), new MapToListTypeAdapter<>(),
+                    new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter(),
+                    new OptionalAdapter(), new StreamToCollectionTypeAdapter());
         }
-        if (inputConverters.isEmpty()) {
-            withDefaultInputConverters();
+        if (inputConverters.isEmpty() || this.defaultInputConverters) {
+            withInputConverters(
+                    new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
         }
-        if (argumentInjectors.isEmpty()) {
-            withDefaultArgumentInjectors();
+        if (argumentInjectors.isEmpty() || this.defaultArgumentInjectors) {
+            withArgumentInjectors(
+                    new IdAdapter(), new RootContextInjector(), new ContextInjector(),
+                    new EnvironmentInjector(), new InputValueDeserializer());
         }
         if (valueMapperFactory == null) {
-            valueMapperFactory = Defaults.valueMapperFactory(typeInfoGenerator);
+            valueMapperFactory = Defaults.valueMapperFactory(basePackage, typeInfoGenerator);
         }
         if (inputFieldStrategy == null) {
             ValueMapper def = valueMapperFactory.getValueMapper();
             if (def instanceof InputFieldDiscoveryStrategy) {
                 inputFieldStrategy = (InputFieldDiscoveryStrategy) def;
             } else {
-                inputFieldStrategy = (InputFieldDiscoveryStrategy) Defaults.valueMapperFactory(typeInfoGenerator).getValueMapper();
+                inputFieldStrategy = (InputFieldDiscoveryStrategy) Defaults.valueMapperFactory(basePackage, typeInfoGenerator).getValueMapper();
             }
         }
     }
@@ -628,23 +658,13 @@ public class GraphQLSchemaGenerator {
     public GraphQLSchema generate() {
         init();
 
-        Set<String> knownTypeNames = this.additionalTypes.stream()
-                .filter(type -> type instanceof GraphQLOutputType)
-                .map(GraphQLType::getName)
-                .collect(Collectors.toSet());
-
-        Set<String> knownInputTypeNames = this.additionalTypes.stream()
-                .filter(type -> type instanceof GraphQLInputType)
-                .map(GraphQLType::getName)
-                .collect(Collectors.toSet());
-
         BuildContext buildContext = new BuildContext(
                 new OperationRepository(operationSourceRepository, operationBuilder),
                 new TypeMapperRepository(typeMappers),
                 new ConverterRepository(inputConverters, outputConverters),
                 new ArgumentInjectorRepository(argumentInjectors),
-                interfaceStrategy, typeInfoGenerator, valueMapperFactory, inputFieldStrategy,
-                knownTypeNames, knownInputTypeNames, relayMappingConfig);
+                interfaceStrategy, basePackage, typeInfoGenerator, valueMapperFactory,
+                inputFieldStrategy, additionalTypes, relayMappingConfig);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema()
@@ -670,6 +690,6 @@ public class GraphQLSchemaGenerator {
     }
 
     private boolean isInternalType(GraphQLType type) {
-        return !type.getName().startsWith("__") && !type.getName().equals(QUERY_ROOT) && !type.getName().equals(MUTATION_ROOT);
+        return type.getName().startsWith("__") || type.getName().equals(QUERY_ROOT) || type.getName().equals(MUTATION_ROOT);
     }
 }

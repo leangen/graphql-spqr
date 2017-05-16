@@ -1,4 +1,4 @@
-package io.leangen.graphql.domain;
+package io.leangen.graphql.services;
 
 import java.util.Collection;
 import java.util.HashMap;

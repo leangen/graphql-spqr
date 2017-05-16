@@ -33,7 +33,7 @@ public class UnionTest {
     public void testInlineUnion() {
         InlineUnionService unionService = new InlineUnionService();
 
-        GraphQLSchema schema = new GraphQLSchemaGenerator()
+        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
                 .withOperationsFromSingleton(unionService)
                 .generate();
 
@@ -57,7 +57,7 @@ public class UnionTest {
     public void testExplicitUnionClass() {
         ExplicitUnionClassService unionService = new ExplicitUnionClassService();
 
-        GraphQLSchema schema = new GraphQLSchemaGenerator()
+        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
                 .withOperationsFromSingleton(unionService)
                 .generate();
 
@@ -71,7 +71,7 @@ public class UnionTest {
     public void testExplicitUnionInterface() {
         ExplicitUnionInterfaceService unionService = new ExplicitUnionInterfaceService();
 
-        GraphQLSchema schema = new GraphQLSchemaGenerator()
+        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
                 .withOperationsFromSingleton(unionService)
                 .generate();
 
@@ -85,7 +85,7 @@ public class UnionTest {
     public void testAutoDiscoveredUnionInterface() {
         AutoDiscoveredUnionService unionService = new AutoDiscoveredUnionService();
 
-        GraphQLSchema schema = new GraphQLSchemaGenerator()
+        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
                 .withOperationsFromSingleton(unionService)
                 .generate();
 

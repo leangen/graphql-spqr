@@ -14,6 +14,7 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
 
     protected OperationNameGenerator operationNameGenerator;
     protected ResolverArgumentBuilder argumentExtractor;
+    protected String basePackage;
     protected List<Predicate<Member>> filters = new ArrayList<>();
     
     public FilteredResolverBuilder withOperationNameGenerator(OperationNameGenerator operationNameGenerator) {
@@ -26,6 +27,11 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
         return this;
     }
 
+    public FilteredResolverBuilder withBasePackage(String basePackage) {
+        this.basePackage = basePackage;
+        return this;
+    }
+    
     @SafeVarargs
     public final FilteredResolverBuilder withFilters(Predicate<Member>... filters) {
         Collections.addAll(this.filters, filters);

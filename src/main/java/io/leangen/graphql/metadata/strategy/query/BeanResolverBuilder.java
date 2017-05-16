@@ -9,7 +9,8 @@ import io.leangen.graphql.util.ClassUtils;
  */
 public class BeanResolverBuilder extends PublicResolverBuilder {
 
-    public BeanResolverBuilder() {
+    public BeanResolverBuilder(String basePackage) {
+        super(basePackage);
         this.operationNameGenerator = new BeanOperationNameGenerator();
         this.argumentExtractor = new AnnotatedArgumentBuilder();
     }

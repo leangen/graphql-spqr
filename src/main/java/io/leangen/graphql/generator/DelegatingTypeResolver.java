@@ -45,7 +45,7 @@ public class DelegatingTypeResolver implements TypeResolver {
             return (GraphQLObjectType) env.getSchema().getType(resultTypeName);
         }
         if (mappedTypes.size() == 1) {
-            return mappedTypes.get(0).graphQLType;
+            return mappedTypes.get(0).getAsObjectType();
         }
         
         //Try to find an explicit resolver

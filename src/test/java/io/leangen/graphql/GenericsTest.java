@@ -24,11 +24,10 @@ import graphql.schema.GraphQLType;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.domain.GenericItemRepo;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
+import io.leangen.graphql.services.GenericItemRepo;
 
 import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertArgumentsPresent;
 import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOf;
@@ -46,7 +45,8 @@ public class GenericsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Object[] data() {
-        return new Object[] { new JacksonValueMapperFactory(new DefaultTypeInfoGenerator()), new GsonValueMapperFactory(new DefaultTypeInfoGenerator())};
+        return new Object[] { new JacksonValueMapperFactory(),
+                new GsonValueMapperFactory()};
     }
     
     // IMPORTANT! All type declarations have to stay outside of tests (can not be inlined)
@@ -72,7 +72,7 @@ public class GenericsTest {
         nonNullStringService.addItem("pooch", "Strudel, the poodle");
         nonNullStringService.addItem("booze", "Fire-water");
 
-        GraphQLSchema schemaWithNonNullGenerics = new GraphQLSchemaGenerator()
+        GraphQLSchema schemaWithNonNullGenerics = new PreconfiguredSchemaGenerator()
                 .withOperationsFromSingleton(nonNullStringService, nonNullString)
                 .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
@@ -108,7 +108,7 @@ public class GenericsTest {
         dateIdService.addItem("firstEvent", firstEvent);
         dateIdService.addItem("secondEvent", secondEvent);
 
-        GraphQLSchema schemaWithDateIds = new GraphQLSchemaGenerator()
+        GraphQLSchema schemaWithDateIds = new PreconfiguredSchemaGenerator()
                 .withOperationsFromSingleton(dateIdService, dateId)
                 .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
@@ -144,7 +144,7 @@ public class GenericsTest {
         wildcardNumberService.addItem("player1", Arrays.asList(12, 13.4, new BigDecimal("4000")));
         wildcardNumberService.addItem("player2", Arrays.asList(new BigDecimal("12.56"), 14.78));
 
-        GraphQLSchema schemaWithGenerics = new GraphQLSchemaGenerator()
+        GraphQLSchema schemaWithGenerics = new PreconfiguredSchemaGenerator()
                 .withOperationsFromSingleton(wildcardNumberService, listOfWildcardNumbers)
                 .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
@@ -181,7 +181,7 @@ public class GenericsTest {
         arrayNumberService.addItem("scores1", array1);
         arrayNumberService.addItem("scores2", array2);
 
-        GraphQLSchema schemaWithGenerics = new GraphQLSchemaGenerator()
+        GraphQLSchema schemaWithGenerics = new PreconfiguredSchemaGenerator()
                 .withOperationsFromSingleton(arrayNumberService, arrayOfListsOfNumbers)
                 .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()

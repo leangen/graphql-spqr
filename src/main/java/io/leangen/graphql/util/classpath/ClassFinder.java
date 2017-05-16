@@ -19,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.jar.Attributes;
@@ -170,7 +171,13 @@ public class ClassFinder {
     }
 
     public ClassFinder add(ClassLoader classLoader, String... packages) {
-        ClassLoader[] classLoaders = new ClassLoader[] {Thread.currentThread().getContextClassLoader(), classLoader};
+        ClassLoader[] classLoaders = Stream.of(Thread.currentThread().getContextClassLoader(),
+                classLoader, this.getClass().getClassLoader(), ClassLoader.getSystemClassLoader())
+                .distinct()
+                .filter(Objects::nonNull).toArray(ClassLoader[]::new);
+        if (classLoaders.length == 0) {
+            throw new IllegalStateException("No class loaders available");
+        }
         Set<File> files = Arrays.stream(packages)
                 .map(pckg -> pckg.replace(".", "/").replace("\\", "/"))
                 .map(path -> path.startsWith("/") ? path.substring(1) : path)

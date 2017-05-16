@@ -4,10 +4,7 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.Set;
 
-import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLTypeReference;
@@ -25,7 +22,7 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
     public GraphQLOutputType graphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         String typeName = getTypeName(javaType, buildContext);
         if (buildContext.knownTypes.contains(typeName)) {
-            return getReferenceFor(typeName);
+            return new GraphQLTypeReference(typeName);
         }
         buildContext.knownTypes.add(typeName);
         return toGraphQLType(typeName, javaType, abstractTypes, operationMapper, buildContext);
@@ -35,7 +32,7 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
     public GraphQLInputType graphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         String typeName = getInputTypeName(javaType, buildContext);
         if (buildContext.knownInputTypes.contains(typeName)) {
-            return getInputReferenceFor(typeName);
+            return new GraphQLTypeReference(typeName);
         }
         buildContext.knownInputTypes.add(typeName);
         return toGraphQLInputType(typeName, javaType, abstractTypes, operationMapper, buildContext);
@@ -51,31 +48,6 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
     
     protected String getInputTypeName(AnnotatedType type, BuildContext buildContext) {
         return getTypeName(type, getTypeArguments(1), buildContext.typeInfoGenerator);
-    }
-    
-    protected GraphQLOutputType getReferenceFor(String name) {
-        return referenceFor(getTypeArguments(0), name);
-    }
-    
-    protected GraphQLInputType getInputReferenceFor(String name) {
-        return inputReferenceFor(getTypeArguments(1), name);
-    }
-    
-    private GraphQLOutputType referenceFor(AnnotatedType type, String typeName) {
-        if (GenericTypeReflector.isSuperType(GraphQLObjectType.class, type.getType())) {
-            return GraphQLObjectType.reference(typeName);
-        }
-        if (GenericTypeReflector.isSuperType(GraphQLInterfaceType.class, type.getType())) {
-            return GraphQLInterfaceType.reference(typeName);
-        }
-        return new GraphQLTypeReference(typeName);
-    }
-    
-    private GraphQLInputType inputReferenceFor(AnnotatedType graphQLType, String typeName) {
-        if (GenericTypeReflector.isSuperType(GraphQLInputObjectType.class, graphQLType.getType())) {
-            return GraphQLInputObjectType.reference(typeName);
-        }
-        return new GraphQLTypeReference(typeName);
     }
     
     private String getTypeName(AnnotatedType javaType, AnnotatedType graphQLType, TypeInfoGenerator typeInfoGenerator) {

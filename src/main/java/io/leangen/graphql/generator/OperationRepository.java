@@ -63,12 +63,12 @@ public class OperationRepository {
     public Collection<Operation> getChildQueries(AnnotatedType domainType) {
         Map<String, Operation> children = new HashMap<>();
 
-        Map<String, Operation> domainQueries = getNestedQueries(domainType).stream().collect(Collectors.toMap(Operation::getName, Function.identity()));
-        /*TODO check if any domain query has a @GraphQLContext field of type different then domainType.
+        Map<String, Operation> nestedQueries = getNestedQueries(domainType).stream().collect(Collectors.toMap(Operation::getName, Function.identity()));
+        /*TODO check if any nested query has a @GraphQLContext field of type different then domainType.
         If so, throw an error early, as such an operation will be impossible to invoke, unless they're static!
         Not sure about @RootContext*/
         Map<String, Operation> embeddableQueries = getEmbeddableQueries(domainType.getType()).stream().collect(Collectors.toMap(Operation::getName, Function.identity()));
-        children.putAll(domainQueries);
+        children.putAll(nestedQueries);
         children.putAll(embeddableQueries);
         return children.values();
     }

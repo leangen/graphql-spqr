@@ -36,6 +36,9 @@ public abstract class Union {
     public static AnnotatedType unionize(AnnotatedType[] types) {
         Objects.requireNonNull(types);
         if (types.length < 2) {
+            if (types.length == 1 && GenericTypeReflector.isSuperType(Union.class, types[0].getType())) {
+                return types[0];
+            }
             throw new IllegalArgumentException(SINGLE_TYPE_UNION_ERROR);
         }
         AnnotatedType t1 = types[0];
@@ -77,6 +80,9 @@ public abstract class Union {
     public static AnnotatedType of(AnnotatedType[] types) {
         Objects.requireNonNull(types);
         if (types.length < 2) {
+            if (types.length == 1 && GenericTypeReflector.isSuperType(Union.class, types[0].getType())) {
+                return types[0];
+            }
             throw new IllegalArgumentException(SINGLE_TYPE_UNION_ERROR);
         }
 

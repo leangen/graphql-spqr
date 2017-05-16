@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.execution.Executable;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -27,10 +28,12 @@ public class Resolver {
     private final AnnotatedType returnType;
     private final Set<OperationArgument> contextArguments;
     private final Executable executable;
+    private final boolean batched;
 
-    public Resolver(String operationName, String operationDescription, Executable executable, List<OperationArgument> arguments) {
+    public Resolver(String operationName, String operationDescription, boolean batched, Executable executable, List<OperationArgument> arguments) {
         this.executable = executable;
         this.operationName = operationName;
+        this.batched = batched;
         this.operationDescription = operationDescription;
         this.arguments = arguments;
         this.returnType = ClassUtils.stripBounds(executable.getReturnType());
@@ -75,11 +78,20 @@ public class Resolver {
      * @return The generic Java type of the source object, or null if this resolver does not accept one.
      */
     public Set<Type> getSourceTypes() {
+        if (batched) {
+            return contextArguments.stream()
+                    .map(arg -> GenericTypeReflector.getTypeParameter(arg.getJavaType(), List.class.getTypeParameters()[0]).getType())
+                    .collect(Collectors.toSet());
+        }
         return contextArguments.stream().map(arg -> arg.getJavaType().getType()).collect(Collectors.toSet());
     }
 
     public String getOperationName() {
         return operationName;
+    }
+
+    public boolean isBatched() {
+        return batched;
     }
 
     public String getOperationDescription() {
@@ -105,6 +117,9 @@ public class Resolver {
     }
 
     public AnnotatedType getReturnType() {
+        if (batched) {
+            return GenericTypeReflector.getTypeParameter(returnType, List.class.getTypeParameters()[0]);
+        }
         return returnType;
     }
 

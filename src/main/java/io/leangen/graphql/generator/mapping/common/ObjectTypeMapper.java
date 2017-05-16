@@ -12,8 +12,11 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLTypeReference;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.generator.types.MappedGraphQLObjectType;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
@@ -34,11 +37,18 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         List<GraphQLFieldDefinition> fields = getFields(javaType, buildContext, operationMapper);
         fields.forEach(typeBuilder::field);
 
-        List<GraphQLInterfaceType> interfaces = getInterfaces(javaType, abstractTypes, fields, buildContext, operationMapper);
-        interfaces.forEach(typeBuilder::withInterface);
-        
-        GraphQLObjectType type = typeBuilder.build();
+        List<GraphQLOutputType> interfaces = getInterfaces(javaType, abstractTypes, fields, buildContext, operationMapper);
+        interfaces.forEach(inter -> {
+            if (inter instanceof GraphQLInterfaceType) {
+                typeBuilder.withInterface((GraphQLInterfaceType) inter);
+            } else {
+                typeBuilder.withInterface((GraphQLTypeReference) inter);
+            }
+        });
+
+        GraphQLObjectType type = new MappedGraphQLObjectType(typeBuilder.build(), javaType);
         interfaces.forEach(inter -> buildContext.typeRepository.registerCovariantTypes(inter.getName(), javaType, type));
+        buildContext.typeRepository.registerObjectType(type);
         return type;
     }
 
@@ -79,18 +89,18 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         }
         return fields;
     }
-    
-    @SuppressWarnings("WeakerAccess")
-    protected List<GraphQLInterfaceType> getInterfaces(AnnotatedType javaType, Set<Type> abstractTypes,
-                                                       List<GraphQLFieldDefinition> fields, BuildContext buildContext, OperationMapper operationMapper) {
 
-        List<GraphQLInterfaceType> interfaces = new ArrayList<>();
+    @SuppressWarnings("WeakerAccess")
+    protected List<GraphQLOutputType> getInterfaces(AnnotatedType javaType, Set<Type> abstractTypes,
+                                                    List<GraphQLFieldDefinition> fields, BuildContext buildContext, OperationMapper operationMapper) {
+
+        List<GraphQLOutputType> interfaces = new ArrayList<>();
         if (fields.stream().anyMatch(GraphQLUtils::isRelayId)) {
-            interfaces.add(operationMapper.node);
+            interfaces.add(buildContext.node);
         }
         buildContext.interfaceStrategy.getInterfaces(javaType).forEach(
-                inter -> interfaces.add((GraphQLInterfaceType) operationMapper.toGraphQLType(inter, abstractTypes, buildContext)));
-        
+                inter -> interfaces.add(operationMapper.toGraphQLType(inter, abstractTypes, buildContext)));
+
         return interfaces;
     }
 }

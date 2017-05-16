@@ -28,10 +28,10 @@ public class Defaults {
         throw new IllegalStateException("No JSON deserialization library found on classpath");
     }
     
-    public static ValueMapperFactory valueMapperFactory(TypeInfoGenerator typeInfoGenerator) {
+    public static ValueMapperFactory valueMapperFactory(String basePackage, TypeInfoGenerator typeInfoGenerator) {
         switch (jsonLibrary()) {
-            case GSON: return new GsonValueMapperFactory(typeInfoGenerator);
-            case JACKSON: return new JacksonValueMapperFactory(typeInfoGenerator);
+            case GSON: return new GsonValueMapperFactory(basePackage, typeInfoGenerator);
+            case JACKSON: return new JacksonValueMapperFactory(basePackage, typeInfoGenerator);
             default: return new ScalarOnlyValueMapperFactory();
         }
     }

@@ -28,8 +28,8 @@ import static org.junit.Assert.assertTrue;
 public class TypeResolverTest {
 
     @Test
-    public void testTypeHintProvider() {
-        GraphQLSchema schema = new GraphQLSchemaGenerator()
+    public void testTypeResolver() {
+        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
                 .withOperationsFromSingleton(new RepoService())
                 .generate();
 

@@ -22,23 +22,29 @@ import io.leangen.graphql.util.ClassUtils;
  */
 public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValueMapper> {
 
+    private final String basePackage;
     private final Configurer configurer;
     private final TypeInfoGenerator typeInfoGenerator;
     private final JacksonValueMapper defaultValueMapper;
 
     public JacksonValueMapperFactory() {
-        this(new DefaultTypeInfoGenerator());
+        this(null);
     }
 
-    public JacksonValueMapperFactory(TypeInfoGenerator typeInfoGenerator) {
-        this(typeInfoGenerator, new AbstractClassAdapterConfigurer());
+    public JacksonValueMapperFactory(String basePackage) {
+        this(basePackage, new DefaultTypeInfoGenerator());
+    }
+    
+    public JacksonValueMapperFactory(String basePackage, TypeInfoGenerator typeInfoGenerator) {
+        this(basePackage, typeInfoGenerator, new AbstractClassAdapterConfigurer());
     }
 
-    public JacksonValueMapperFactory(TypeInfoGenerator typeInfoGenerator, Configurer configurer) {
+    public JacksonValueMapperFactory(String basePackage, TypeInfoGenerator typeInfoGenerator, Configurer configurer) {
+        this.basePackage = basePackage;
         this.configurer = configurer;
         this.typeInfoGenerator = typeInfoGenerator;
         this.defaultValueMapper = new JacksonValueMapper(
-                this.configurer.configure(new ObjectMapper(), Collections.emptySet(), typeInfoGenerator));
+                this.configurer.configure(new ObjectMapper(), Collections.emptySet(), basePackage, typeInfoGenerator));
     }
 
     @Override
@@ -46,25 +52,25 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         if (abstractTypes.isEmpty()) {
             return this.defaultValueMapper;
         }
-        ObjectMapper objectMapper = this.configurer.configure(new ObjectMapper(), abstractTypes, this.typeInfoGenerator);
+        ObjectMapper objectMapper = this.configurer.configure(new ObjectMapper(), abstractTypes, basePackage, this.typeInfoGenerator);
         return new JacksonValueMapper(objectMapper);
     }
 
     public static class AbstractClassAdapterConfigurer implements Configurer {
 
         @Override
-        public ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, TypeInfoGenerator metaDataGen) {
-            return objectMapper.setAnnotationIntrospector(new AnnotationIntrospector(collectSubtypes(abstractTypes, metaDataGen)));
+        public ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, String basePackage, TypeInfoGenerator metaDataGen) {
+            return objectMapper.setAnnotationIntrospector(new AnnotationIntrospector(collectSubtypes(abstractTypes, basePackage, metaDataGen)));
         }
 
-        private Map<Type, List<NamedType>> collectSubtypes(Set<Type> abstractTypes, TypeInfoGenerator metaDataGen) {
+        private Map<Type, List<NamedType>> collectSubtypes(Set<Type> abstractTypes, String basePackage, TypeInfoGenerator metaDataGen) {
             Map<Type, List<NamedType>> types = new HashMap<>();
             Set<Class<?>> abstractClasses = abstractTypes.stream()
                     .map(ClassUtils::getRawType)
                     .distinct()
                     .collect(Collectors.toSet());
             for (Class abstractClass : abstractClasses) {
-                List<NamedType> subTypes = ClassUtils.findImplementations(abstractClass).stream()
+                List<NamedType> subTypes = ClassUtils.findImplementations(abstractClass, basePackage).stream()
                         .filter(impl -> !ClassUtils.isAbstract(impl))
                         .map(sub -> new NamedType(sub, metaDataGen.generateTypeName(GenericTypeReflector.annotate(sub))))
                         .collect(Collectors.toList());
@@ -76,7 +82,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
     @FunctionalInterface
     public interface Configurer {
-        ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, TypeInfoGenerator metaDataGen);
+        ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, String basePackage, TypeInfoGenerator metaDataGen);
     }
 
     @Override

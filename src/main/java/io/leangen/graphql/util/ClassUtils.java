@@ -247,6 +247,7 @@ public class ClassUtils {
         }
         try {
             ClassFinder classFinder = new ClassFinder();
+            packages = packages == null ? null : Arrays.stream(packages).filter(Utils::notEmpty).toArray(String[]::new);
             classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(superType.getClassLoader(), packages);
             List<Class> implementations = classFinder
                     .findClasses(new SubclassClassFilter(superType)).stream()
