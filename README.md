@@ -3,7 +3,11 @@
 GraphQL SPQR (GraphQL Schema Publisher & Query Resolver) is a simple to use library for rapid development of GraphQL APIs in Java.
 
 [![Join the chat at https://gitter.im/leangen/Lobby](https://badges.gitter.im/leangen/Lobby.svg)](https://gitter.im/leangen/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.leangen.graphql/spqr/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.leangen.geantyref/geantyref)
+[![Javadoc](https://javadoc-emblem.rhcloud.com/doc/io.leangen.graphql/spqr/badge.svg)](http://www.javadoc.io/doc/io.leangen.geantyref/geantyref)
 [![Build Status](https://travis-ci.org/leangen/graphql-spqr.svg?branch=master)](https://travis-ci.org/leangen/graphql-spqr)
+[![Hex.pm](https://img.shields.io/hexpm/l/plug.svg?maxAge=2592000)](https://raw.githubusercontent.com/leangen/graphql-spqr/master/LICENSE)
+[![Semver](http://img.shields.io/SemVer/2.0.0.png)](http://semver.org/spec/v2.0.0.html)
 
 ## Example
 
@@ -68,3 +72,6 @@ ExecutionResult result = graphQL.execute(
         regDate
     }}");
 ```
+##Full example
+
+See more complete examples using Spring MVC on [https://github.com/leangen/graphql-spqr-samples](https://github.com/leangen/graphql-spqr-samples)
