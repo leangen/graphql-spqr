@@ -18,22 +18,9 @@ import io.leangen.graphql.domain.SimpleUser;
  */
 public class RecService {
 
-    @GraphQLQuery(name = "dudes")
-    public List<SimpleUser> getDudes() {
-        SimpleUser friend = new SimpleUser("Other Guy");
-        SimpleUser one = new SimpleUser("One", friend);
-        SimpleUser two = new SimpleUser("Two", friend);
-        SimpleUser three = new SimpleUser("Three", friend);
-        List<SimpleUser> dudes = new ArrayList<>();
-        dudes.add(one);
-        dudes.add(two);
-        dudes.add(three);
-        return dudes;
-    }
-    
     @GraphQLQuery
     @Batched
-    public List<Education> name(@GraphQLContext List<SimpleUser> users) {
+    public List<Education> education(@GraphQLContext List<SimpleUser> users) {
         return users.stream()
                 .map(u -> u.getEducation(2000 + u.getFullName().charAt(0)))
                 .collect(Collectors.toList());

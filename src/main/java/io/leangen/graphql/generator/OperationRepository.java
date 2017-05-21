@@ -75,6 +75,7 @@ public class OperationRepository {
 
     public Set<Operation> getEmbeddableQueries(Type domainType) {
         return getQueries().stream()
+                .map(Operation::unbatch)
                 .filter(query -> query.isEmbeddableForType(domainType))
                 .collect(Collectors.toSet());
     }

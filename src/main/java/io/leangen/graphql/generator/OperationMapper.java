@@ -36,7 +36,6 @@ import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
-import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.GraphQLUtils;
 
@@ -271,7 +270,7 @@ public class OperationMapper {
      * @return The resolver for the given operation
      */
     private DataFetcher createResolver(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
-        if (operation.getResolvers().stream().anyMatch(Resolver::isBatched)) {
+        if (operation.isBatched()) {
             return new BatchedDataFetcher() {
                 @Override
                 public Object get(DataFetchingEnvironment environment) {

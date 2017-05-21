@@ -2,6 +2,7 @@ package io.leangen.graphql.metadata;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -21,9 +22,14 @@ public class Operation {
     private final List<Type> contextTypes;
     private final Map<String, Resolver> resolversByFingerprint;
     private final List<OperationArgument> arguments;
+    private final boolean batched;
 
     public Operation(String name, AnnotatedType javaType, List<Type> contextTypes, 
-                     List<OperationArgument> arguments, List<Resolver> resolvers) {
+                     List<OperationArgument> arguments, List<Resolver> resolvers, boolean batched) {
+
+        if (!(resolvers.stream().allMatch(Resolver::isBatched) || resolvers.stream().noneMatch(Resolver::isBatched))) {
+            throw new IllegalArgumentException("Operation \"" + name + "\" mixes regular and batched resolvers");
+        }
         
         this.name = name;
         this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
@@ -31,8 +37,13 @@ public class Operation {
         this.contextTypes = contextTypes;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
+        this.batched = batched;
     }
-
+    
+    public Operation unbatch() {
+        return new UnbatchedOperation(this);
+    }
+    
     private Map<String, Resolver> collectResolversByFingerprint(List<Resolver> resolvers) {
         Map<String, Resolver> resolversByFingerprint = new HashMap<>();
         resolvers.forEach(resolver -> resolver.getFingerprints().forEach(fingerprint -> resolversByFingerprint.putIfAbsent(fingerprint, resolver)));
@@ -73,6 +84,10 @@ public class Operation {
         return resolversByFingerprint.values();
     }
 
+    public boolean isBatched() {
+        return batched;
+    }
+
     @Override
     public int hashCode() {
         int typeHash = stream(javaType.getAnnotations())
@@ -98,5 +113,28 @@ public class Operation {
     @Override
     public String toString() {
         return name + "(" + String.join(",", arguments.stream().map(OperationArgument::getName).collect(Collectors.toList())) + ")";
+    }
+    
+    private static class UnbatchedOperation extends Operation {
+        
+        private UnbatchedOperation(Operation operation) {
+            super(operation.name, unbatchJavaType(operation.javaType), unbatchContextTypes(operation.contextTypes),
+                    operation.arguments, new ArrayList<>(operation.getResolvers()), true);
+        }
+
+        private static AnnotatedType unbatchJavaType(AnnotatedType javaType) {
+            return GenericTypeReflector.getTypeParameter(javaType, List.class.getTypeParameters()[0]);
+        }
+        
+        private static List<Type> unbatchContextTypes(List<Type> contextTypes) {
+            return contextTypes.stream()
+                    .map(contextType -> GenericTypeReflector.getTypeParameter(contextType, List.class.getTypeParameters()[0]))
+                    .collect(Collectors.toList());
+        }
+        
+        @Override
+        public Operation unbatch() {
+            return this;
+        }
     }
 }

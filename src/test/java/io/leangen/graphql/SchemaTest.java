@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import graphql.execution.batched.BatchedExecutionStrategy;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.domain.Education;
@@ -23,7 +22,6 @@ import io.leangen.graphql.execution.relay.generic.PageFactory;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
-import io.leangen.graphql.services.RecService;
 import io.leangen.graphql.services.UserService;
 
 import static org.junit.Assert.assertFalse;
@@ -134,19 +132,6 @@ public class SchemaTest {
         return new Object[] { new JacksonValueMapperFactory(), new GsonValueMapperFactory() };
     }
 
-    @Test
-    public void batchingTest() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
-                .withValueMapperFactory(valueMapperFactory)
-                .withOperationsFromSingleton(new RecService())
-                .generate();
-
-        GraphQL exe = GraphQL.newGraphQL(schema).queryExecutionStrategy(new BatchedExecutionStrategy()).build();
-        ExecutionResult result;
-        result = exe.execute("{dudes {name {startYear}}}");
-        System.out.println(result);
-    }
-    
     @Test
     public void relayMutationTest() {
         GraphQLSchema schema = new PreconfiguredSchemaGenerator()

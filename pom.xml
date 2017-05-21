@@ -79,7 +79,7 @@
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java</artifactId>
-            <version>2017-05-10T00-04-03</version>
+            <version>3.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>

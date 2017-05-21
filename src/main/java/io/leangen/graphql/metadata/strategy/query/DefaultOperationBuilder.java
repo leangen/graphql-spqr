@@ -33,7 +33,8 @@ public class DefaultOperationBuilder implements OperationBuilder {
         AnnotatedType javaType = resolveJavaType(name, resolvers);
         List<Type> contextTypes = resolveContextTypes(resolvers);
         List<OperationArgument> arguments = collectArguments(resolvers);
-        return new Operation(name, javaType, contextTypes, arguments, resolvers);
+        boolean batched = isBatched(resolvers);
+        return new Operation(name, javaType, contextTypes, arguments, resolvers, batched);
     }
 
     @Override
@@ -94,6 +95,10 @@ public class DefaultOperationBuilder implements OperationBuilder {
                 .collect(Collectors.toList());
     }
 
+    protected boolean isBatched(List<Resolver> resolvers) {
+        return resolvers.stream().anyMatch(Resolver::isBatched);
+    }
+    
     protected AnnotatedType unionize(AnnotatedType[] types) {
         return Union.unionize(types);
     }

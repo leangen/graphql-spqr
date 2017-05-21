@@ -25,14 +25,17 @@ import graphql.validation.ValidationError;
  */
 public class GraphQLRuntime extends GraphQL {
     
+    private final GraphQL delegate;
+    
     @SuppressWarnings("deprecation")
     private GraphQLRuntime(GraphQL delegate, GraphQLSchema schema) {
         super(schema);
+        this.delegate = delegate;
     }
 
     @Override
     public ExecutionResult execute(String requestString, String operationName, Object context, Map<String, Object> arguments) {
-        return super.execute(requestString, operationName, new ContextWrapper(context), arguments);
+        return delegate.execute(requestString, operationName, new ContextWrapper(context), arguments);
     }
 
     public static Builder newGraphQL(GraphQLSchema graphQLSchema) {
@@ -63,7 +66,9 @@ public class GraphQLRuntime extends GraphQL {
 
         @Override
         public GraphQLRuntime build() {
-            super.instrumentation(new InstrumentationChain(instrumentations));
+            if (!instrumentations.isEmpty()) {
+                super.instrumentation(new InstrumentationChain(instrumentations));
+            }
             return new GraphQLRuntime(super.build(), graphQLSchema);
         }
     }
