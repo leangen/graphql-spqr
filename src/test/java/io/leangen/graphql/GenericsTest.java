@@ -45,13 +45,12 @@ public class GenericsTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Object[] data() {
-        return new Object[] { new JacksonValueMapperFactory(),
-                new GsonValueMapperFactory()};
+        return new Object[] { new JacksonValueMapperFactory(), new GsonValueMapperFactory() };
     }
     
     // IMPORTANT! All type declarations have to stay outside of tests (can not be inlined)
     // as the annotation parser treats them differently and discards the annotations otherwise.
-    // This is JDK8 bug: http://stackoverflow.com/questions/39952812
+    // This is a JDK8 bug: http://stackoverflow.com/questions/39952812
     private static final AnnotatedType nonNullString = new TypeToken<GenericItemRepo<@GraphQLNonNull String>>() {
     }.getAnnotatedType();
     private static final AnnotatedType dateId = new TypeToken<GenericItemRepo<@GraphQLId(relayId = true) Date>>() {
@@ -94,7 +93,7 @@ public class GenericsTest {
         assertArgumentsPresent(addManyItems, "items");
         assertListOfNonNull(addManyItems.getArgument("items").getType(), Scalars.GraphQLString);
 
-        GraphQL graphQL = new GraphQL(schemaWithNonNullGenerics);
+        GraphQL graphQL = GraphQL.newGraphQL(schemaWithNonNullGenerics).build();
         ExecutionResult result = graphQL.execute("{ getAllItems }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
         assertEquals(new ArrayList<>(nonNullStringService.getAllItems()), ((Map<String, Object>) result.getData()).get("getAllItems"));
@@ -163,7 +162,7 @@ public class GenericsTest {
         assertNonNull(itemArgType, GraphQLList.class);
         assertListOf(((graphql.schema.GraphQLNonNull) itemArgType).getWrappedType(), Scalars.GraphQLBigDecimal);
 
-        GraphQL graphQL = new GraphQL(schemaWithGenerics);
+        GraphQL graphQL = GraphQL.newGraphQL(schemaWithGenerics).build();
         ExecutionResult result = graphQL.execute("{ getAllItems }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
         Object[] expected = wildcardNumberService.getAllItems().toArray();
@@ -202,7 +201,7 @@ public class GenericsTest {
         inner = ((graphql.schema.GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
         assertListOf(inner, Scalars.GraphQLBigDecimal);
 
-        GraphQL graphQL = new GraphQL(schemaWithGenerics);
+        GraphQL graphQL = GraphQL.newGraphQL(schemaWithGenerics).build();
         ExecutionResult result = graphQL.execute("{ getAllItems }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
         Object[] expected = arrayNumberService.getAllItems().toArray();
