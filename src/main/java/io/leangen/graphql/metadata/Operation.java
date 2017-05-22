@@ -41,7 +41,7 @@ public class Operation {
     }
     
     public Operation unbatch() {
-        return new UnbatchedOperation(this);
+        return batched ? new UnbatchedOperation(this) : this;
     }
     
     private Map<String, Resolver> collectResolversByFingerprint(List<Resolver> resolvers) {
