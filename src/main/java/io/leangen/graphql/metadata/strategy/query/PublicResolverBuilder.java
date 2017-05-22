@@ -18,7 +18,7 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
 /**
- * Created by bojan.tomic on 6/10/16.
+ * A resolver builder that exposes all public methods
  */
 public class PublicResolverBuilder extends FilteredResolverBuilder {
 
@@ -43,6 +43,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         if (rawType.isArray() || rawType.isPrimitive()) return Collections.emptyList();
         return Arrays.stream(rawType.getMethods())
+                .filter(method -> !method.isBridge() && !method.isSynthetic())
                 .filter(method -> isPackageAcceptable(method, rawType))
                 .filter(this::isQuery)
                 .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
