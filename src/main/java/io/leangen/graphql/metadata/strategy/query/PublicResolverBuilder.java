@@ -48,8 +48,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(this::isQuery)
                 .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
                 .map(method -> new Resolver(
-                        operationNameGenerator.generateQueryName(method, beanType),
-                        operationNameGenerator.generateQueryName(method, beanType),
+                        operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
+                        operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         argumentExtractor.buildResolverArguments(method, beanType)
@@ -65,8 +65,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(this::isMutation)
                 .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
                 .map(method -> new Resolver(
-                        operationNameGenerator.generateMutationName(method, beanType),
-                        operationNameGenerator.generateMutationName(method, beanType),
+                        operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
+                        operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         argumentExtractor.buildResolverArguments(method, beanType)

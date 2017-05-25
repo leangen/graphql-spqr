@@ -5,7 +5,6 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -95,11 +94,11 @@ public class OperationRepository {
     }
 
     private Collection<Resolver> buildResolvers(Collection<OperationSource> operationSources, BiFunction<OperationSource, ResolverBuilder, Collection<Resolver>> building) {
-        Collection<Resolver> resolvers = new HashSet<>();
-        operationSources.forEach(
-                operationSource -> operationSource.getResolverBuilders().forEach(
-                        builder -> resolvers.addAll(building.apply(operationSource, builder)))
-        );
-        return resolvers;
+        return operationSources.stream()
+                .flatMap(operationSource ->
+                        operationSource.getResolverBuilders().stream()
+                                .flatMap(builder -> building.apply(operationSource, builder).stream())
+                                .distinct())
+                .collect(Collectors.toList());
     }
 }

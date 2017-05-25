@@ -21,14 +21,14 @@ public class DelegatingOperationNameGenerator implements OperationNameGenerator 
     }
 
     @Override
-    public String generateQueryName(Method queryMethod, AnnotatedType declaringType) {
-        Optional<String> queryName = generateName(queryNameGenerator -> queryNameGenerator.generateQueryName(queryMethod, declaringType));
+    public String generateQueryName(Method queryMethod, AnnotatedType declaringType, Object instance) {
+        Optional<String> queryName = generateName(queryNameGenerator -> queryNameGenerator.generateQueryName(queryMethod, declaringType, instance));
         return requireName(queryName, queryMethod);
     }
 
     @Override
-    public String generateQueryName(Field queryField, AnnotatedType declaringType) {
-        Optional<String> queryName = generateName(queryNameGenerator -> queryNameGenerator.generateQueryName(queryField, declaringType));
+    public String generateQueryName(Field queryField, AnnotatedType declaringType, Object instance) {
+        Optional<String> queryName = generateName(queryNameGenerator -> queryNameGenerator.generateQueryName(queryField, declaringType, instance));
         return requireName(queryName, queryField);
     }
 
@@ -41,8 +41,8 @@ public class DelegatingOperationNameGenerator implements OperationNameGenerator 
     }
 
     @Override
-    public String generateMutationName(Method mutationMethod, AnnotatedType declaringType) {
-        Optional<String> mutationName = generateName(queryNameGenerator -> queryNameGenerator.generateMutationName(mutationMethod, declaringType));
+    public String generateMutationName(Method mutationMethod, AnnotatedType declaringType, Object instance) {
+        Optional<String> mutationName = generateName(queryNameGenerator -> queryNameGenerator.generateMutationName(mutationMethod, declaringType, instance));
 
         if (mutationName.isPresent()) return mutationName.get();
 

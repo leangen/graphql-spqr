@@ -14,12 +14,12 @@ import io.leangen.graphql.util.ClassUtils;
  */
 public class AnnotatedOperationNameGenerator implements OperationNameGenerator {
 
-    public String generateQueryName(Method queryMethod, AnnotatedType declaringType) {
+    public String generateQueryName(Method queryMethod, AnnotatedType declaringType, Object instance) {
         return queryName(queryMethod, declaringType);
     }
 
     @Override
-    public String generateQueryName(Field queryField, AnnotatedType declaringType) {
+    public String generateQueryName(Field queryField, AnnotatedType declaringType, Object instance) {
         return queryName(queryField, declaringType);
     }
 
@@ -36,7 +36,7 @@ public class AnnotatedOperationNameGenerator implements OperationNameGenerator {
     }
 
     @Override
-    public String generateMutationName(Method mutationMethod, AnnotatedType declaringType) {
+    public String generateMutationName(Method mutationMethod, AnnotatedType declaringType, Object instance) {
         if (mutationMethod.isAnnotationPresent(GraphQLMutation.class)) {
             return mutationMethod.getAnnotation(GraphQLMutation.class).name();
         }

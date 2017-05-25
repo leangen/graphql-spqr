@@ -39,7 +39,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
         Stream<Resolver> methodInvokers = ClassUtils.getAnnotatedMethods(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
                 .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
                 .map(method -> new Resolver(
-                        operationNameGenerator.generateQueryName(method, beanType),
+                        operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLQuery.class).description(),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
@@ -48,7 +48,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
         Stream<Resolver> fieldAccessors = ClassUtils.getAnnotatedFields(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
                 .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
                 .map(field -> new Resolver(
-                        operationNameGenerator.generateQueryName(field, beanType),
+                        operationNameGenerator.generateQueryName(field, beanType, querySourceBean),
                         field.getAnnotation(GraphQLQuery.class).description(),
                         false,
                         new FieldAccessor(field, beanType),
@@ -62,7 +62,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
         return ClassUtils.getAnnotatedMethods(ClassUtils.getRawType(beanType.getType()), GraphQLMutation.class).stream()
                 .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
                 .map(method -> new Resolver(
-                        operationNameGenerator.generateMutationName(method, beanType),
+                        operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLMutation.class).description(),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),

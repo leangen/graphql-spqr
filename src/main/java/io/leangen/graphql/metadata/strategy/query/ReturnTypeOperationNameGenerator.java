@@ -10,7 +10,7 @@ import java.lang.reflect.Method;
 public class ReturnTypeOperationNameGenerator implements OperationNameGenerator {
 
     @Override
-    public String generateQueryName(Method queryElement, AnnotatedType type) {
+    public String generateQueryName(Method queryElement, AnnotatedType type, Object instance) {
         String name = queryElement.getReturnType().getSimpleName().toLowerCase();
         if (queryElement.getReturnType().isArray() || Iterable.class.isAssignableFrom(queryElement.getReturnType())) {
             return pluralize(name);
@@ -19,7 +19,7 @@ public class ReturnTypeOperationNameGenerator implements OperationNameGenerator 
     }
 
     @Override
-    public String generateQueryName(Field queryField, AnnotatedType declaringType) {
+    public String generateQueryName(Field queryField, AnnotatedType declaringType, Object instance) {
         String name = queryField.getType().getSimpleName().toLowerCase();
         if (queryField.getType().isArray() || Iterable.class.isAssignableFrom(queryField.getType())) {
             return pluralize(name);
@@ -28,8 +28,8 @@ public class ReturnTypeOperationNameGenerator implements OperationNameGenerator 
     }
 
     @Override
-    public String generateMutationName(Method mutationMethod, AnnotatedType declaringType) {
-        return generateQueryName(mutationMethod, declaringType);
+    public String generateMutationName(Method mutationMethod, AnnotatedType declaringType, Object instance) {
+        return generateQueryName(mutationMethod, declaringType, instance);
     }
 
     @SuppressWarnings("WeakerAccess")
