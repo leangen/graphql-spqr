@@ -16,6 +16,7 @@ import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.util.ClassUtils;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -29,7 +30,7 @@ public class NonNullMapper implements TypeMapper {
         Set<Class<? extends Annotation>> annotations = new HashSet<>();
         annotations.add(GraphQLNonNull.class);
         try {
-            annotations.add((Class<? extends Annotation>) Class.forName("javax.annotation.Nonnull"));
+            annotations.add((Class<? extends Annotation>) ClassUtils.forName("javax.annotation.Nonnull"));
         } catch (ClassNotFoundException e) {
             /*no-op*/
         }

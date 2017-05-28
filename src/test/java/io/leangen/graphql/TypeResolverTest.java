@@ -19,7 +19,7 @@ import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.execution.TypeResolutionEnvironment;
 import io.leangen.graphql.execution.TypeResolver;
 
-import static io.leangen.graphql.assertions.QueryResultAssertions.assertValueAtPathEquals;
+import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertTrue;
 
 /**

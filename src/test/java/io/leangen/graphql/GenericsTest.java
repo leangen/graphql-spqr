@@ -29,11 +29,11 @@ import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import io.leangen.graphql.services.GenericItemRepo;
 
-import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertArgumentsPresent;
-import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOf;
-import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOfNonNull;
-import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOfRelayIds;
-import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertNonNull;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertArgumentsPresent;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOf;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOfNonNull;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOfRelayIds;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;
 import static io.leangen.graphql.util.GraphQLUtils.isRelayId;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

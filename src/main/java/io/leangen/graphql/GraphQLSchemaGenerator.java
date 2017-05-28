@@ -19,6 +19,7 @@ import io.leangen.graphql.generator.OperationRepository;
 import io.leangen.graphql.generator.OperationSource;
 import io.leangen.graphql.generator.OperationSourceRepository;
 import io.leangen.graphql.generator.RelayMappingConfig;
+import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRepository;
@@ -60,6 +61,7 @@ import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Defaults;
 
 import static graphql.schema.GraphQLObjectType.newObject;
@@ -160,6 +162,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton) {
+        checkType(serviceSingleton.getClass());
         return withOperationsFromSingleton(serviceSingleton, serviceSingleton.getClass());
     }
 
@@ -197,6 +200,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType) {
+        checkType(beanType);
         this.operationSourceRepository.registerOperationSource(serviceSingleton, beanType);
         return this;
     }
@@ -214,7 +218,7 @@ public class GraphQLSchemaGenerator {
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, ResolverBuilder... builders) {
         return withOperationsFromSingleton(serviceSingleton, serviceSingleton.getClass(), builders);
     }
-    
+
     /**
      * Same as {@link #withOperationsFromSingleton(Object, Type)} except that custom {@link ResolverBuilder}s will be used
      * to look through {@code beanType} for methods to be exposed.
@@ -231,6 +235,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, Type beanType, ResolverBuilder... builders) {
+        checkType(beanType);
         return withOperationsFromSingleton(serviceSingleton, GenericTypeReflector.annotate(beanType), builders);
     }
 
@@ -249,6 +254,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType, ResolverBuilder... builders) {
+        checkType(beanType);
         this.operationSourceRepository.registerOperationSource(serviceSingleton, beanType, Arrays.asList(builders));
         return this;
     }
@@ -280,11 +286,13 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withOperationsFromType(AnnotatedType serviceType) {
+        checkType(serviceType);
         this.operationSourceRepository.registerOperationSource(serviceType);
         return this;
     }
 
     public GraphQLSchemaGenerator withOperationsFromType(AnnotatedType serviceType, ResolverBuilder... builders) {
+        checkType(serviceType);
         this.operationSourceRepository.registerOperationSource(serviceType, Arrays.asList(builders));
         return this;
     }
@@ -378,7 +386,7 @@ public class GraphQLSchemaGenerator {
         this.interfaceStrategy = interfaceStrategy;
         return this;
     }
-    
+
     public GraphQLSchemaGenerator withBasePackage(String basePackage) {
         this.basePackage = basePackage;
         return this;
@@ -522,7 +530,7 @@ public class GraphQLSchemaGenerator {
         addAll(this.processors, processors);
         return this;
     }
-    
+
     /**
      * Registers all built-in {@link TypeMapper}s, {@link InputConverter}s and {@link OutputConverter}s
      * <p>Equivalent to calling {@code withDefaultResolverBuilders().withDefaultMappers().withDefaultConverters()}</p>
@@ -680,6 +688,8 @@ public class GraphQLSchemaGenerator {
                         .build());
         applyProcessors(builder);
 
+        additionalTypes.addAll(buildContext.typeRepository.getDiscoveredTypes());
+        
         return builder.build(additionalTypes);
     }
 
@@ -691,5 +701,24 @@ public class GraphQLSchemaGenerator {
 
     private boolean isInternalType(GraphQLType type) {
         return type.getName().startsWith("__") || type.getName().equals(QUERY_ROOT) || type.getName().equals(MUTATION_ROOT);
+    }
+
+    private void checkType(Type type) {
+        if (type == null) {
+            throw new TypeMappingException();
+        }
+        Class<?> clazz = ClassUtils.getRawType(type);
+        if (ClassUtils.isProxy(clazz)) {
+            throw new TypeMappingException("The provided object of type " + clazz.getName() +
+                    " appears to be a dynamically generated proxy, so its type can not be reliably determined." +
+                    " Provide the type explicitly when registering the bean.");
+        }
+    }
+
+    private void checkType(AnnotatedType type) {
+        if (type == null) {
+            throw new TypeMappingException();
+        }
+        checkType(type.getType());
     }
 }

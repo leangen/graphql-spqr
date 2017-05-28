@@ -8,7 +8,6 @@ import java.util.Map;
 
 import graphql.GraphQLException;
 import graphql.schema.DataFetchingEnvironment;
-import io.leangen.graphql.GraphQLRuntime;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
@@ -34,8 +33,8 @@ public class OperationExecutor {
 
     public Object execute(DataFetchingEnvironment env) {
         Resolver resolver;
-        if (env.getContext() instanceof GraphQLRuntime.ContextWrapper) {
-            GraphQLRuntime.ContextWrapper context = env.getContext();
+        if (env.getContext() instanceof ContextWrapper) {
+            ContextWrapper context = env.getContext();
             if (env.getArguments().get("clientMutationId") != null) {
                 context.putExtension("clientMutationId", env.getArguments().get("clientMutationId"));
             }

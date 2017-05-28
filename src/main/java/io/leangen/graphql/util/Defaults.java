@@ -21,7 +21,7 @@ public class Defaults {
     private static JsonLib jsonLibrary() {
         for (JsonLib jsonLib : JsonLib.values()) {
             try {
-                Class.forName(jsonLib.requiredClass);
+                ClassUtils.forName(jsonLib.requiredClass);
                 return jsonLib;
             } catch (ClassNotFoundException ge) {/*no-op*/}
         }

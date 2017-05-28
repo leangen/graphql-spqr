@@ -14,7 +14,7 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 
-import static io.leangen.graphql.assertions.QueryResultAssertions.assertValueAtPathEquals;
+import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)

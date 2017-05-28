@@ -29,16 +29,17 @@ public class TypeRepository {
 
     private final Map<String, Map<String, MappedType>> covariantOutputTypes = new ConcurrentHashMap<>();
     private final Map<String, GraphQLObjectType> knownObjectTypes = new HashMap<>();
-
-    private final Logger log = LoggerFactory.getLogger(TypeRepository.class);
+    private final Set<GraphQLObjectType> discoveredTypes = new HashSet<>();
     
+    private final Logger log = LoggerFactory.getLogger(TypeRepository.class);
+
     public TypeRepository(Set<GraphQLType> knownTypes) {
         //extract known interface implementations
         knownTypes.stream()
                 .filter(type -> type instanceof MappedGraphQLObjectType)
                 .map(type -> (MappedGraphQLObjectType) type)
                 .forEach(obj -> obj.getInterfaces().forEach(
-                        inter -> registerCovariantTypes(inter.getName(), obj.getJavaType(), obj)));
+                        inter -> registerCovariantType(inter.getName(), obj.getJavaType(), obj)));
 
         //extract known union members
         knownTypes.stream()
@@ -47,14 +48,19 @@ public class TypeRepository {
                 .forEach(union -> union.getTypes().stream()
                         .filter(type -> type instanceof MappedGraphQLObjectType)
                         .map(type -> (MappedGraphQLObjectType) type)
-                        .forEach(obj -> registerCovariantTypes(union.getName(), obj.getJavaType(), obj)));
+                        .forEach(obj -> registerCovariantType(union.getName(), obj.getJavaType(), obj)));
     }
 
     public void registerObjectType(GraphQLObjectType objectType) {
         this.knownObjectTypes.put(objectType.getName(), objectType);
     }
 
-    public void registerCovariantTypes(String compositeTypeName, AnnotatedType javaSubType, GraphQLOutputType subType) {
+    public void registerDiscoveredCovariantType(String compositeTypeName, AnnotatedType javaSubType, GraphQLObjectType subType) {
+        this.discoveredTypes.add(subType);
+        registerCovariantType(compositeTypeName, javaSubType, subType);
+    }
+    
+    public void registerCovariantType(String compositeTypeName, AnnotatedType javaSubType, GraphQLOutputType subType) {
         this.covariantOutputTypes.putIfAbsent(compositeTypeName, new ConcurrentHashMap<>());
         Map<String, MappedType> covariantTypes = this.covariantOutputTypes.get(compositeTypeName);
         //never overwrite an exact type with a reference
@@ -76,6 +82,10 @@ public class TypeRepository {
         return new ArrayList<>(this.covariantOutputTypes.get(compositeTypeName).values());
     }
 
+    public Set<GraphQLObjectType> getDiscoveredTypes() {
+        return discoveredTypes;
+    }
+    
     public void replaceTypeReferences() {
         for (Map<String, MappedType> covariantTypes : this.covariantOutputTypes.values()) {
             Set<String> toRemove = new HashSet<>();
@@ -85,10 +95,11 @@ public class TypeRepository {
                     if (resolvedType != null) {
                         entry.setValue(new MappedType(entry.getValue().javaType, resolvedType));
                     } else {
-                        log.warn("Type reference " + entry.getKey() + " could not replaced correctly. " +
+                        log.warn("Type reference " + entry.getKey() + " could not be replaced correctly. " +
                                 "This can occur when the schema generator is initialized with " +
                                 "additional types not built by GraphQL-SPQR. If this type implements " +
                                 "Node, in some edge cases it may end up not exposed via the 'node' query.");
+                        //the edge case is when the primary resolver returns an interface or a union and not the node type directly
                         toRemove.add(entry.getKey());
                     }
                 }

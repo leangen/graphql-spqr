@@ -28,10 +28,11 @@ public class Resolver {
     private final List<OperationArgument> arguments;
     private final AnnotatedType returnType;
     private final Set<OperationArgument> contextArguments;
+    private final String complexityExpression;
     private final Executable executable;
     private final boolean batched;
 
-    public Resolver(String operationName, String operationDescription, boolean batched, Executable executable, List<OperationArgument> arguments) {
+    public Resolver(String operationName, String operationDescription, boolean batched, Executable executable, List<OperationArgument> arguments, String complexityExpression) {
         AnnotatedType returnType = ClassUtils.stripBounds(executable.getReturnType());
         Set<OperationArgument> contextArguments = resolveContexts(arguments);
         
@@ -46,6 +47,7 @@ public class Resolver {
         this.arguments = arguments;
         this.returnType = returnType;
         this.contextArguments = contextArguments;
+        this.complexityExpression = complexityExpression;
     }
 
     private void validateBatching(String executableSignature, AnnotatedType returnType, Set<OperationArgument> contextArguments) {
@@ -129,6 +131,10 @@ public class Resolver {
 
     public AnnotatedType getReturnType() {
         return returnType;
+    }
+
+    public String getComplexityExpression() {
+        return complexityExpression;
     }
 
     private String fingerprint(OperationArgument ignoredResolverSource) {

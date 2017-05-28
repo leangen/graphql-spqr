@@ -1,4 +1,4 @@
-package io.leangen.graphql.assertions;
+package io.leangen.graphql.support;
 
 import java.util.Arrays;
 import java.util.Set;

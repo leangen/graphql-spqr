@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -90,6 +91,30 @@ public class Scalars {
         }
     });
 
+    public static final GraphQLScalarType GraphQLLocale = new GraphQLScalarType("Locale", "Built-in locale", new Coercing() {
+        @Override
+        public Object serialize(Object input) {
+            if (input instanceof Locale) {
+                return ((Locale) input).toLanguageTag();
+            } else if (input instanceof String) {
+                return input;
+            } else {
+                return null;
+            }
+        }
+
+        @Override
+        public Object parseValue(Object input) {
+            return serialize(input);
+        }
+
+        @Override
+        public Object parseLiteral(Object input) {
+            if (!(input instanceof StringValue)) return null;
+            return Locale.forLanguageTag(((StringValue) input).getValue());
+        }
+    });
+    
     public static final GraphQLScalarType GraphQLISODate = new GraphQLScalarType("Date", "Built-in date", new Coercing() {
         private String toISODateString(Date date) {
             return date.toInstant().toString();
@@ -214,6 +239,7 @@ public class Scalars {
         scalarMapping.put(UUID.class, GraphQLUuid);
         scalarMapping.put(URI.class, GraphQLUri);
         scalarMapping.put(Date.class, GraphQLISODate);
+        scalarMapping.put(Locale.class, GraphQLLocale);
         return Collections.unmodifiableMap(scalarMapping);
     }
 }

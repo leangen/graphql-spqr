@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import graphql.ExecutionResult;
@@ -19,14 +18,18 @@ import graphql.execution.instrumentation.parameters.ValidationParameters;
 import graphql.language.Document;
 import graphql.schema.GraphQLSchema;
 import graphql.validation.ValidationError;
+import io.leangen.graphql.execution.ContextWrapper;
+import io.leangen.graphql.execution.instrumentation.AstNodeVisitor;
+import io.leangen.graphql.execution.instrumentation.ComplexityAnalysisInstrumentation;
+import io.leangen.graphql.execution.instrumentation.JavaScriptEvaluator;
 
 /**
  * Created by bojan.tomic on 4/23/17.
  */
 public class GraphQLRuntime extends GraphQL {
-    
+
     private final GraphQL delegate;
-    
+
     @SuppressWarnings("deprecation")
     private GraphQLRuntime(GraphQL delegate, GraphQLSchema schema) {
         super(schema);
@@ -41,12 +44,13 @@ public class GraphQLRuntime extends GraphQL {
     public static Builder newGraphQL(GraphQLSchema graphQLSchema) {
         return new Builder(graphQLSchema);
     }
-    
+
     public static class Builder extends GraphQL.Builder {
 
         private GraphQLSchema graphQLSchema;
         private List<Instrumentation> instrumentations;
-        
+        private List<AstNodeVisitor> complexityVisitors = new ArrayList<>();
+
         public Builder(GraphQLSchema graphQLSchema) {
             super(graphQLSchema);
             this.graphQLSchema = graphQLSchema;
@@ -58,21 +62,23 @@ public class GraphQLRuntime extends GraphQL {
             this.instrumentations.add(instrumentation);
             return this;
         }
-        
-        public Builder maximumQueryComplexity(double limit) {
-//            this.instrumentations.add(new ComplexityInstrumentation());
+
+        public Builder maximumQueryComplexity(int limit) {
+            instrumentations.add(new ComplexityAnalysisInstrumentation(new JavaScriptEvaluator(), limit));
             return this;
         }
 
         @Override
         public GraphQLRuntime build() {
-            if (!instrumentations.isEmpty()) {
+            if (instrumentations.size() == 1) {
+                super.instrumentation(instrumentations.get(0));
+            } else if (!instrumentations.isEmpty()) {
                 super.instrumentation(new InstrumentationChain(instrumentations));
             }
             return new GraphQLRuntime(super.build(), graphQLSchema);
         }
     }
-    
+
     public static class InstrumentationChain implements Instrumentation {
 
         private final List<Instrumentation> instrumentations;
@@ -123,7 +129,7 @@ public class GraphQLRuntime extends GraphQL {
                     .collect(Collectors.toList()));
         }
     }
-    
+
     public static class InstrumentationContextChain<T> implements InstrumentationContext<T> {
 
         private final List<InstrumentationContext<T>> contexts;
@@ -142,33 +148,5 @@ public class GraphQLRuntime extends GraphQL {
             contexts.forEach(context -> context.onEnd(e));
         }
     }
-    
-    public static class ContextWrapper {
-        private final Object context;
-        private final Map<String, Object> extensions;
 
-        public ContextWrapper(Object context) {
-            this.context = context;
-            this.extensions = new ConcurrentHashMap<>();
-        }
-
-        @SuppressWarnings("unchecked")
-        public <T> T getContext() {
-            return (T) context;
-        }
-        
-        @SuppressWarnings("unchecked")
-        public <T> T getExtension(String key) {
-            return (T) extensions.get(key);
-        }
-        
-        public void putExtension(String key, Object extension) {
-            extensions.put(key, extension);
-        }
-        
-        @SuppressWarnings("unchecked")
-        public <T> T removeExtension(String key) {
-            return (T) extensions.remove(key);
-        }
-    }
 }

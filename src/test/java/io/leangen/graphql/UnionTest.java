@@ -18,10 +18,10 @@ import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 
-import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertListOf;
-import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertMapOf;
-import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertNonNull;
-import static io.leangen.graphql.assertions.GraphQLTypeAssertions.assertUnionOf;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOf;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertMapOf;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertUnionOf;
 import static org.junit.Assert.assertEquals;
 
 /**

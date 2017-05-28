@@ -4,7 +4,9 @@ import graphql.relay.Relay;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLModifiedType;
 import graphql.schema.GraphQLNonNull;
+import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.annotations.GraphQLId;
 
@@ -37,6 +39,13 @@ public class GraphQLUtils {
     public static GraphQLType unwrapNonNull(GraphQLType type) {
         if (type instanceof GraphQLNonNull) {
             return unwrapNonNull(((GraphQLNonNull) type).getWrappedType());
+        }
+        return type;
+    }
+
+    public static GraphQLType unwrap(GraphQLOutputType type) {
+        if (type instanceof GraphQLModifiedType) {
+            return ((GraphQLModifiedType) type).getWrappedType();
         }
         return type;
     }

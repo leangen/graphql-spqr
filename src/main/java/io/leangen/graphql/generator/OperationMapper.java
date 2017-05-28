@@ -27,11 +27,12 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
 import graphql.schema.PropertyDataFetcher;
-import io.leangen.graphql.GraphQLRuntime;
 import io.leangen.graphql.annotations.GraphQLId;
+import io.leangen.graphql.execution.ContextWrapper;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.types.MappedGraphQLFieldDefinition;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
@@ -132,7 +133,7 @@ public class OperationMapper {
         ValueMapper valueMapper = buildContext.valueMapperFactory.getValueMapper(abstractTypes);
         queryBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
 
-        return queryBuilder.build();
+        return new MappedGraphQLFieldDefinition(queryBuilder.build(), operation);
     }
 
     /**
@@ -229,8 +230,8 @@ public class OperationMapper {
                 .field(newFieldDefinition()
                         .name("clientMutationId")
                         .type(new GraphQLNonNull(GraphQLString))
-                        .dataFetcher(env -> env.getContext() instanceof GraphQLRuntime.ContextWrapper
-                                ? ((GraphQLRuntime.ContextWrapper) env.getContext()).getExtension("clientMutationId")
+                        .dataFetcher(env -> env.getContext() instanceof ContextWrapper
+                                ? ((ContextWrapper) env.getContext()).getExtension("clientMutationId")
                                 : new PropertyDataFetcher("clientMutationId")))
                 .fields(outputFields)
                 .build();
@@ -245,8 +246,8 @@ public class OperationMapper {
                     Map<String, Object> input = (Map<String, Object>) env.getArguments().get("input");
                     env.getArguments().clear();
                     env.getArguments().putAll(input);
-                    if (env.getContext() instanceof GraphQLRuntime.ContextWrapper) {
-                        GraphQLRuntime.ContextWrapper context = env.getContext();
+                    if (env.getContext() instanceof ContextWrapper) {
+                        ContextWrapper context = env.getContext();
                         context.putExtension("clientMutationId", env.getArgument("clientMutationId"));
 //                        if (!(mutation.getType() instanceof GraphQLObjectType)) {
 //                            Object result = mutation.getDataFetcher().get(env);

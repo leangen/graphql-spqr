@@ -4,10 +4,15 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Type;
 
 /**
- * Created by bojan.tomic on 6/6/16.
+ * Thrown from the mapping process when the type of the object to be mapped can not be determined.
+ * Commonly occurs when type information was lost due to type erasure or dynamic proxying.
  */
 public class TypeMappingException extends IllegalArgumentException {
 
+    public TypeMappingException() {
+        super("The provided object is of an unknown type. Provide the type explicitly when registering the bean.");
+    }
+    
     public TypeMappingException(String s) {
         super(s);
     }

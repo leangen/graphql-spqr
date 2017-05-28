@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLMutation;
@@ -85,6 +86,7 @@ public class UserService<T> {
     }
 
     @GraphQLQuery(name = "users")
+    @GraphQLComplexity("2 * childScore")
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public List<User<String>> getUsersByRegDate(@GraphQLArgument(name = "regDate") Optional<Date> date) {
         return getUsersById(1);

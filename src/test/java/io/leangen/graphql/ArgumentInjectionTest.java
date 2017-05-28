@@ -13,7 +13,7 @@ import io.leangen.graphql.annotations.GraphQLRootContext;
 import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.domain.Street;
 
-import static io.leangen.graphql.assertions.QueryResultAssertions.assertValueAtPathEquals;
+import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertTrue;
 
 /**

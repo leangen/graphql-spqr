@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.UUID;
 
+import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
 
@@ -27,6 +28,7 @@ public class User<T> implements Person {
     @GraphQLQuery(name = "regDate", description = "Date of registration")
     public Date registrationDate;
 
+    @GraphQLComplexity("2 * childScore")
     @GraphQLQuery(name = "addresses", description = "A person's address")
     public Collection<Address> addresses;
 
@@ -53,6 +55,7 @@ public class User<T> implements Person {
         return registrationDate;
     }
 
+    @GraphQLComplexity("2 * childScore")
     public Collection<Address> getAddresses() {
         return addresses;
     }

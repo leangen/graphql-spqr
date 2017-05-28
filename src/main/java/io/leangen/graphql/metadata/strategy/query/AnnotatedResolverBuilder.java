@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import graphql.execution.batched.Batched;
+import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.metadata.Resolver;
@@ -43,7 +44,8 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         method.getAnnotation(GraphQLQuery.class).description(),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        argumentExtractor.buildResolverArguments(method, beanType)
+                        argumentExtractor.buildResolverArguments(method, beanType),
+                        method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ));
         Stream<Resolver> fieldAccessors = ClassUtils.getAnnotatedFields(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
                 .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
@@ -52,10 +54,10 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         field.getAnnotation(GraphQLQuery.class).description(),
                         false,
                         new FieldAccessor(field, beanType),
-                        Collections.emptyList()
+                        Collections.emptyList(),
+                        field.isAnnotationPresent(GraphQLComplexity.class) ? field.getAnnotation(GraphQLComplexity.class).value() : null
                 ));
         return Stream.concat(methodInvokers, fieldAccessors).collect(Collectors.toSet());
-
     }
 
     private Collection<Resolver> buildMutationResolvers(Object querySourceBean, AnnotatedType beanType, List<Predicate<Member>> filters) {
@@ -66,7 +68,8 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         method.getAnnotation(GraphQLMutation.class).description(),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        argumentExtractor.buildResolverArguments(method, beanType)
+                        argumentExtractor.buildResolverArguments(method, beanType),
+                        method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 )).collect(Collectors.toSet());
     }
 

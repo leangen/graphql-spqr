@@ -15,6 +15,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
@@ -45,7 +46,19 @@ import static java.util.Arrays.stream;
 
 public class ClassUtils {
 
-    private static Map<Class, List<Class>> implementationCache = new ConcurrentHashMap<>();
+    private static final Map<Class, List<Class>> implementationCache = new ConcurrentHashMap<>();
+    private static final Class<?> javassistProxyClass;
+    private static final String CGLIB_CLASS_SEPARATOR = "$$";
+
+    static {
+        Class<?> proxy;
+        try {
+            proxy = ClassUtils.forName("javassist.util.proxy.ProxyObject");
+        } catch (ClassNotFoundException e) {
+            proxy = null;
+        }
+        javassistProxyClass = proxy;
+    }
 
     /**
      * Retrieves all public methods on the given class (same as {@link Class#getMethods()}) annotated by the given annotation
@@ -420,6 +433,22 @@ public class ClassUtils {
         return classes;
     }
 
+    /**
+     * Attempts to discover if the given class is a dynamically generated proxy class.
+     * Standard Java proxies, cglib and Javassist proxies are detected.
+     * @param clazz The class to test
+     * @return {@code true} if the given class is a known proxy, {@code false} otherwise
+     */
+    public static boolean isProxy(Class<?> clazz) {
+        return Proxy.isProxyClass(clazz)
+                || (javassistProxyClass != null && javassistProxyClass.isAssignableFrom(clazz))
+                || clazz.getName().contains(CGLIB_CLASS_SEPARATOR); //cglib
+    }
+
+    public static Class<?> forName(String className) throws ClassNotFoundException {
+        return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+    }
+
     private static String capitalize(final String str) {
         final char firstChar = str.charAt(0);
         final char newChar = Character.toUpperCase(firstChar);
@@ -436,7 +465,7 @@ public class ClassUtils {
 
     private static Class<?> loadClass(String className) {
         try {
-            return Class.forName(className);
+            return forName(className);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

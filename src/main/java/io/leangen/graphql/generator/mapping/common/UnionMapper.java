@@ -51,7 +51,7 @@ public abstract class UnionMapper implements TypeMapper {
 
         GraphQLUnionType union = new MappedGraphQLUnionType(builder.build(), javaType);
         for (int i = 0; i < possibleJavaTypes.size(); i++) {
-            buildContext.typeRepository.registerCovariantTypes(union.getName(), possibleJavaTypes.get(i), union.getTypes().get(i));
+            buildContext.typeRepository.registerCovariantType(union.getName(), possibleJavaTypes.get(i), union.getTypes().get(i));
         }
         return union;
     }

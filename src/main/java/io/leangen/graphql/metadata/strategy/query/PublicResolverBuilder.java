@@ -11,6 +11,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import graphql.execution.batched.Batched;
+import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.execution.MethodInvoker;
 import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
@@ -52,7 +53,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                         operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        argumentExtractor.buildResolverArguments(method, beanType)
+                        argumentExtractor.buildResolverArguments(method, beanType),
+                        method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ))
                 .collect(Collectors.toList());
     }
@@ -69,7 +71,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        argumentExtractor.buildResolverArguments(method, beanType)
+                        argumentExtractor.buildResolverArguments(method, beanType),
+                        method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ))
                 .collect(Collectors.toList());
     }
