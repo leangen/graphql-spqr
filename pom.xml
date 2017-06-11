@@ -4,7 +4,7 @@
     <groupId>io.leangen.graphql</groupId>
     <artifactId>spqr</artifactId>
     <packaging>jar</packaging>
-    <version>0.8.1-SNAPSHOT</version>
+    <version>0.9.0</version>
 
     <inceptionYear>2016</inceptionYear>
     <name>GraphQL SPQR</name>
@@ -22,7 +22,7 @@
         <connection>scm:git:git://github.com/leangen/GraphQL-SPQR</connection>
         <developerConnection>scm:git:git://github.com/leangen/GraphQL-SPQR</developerConnection>
         <url>https://github.com/leangen/GraphQL-SPQR</url>
-        <tag>HEAD</tag>
+        <tag>graphql-spqr-v0.9.0</tag>
     </scm>
     <distributionManagement>
         <repository>
