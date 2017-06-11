@@ -72,6 +72,6 @@ ExecutionResult result = graphQL.execute(
         regDate
     }}");
 ```
-##Full example
+## Full example
 
 See more complete examples using Spring MVC on [https://github.com/leangen/graphql-spqr-samples](https://github.com/leangen/graphql-spqr-samples)
