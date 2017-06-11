@@ -42,7 +42,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static TypeResolverBuilder<?> typeResolverBuilder;
     private Map<Type, List<NamedType>> typeMap;
 
-    private final Logger log = LoggerFactory.getLogger(AnnotationIntrospector.class);
+    private static final Logger log = LoggerFactory.getLogger(AnnotationIntrospector.class);
 
     static {
         typeResolverBuilder = new StdTypeResolverBuilder()
