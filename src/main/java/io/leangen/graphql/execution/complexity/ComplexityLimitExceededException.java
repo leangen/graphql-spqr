@@ -1,4 +1,4 @@
-package io.leangen.graphql.execution.instrumentation;
+package io.leangen.graphql.execution.complexity;
 
 public class ComplexityLimitExceededException extends RuntimeException {
 

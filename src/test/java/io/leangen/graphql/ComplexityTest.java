@@ -12,7 +12,7 @@ import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.domain.Education;
-import io.leangen.graphql.execution.instrumentation.ComplexityLimitExceededException;
+import io.leangen.graphql.execution.complexity.ComplexityLimitExceededException;
 import io.leangen.graphql.services.UserService;
 
 import static io.leangen.graphql.support.Matchers.complexityScore;

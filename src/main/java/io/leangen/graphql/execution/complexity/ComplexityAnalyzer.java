@@ -1,4 +1,4 @@
-package io.leangen.graphql.execution.instrumentation;
+package io.leangen.graphql.execution.complexity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +45,7 @@ class ComplexityAnalyzer {
     }
 
 
-    QueryTreeNode collectFields(ExecutionContext context) {
+    ResolvedField collectFields(ExecutionContext context) {
         FieldCollectorParameters parameters = FieldCollectorParameters.newParameters(context.getGraphQLSchema(), context.getGraphQLSchema().getQueryType())
                 .fragments(context.getFragmentsByName())
                 .variables(context.getVariables())
@@ -56,7 +56,7 @@ class ComplexityAnalyzer {
         Field field = fields.get(0);
         GraphQLFieldDefinition fieldDefinition = context.getGraphQLSchema().getQueryType().getFieldDefinition(field.getName());
         Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), context.getVariables());
-        return collectFields(parameters, fields.stream().map(f -> new QueryTreeNode(f, fieldDefinition, argumentValues)).collect(Collectors.toList()));
+        return collectFields(parameters, fields.stream().map(f -> new ResolvedField(f, fieldDefinition, argumentValues)).collect(Collectors.toList()));
     }
 
     /**
@@ -67,10 +67,10 @@ class ComplexityAnalyzer {
      *
      * @return a map of the sub field selections
      */
-    private Map<String, QueryTreeNode> collectFields(FieldCollectorParameters parameters, List<Field> fields, GraphQLFieldsContainer parent) {
+    private Map<String, ResolvedField> collectFields(FieldCollectorParameters parameters, List<Field> fields, GraphQLFieldsContainer parent) {
         List<String> visitedFragments = new ArrayList<>();
-        Map<String, List<QueryTreeNode>> unconditionalSubFields = new LinkedHashMap<>();
-        Map<String, Map<String, List<QueryTreeNode>>> conditionalSubFields = new LinkedHashMap<>();
+        Map<String, List<ResolvedField>> unconditionalSubFields = new LinkedHashMap<>();
+        Map<String, Map<String, List<ResolvedField>>> conditionalSubFields = new LinkedHashMap<>();
 
         fields.stream()
                 .filter(field -> field.getSelectionSet() != null)
@@ -80,7 +80,7 @@ class ComplexityAnalyzer {
                 .filter(field -> field.getSelectionSet() != null)
                 .forEach(field ->
                         getConditionalSelections(field.getSelectionSet()).forEach((condition, selections) -> {
-                                    Map<String, List<QueryTreeNode>> subFields = new LinkedHashMap<>();
+                                    Map<String, List<ResolvedField>> subFields = new LinkedHashMap<>();
                                     collectFields(parameters, subFields, selections, visitedFragments, parent);
                                     conditionalSubFields.put(condition, subFields);
                                 }
@@ -89,22 +89,22 @@ class ComplexityAnalyzer {
         if (conditionalSubFields.isEmpty()) {
             return unconditionalSubFields.values().stream()
                     .map(nodes -> collectFields(parameters, nodes))
-                    .collect(Collectors.toMap(QueryTreeNode::getName, Function.identity()));
+                    .collect(Collectors.toMap(ResolvedField::getName, Function.identity()));
         } else {
             return reduceAlternatives(parameters, unconditionalSubFields, conditionalSubFields);
         }
     }
 
-    private QueryTreeNode collectFields(FieldCollectorParameters parameters, List<QueryTreeNode> fields) {
-        QueryTreeNode field = fields.get(0);
+    private ResolvedField collectFields(FieldCollectorParameters parameters, List<ResolvedField> fields) {
+        ResolvedField field = fields.get(0);
         if (!fields.stream().allMatch(f -> f.getFieldType() instanceof GraphQLFieldsContainer)) {
             field.setComplexityScore(complexityFunction.getComplexity(field, 0));
             return field;
         }
-        List<Field> rawFields = fields.stream().map(QueryTreeNode::getField).collect(Collectors.toList());
-        Map<String, QueryTreeNode> children = collectFields(parameters, rawFields, (GraphQLFieldsContainer) field.getFieldType());
-        QueryTreeNode node = new QueryTreeNode(field.getField(), field.getFieldDefinition(), field.getArguments(), children);
-        int childScore = children.values().stream().mapToInt(QueryTreeNode::getComplexityScore).sum();
+        List<Field> rawFields = fields.stream().map(ResolvedField::getField).collect(Collectors.toList());
+        Map<String, ResolvedField> children = collectFields(parameters, rawFields, (GraphQLFieldsContainer) field.getFieldType());
+        ResolvedField node = new ResolvedField(field.getField(), field.getFieldDefinition(), field.getArguments(), children);
+        int childScore = children.values().stream().mapToInt(ResolvedField::getComplexityScore).sum();
         int complexityScore = complexityFunction.getComplexity(node, childScore);
         if (complexityScore > maximumComplexity) {
             throw new ComplexityLimitExceededException(complexityScore, maximumComplexity);
@@ -113,7 +113,7 @@ class ComplexityAnalyzer {
         return node;
     }
 
-    private void collectFields(FieldCollectorParameters parameters, Map<String, List<QueryTreeNode>> fields, List<Selection> selectionSet, List<String> visitedFragments, GraphQLFieldsContainer parent) {
+    private void collectFields(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, List<Selection> selectionSet, List<String> visitedFragments, GraphQLFieldsContainer parent) {
 
         for (Selection selection : selectionSet) {
             if (selection instanceof Field) {
@@ -126,7 +126,7 @@ class ComplexityAnalyzer {
         }
     }
 
-    private void collectFragmentSpread(FieldCollectorParameters parameters, Map<String, List<QueryTreeNode>> fields, List<String> visitedFragments, FragmentSpread fragmentSpread, GraphQLFieldsContainer parent) {
+    private void collectFragmentSpread(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, List<String> visitedFragments, FragmentSpread fragmentSpread, GraphQLFieldsContainer parent) {
         if (visitedFragments.contains(fragmentSpread.getName())) {
             return;
         }
@@ -145,7 +145,7 @@ class ComplexityAnalyzer {
         collectFields(parameters, fields, fragmentDefinition.getSelectionSet().getSelections(), visitedFragments, parent);
     }
 
-    private void collectInlineFragment(FieldCollectorParameters parameters, Map<String, List<QueryTreeNode>> fields, List<String> visitedFragments, InlineFragment inlineFragment, GraphQLFieldsContainer parent) {
+    private void collectInlineFragment(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, List<String> visitedFragments, InlineFragment inlineFragment, GraphQLFieldsContainer parent) {
         if (!conditionalNodes.shouldInclude(parameters.getVariables(), inlineFragment.getDirectives())) {
             return;
         }
@@ -155,35 +155,35 @@ class ComplexityAnalyzer {
         collectFields(parameters, fields, inlineFragment.getSelectionSet().getSelections(), visitedFragments, parent);
     }
 
-    private void collectField(FieldCollectorParameters parameters, Map<String, List<QueryTreeNode>> fields, Field field, GraphQLFieldsContainer parent) {
+    private void collectField(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, Field field, GraphQLFieldsContainer parent) {
         if (!conditionalNodes.shouldInclude(parameters.getVariables(), field.getDirectives())) {
             return;
         }
         GraphQLFieldDefinition fieldDefinition = parent.getFieldDefinition(field.getName());
         Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), parameters.getVariables());
-        QueryTreeNode node = new QueryTreeNode(field, fieldDefinition, argumentValues);
+        ResolvedField node = new ResolvedField(field, fieldDefinition, argumentValues);
         fields.putIfAbsent(node.getName(), new ArrayList<>());
         fields.get(node.getName()).add(node);
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected Map<String, QueryTreeNode> reduceAlternatives(FieldCollectorParameters parameters,
-                                                            Map<String, List<QueryTreeNode>> unconditionalSubFields,
-                                                            Map<String, Map<String, List<QueryTreeNode>>> conditionalSubFields) {
-        Map<String, QueryTreeNode> reduced = null;
-        for (Map.Entry<String, Map<String, List<QueryTreeNode>>> conditional : conditionalSubFields.entrySet()) {
-            Map<String, List<QueryTreeNode>> merged = new HashMap<>(conditional.getValue());
-            for (Map.Entry<String, List<QueryTreeNode>> unconditional : unconditionalSubFields.entrySet()) {
+    protected Map<String, ResolvedField> reduceAlternatives(FieldCollectorParameters parameters,
+                                                            Map<String, List<ResolvedField>> unconditionalSubFields,
+                                                            Map<String, Map<String, List<ResolvedField>>> conditionalSubFields) {
+        Map<String, ResolvedField> reduced = null;
+        for (Map.Entry<String, Map<String, List<ResolvedField>>> conditional : conditionalSubFields.entrySet()) {
+            Map<String, List<ResolvedField>> merged = new HashMap<>(conditional.getValue());
+            for (Map.Entry<String, List<ResolvedField>> unconditional : unconditionalSubFields.entrySet()) {
                 merged.merge(unconditional.getKey(), unconditional.getValue(), (condNodes, uncondNodes) -> Stream.concat(condNodes.stream(), uncondNodes.stream()).collect(Collectors.toList()));
             }
-            Map<String, QueryTreeNode> flat = merged.values().stream()
+            Map<String, ResolvedField> flat = merged.values().stream()
                     .map(nodes -> collectFields(parameters, nodes))
-                    .collect(Collectors.toMap(QueryTreeNode::getName, Function.identity()));
+                    .collect(Collectors.toMap(ResolvedField::getName, Function.identity()));
             if (reduced == null) {
                 reduced = flat;
             } else {
-                int currentScore = flat.values().stream().mapToInt(QueryTreeNode::getComplexityScore).sum();
-                int maxScore = reduced.values().stream().mapToInt(QueryTreeNode::getComplexityScore).sum();
+                int currentScore = flat.values().stream().mapToInt(ResolvedField::getComplexityScore).sum();
+                int maxScore = reduced.values().stream().mapToInt(ResolvedField::getComplexityScore).sum();
                 if (currentScore > maxScore) {
                     reduced = flat;
                 }

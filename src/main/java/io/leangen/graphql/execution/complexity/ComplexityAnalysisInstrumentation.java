@@ -1,4 +1,4 @@
-package io.leangen.graphql.execution.instrumentation;
+package io.leangen.graphql.execution.complexity;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ public class ComplexityAnalysisInstrumentation implements Instrumentation {
 
     @Override
     public InstrumentationContext<ExecutionResult> beginDataFetch(DataFetchParameters parameters) {
-        QueryTreeNode root = new ComplexityAnalyzer(complexityFunction, maximumComplexity).collectFields(parameters.getExecutionContext());
+        ResolvedField root = new ComplexityAnalyzer(complexityFunction, maximumComplexity).collectFields(parameters.getExecutionContext());
         if (log.isDebugEnabled()) {
             log.debug("Operation {} has total complexity of {}",
                     AstPrinter.printAst(parameters.getExecutionContext().getOperationDefinition().getSelectionSet().getSelections().get(0)),

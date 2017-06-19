@@ -1,4 +1,4 @@
-package io.leangen.graphql.execution.instrumentation;
+package io.leangen.graphql.execution.complexity;
 
 import java.util.Collections;
 import java.util.Map;
@@ -11,30 +11,30 @@ import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.util.GraphQLUtils;
 
-public class QueryTreeNode {
+public class ResolvedField {
 
     private final String name;
     private final Field field;
     private final GraphQLFieldDefinition fieldDefinition;
+    private final GraphQLOutputType fieldType;
     private final Map<String, Object> arguments;
     private final Resolver resolver;
-    private final GraphQLOutputType fieldType;
 
-    private Map<String, QueryTreeNode> children;
+    private Map<String, ResolvedField> children;
     private int complexityScore;
 
-    public QueryTreeNode(Field field, GraphQLFieldDefinition fieldDefinition, Map<String, Object> arguments) {
+    public ResolvedField(Field field, GraphQLFieldDefinition fieldDefinition, Map<String, Object> arguments) {
         this(field, fieldDefinition, arguments, Collections.emptyMap());
     }
     
-    public QueryTreeNode(Field field, GraphQLFieldDefinition fieldDefinition, Map<String, Object> arguments, Map<String, QueryTreeNode> children) {
+    public ResolvedField(Field field, GraphQLFieldDefinition fieldDefinition, Map<String, Object> arguments, Map<String, ResolvedField> children) {
         this.name = field.getAlias() != null ? field.getAlias() : field.getName();
         this.field = field;
         this.fieldDefinition = fieldDefinition;
+        this.fieldType = (GraphQLOutputType) GraphQLUtils.unwrap(fieldDefinition.getType());
         this.arguments = arguments;
         this.children = children;
         this.resolver = findResolver(fieldDefinition, arguments);
-        this.fieldType = (GraphQLOutputType) GraphQLUtils.unwrap(fieldDefinition.getType());
     }
     
     private Resolver findResolver(GraphQLFieldDefinition fieldDefinition, Map<String, Object> arguments) {
@@ -66,16 +66,16 @@ public class QueryTreeNode {
         return fieldDefinition;
     }
 
+    public GraphQLOutputType getFieldType() {
+        return fieldType;
+    }
+    
     public Map<String, Object> getArguments() {
         return arguments;
     }
 
-    public Map<String, QueryTreeNode> getChildren() {
+    public Map<String, ResolvedField> getChildren() {
         return children;
-    }
-
-    public void setChildren(Map<String, QueryTreeNode> children) {
-        this.children = children;
     }
 
     public int getComplexityScore() {
@@ -88,10 +88,6 @@ public class QueryTreeNode {
 
     public Resolver getResolver() {
         return resolver;
-    }
-
-    public GraphQLOutputType getFieldType() {
-        return fieldType;
     }
 
     @Override

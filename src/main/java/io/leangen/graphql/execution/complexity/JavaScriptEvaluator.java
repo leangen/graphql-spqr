@@ -1,4 +1,4 @@
-package io.leangen.graphql.execution.instrumentation;
+package io.leangen.graphql.execution.complexity;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
@@ -20,7 +20,7 @@ public class JavaScriptEvaluator implements ComplexityFunction {
     }
 
     @Override
-    public int getComplexity(QueryTreeNode node, int childScore) {
+    public int getComplexity(ResolvedField node, int childScore) {
         String expression = node.getResolver().getComplexityExpression();
         if (expression == null) {
             GraphQLType fieldType = GraphQLUtils.unwrap(node.getFieldDefinition().getType());

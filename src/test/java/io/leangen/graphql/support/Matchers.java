@@ -3,7 +3,7 @@ package io.leangen.graphql.support;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 
-import io.leangen.graphql.execution.instrumentation.ComplexityLimitExceededException;
+import io.leangen.graphql.execution.complexity.ComplexityLimitExceededException;
 
 public class Matchers {
     

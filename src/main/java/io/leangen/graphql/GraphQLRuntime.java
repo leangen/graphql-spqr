@@ -19,8 +19,8 @@ import graphql.language.Document;
 import graphql.schema.GraphQLSchema;
 import graphql.validation.ValidationError;
 import io.leangen.graphql.execution.ContextWrapper;
-import io.leangen.graphql.execution.instrumentation.ComplexityAnalysisInstrumentation;
-import io.leangen.graphql.execution.instrumentation.JavaScriptEvaluator;
+import io.leangen.graphql.execution.complexity.ComplexityAnalysisInstrumentation;
+import io.leangen.graphql.execution.complexity.JavaScriptEvaluator;
 
 /**
  * Wrapper around GraphQL that allows instrumentation chaining and limiting query complexity
@@ -49,7 +49,7 @@ public class GraphQLRuntime extends GraphQL {
         private GraphQLSchema graphQLSchema;
         private List<Instrumentation> instrumentations;
 
-        public Builder(GraphQLSchema graphQLSchema) {
+        private Builder(GraphQLSchema graphQLSchema) {
             super(graphQLSchema);
             this.graphQLSchema = graphQLSchema;
             this.instrumentations = new ArrayList<>();
