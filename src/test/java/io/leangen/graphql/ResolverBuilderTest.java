@@ -31,7 +31,7 @@ public class ResolverBuilderTest {
 
     @Test
     public void impreciseBeanTypeTest() {
-        GraphQLSchema schema = new GraphQLSchemaGenerator()
+        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
                 .withResolverBuilders(new PublicResolverBuilder("io.leangen").withOperationNameGenerator(new OperationNameGenerator() {
                     @Override
                     public String generateQueryName(Method queryMethod, AnnotatedType declaringType, Object instance) {

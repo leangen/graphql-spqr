@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -13,6 +14,8 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
+import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.User;
 import io.leangen.graphql.execution.relay.Page;
@@ -60,6 +63,15 @@ public class RelayTest {
             "       value" +
             "}}}";
 
+    private static final String simplePagedQueryTemplate = "{#query(first:10, after:\"20\") {" +
+            "   pageInfo {" +
+            "       hasNextPage" +
+            "   }," +
+            "   edges {" +
+            "       cursor, node {" +
+            "           title" +
+            "}}}}";
+    
     @Test
     public void testOffsetBasedPageCreation() {
         List<User<String>> users = new UserService<String>().getUsersById(1);
@@ -106,6 +118,53 @@ public class RelayTest {
                 .thenApply(v -> futures.stream()
                         .map(CompletableFuture::join)
                         .collect(Collectors.toList()));
-        System.out.println(result.get().stream().mapToLong(t -> t).sum()/1000d);
+        assertTrue(result.get().stream().mapToLong(t -> t).sum()/1000d < 5);
+    }
+
+    @Test
+    public void testSimplePagedQuery() {
+        testPagedQuery("books");
+    }
+
+    @Test
+    public void testEmptyPagedQuery() {
+        testPagedQuery("empty");
+    }
+
+    private void testPagedQuery(String query) {
+        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+                .withOperationsFromSingleton(new BookService())
+                .generate();
+        GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
+
+        ExecutionResult result = exe.execute(simplePagedQueryTemplate.replace("#query", query));
+        assertTrue(result.getErrors().isEmpty());
+    }
+
+    public class Book {
+        private String title;
+        private String isbn;
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getIsbn() {
+            return isbn;
+        }
+    }
+
+    public class BookService {
+        @GraphQLQuery(name = "books")
+        public Page<Book> getBooks(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+            List<Book> books = new ArrayList<>();
+            books.add(new Book());
+            return PageFactory.createOffsetBasedPage(books, 100, 10);
+        }
+
+        @GraphQLQuery(name = "empty")
+        public Page<Book> getEmpty(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+            return PageFactory.createOffsetBasedPage(Collections.emptyList(), 100, 10);
+        }
     }
 }

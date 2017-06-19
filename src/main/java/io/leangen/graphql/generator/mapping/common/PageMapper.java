@@ -8,6 +8,7 @@ import java.util.Set;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.generator.BuildContext;
@@ -22,6 +23,11 @@ public class PageMapper implements TypeMapper {
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         AnnotatedType elementType = GenericTypeReflector.getTypeParameter(javaType, Page.class.getTypeParameters()[0]);
+        String connectionName = buildContext.typeInfoGenerator.generateTypeName(elementType) + "Connection";
+        if (buildContext.knownTypes.contains(connectionName)) {
+            return new GraphQLTypeReference(connectionName);
+        }
+        buildContext.knownTypes.add(connectionName);
         GraphQLOutputType type = operationMapper.toGraphQLType(elementType, abstractTypes, buildContext);
         GraphQLObjectType edge = buildContext.relay.edgeType(type.getName(), type, null, Collections.emptyList());
         return buildContext.relay.connectionType(type.getName(), edge, Collections.emptyList());

@@ -37,6 +37,12 @@ public class PageFactory {
     }
 
     public static <N> PageInfo<N> createPageInfo(List<Edge<N>> edges, boolean hasNextPage, boolean hasPreviousPage) {
-        return new GenericPageInfo<>(edges.get(0).getCursor(), edges.get(edges.size() - 1).getCursor(), hasNextPage, hasPreviousPage);
+        String firstCursor = null;
+        String lastCursor = null;
+        if (!edges.isEmpty()) {
+            firstCursor = edges.get(0).getCursor();
+            lastCursor = edges.get(edges.size() - 1).getCursor();
+        }
+        return new GenericPageInfo<>(firstCursor, lastCursor, hasNextPage, hasPreviousPage);
     }
 }
