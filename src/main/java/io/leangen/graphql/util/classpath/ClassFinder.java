@@ -2,6 +2,8 @@ package io.leangen.graphql.util.classpath;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -113,6 +115,8 @@ public class ClassFinder {
             new LinkedHashMap<>();
 
 
+    private static final Logger log = LoggerFactory.getLogger(ClassFinder.class);
+    
     /*----------------------------------------------------------------------*\
                               Public Methods
     \*----------------------------------------------------------------------*/
@@ -224,7 +228,7 @@ public class ClassFinder {
         for (File file : placesToSearch.values()) {
             String name = file.getPath();
 
-            System.out.println("Finding classes in " + name);
+            log.debug("Finding classes in {}", name);
             if (isJar(name))
                 processJar(name, foundClasses);
             else if (isZip(name))
@@ -233,7 +237,7 @@ public class ClassFinder {
                 processDirectory(file, foundClasses);
         }
 
-        System.out.println("Read " + foundClasses.size() + " classes.");
+        log.debug("Read {} classes.", foundClasses.size());
 
         // Next, weed out the ones we don't want.
 
@@ -241,10 +245,10 @@ public class ClassFinder {
         for (ClassInfo classInfo : foundClasses.values()) {
             String className = classInfo.getClassName();
             String locationName = classInfo.getClassLocation().getPath();
-//			System.out.println ("Looking at " + locationName + " (" + className + ")");
+			log.trace("Looking at {} ({})", locationName, className);
 
             if ((filter == null) || (filter.accept(classInfo, this))) {
-                System.out.println("Filter accepted " + className);
+                log.debug("Filter accepted {}", className);
                 result.add(classInfo);
             }
         }
@@ -330,12 +334,12 @@ public class ClassFinder {
             processOpenZip(jar, jarFile,
                     new ClassInfoClassVisitor(foundClasses, jarFile));
         } catch (IOException ex) {
-            System.out.println("Can't open jar file '" + jarName + "'" + ex.getMessage());
+            log.warn("Can't open jar file '{}' : {}", jarName, ex.getMessage());
         } finally {
             try {
                 if (jar != null) jar.close();
             } catch (IOException ex) {
-                System.out.println("Can't close " + jarName + ": " + ex.getMessage());
+                log.warn("Can't close '{}' : {}", jarName, ex.getMessage());
             }
         }
     }
@@ -349,12 +353,12 @@ public class ClassFinder {
             processOpenZip(zip, zipFile,
                     new ClassInfoClassVisitor(foundClasses, zipFile));
         } catch (IOException ex) {
-            System.out.println("Can't open jar file '" + zipName + "'" + ex.getMessage());
+            log.warn("Can't open jar file '{}' : {}", zipName, ex.getMessage());
         } finally {
             try {
                 if (zip != null) zip.close();
             } catch (IOException ex) {
-                System.out.println("Can't close " + zipName + ": " + ex.getMessage());
+                log.warn("Can't close '{}' : {}", zipName, ex.getMessage());
             }
 
         }
@@ -368,13 +372,10 @@ public class ClassFinder {
 
             if (!entry.isDirectory() && entry.getName().toLowerCase().endsWith(".class")) {
                 try {
-                    System.out.println("Reading " + zipName + "(" + entry.getName() +
-                            ")");
+                    log.debug("Reading {} ({})", zipName, entry.getName());
                     readClass(zip.getInputStream(entry), classVisitor);
                 } catch (IOException ex) {
-                    System.out.println("Can't open \"" + entry.getName() +
-                            "\" in zip file \"" + zipName + "\": "
-                            + ex.getMessage());
+                    log.warn("Can't open '{}' in zip file '{}' : {}", entry.getName(), zipName, ex.getMessage());
                 }
             }
         }
@@ -414,7 +415,7 @@ public class ClassFinder {
 
             if (key.toString().equals("Class-Path")) {
                 String jarName = jar.getName();
-                System.out.println("Adding Class-Path from jar " + jarName);
+                log.debug("Adding Class-Path from jar {}", jarName);
 
                 StringBuilder buf = new StringBuilder();
                 StringTokenizer tok = new StringTokenizer(value);
@@ -431,7 +432,7 @@ public class ClassFinder {
                 }
 
                 String element = buf.toString();
-                System.out.println("From " + jarName + ": " + element);
+                log.debug("From {} : {}", jarName, element);
 
                 add(new File(element));
             }
