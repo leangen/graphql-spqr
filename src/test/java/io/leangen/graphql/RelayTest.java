@@ -3,12 +3,8 @@ package io.leangen.graphql;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
@@ -24,7 +20,6 @@ import io.leangen.graphql.services.UserService;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Tests concerning Relay support
@@ -91,34 +86,6 @@ public class RelayTest {
 
         ExecutionResult result = exe.execute(relayMapInputMutation);
         assertTrue(result.getErrors().isEmpty());
-    }
-
-    @Test
-    public void simpleConcurrencyTest() throws InterruptedException, ExecutionException {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
-                .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
-                .withRelayCompliantMutations()
-                .generate();
-
-        List<String> context = Arrays.asList("xxx", "zzz", "yyy");
-        GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
-
-        List<CompletableFuture<Long>> futures = new ArrayList<>(1000);
-        for (int i = 0; i < 1000; i++) {
-            futures.add(CompletableFuture.supplyAsync(() -> {
-                long start = System.currentTimeMillis();
-                ExecutionResult result = exe.execute(relayMapInputMutation, context);
-                if (!result.getErrors().isEmpty()) {
-                    fail("Error during concurrent execution");
-                }
-                return System.currentTimeMillis() - start;
-            }));
-        }
-        CompletableFuture<List<Long>> result = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]))
-                .thenApply(v -> futures.stream()
-                        .map(CompletableFuture::join)
-                        .collect(Collectors.toList()));
-        assertTrue(result.get().stream().mapToLong(t -> t).sum()/1000d < 5);
     }
 
     @Test

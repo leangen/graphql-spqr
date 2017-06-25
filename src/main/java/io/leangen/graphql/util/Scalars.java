@@ -5,13 +5,19 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAccessor;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import graphql.language.ArrayValue;
@@ -91,7 +97,7 @@ public class Scalars {
         }
     });
 
-    public static final GraphQLScalarType GraphQLLocale = new GraphQLScalarType("Locale", "Built-in locale", new Coercing() {
+    public static final GraphQLScalarType GraphQLLocale = new GraphQLScalarType("Locale", "Built-in Locale", new Coercing() {
         @Override
         public Object serialize(Object input) {
             if (input instanceof Locale) {
@@ -115,45 +121,18 @@ public class Scalars {
         }
     });
     
-    public static final GraphQLScalarType GraphQLISODate = new GraphQLScalarType("Date", "Built-in date", new Coercing() {
-        private String toISODateString(Date date) {
-            return date.toInstant().toString();
-        }
+    public static final GraphQLScalarType GraphQLDate = temporalScalar(Date.class, s -> new Date(Instant.parse(s).toEpochMilli()), i -> new Date(i.toEpochMilli()));
 
-        private Date fromISODateString(String isoDateString) {
-            return new Date(Instant.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(isoDateString)).toEpochMilli());
-        }
+    public static final GraphQLScalarType GraphQLInstant = temporalScalar(Instant.class, Instant::parse, Function.identity());
 
-        @Override
-        public Object serialize(Object input) {
-            if (input instanceof Date) {
-                return toISODateString(((Date) input));
-            } else if (input instanceof Long) {
-                return toISODateString(new Date((Long) input));
-            } else if (input instanceof String) {
-                return input;
-            } else {
-                return null;
-            }
-        }
-
-        @Override
-        public Object parseValue(Object input) {
-            return serialize(input);
-        }
-
-        @Override
-        public Object parseLiteral(Object input) {
-            if (input instanceof StringValue) {
-                return fromISODateString(((StringValue) input).getValue());
-            } else if (input instanceof IntValue) {
-                return new Date(((IntValue) input).getValue().longValue());
-            } else {
-                return null;
-            }
-        }
-    });
-
+    public static final GraphQLScalarType GraphQLLocalDate = temporalScalar(LocalDate.class, LocalDate::parse, i -> i.atZone(ZoneOffset.UTC).toLocalDate());
+       
+    public static final GraphQLScalarType GraphQLLocalTime = temporalScalar(LocalTime.class, LocalTime::parse, i -> i.atZone(ZoneOffset.UTC).toLocalTime());
+    
+    public static final GraphQLScalarType GraphQLLocalDateTime = temporalScalar(LocalDateTime.class, LocalDateTime::parse, i -> i.atZone(ZoneOffset.UTC).toLocalDateTime());
+    
+    public static final GraphQLScalarType GraphQLZonedDateTime = temporalScalar(ZonedDateTime.class, ZonedDateTime::parse, i -> i.atZone(ZoneOffset.UTC));
+    
     public static GraphQLScalarType graphQLObjectScalar(String name) {
         return new GraphQLScalarType(name, "Built-in object scalar", new Coercing() {
 
@@ -204,6 +183,31 @@ public class Scalars {
         });
     }
 
+    public static <T> GraphQLScalarType temporalScalar(Class<T> type, Function<String, T> fromString, Function<Instant, T> fromDate) {
+        return new GraphQLScalarType(type.getSimpleName(), "Built-in " + type.getSimpleName(), new Coercing() {
+            @Override
+            public String serialize(Object input) {
+                return input instanceof TemporalAccessor ? input.toString() : ((Date) input).toInstant().toString();
+            }
+
+            @Override
+            public Object parseValue(Object input) {
+                return serialize(input);
+            }
+
+            @Override
+            public T parseLiteral(Object input) {
+                if (input instanceof StringValue) {
+                    return fromString.apply(((StringValue) input).getValue());
+                } else if (input instanceof IntValue) {
+                    return fromDate.apply(Instant.ofEpochMilli(((IntValue) input).getValue().longValue()));
+                } else {
+                    return null;
+                }
+            }
+        });
+    }
+    
     private static final Map<Type, GraphQLScalarType> SCALAR_MAPPING = getScalarMapping();
 
     public static boolean isScalar(Type javaType) {
@@ -238,7 +242,12 @@ public class Scalars {
         scalarMapping.put(boolean.class, GraphQLBoolean);
         scalarMapping.put(UUID.class, GraphQLUuid);
         scalarMapping.put(URI.class, GraphQLUri);
-        scalarMapping.put(Date.class, GraphQLISODate);
+        scalarMapping.put(Date.class, GraphQLDate);
+        scalarMapping.put(Instant.class, GraphQLInstant);
+        scalarMapping.put(LocalDate.class, GraphQLLocalDate);
+        scalarMapping.put(LocalTime.class, GraphQLLocalTime);
+        scalarMapping.put(LocalDateTime.class, GraphQLLocalDateTime);
+        scalarMapping.put(ZonedDateTime.class, GraphQLZonedDateTime);
         scalarMapping.put(Locale.class, GraphQLLocale);
         return Collections.unmodifiableMap(scalarMapping);
     }

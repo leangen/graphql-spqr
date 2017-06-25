@@ -26,6 +26,7 @@ public class ResolutionEnvironment {
     public final GraphQLOutputType fieldType;
     public final GraphQLType parentType;
     public final GraphQLSchema graphQLSchema;
+    public final DataFetchingEnvironment dataFetchingEnvironment;
 
     public ResolutionEnvironment(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
         
@@ -37,6 +38,7 @@ public class ResolutionEnvironment {
         this.fieldType = env.getFieldType();
         this.parentType = env.getParentType();
         this.graphQLSchema = env.getGraphQLSchema();
+        this.dataFetchingEnvironment = env;
     }
 
     @SuppressWarnings("unchecked")

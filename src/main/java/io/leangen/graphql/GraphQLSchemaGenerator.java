@@ -42,6 +42,9 @@ import io.leangen.graphql.generator.mapping.common.NonNullMapper;
 import io.leangen.graphql.generator.mapping.common.ObjectScalarAdapter;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
+import io.leangen.graphql.generator.mapping.common.OptionalDoubleAdapter;
+import io.leangen.graphql.generator.mapping.common.OptionalIntAdapter;
+import io.leangen.graphql.generator.mapping.common.OptionalLongAdapter;
 import io.leangen.graphql.generator.mapping.common.PageMapper;
 import io.leangen.graphql.generator.mapping.common.RootContextInjector;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
@@ -106,6 +109,7 @@ import static java.util.Collections.addAll;
  *  }
  * </pre>
  */
+@SuppressWarnings("WeakerAccess")
 public class GraphQLSchemaGenerator {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
@@ -623,6 +627,7 @@ public class GraphQLSchemaGenerator {
             ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
             withTypeMappers(
                     new NonNullMapper(), new IdAdapter(), new ScalarMapper(),
+                    new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                     new ObjectScalarAdapter(), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
                     new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(),
                     new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
@@ -632,10 +637,12 @@ public class GraphQLSchemaGenerator {
             withOutputConverters(
                     new IdAdapter(), new ObjectScalarAdapter(), new MapToListTypeAdapter<>(),
                     new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter(),
+                    new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                     new OptionalAdapter(), new StreamToCollectionTypeAdapter());
         }
         if (inputConverters.isEmpty() || this.defaultInputConverters) {
             withInputConverters(
+                    new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                     new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
         }
         if (argumentInjectors.isEmpty() || this.defaultArgumentInjectors) {
