@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -687,16 +688,20 @@ public class GraphQLSchemaGenerator {
                         .name(QUERY_ROOT)
                         .description("Query root type")
                         .fields(operationMapper.getQueries())
-                        .build())
-                .mutation(newObject()
-                        .name(MUTATION_ROOT)
-                        .description("Mutation root type")
-                        .fields(operationMapper.getMutations())
                         .build());
+        
+        List<GraphQLFieldDefinition> mutations = operationMapper.getMutations();
+        if (!mutations.isEmpty()) {
+            builder.mutation(newObject()
+                    .name(MUTATION_ROOT)
+                    .description("Mutation root type")
+                    .fields(mutations)
+                    .build());
+        }
         applyProcessors(builder);
 
         additionalTypes.addAll(buildContext.typeRepository.getDiscoveredTypes());
-        
+
         return builder.build(additionalTypes);
     }
 
