@@ -2,7 +2,6 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -23,7 +22,7 @@ public class EnvironmentInjector implements ArgumentInjector {
     @Override
     public Object getArgumentValue(Object rawInput, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         if (GenericTypeReflector.isSuperType(setOfStrings, type.getType()) && resolutionEnvironment.fieldType instanceof GraphQLObjectType) {
-            return Collections.<String>emptySet();
+            return resolutionEnvironment.dataFetchingEnvironment.getSelectionSet().get().keySet();
         }
         Class raw = GenericTypeReflector.erase(type.getType());
         if (Field.class.equals(raw)) {
