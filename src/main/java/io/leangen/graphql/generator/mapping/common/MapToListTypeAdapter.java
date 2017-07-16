@@ -17,6 +17,7 @@ import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.generator.mapping.strategy.ScalarMappingStrategy;
 
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
@@ -24,10 +25,17 @@ import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
 
 /**
- * Created by bojan.tomic on 9/21/16.
+ * As maps are dynamic structures with no equivalent in GraphQL, they require special treatment.
+ * This adapter turns a map into a list of key-value pairs (instances of {@link MapToListTypeAdapter.MapEntry}).
  */
 public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, List<MapToListTypeAdapter.MapEntry<K,V>>> {
 
+    private final ScalarMappingStrategy scalarStrategy;
+
+    public MapToListTypeAdapter(ScalarMappingStrategy scalarStrategy) {
+        this.scalarStrategy = scalarStrategy;
+    }
+    
     @Override
     public List<MapToListTypeAdapter.MapEntry<K,V>> convertOutput(Map<K, V> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         return original.entrySet().stream()
@@ -61,7 +69,12 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
         return new GraphQLList(
                 mapEntry(
                         operationMapper.toGraphQLInputType(getElementType(javaType, 0), abstractTypes, buildContext),
-                        operationMapper.toGraphQLInputType(getElementType(javaType, 1), abstractTypes, buildContext)));
+                        operationMapper.toGraphQLInputType(getElementType(javaType, 1), abstractTypes, buildContext), buildContext));
+    }
+
+    @Override
+    public boolean supports(AnnotatedType type) {
+        return super.supports(type) && !scalarStrategy.supports(type);
     }
 
     private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType, BuildContext buildContext) {
@@ -87,9 +100,15 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
                 .build();
     }
 
-    private GraphQLInputType mapEntry(GraphQLInputType keyType, GraphQLInputType valueType) {
+    private GraphQLInputType mapEntry(GraphQLInputType keyType, GraphQLInputType valueType, BuildContext buildContext) {
+        String typeName = "mapEntry_" + keyType.getName() + "_" + valueType.getName() + "_input";
+        if (buildContext.knownInputTypes.contains(typeName)) {
+            return new GraphQLTypeReference(typeName);
+        }
+        buildContext.knownInputTypes.add(typeName);
+        
         return newInputObject()
-                .name("mapEntry_" + keyType.getName() + "_" + valueType.getName() + "_input")
+                .name(typeName)
                 .description("Map entry input")
                 .field(newInputObjectField()
                         .name("key")

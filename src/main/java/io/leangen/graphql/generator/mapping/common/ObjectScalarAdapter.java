@@ -9,11 +9,11 @@ import java.util.Set;
 
 import graphql.schema.GraphQLScalarType;
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.generator.mapping.strategy.ScalarMappingStrategy;
 import io.leangen.graphql.util.Scalars;
 
 /**
@@ -21,7 +21,13 @@ import io.leangen.graphql.util.Scalars;
  */
 public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQLScalarType> implements OutputConverter<Object, Map<String, ?>> {
 
-    private final AnnotatedType MAP = GenericTypeReflector.annotate(LinkedHashMap.class);
+    private final ScalarMappingStrategy scalarStrategy;
+    
+    private static final AnnotatedType MAP = GenericTypeReflector.annotate(LinkedHashMap.class);
+
+    public ObjectScalarAdapter(ScalarMappingStrategy scalarStrategy) {
+        this.scalarStrategy = scalarStrategy;
+    }
 
     @Override
     public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
@@ -47,6 +53,6 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return type.isAnnotationPresent(GraphQLScalar.class);
+        return scalarStrategy.supports(type);
     }
 }

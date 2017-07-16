@@ -54,7 +54,9 @@ import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
 import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
 import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
+import io.leangen.graphql.generator.mapping.strategy.DefaultScalarStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
+import io.leangen.graphql.generator.mapping.strategy.ScalarMappingStrategy;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.DefaultOperationBuilder;
@@ -114,6 +116,7 @@ import static java.util.Collections.addAll;
 public class GraphQLSchemaGenerator {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
+    private ScalarMappingStrategy scalarStrategy = new DefaultScalarStrategy();
     private OperationBuilder operationBuilder = new DefaultOperationBuilder();
     private ValueMapperFactory valueMapperFactory;
     private InputFieldDiscoveryStrategy inputFieldStrategy;
@@ -391,6 +394,11 @@ public class GraphQLSchemaGenerator {
         this.interfaceStrategy = interfaceStrategy;
         return this;
     }
+    
+    public GraphQLSchemaGenerator withScalarMappingStrategy(ScalarMappingStrategy scalarStrategy) {
+        this.scalarStrategy = scalarStrategy;
+        return this;
+    }
 
     public GraphQLSchemaGenerator withBasePackage(String basePackage) {
         this.basePackage = basePackage;
@@ -629,14 +637,14 @@ public class GraphQLSchemaGenerator {
             withTypeMappers(
                     new NonNullMapper(), new IdAdapter(), new ScalarMapper(),
                     new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                    new ObjectScalarAdapter(), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
-                    new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(),
+                    new ObjectScalarAdapter(scalarStrategy), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
+                    new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(scalarStrategy),
                     new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
                     new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         }
         if (outputConverters.isEmpty() || this.defaultOutputConverters) {
             withOutputConverters(
-                    new IdAdapter(), new ObjectScalarAdapter(), new MapToListTypeAdapter<>(),
+                    new IdAdapter(), new ObjectScalarAdapter(scalarStrategy), new MapToListTypeAdapter<>(scalarStrategy),
                     new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter(),
                     new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                     new OptionalAdapter(), new StreamToCollectionTypeAdapter());
@@ -644,7 +652,7 @@ public class GraphQLSchemaGenerator {
         if (inputConverters.isEmpty() || this.defaultInputConverters) {
             withInputConverters(
                     new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                    new MapToListTypeAdapter<>(), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+                    new MapToListTypeAdapter<>(scalarStrategy), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
         }
         if (argumentInjectors.isEmpty() || this.defaultArgumentInjectors) {
             withArgumentInjectors(

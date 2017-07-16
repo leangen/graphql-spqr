@@ -24,7 +24,7 @@ public class StreamToCollectionTypeAdapter extends AbstractTypeAdapter<Stream<?>
 
     @Override
     public Stream<?> convertInput(List<?> substitute, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        return substitute.stream().map(item -> resolutionEnvironment.convertInput(item, getElementType(type), resolutionEnvironment));
+        return substitute.stream().map(item -> resolutionEnvironment.convertInput(item, getElementType(type)));
     }
 
     @Override

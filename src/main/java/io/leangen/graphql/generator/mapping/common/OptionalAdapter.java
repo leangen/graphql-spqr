@@ -6,6 +6,7 @@ import java.util.Optional;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.util.ClassUtils;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -19,11 +20,12 @@ public class OptionalAdapter extends AbstractTypeAdapter<Optional<?>, Object> {
 
     @Override
     public Optional<?> convertInput(Object substitute, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        return Optional.ofNullable(resolutionEnvironment.convertInput(substitute, getSubstituteType(type), resolutionEnvironment));
+        return Optional.ofNullable(resolutionEnvironment.convertInput(substitute, getSubstituteType(type)));
     }
 
     @Override
     public AnnotatedType getSubstituteType(AnnotatedType original) {
-        return GenericTypeReflector.getTypeParameter(original, Optional.class.getTypeParameters()[0]);
+        AnnotatedType innerType = GenericTypeReflector.getTypeParameter(original, Optional.class.getTypeParameters()[0]);
+        return ClassUtils.addAnnotations(innerType, original.getAnnotations());
     }
 }

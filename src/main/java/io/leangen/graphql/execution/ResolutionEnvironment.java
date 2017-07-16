@@ -51,17 +51,17 @@ public class ResolutionEnvironment {
     }
 
     @SuppressWarnings("unchecked")
-    public Object convertInput(Object input, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+    public Object convertInput(Object input, AnnotatedType type) {
         if (input == null) {
             return null;
         }
         InputConverter inputConverter = this.globalEnvironment.converters.getInputConverter(type);
-        return inputConverter == null ? input : inputConverter.convertInput(input, type, resolutionEnvironment);
+        return inputConverter == null ? input : inputConverter.convertInput(input, type, this);
     }
 
     public Object getInputValue(Object input, AnnotatedType type) {
         Object in = this.globalEnvironment.injectors.getInjector(type).getArgumentValue(input, type, this);
-        return convertInput(in, type, this);
+        return convertInput(in, type);
     }
     
     public AnnotatedType getMappableType(AnnotatedType type) {
