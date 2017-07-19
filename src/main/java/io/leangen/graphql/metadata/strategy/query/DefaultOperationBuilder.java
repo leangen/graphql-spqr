@@ -56,7 +56,10 @@ public class DefaultOperationBuilder implements OperationBuilder {
         }
 
         AnnotatedType mostSpecificSuperType = ClassUtils.getCommonSuperType(returnTypes);
-        if (mostSpecificSuperType.getType() == Object.class || mostSpecificSuperType.getType() == Cloneable.class || mostSpecificSuperType.getType() == Serializable.class) {
+        if (returnTypes.stream().noneMatch(type -> type.getType().equals(Object.class))
+                && (mostSpecificSuperType.getType().equals(Object.class)
+                || mostSpecificSuperType.getType().equals(Cloneable.class)
+                || mostSpecificSuperType.getType().equals(Serializable.class))) {
             throw new IllegalArgumentException("Resolvers for query " + queryName + " do not return compatible types, or the types were lost to erasure");
         }
         Annotation[] aggregatedAnnotations = resolvers.stream()
@@ -98,7 +101,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
     protected boolean isBatched(List<Resolver> resolvers) {
         return resolvers.stream().anyMatch(Resolver::isBatched);
     }
-    
+
     protected AnnotatedType unionize(AnnotatedType[] types) {
         return Union.unionize(types);
     }
