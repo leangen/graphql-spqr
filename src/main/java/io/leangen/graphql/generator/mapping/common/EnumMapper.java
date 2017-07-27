@@ -35,13 +35,23 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
         return enumBuilder.build();
     }
 
+    private void addOptions(GraphQLEnumType.Builder enumBuilder, Class<?> enumClass) {
+        Arrays.stream(enumClass.getEnumConstants()).forEach(
+                enumConst -> enumBuilder.value(((Enum) enumConst).name(), enumConst));
+    }
+
     @Override
     public boolean supports(AnnotatedType type) {
         return ClassUtils.getRawType(type.getType()).isEnum();
     }
 
-    private void addOptions(GraphQLEnumType.Builder enumBuilder, Class<?> enumClass) {
-        Arrays.stream(enumClass.getEnumConstants()).forEach(
-                enumConst -> enumBuilder.value(((Enum) enumConst).name(), enumConst));
+    @Override
+    protected String getTypeName(AnnotatedType type, BuildContext buildContext) {
+        return buildContext.typeInfoGenerator.generateTypeName(type);
+    }
+
+    @Override
+    protected String getInputTypeName(AnnotatedType type, BuildContext buildContext) {
+        return buildContext.typeInfoGenerator.generateInputTypeName(type);
     }
 }
