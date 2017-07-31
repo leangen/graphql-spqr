@@ -39,6 +39,6 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
     }
     
     protected List<Predicate<Member>> getFilters() {
-        return filters.isEmpty() ? Collections.singletonList(acceptAll) : filters;
+        return filters.isEmpty() ? Collections.singletonList(ACCEPT_ALL) : filters;
     }
 }

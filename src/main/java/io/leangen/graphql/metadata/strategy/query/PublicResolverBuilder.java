@@ -44,10 +44,10 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         if (rawType.isArray() || rawType.isPrimitive()) return Collections.emptyList();
         return Arrays.stream(rawType.getMethods())
-                .filter(method -> !method.isBridge() && !method.isSynthetic())
+                .filter(REAL_ONLY)
                 .filter(method -> isPackageAcceptable(method, rawType))
                 .filter(this::isQuery)
-                .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
+                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
                         operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
@@ -63,9 +63,10 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         if (rawType.isArray()|| rawType.isPrimitive()) return Collections.emptyList();
         return Arrays.stream(rawType.getMethods())
+                .filter(REAL_ONLY)
                 .filter(method -> isPackageAcceptable(method, rawType))
                 .filter(this::isMutation)
-                .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
+                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),

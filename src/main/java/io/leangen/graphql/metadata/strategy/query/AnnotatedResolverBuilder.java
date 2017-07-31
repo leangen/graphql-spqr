@@ -38,7 +38,8 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
 
     private Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType, List<Predicate<Member>> filters) {
         Stream<Resolver> methodInvokers = ClassUtils.getAnnotatedMethods(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
-                .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
+                .filter(REAL_ONLY)
+                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLQuery.class).description(),
@@ -48,7 +49,8 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ));
         Stream<Resolver> fieldAccessors = ClassUtils.getAnnotatedFields(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
-                .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
+                .filter(REAL_ONLY)
+                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(field -> new Resolver(
                         operationNameGenerator.generateQueryName(field, beanType, querySourceBean),
                         field.getAnnotation(GraphQLQuery.class).description(),
@@ -62,7 +64,8 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
 
     private Collection<Resolver> buildMutationResolvers(Object querySourceBean, AnnotatedType beanType, List<Predicate<Member>> filters) {
         return ClassUtils.getAnnotatedMethods(ClassUtils.getRawType(beanType.getType()), GraphQLMutation.class).stream()
-                .filter(filters.stream().reduce(Predicate::and).orElse(acceptAll))
+                .filter(REAL_ONLY)
+                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLMutation.class).description(),
