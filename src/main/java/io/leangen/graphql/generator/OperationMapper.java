@@ -31,6 +31,7 @@ import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.ContextWrapper;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
+import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.types.MappedGraphQLFieldDefinition;
 import io.leangen.graphql.metadata.InputField;
@@ -124,11 +125,22 @@ public class OperationMapper {
                 .name(operation.getName())
                 .description(operation.getName())
                 .type(type);
-        operation.getArguments().stream()
+
+        List<GraphQLArgument> arguments = operation.getArguments().stream()
                 .filter(OperationArgument::isMappable)
-                .forEach(argument -> queryBuilder.argument(toGraphQLArgument(argument, abstractTypes, buildContext)));
+                .map(argument -> toGraphQLArgument(argument, abstractTypes, buildContext))
+                .collect(Collectors.toList());
+        queryBuilder.argument(arguments);
         if (type.getName() != null && !type.getName().equals("Connection") && type.getName().endsWith("Connection")) {
-            queryBuilder.argument(buildContext.relay.getConnectionFieldArguments());
+            if (buildContext.relay.getConnectionFieldArguments().stream()
+                    .anyMatch(connArg -> arguments.stream()
+                            .anyMatch(arg -> arg.getName().equals(connArg.getName()) && !arg.getType().getName().equals(connArg.getType().getName())))) {
+                throw new TypeMappingException("Operation \"" + operation.getName() + "\" has arguments of types incompatible with the Relay Connection spec");
+            }
+            //add only the argument that are not explicitly overridden
+            queryBuilder.argument(buildContext.relay.getConnectionFieldArguments().stream()
+                    .filter(connArg -> arguments.stream().noneMatch(arg -> arg.getName().equals(connArg.getName())))
+                    .collect(Collectors.toList()));
         }
         ValueMapper valueMapper = buildContext.valueMapperFactory.getValueMapper(abstractTypes);
         queryBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
@@ -197,7 +209,7 @@ public class OperationMapper {
     }
 
     private GraphQLFieldDefinition toRelayMutation(GraphQLFieldDefinition mutation, RelayMappingConfig relayMappingConfig) {
-        
+
         List<GraphQLFieldDefinition> outputFields;
         if (mutation.getType() instanceof GraphQLObjectType) {
             outputFields = ((GraphQLObjectType) mutation.getType()).getFieldDefinitions();
@@ -272,12 +284,7 @@ public class OperationMapper {
      */
     private DataFetcher createResolver(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
         if (operation.isBatched()) {
-            return new BatchedDataFetcher() {
-                @Override
-                public Object get(DataFetchingEnvironment environment) {
-                    return new OperationExecutor(operation, valueMapper, globalEnvironment).execute(environment);
-                }
-            };
+            return (BatchedDataFetcher) environment -> new OperationExecutor(operation, valueMapper, globalEnvironment).execute(environment);
         }
         return new OperationExecutor(operation, valueMapper, globalEnvironment)::execute;
     }

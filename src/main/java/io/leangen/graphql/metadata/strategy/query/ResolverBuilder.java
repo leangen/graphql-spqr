@@ -10,7 +10,7 @@ import io.leangen.graphql.metadata.Resolver;
 
 public interface ResolverBuilder {
 
-    Predicate<Member> ACCEPT_ALL = method -> true;
+    Predicate<Member> ACCEPT_ALL = member -> true;
     Predicate<Member> REAL_ONLY = member -> (!(member instanceof Method) || !((Method) member).isBridge()) && !member.isSynthetic();
 
     Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType);
