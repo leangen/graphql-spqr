@@ -17,9 +17,11 @@ public class StreamToCollectionTypeAdapter extends AbstractTypeAdapter<Stream<?>
 
     @Override
     public List<?> convertOutput(Stream<?> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        return original
-                .map(item -> resolutionEnvironment.convertOutput(item, getElementType(type)))
-                .collect(Collectors.toList());
+        try (Stream<?> stream = original) {
+            return stream
+                    .map(item -> resolutionEnvironment.convertOutput(item, getElementType(type)))
+                    .collect(Collectors.toList());
+        }
     }
 
     @Override
