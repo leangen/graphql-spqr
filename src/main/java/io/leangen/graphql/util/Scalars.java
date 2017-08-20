@@ -4,13 +4,14 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.TemporalAccessor;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import graphql.GraphQLException;
 import graphql.language.ArrayValue;
 import graphql.language.BooleanValue;
 import graphql.language.EnumValue;
@@ -133,6 +135,12 @@ public class Scalars {
     
     public static final GraphQLScalarType GraphQLZonedDateTime = temporalScalar(ZonedDateTime.class, ZonedDateTime::parse, i -> i.atZone(ZoneOffset.UTC));
     
+    public static final GraphQLScalarType GraphQLDurationScalar = temporalScalar(Duration.class, Duration::parse, instant -> Duration.ofMillis(instant.toEpochMilli()));
+    
+    public static final GraphQLScalarType GraphQLPeriodScalar = temporalScalar(Period.class, Period::parse, instant -> {
+        throw new GraphQLException("Period can not be deserialized from a numeric value");
+    });
+    
     public static GraphQLScalarType graphQLObjectScalar(String name) {
         return new GraphQLScalarType(name, "Built-in object scalar", new Coercing() {
 
@@ -187,7 +195,7 @@ public class Scalars {
         return new GraphQLScalarType(type.getSimpleName(), "Built-in " + type.getSimpleName(), new Coercing() {
             @Override
             public String serialize(Object input) {
-                return input instanceof TemporalAccessor ? input.toString() : ((Date) input).toInstant().toString();
+                return input instanceof Date ? ((Date) input).toInstant().toString() : input.toString();
             }
 
             @Override
@@ -248,6 +256,8 @@ public class Scalars {
         scalarMapping.put(LocalTime.class, GraphQLLocalTime);
         scalarMapping.put(LocalDateTime.class, GraphQLLocalDateTime);
         scalarMapping.put(ZonedDateTime.class, GraphQLZonedDateTime);
+        scalarMapping.put(Duration.class, GraphQLDurationScalar);
+        scalarMapping.put(Period.class, GraphQLPeriodScalar);
         scalarMapping.put(Locale.class, GraphQLLocale);
         return Collections.unmodifiableMap(scalarMapping);
     }

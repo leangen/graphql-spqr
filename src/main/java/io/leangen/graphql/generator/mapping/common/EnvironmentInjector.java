@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Set;
 
 import graphql.language.Field;
-import graphql.schema.GraphQLObjectType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLEnvironment;
@@ -21,7 +20,7 @@ public class EnvironmentInjector implements ArgumentInjector {
     
     @Override
     public Object getArgumentValue(Object rawInput, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        if (GenericTypeReflector.isSuperType(setOfStrings, type.getType()) && resolutionEnvironment.fieldType instanceof GraphQLObjectType) {
+        if (GenericTypeReflector.isSuperType(setOfStrings, type.getType())) {
             return resolutionEnvironment.dataFetchingEnvironment.getSelectionSet().get().keySet();
         }
         Class raw = GenericTypeReflector.erase(type.getType());
@@ -38,7 +37,7 @@ public class EnvironmentInjector implements ArgumentInjector {
             return resolutionEnvironment;
         }
         throw new IllegalArgumentException("Argument of type " + raw.getName() 
-                + " can not be injected via @" + EnvironmentInjector.class.getSimpleName());
+                + " can not be injected via @" + GraphQLEnvironment.class.getSimpleName());
     }
 
     @Override

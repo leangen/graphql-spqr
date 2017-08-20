@@ -23,7 +23,7 @@ public class TypeRepositoryTest {
     
     @Test
     public void referenceReplacementTest() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
                 .generate();
 
@@ -34,11 +34,11 @@ public class TypeRepositoryTest {
 
     @Test
     public void knownTypeTest() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
                 .generate();
 
-        schema = new PreconfiguredSchemaGenerator()
+        schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
                 .withAdditionalTypes(schema.getAllTypesAsList())
                 .generate();

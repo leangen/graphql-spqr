@@ -17,7 +17,7 @@ public class PaginationTest {
 
     @Test
     public void testPaginationArguments() throws NoSuchMethodException {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new PagingService())
                 .generate();
         List<graphql.schema.GraphQLArgument> arguments = schema.getQueryType().getFieldDefinition("streets").getArguments();
@@ -27,11 +27,26 @@ public class PaginationTest {
 
     @Test(expected = TypeMappingException.class)
     public void testInvalidPaginationArguments() throws NoSuchMethodException {
-        new PreconfiguredSchemaGenerator()
+        new TestSchemaGenerator()
                 .withOperationsFromSingleton(new InvalidPagingService())
                 .generate();
     }
 
+    @Test
+    public void testExtraPaginationArguments() throws NoSuchMethodException {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new ExtraArgumentPagingService())
+                .generate();
+        
+        checkExtraArgument(schema.getQueryType().getFieldDefinition("streets").getArguments());
+        checkExtraArgument(schema.getQueryType().getFieldDefinition("moreStreets").getArguments());
+    }
+    
+    private void checkExtraArgument(List<graphql.schema.GraphQLArgument> arguments) {
+        assertEquals(5, arguments.size());
+        assertEquals("extra", arguments.get(0).getName());
+    }
+    
     private static class PagingService {
 
         @GraphQLQuery(name = "streets")
@@ -44,6 +59,19 @@ public class PaginationTest {
 
         @GraphQLQuery(name = "streets")
         public Page<Street> streets(@GraphQLArgument(name = "first") String first) {
+            return null;
+        }
+    }
+
+    private static class ExtraArgumentPagingService {
+
+        @GraphQLQuery(name = "streets")
+        public Page<Street> streets(@GraphQLArgument(name = "extra", defaultValue = "\"extra\"") String extra) {
+            return null;
+        }
+
+        @GraphQLQuery(name = "moreStreets")
+        public Page<Street> streets(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "extra") String extra) {
             return null;
         }
     }

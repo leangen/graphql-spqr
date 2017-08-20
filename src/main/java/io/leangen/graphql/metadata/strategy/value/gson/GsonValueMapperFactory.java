@@ -4,6 +4,8 @@ import com.google.gson.FieldNamingStrategy;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapterFactory;
 
+import net.dongliu.gson.GsonJava8TypeAdapterFactory;
+
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Set;
@@ -57,7 +59,8 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
 
     private GsonBuilder initBuilder(FieldNamingStrategy fieldNamingStrategy, Set<Type> abstractTypes, Configurer configurer) {
         GsonBuilder gsonBuilder = new GsonBuilder()
-                .setFieldNamingStrategy(fieldNamingStrategy);
+                .setFieldNamingStrategy(fieldNamingStrategy)
+                .registerTypeAdapterFactory(new GsonJava8TypeAdapterFactory());
         return configurer.configure(gsonBuilder, abstractTypes, basePackage, this.typeInfoGenerator);
     }
     

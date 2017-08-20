@@ -11,7 +11,6 @@ import java.util.stream.Stream;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.execution.Executable;
-import io.leangen.graphql.util.ClassUtils;
 
 /**
  * Class representing a single method used to resolve a specific query given specific arguments.
@@ -32,8 +31,7 @@ public class Resolver {
     private final Executable executable;
     private final boolean batched;
 
-    public Resolver(String operationName, String operationDescription, boolean batched, Executable executable, List<OperationArgument> arguments, String complexityExpression) {
-        AnnotatedType returnType = ClassUtils.stripBounds(executable.getReturnType());
+    public Resolver(String operationName, String operationDescription, boolean batched, Executable executable, AnnotatedType returnType, List<OperationArgument> arguments, String complexityExpression) {
         Set<OperationArgument> contextArguments = resolveContexts(arguments);
         
         if (batched) {

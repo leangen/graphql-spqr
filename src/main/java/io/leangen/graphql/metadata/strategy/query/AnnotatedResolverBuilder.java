@@ -5,6 +5,7 @@ import java.lang.reflect.Member;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -17,13 +18,17 @@ import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.execution.FieldAccessor;
 import io.leangen.graphql.metadata.execution.MethodInvoker;
 import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 
 public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
 
     public AnnotatedResolverBuilder() {
+        TypeTransformer transformer = new DefaultTypeTransformer(false, false);
+        this.transformer = transformer;
         this.operationNameGenerator = new DelegatingOperationNameGenerator(new AnnotatedOperationNameGenerator(), new MethodOperationNameGenerator());
-        this.argumentExtractor = new AnnotatedArgumentBuilder();
+        this.argumentBuilder = new AnnotatedArgumentBuilder(transformer);
     }
 
     @Override
@@ -45,7 +50,8 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         method.getAnnotation(GraphQLQuery.class).description(),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        argumentExtractor.buildResolverArguments(method, beanType),
+                        getReturnType(method, beanType),
+                        argumentBuilder.buildResolverArguments(method, beanType),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ));
         Stream<Resolver> fieldAccessors = ClassUtils.getAnnotatedFields(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
@@ -56,6 +62,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         field.getAnnotation(GraphQLQuery.class).description(),
                         false,
                         new FieldAccessor(field, beanType),
+                        getFieldType(field, beanType),
                         Collections.emptyList(),
                         field.isAnnotationPresent(GraphQLComplexity.class) ? field.getAnnotation(GraphQLComplexity.class).value() : null
                 ));
@@ -71,14 +78,15 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         method.getAnnotation(GraphQLMutation.class).description(),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        argumentExtractor.buildResolverArguments(method, beanType),
+                        getReturnType(method, beanType),
+                        argumentBuilder.buildResolverArguments(method, beanType),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 )).collect(Collectors.toSet());
     }
 
     @Override
     public int hashCode() {
-        return operationNameGenerator.getClass().hashCode() + argumentExtractor.getClass().hashCode();
+        return Objects.hash(operationNameGenerator.getClass(), argumentBuilder.getClass(), transformer.getClass());
     }
 
     @Override
@@ -86,6 +94,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
         if (!(other instanceof AnnotatedResolverBuilder)) return false;
         AnnotatedResolverBuilder that = (AnnotatedResolverBuilder) other;
         return this.operationNameGenerator.getClass().equals(that.operationNameGenerator.getClass())
-                && this.argumentExtractor.getClass().equals(that.argumentExtractor.getClass());
+                && this.argumentBuilder.getClass().equals(that.argumentBuilder.getClass())
+                && this.transformer.getClass().equals(that.transformer.getClass());
     }
 }

@@ -71,7 +71,7 @@ public class GenericsTest {
         nonNullStringService.addItem("pooch", "Strudel, the poodle");
         nonNullStringService.addItem("booze", "Fire-water");
 
-        GraphQLSchema schemaWithNonNullGenerics = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schemaWithNonNullGenerics = new TestSchemaGenerator()
                 .withOperationsFromSingleton(nonNullStringService, nonNullString)
                 .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
@@ -107,7 +107,7 @@ public class GenericsTest {
         dateIdService.addItem("firstEvent", firstEvent);
         dateIdService.addItem("secondEvent", secondEvent);
 
-        GraphQLSchema schemaWithDateIds = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schemaWithDateIds = new TestSchemaGenerator()
                 .withOperationsFromSingleton(dateIdService, dateId)
                 .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
@@ -143,7 +143,7 @@ public class GenericsTest {
         wildcardNumberService.addItem("player1", Arrays.asList(12, 13.4, new BigDecimal("4000")));
         wildcardNumberService.addItem("player2", Arrays.asList(new BigDecimal("12.56"), 14.78));
 
-        GraphQLSchema schemaWithGenerics = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schemaWithGenerics = new TestSchemaGenerator()
                 .withOperationsFromSingleton(wildcardNumberService, listOfWildcardNumbers)
                 .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()
@@ -180,7 +180,7 @@ public class GenericsTest {
         arrayNumberService.addItem("scores1", array1);
         arrayNumberService.addItem("scores2", array2);
 
-        GraphQLSchema schemaWithGenerics = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schemaWithGenerics = new TestSchemaGenerator()
                 .withOperationsFromSingleton(arrayNumberService, arrayOfListsOfNumbers)
                 .withValueMapperFactory(valueMapperFactory)
                 .withDefaults()

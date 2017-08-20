@@ -28,7 +28,7 @@ public class BatchingTest {
     @Test
     @SuppressWarnings("unchecked")
     public void batchingTest() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new CandidatesService())
                 .generate();
 

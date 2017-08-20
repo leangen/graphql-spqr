@@ -44,7 +44,7 @@ public class ImplementationAutoDiscoveryTest {
     }
     
     private GraphQLSchema schemaFor(Object service) {
-        return new PreconfiguredSchemaGenerator()
+        return new TestSchemaGenerator()
                 .withOperationsFromSingleton(service)
                 .generate();
     }

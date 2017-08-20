@@ -60,7 +60,9 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
         @Override
         public ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, String basePackage, TypeInfoGenerator metaDataGen) {
-            return objectMapper.setAnnotationIntrospector(new AnnotationIntrospector(collectSubtypes(abstractTypes, basePackage, metaDataGen)));
+            return objectMapper
+                    .findAndRegisterModules()
+                    .setAnnotationIntrospector(new AnnotationIntrospector(collectSubtypes(abstractTypes, basePackage, metaDataGen)));
         }
 
         private Map<Type, List<NamedType>> collectSubtypes(Set<Type> abstractTypes, String basePackage, TypeInfoGenerator metaDataGen) {

@@ -117,7 +117,7 @@ public class GraphQLSchemaGenerator {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
     private ScalarMappingStrategy scalarStrategy = new DefaultScalarStrategy();
-    private OperationBuilder operationBuilder = new DefaultOperationBuilder();
+    private OperationBuilder operationBuilder = new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.NONE);
     private ValueMapperFactory valueMapperFactory;
     private InputFieldDiscoveryStrategy inputFieldStrategy;
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
@@ -509,6 +509,11 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withOperationBuilder(OperationBuilder operationBuilder) {
+        this.operationBuilder = operationBuilder;
+        return this;
+    }
+    
     /**
      * Sets a flag that all mutations should be mapped in a Relay-compliant way,
      * using the default name and description for output wrapper fields.
@@ -624,7 +629,7 @@ public class GraphQLSchemaGenerator {
      */
     private void init() {
         if (operationSourceRepository.isEmpty()) {
-            throw new IllegalStateException("At least one top-level query source must be registered");
+            throw new IllegalStateException("At least one top-level operation source must be registered");
         }
         if (!operationSourceRepository.hasGlobalResolverBuilders() || this.defaultResolverBuilders) {
             withResolverBuilders(new AnnotatedResolverBuilder());

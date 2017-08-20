@@ -15,6 +15,8 @@ import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.execution.MethodInvoker;
 import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
@@ -25,9 +27,11 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
 
     @SuppressWarnings("WeakerAccess")
     public PublicResolverBuilder(String basePackage) {
+        TypeTransformer transformer = new DefaultTypeTransformer(false, false);
         this.basePackage = basePackage;
+        this.transformer = transformer;
         this.operationNameGenerator = new MethodOperationNameGenerator();
-        this.argumentExtractor = new AnnotatedArgumentBuilder();
+        this.argumentBuilder = new AnnotatedArgumentBuilder(transformer);
     }
 
     @Override
@@ -53,7 +57,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                         operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        argumentExtractor.buildResolverArguments(method, beanType),
+                        getReturnType(method, beanType),
+                        argumentBuilder.buildResolverArguments(method, beanType),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ))
                 .collect(Collectors.toList());
@@ -72,7 +77,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        argumentExtractor.buildResolverArguments(method, beanType),
+                        getReturnType(method, beanType),
+                        argumentBuilder.buildResolverArguments(method, beanType),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ))
                 .collect(Collectors.toList());

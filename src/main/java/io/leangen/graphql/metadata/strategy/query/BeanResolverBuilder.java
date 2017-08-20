@@ -12,7 +12,6 @@ public class BeanResolverBuilder extends PublicResolverBuilder {
     public BeanResolverBuilder(String basePackage) {
         super(basePackage);
         this.operationNameGenerator = new BeanOperationNameGenerator();
-        this.argumentExtractor = new AnnotatedArgumentBuilder();
     }
 
     @Override

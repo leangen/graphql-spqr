@@ -12,20 +12,32 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 
 public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
 
+    private final TypeTransformer transformer;
+
+    public AnnotatedArgumentBuilder(TypeTransformer transformer) {
+        this.transformer = transformer;
+    }
+    
     @Override
-    public List<OperationArgument> buildResolverArguments(Method resolverMethod, AnnotatedType enclosingType) {
+    public List<OperationArgument> buildResolverArguments(Method resolverMethod, AnnotatedType declaringType) {
         List<OperationArgument> operationArguments = new ArrayList<>(resolverMethod.getParameterCount());
-        AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, enclosingType);
+        AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, declaringType);
         for (int i = 0; i < resolverMethod.getParameterCount(); i++) {
             Parameter parameter = resolverMethod.getParameters()[i];
-            ClassUtils.checkIfResolvable(parameterTypes[i], resolverMethod); //checks if the type is resolvable
-            AnnotatedType parameterType = ClassUtils.stripBounds(parameterTypes[i]);
+            AnnotatedType parameterType;
+            try {
+                parameterType = transformer.transform(parameterTypes[i]);
+            } catch (TypeMappingException e) {
+                throw new TypeMappingException(resolverMethod, parameter, e);
+            }
             parameterType = ClassUtils.addAnnotations(parameterType, parameter.getAnnotations());
             operationArguments.add(new OperationArgument(
                     parameterType,

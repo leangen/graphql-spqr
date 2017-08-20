@@ -29,7 +29,7 @@ public class TypeResolverTest {
 
     @Test
     public void testTypeResolver() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new RepoService())
                 .generate();
 
@@ -48,7 +48,7 @@ public class TypeResolverTest {
         assertTrue(result.getErrors().isEmpty());
         assertValueAtPathEquals("Alma Mater", result, "repo.0.0.school.schoolName");
     }
-
+    
     public static class RepoService {
 
         @GraphQLQuery(name = "repo")
@@ -59,15 +59,6 @@ public class TypeResolverTest {
                 return Collections.singletonList(Stream.of(new SessionRepo<>(new Education("Alma Mater", 1600, 1604))));
             }
         }
-
-//    @GraphQLQuery(name = "repo")
-//    public Map<GenericRepo, GenericRepo> getRepo(@GraphQLArgument(name = "id") int id) {
-//        if (id % 2 == 0) {
-//            return Collections.singletonMap(new SessionRepo<>(new Street("juuu", 1)), new SessionRepo<>(new Street("juuu", 1)));
-//        } else {
-//            return Collections.singletonMap(new SessionRepo<>(new Education("alma mater", 1600, 1604)), new SessionRepo<>(new Education("alma mater", 1600, 1604)));
-//        }
-//    }
 
         @GraphQLQuery(name = "repo1")
         public SessionRepo<Street> repo1() {

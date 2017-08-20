@@ -4,21 +4,23 @@ import com.google.gson.FieldNamingStrategy;
 
 import java.lang.reflect.Field;
 
+import io.leangen.graphql.metadata.strategy.query.DefaultOperationBuilder;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 
 /**
- * For testing use only!
- * A schema generator that transparently forces global base package to be "io.leangen".
+ * <b>For testing use only!</b>
+ * A schema generator with default configuration useful for testing.
  */
-public class PreconfiguredSchemaGenerator extends GraphQLSchemaGenerator {
+public class TestSchemaGenerator extends GraphQLSchemaGenerator {
 
     private static final String basePackage = "io.leangen";
 
-    public PreconfiguredSchemaGenerator() {
+    public TestSchemaGenerator() {
         withBasePackage(basePackage);
+        withOperationBuilder(new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.LIMITED));
     }
 
     @Override

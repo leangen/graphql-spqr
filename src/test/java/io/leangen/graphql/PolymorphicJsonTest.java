@@ -30,7 +30,7 @@ public class PolymorphicJsonTest {
     
     @Test
     public void test() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
                 .withOperationsFromSingleton(new Operations())
                 .generate();

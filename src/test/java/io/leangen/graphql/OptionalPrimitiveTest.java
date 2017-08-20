@@ -20,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 
 public class OptionalPrimitiveTest {
 
-    private static final GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+    private static final GraphQLSchema schema = new TestSchemaGenerator()
             .withOperationsFromSingleton(new PrimitiveService()).generate();
     private static final GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
 

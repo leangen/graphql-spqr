@@ -93,7 +93,7 @@ public class SchemaTest {
 
     @Test
     public void testSchema() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .generate();

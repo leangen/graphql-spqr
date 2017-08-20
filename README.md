@@ -47,13 +47,13 @@ public class Link {
 }
 ```
 
-Both of these blocks contain the exact same information. Worse yet, changing one requires immediate change to the other. This makes refactoring risky and cumbersome. On the other hand, if you’re trying to introduce a GraphQL API into an existing project, writing the schema practically means re-describing the entire existing model. This is both expensive and error-prone, and still suffers from duplication.
+Both of these blocks contain the exact same information. Worse yet, changing one requires an immediate change to the other. This makes refactoring risky and cumbersome. On the other hand, if you’re trying to introduce a GraphQL API into an existing project, writing the schema practically means re-describing the entire existing model. This is both expensive and error-prone, and still suffers from duplication.
 
 Instead, GraphQL SPQR takes the code-first approach, by generating the schema from the existing model. This keeps the schema and the model in sync, easing refactoring. It also works well in projects where GraphQL is introduced on top of an existing codebase.
 
 ## Installation
 
-GraphQL SPQR is deployed to Maven Central.
+GraphQL SPQR is deployed to [Maven Central](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22io.leangen.graphql%22%20AND%20a%3A%22spqr%22).
 
 Maven
 
@@ -137,4 +137,4 @@ _Work in progress_
 
 ## Full example
 
-See more complete examples using Spring MVC at https://github.com/leangen/graphql-spqr-samples
+See more complete examples using Spring Boot at https://github.com/leangen/graphql-spqr-samples

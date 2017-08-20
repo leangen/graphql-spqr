@@ -68,7 +68,7 @@ public class ComplexityTest {
 
     @Test
     public void fragmentComplexityTest() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .generate();
 
@@ -83,7 +83,7 @@ public class ComplexityTest {
     
     @Test
     public void branchingComplexityTest() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new PetService())
                 .generate();
 

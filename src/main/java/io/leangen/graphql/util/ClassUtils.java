@@ -11,7 +11,6 @@ import java.lang.reflect.AnnotatedWildcardType;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -49,6 +48,8 @@ public class ClassUtils {
     private static final Map<Class, List<Class>> implementationCache = new ConcurrentHashMap<>();
     private static final Class<?> javassistProxyClass;
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
+    private static final Set<Class> ROOT_TYPES = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(Object.class, Annotation.class, Cloneable.class, Comparable.class, Serializable.class)));
 
     static {
         Class<?> proxy;
@@ -132,14 +133,6 @@ public class ClassUtils {
         return GenericTypeReflector.getExactFieldType(field, declaringType);
     }
 
-    public static AnnotatedType[] getTypeArguments(AnnotatedType type) {
-        if (type instanceof AnnotatedParameterizedType) {
-            return ((AnnotatedParameterizedType) type).getAnnotatedActualTypeArguments();
-        } else {
-            throw new IllegalArgumentException("Raw parameterized types are not possible to map: " + type.getType().getTypeName());
-        }
-    }
-
     /**
      * Returns the exact annotated parameter types of the executable declared by the given type, with type variables resolved (if possible)
      *
@@ -163,23 +156,6 @@ public class ClassUtils {
                     "methods, or customizing the mapping process.");
         }
         return erased;
-    }
-
-    /**
-     * Check whether the member has resolvable type. A convenience method for easier fail-fast logic.
-     *
-     * @param declaringType The type declaring the member (against which the member's type will be resolved)
-     * @param member        The field of method to be checked
-     */
-    public static void checkIfResolvable(AnnotatedType declaringType, Member member) {
-        try {
-            if (declaringType instanceof AnnotatedParameterizedType) {
-                getTypeArguments(declaringType);
-            }
-            getRawType(declaringType.getType());
-        } catch (IllegalArgumentException e) {
-            throw new TypeMappingException(member, e);
-        }
     }
 
     /**
@@ -344,56 +320,79 @@ public class ClassUtils {
     }
 
     /**
-     * Recursively replaces all bounded types found within the structure of the given {@link AnnotatedType} with their first bound.
-     * I.e.
-     * <ul>
-     *     <li>All {@link AnnotatedWildcardType}s are replaced with their first lower bound if it exists,
-     *     or their first upper bound otherwise. All annotations are preserved.</li>
-     *     <li>All {@link AnnotatedTypeVariable}s are replaced with their first bound. All annotations are preserved.</li>
-     *     <li>Other types are kept as they are.</li>
-     * </ul>
-     *
-     * @param type A potentially bounded type
-     * @return The first bound of bounded types, or the unchanged type itself
-     */
-    public static AnnotatedType stripBounds(AnnotatedType type) {
-        if (type instanceof AnnotatedWildcardType) {
-            AnnotatedWildcardType wildcard = (AnnotatedWildcardType) type;
-            AnnotatedType bound = wildcard.getAnnotatedLowerBounds().length > 0
-                    ? stripBounds(wildcard.getAnnotatedLowerBounds()[0])
-                    : stripBounds(wildcard.getAnnotatedUpperBounds()[0]);
-            return type.getAnnotations().length > 0 ? GenericTypeReflector.replaceAnnotations(bound, getMergedAnnotations(type, bound)) : bound;
-        }
-        if (type instanceof AnnotatedTypeVariable) {
-            AnnotatedType bound = ((AnnotatedTypeVariable) type).getAnnotatedBounds()[0];
-            return type.getAnnotations().length > 0 ? GenericTypeReflector.replaceAnnotations(bound, getMergedAnnotations(type, bound)) : bound;
-        }
-        if (type instanceof AnnotatedParameterizedType) {
-            AnnotatedParameterizedType parameterizedType = (AnnotatedParameterizedType) type;
-            AnnotatedType[] typeArguments = Arrays.stream(parameterizedType.getAnnotatedActualTypeArguments())
-                    .map(ClassUtils::stripBounds)
-                    .toArray(AnnotatedType[]::new);
-            return GenericTypeReflector.replaceParameters(parameterizedType, typeArguments);
-        }
-        if (type instanceof AnnotatedArrayType) {
-            return TypeFactory.arrayOf(stripBounds(((AnnotatedArrayType) type).getAnnotatedGenericComponentType()), type.getAnnotations());
-        }
-        return type;
-    }
-
-    /**
-     * Finds the most specific super type of all given types. Currently broken, so it is expected all provided types are actually the same.
+     * Finds the most specific common super type of all the given types, merging the original annotations at each level.
+     * If no common ancestors are found (except Object) a {@link TypeMappingException} is thrown.
      *
      * @param types Types whose most specific super types is to be found
      * @return The most specific super type
      */
     public static AnnotatedType getCommonSuperType(List<AnnotatedType> types) {
-        if (types.isEmpty()) {
-            throw new IllegalArgumentException("At least one class must be provided");
+        return getCommonSuperType(types, new HashSet<>(), null);
+    }
+
+    /**
+     * Finds the most specific common super type of all the given types, merging the original annotations at each level.
+     * 
+     * <p>If no common ancestors are found (except Object) returns {@code fallback} or throws a
+     * {@link TypeMappingException} if {@code fallback} is {@code null}.</p>
+     *
+     * @param types Types whose most specific super types is to be found
+     * @param fallback The type to return as the result when no common ancestors except Object are found (at any level)
+     * 
+     * @return The most specific super type
+     */
+    public static AnnotatedType getCommonSuperType(List<AnnotatedType> types, AnnotatedType fallback) {
+        return getCommonSuperType(types, new HashSet<>(), fallback);
+    }
+    
+    private static AnnotatedType getCommonSuperType(List<AnnotatedType> types, Set<String> seenTypeCombos, AnnotatedType fallback) {
+        if (types == null || types.isEmpty()) {
+            throw new IllegalArgumentException("At least one type must be provided");
         }
-        if (types.stream().allMatch(type -> GenericTypeReflector.equals(type, types.get(0)))) return types.get(0);
-        List<Class> classes = types.stream().map(AnnotatedType::getType).map(ClassUtils::getRawType).collect(Collectors.toList());
-        return annotate(getCommonSuperTypes(classes).get(0), getMergedAnnotations(types.toArray(new AnnotatedType[types.size()])));
+        if (types.size() == 1) {
+            return types.get(0);
+        }
+        Annotation[] mergedAnnotations = getMergedAnnotations(types.toArray(new AnnotatedType[types.size()]));
+        if (types.stream().map(AnnotatedType::getType).allMatch(type -> type.equals(types.get(0).getType()))) {
+            return GenericTypeReflector.replaceAnnotations(types.get(0), mergedAnnotations);
+        }
+        List<Class<?>> classes = types.stream().map(AnnotatedType::getType).map(ClassUtils::getRawType).collect(Collectors.toList());
+        String typeNames = types.stream().map(type -> type.getType().getTypeName()).sorted().collect(Collectors.joining(","));
+        if (seenTypeCombos.contains(typeNames)) {
+            return fallbackOrException(fallback);
+        }
+        seenTypeCombos.add(typeNames);
+
+        //deal with arrays first as they are special
+        if (types.stream().allMatch(type -> type instanceof AnnotatedArrayType)) {
+            List<AnnotatedType> componentTypes = types.stream()
+                    .map(type -> ((AnnotatedArrayType) type).getAnnotatedGenericComponentType())
+                    .collect(Collectors.toList());
+            AnnotatedType componentType = getCommonSuperType(componentTypes, seenTypeCombos, fallback);
+            return TypeFactory.arrayOf(componentType, mergedAnnotations);
+        }
+
+        Class<?> commonRawSuperType = getCommonSuperTypes(classes).get(0);
+        if (classes.stream().noneMatch(ROOT_TYPES::contains) && ROOT_TYPES.contains(commonRawSuperType)) {
+            return fallbackOrException(fallback);
+        }
+        List<AnnotatedType> normalizedTypes = types.stream()
+                .map(type -> GenericTypeReflector.getExactSuperType(type, commonRawSuperType))
+                .collect(Collectors.toList());
+        if (normalizedTypes.stream().anyMatch(type -> GenericTypeReflector.isMissingTypeParameters(type.getType()))) {
+            throw new TypeMappingException("Automatic type inference failed because some of the types are missing generic type parameter(s).");
+        }
+        if (normalizedTypes.stream().allMatch(type -> type.getType() instanceof Class)) {
+            return annotate(commonRawSuperType, mergedAnnotations);
+        }
+        if (normalizedTypes.stream().allMatch(type -> type instanceof AnnotatedParameterizedType)) {
+            AnnotatedType[] parameters = Arrays.stream(commonRawSuperType.getTypeParameters())
+                    .map(param -> normalizedTypes.stream().map(type -> GenericTypeReflector.getTypeParameter(type, param)).collect(Collectors.toList()))
+                    .map(paramTypes -> getCommonSuperType(paramTypes, seenTypeCombos, fallback))
+                    .toArray(AnnotatedType[]::new);
+            return TypeFactory.parameterizedAnnotatedClass(commonRawSuperType, mergedAnnotations, parameters);
+        }
+        return fallbackOrException(fallback);
     }
 
     /**
@@ -401,13 +400,16 @@ public class ClassUtils {
      * @return The most specific super type
      * @see ClassUtils#getCommonSuperType(List)
      */
-    public static List<Class<?>> getCommonSuperTypes(List<Class> classes) {
+    public static List<Class<?>> getCommonSuperTypes(List<Class<?>> classes) {
         // start off with set from first hierarchy
         Set<Class<?>> rollingIntersect = new LinkedHashSet<>(
                 getSuperTypes(classes.get(0)));
         // intersect with next
         for (int i = 1; i < classes.size(); i++) {
             rollingIntersect.retainAll(getSuperTypes(classes.get(i)));
+        }
+        if (rollingIntersect.isEmpty()) {
+            return Collections.singletonList(Object.class);
         }
         List<Class<?>> result = new LinkedList<>(rollingIntersect);
         result.sort(new TypeComparator());
@@ -433,6 +435,13 @@ public class ClassUtils {
         return classes;
     }
 
+    private static AnnotatedType fallbackOrException(AnnotatedType fallback) {
+        if (fallback != null) {
+            return fallback;
+        }
+        throw new TypeMappingException("Automatic type inference failed because some of the types had no common ancestors except for Object class");
+    }
+    
     /**
      * Attempts to discover if the given class is a dynamically generated proxy class.
      * Standard Java proxies, cglib and Javassist proxies are detected.

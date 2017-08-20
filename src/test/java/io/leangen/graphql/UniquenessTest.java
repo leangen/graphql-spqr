@@ -43,7 +43,7 @@ public class UniquenessTest {
     }
 
     private GraphQLSchema schemaFor(Object service) {
-        return new PreconfiguredSchemaGenerator()
+        return new TestSchemaGenerator()
                 .withOperationsFromSingleton(service, new PublicResolverBuilder(thisPackage))
                 .generate();
     }

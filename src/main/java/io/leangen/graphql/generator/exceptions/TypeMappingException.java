@@ -1,6 +1,9 @@
 package io.leangen.graphql.generator.exceptions;
 
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Member;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 
 /**
@@ -12,14 +15,29 @@ public class TypeMappingException extends IllegalArgumentException {
     public TypeMappingException() {
         super("The provided object is of an unknown type. Provide the type explicitly when registering the bean.");
     }
-    
+
     public TypeMappingException(String s) {
         super(s);
     }
+    
+    public TypeMappingException(String s, Exception cause) {
+        super(s, cause);
+    }
 
-    public TypeMappingException(Member fieldOrMethod, Throwable cause) {
-        super("Member " + fieldOrMethod.getName() + " belonging to " + fieldOrMethod.getDeclaringClass().getName() + " has indeterminable type and can not be mapped.\n" +
-                "This can be resolved either by declaring the generic types more strongly or by registering a custom mapper.", cause);
+    public TypeMappingException(Type type) {
+        super("Type " + type.getTypeName() + " is unbounded or missing generic type parameters");
+    }
+    
+    public TypeMappingException(Member fieldOrMethod, AnnotatedType declaringType, Exception cause) {
+        super("The type of member \"" + fieldOrMethod.getName() + "\" belonging to " + declaringType.getType().getTypeName() +
+                " is missing generic type parameters and can not be mapped." +
+                " For details and possible solutions see https://github.com/leangen/graphql-spqr/wiki/Errors#ambiguous-member-type", cause);
+    }
+
+    public TypeMappingException(Executable executable, Parameter parameter, Exception cause) {
+        super("Parameter \"" + parameter.getName() + "\" of method \"" + executable.getName() +
+                "\" is missing generic type parameters and can not be mapped." +
+                " For details and possible solutions see https://github.com/leangen/graphql-spqr/wiki/Errors#ambiguous-method-parameter-type", cause);
     }
 
     public TypeMappingException(Type superType, Type subType) {
