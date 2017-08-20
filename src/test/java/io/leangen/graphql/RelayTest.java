@@ -77,7 +77,7 @@ public class RelayTest {
 
     @Test
     public void relayMutationTest() {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .withRelayCompliantMutations()
                 .generate();
@@ -99,7 +99,7 @@ public class RelayTest {
     }
 
     private void testPagedQuery(String query) {
-        GraphQLSchema schema = new PreconfiguredSchemaGenerator()
+        GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new BookService())
                 .generate();
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
