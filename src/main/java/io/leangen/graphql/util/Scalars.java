@@ -65,7 +65,7 @@ public class Scalars {
 
         @Override
         public Object parseValue(Object input) {
-            return serialize(input);
+            return input instanceof String ? UUID.fromString((String) input) : input;
         }
 
         @Override
@@ -89,7 +89,7 @@ public class Scalars {
 
         @Override
         public Object parseValue(Object input) {
-            return serialize(input);
+            return input instanceof String ? URI.create((String) input) : input;
         }
 
         @Override
@@ -113,7 +113,7 @@ public class Scalars {
 
         @Override
         public Object parseValue(Object input) {
-            return serialize(input);
+                return input instanceof String ? Locale.forLanguageTag((String) input) : input;
         }
 
         @Override
@@ -151,7 +151,7 @@ public class Scalars {
 
             @Override
             public Object parseValue(Object input) {
-                return serialize(input);
+                return input;
             }
 
             @Override
@@ -200,7 +200,13 @@ public class Scalars {
 
             @Override
             public Object parseValue(Object input) {
-                return serialize(input);
+                if (input instanceof String) {
+                    return fromString.apply((String) input);
+                }
+                if (input instanceof Long) {
+                    return fromDate.apply(Instant.ofEpochMilli((Long) input));
+                }
+                return input;
             }
 
             @Override

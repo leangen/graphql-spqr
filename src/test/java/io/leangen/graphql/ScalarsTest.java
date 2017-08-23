@@ -67,10 +67,21 @@ public class ScalarsTest {
         Object parsed = coercing.parseLiteral(new StringValue(expected));
         assertTrue(type.isInstance(parsed));
         assertEquals(expected, coercing.serialize(parsed));
+
+        parsed = coercing.parseValue(expected);
+        assertTrue(type.isInstance(parsed));
+        assertEquals(expected, coercing.serialize(parsed));
+        
+        Object same = coercing.parseValue(parsed);
+        assertEquals(parsed, same);
     }
     
     private void testEpochMilliTemporal(Class type, Coercing coercing, String expected, long literal) {
         Object parsed = coercing.parseLiteral(new IntValue(new BigInteger(Long.toString(literal))));
+        assertTrue(type.isInstance(parsed));
+        assertEquals(expected, coercing.serialize(parsed));
+        
+        parsed = coercing.parseValue(literal);
         assertTrue(type.isInstance(parsed));
         assertEquals(expected, coercing.serialize(parsed));
     }
