@@ -28,7 +28,10 @@ import io.leangen.graphql.util.ClassUtils;
 public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
 
     public AnnotatedResolverBuilder() {
-        TypeTransformer transformer = new DefaultTypeTransformer(false, false);
+        this(new DefaultTypeTransformer(false, false));
+    }
+    
+    public AnnotatedResolverBuilder(TypeTransformer transformer) {
         this.transformer = transformer;
         this.operationNameGenerator = new DelegatingOperationNameGenerator(new AnnotatedOperationNameGenerator(), new MethodOperationNameGenerator());
         this.argumentBuilder = new AnnotatedArgumentBuilder(transformer);

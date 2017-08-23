@@ -27,7 +27,10 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
 
     @SuppressWarnings("WeakerAccess")
     public PublicResolverBuilder(String basePackage) {
-        TypeTransformer transformer = new DefaultTypeTransformer(false, false);
+        this(basePackage, new DefaultTypeTransformer(false, false));
+    }
+
+    public PublicResolverBuilder(String basePackage, TypeTransformer transformer) {
         this.basePackage = basePackage;
         this.transformer = transformer;
         this.operationNameGenerator = new MethodOperationNameGenerator();

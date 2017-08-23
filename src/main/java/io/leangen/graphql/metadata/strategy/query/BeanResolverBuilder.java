@@ -2,6 +2,7 @@ package io.leangen.graphql.metadata.strategy.query;
 
 import java.lang.reflect.Method;
 
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 
 /**
@@ -11,6 +12,11 @@ public class BeanResolverBuilder extends PublicResolverBuilder {
 
     public BeanResolverBuilder(String basePackage) {
         super(basePackage);
+        this.operationNameGenerator = new BeanOperationNameGenerator();
+    }
+
+    public BeanResolverBuilder(String basePackage, TypeTransformer transformer) {
+        super(basePackage, transformer);
         this.operationNameGenerator = new BeanOperationNameGenerator();
     }
 

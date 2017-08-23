@@ -640,12 +640,12 @@ public class GraphQLSchemaGenerator {
             throw new IllegalStateException("At least one top-level operation source must be registered");
         }
         if (!operationSourceRepository.hasGlobalResolverBuilders() || defaultResolverBuilders) {
-            withResolverBuilders(new AnnotatedResolverBuilder().withTypeTransformer(typeTransformer));
+            withResolverBuilders(new AnnotatedResolverBuilder(typeTransformer));
         }
         if (!operationSourceRepository.hasGlobalNestedResolverBuilders() || defaultNestedResolverBuilders) {
             withNestedResolverBuilders(
-                    new AnnotatedResolverBuilder().withTypeTransformer(typeTransformer),
-                    new BeanResolverBuilder(basePackage).withTypeTransformer(typeTransformer));
+                    new AnnotatedResolverBuilder(typeTransformer),
+                    new BeanResolverBuilder(basePackage, typeTransformer));
         }
         if (typeMappers.isEmpty() || this.defaultTypeMappers) {
             ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
