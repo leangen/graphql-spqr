@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import io.leangen.graphql.util.ClassUtils;
 
 /**
- * Created by bojan.tomic on 6/10/16.
+ * A resolver builder that exposes all public getter methods
  */
 public class BeanResolverBuilder extends PublicResolverBuilder {
 

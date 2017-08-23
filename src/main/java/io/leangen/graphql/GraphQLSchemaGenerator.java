@@ -63,7 +63,9 @@ import io.leangen.graphql.metadata.strategy.query.DefaultOperationBuilder;
 import io.leangen.graphql.metadata.strategy.query.OperationBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
@@ -121,6 +123,7 @@ public class GraphQLSchemaGenerator {
     private ValueMapperFactory valueMapperFactory;
     private InputFieldDiscoveryStrategy inputFieldStrategy;
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
+    private TypeTransformer typeTransformer = new DefaultTypeTransformer(false, false);
     private String basePackage;
     private boolean defaultTypeMappers = false;
     private boolean defaultOutputConverters = false;
@@ -502,6 +505,11 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withTypeTransformer(TypeTransformer transformer) {
+        this.typeTransformer = transformer;
+        return this;
+    }
+    
     public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes) {
         additionalTypes.stream()
                 .filter(type -> !isInternalType(type))
@@ -631,11 +639,13 @@ public class GraphQLSchemaGenerator {
         if (operationSourceRepository.isEmpty()) {
             throw new IllegalStateException("At least one top-level operation source must be registered");
         }
-        if (!operationSourceRepository.hasGlobalResolverBuilders() || this.defaultResolverBuilders) {
-            withResolverBuilders(new AnnotatedResolverBuilder());
+        if (!operationSourceRepository.hasGlobalResolverBuilders() || defaultResolverBuilders) {
+            withResolverBuilders(new AnnotatedResolverBuilder().withTypeTransformer(typeTransformer));
         }
-        if (!operationSourceRepository.hasGlobalNestedResolverBuilders() || this.defaultNestedResolverBuilders) {
-            withNestedResolverBuilders(new AnnotatedResolverBuilder(), new BeanResolverBuilder(this.basePackage));
+        if (!operationSourceRepository.hasGlobalNestedResolverBuilders() || defaultNestedResolverBuilders) {
+            withNestedResolverBuilders(
+                    new AnnotatedResolverBuilder().withTypeTransformer(typeTransformer),
+                    new BeanResolverBuilder(basePackage).withTypeTransformer(typeTransformer));
         }
         if (typeMappers.isEmpty() || this.defaultTypeMappers) {
             ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();

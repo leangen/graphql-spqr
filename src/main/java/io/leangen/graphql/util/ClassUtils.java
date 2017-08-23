@@ -320,6 +320,94 @@ public class ClassUtils {
     }
 
     /**
+     * Recursively replaces all bounded types found within the structure of the given {@link AnnotatedType} with their first bound.
+     * I.e.
+     * <ul>
+     *     <li>All {@link AnnotatedWildcardType}s are replaced with their first lower bound if it exists,
+     *     or their first upper bound otherwise. All annotations are preserved.</li>
+     *     <li>All {@link AnnotatedTypeVariable}s are replaced with their first bound. All annotations are preserved.</li>
+     *     <li>Other types are kept as they are.</li>
+     * </ul>
+     *
+     * @param type A potentially bounded type
+     * @return The type of the same structure as the given type but with bounds erased, or the unchanged type itself if it contained no bounds
+     */
+    public static AnnotatedType eraseBounds(AnnotatedType type, AnnotatedType replacement) {
+        if (type instanceof AnnotatedWildcardType) {
+            AnnotatedWildcardType wildcard = (AnnotatedWildcardType) type;
+            AnnotatedType bound = wildcard.getAnnotatedLowerBounds().length > 0
+                    ? eraseBounds(wildcard.getAnnotatedLowerBounds()[0], replacement)
+                    : eraseBounds(wildcard.getAnnotatedUpperBounds()[0], replacement);
+            if (bound.getType().equals(Object.class)) {
+                if (replacement != null) {
+                    bound = replacement;
+                } else {
+                    throw new TypeMappingException(type.getType());
+                }
+            }
+            return GenericTypeReflector.updateAnnotations(bound, type.getAnnotations());
+        }
+        if (type instanceof AnnotatedTypeVariable) {
+            AnnotatedType bound = ((AnnotatedTypeVariable) type).getAnnotatedBounds()[0];
+            if (bound.getType().equals(Object.class)) {
+                if (replacement != null) {
+                    bound = replacement;
+                } else {
+                    throw new TypeMappingException(type.getType());
+                }
+            }
+            return GenericTypeReflector.updateAnnotations(bound, type.getAnnotations());
+        }
+        if (type instanceof AnnotatedParameterizedType) {
+            AnnotatedParameterizedType parameterizedType = (AnnotatedParameterizedType) type;
+            AnnotatedType[] typeArguments = Arrays.stream(parameterizedType.getAnnotatedActualTypeArguments())
+                    .map(parameterType -> eraseBounds(parameterType, replacement))
+                    .toArray(AnnotatedType[]::new);
+            return GenericTypeReflector.replaceParameters(parameterizedType, typeArguments);
+        }
+        if (type instanceof AnnotatedArrayType) {
+            return TypeFactory.arrayOf(eraseBounds(((AnnotatedArrayType) type).getAnnotatedGenericComponentType(), replacement), type.getAnnotations());
+        }
+        return type;
+    }
+    
+    public static AnnotatedType completeGenerics(AnnotatedType type, AnnotatedType replacement) {
+        if (type.getType() instanceof Class) {
+            Class clazz = (Class) type.getType();
+            if (clazz.isArray()) {
+                return TypeFactory.arrayOf(completeGenerics(GenericTypeReflector.annotate(clazz.getComponentType()), replacement), type.getAnnotations());
+            } else {
+                if (GenericTypeReflector.isMissingTypeParameters(clazz)) {
+                    if (replacement == null) {
+                        throw new TypeMappingException(clazz);
+                    }
+                    AnnotatedType[] parameters = new AnnotatedType[clazz.getTypeParameters().length];
+                    for (int i = 0; i < parameters.length; i++) {
+                        parameters[i] = replacement;
+                    }
+                    return TypeFactory.parameterizedAnnotatedClass(clazz, type.getAnnotations(), parameters);
+                }
+            }
+        }
+        else if (type instanceof AnnotatedParameterizedType) {
+            AnnotatedParameterizedType parameterizedType = (AnnotatedParameterizedType) type;
+            AnnotatedType[] parameters = Arrays.stream(parameterizedType.getAnnotatedActualTypeArguments())
+                    .map(parameterType -> completeGenerics(parameterType, replacement))
+                    .toArray(AnnotatedType[]::new);
+            return GenericTypeReflector.replaceParameters(parameterizedType, parameters);
+        }
+        else if (type instanceof AnnotatedArrayType) {
+            AnnotatedType componentType = completeGenerics(((AnnotatedArrayType) type).getAnnotatedGenericComponentType(), replacement);
+            return TypeFactory.arrayOf(componentType, type.getAnnotations());
+        }
+        else if (type instanceof AnnotatedWildcardType || type instanceof AnnotatedTypeVariable) {
+            //can only happen if bounds haven't been erased (via eraseBounds) prior to invoking this method
+            throw new TypeMappingException(type.getType().getTypeName() + " can not completed. Call eraseBounds first?");
+        }
+        return type;
+    }
+    
+    /**
      * Finds the most specific common super type of all the given types, merging the original annotations at each level.
      * If no common ancestors are found (except Object) a {@link TypeMappingException} is thrown.
      *

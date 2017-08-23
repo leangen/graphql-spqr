@@ -22,6 +22,9 @@ import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 
+/**
+ * A resolver builder that exposes only the methods explicitly annotated with {@link GraphQLQuery}
+ */
 public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
 
     public AnnotatedResolverBuilder() {
