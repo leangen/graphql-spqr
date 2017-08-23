@@ -734,9 +734,15 @@ public class GraphQLSchemaGenerator {
         }
         Class<?> clazz = ClassUtils.getRawType(type);
         if (ClassUtils.isProxy(clazz)) {
-            throw new TypeMappingException("The provided object of type " + clazz.getName() +
+            throw new TypeMappingException("The registered object of type " + clazz.getName() +
                     " appears to be a dynamically generated proxy, so its type can not be reliably determined." +
-                    " Provide the type explicitly when registering the bean.");
+                    " Provide the type explicitly when registering the bean." +
+                    " For details and solutions see https://github.com/leangen/graphql-spqr/wiki/Errors#dynamic-proxies");
+        }
+        if (GenericTypeReflector.isMissingTypeParameters(type)) {
+            throw new TypeMappingException("The registered object is of generic type " + type.getTypeName() + "." +
+                    " Provide the full type explicitly when registering the bean." +
+                    " For details and solutions see https://github.com/leangen/graphql-spqr/wiki/Errors#generic-top-level-singletons");
         }
     }
 
