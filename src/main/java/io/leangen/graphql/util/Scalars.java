@@ -195,6 +195,8 @@ public class Scalars {
         return new GraphQLScalarType(type.getSimpleName(), "Built-in " + type.getSimpleName(), new Coercing() {
             @Override
             public String serialize(Object input) {
+                if (input == null)
+                    return null;
                 return input instanceof Date ? ((Date) input).toInstant().toString() : input.toString();
             }
 
