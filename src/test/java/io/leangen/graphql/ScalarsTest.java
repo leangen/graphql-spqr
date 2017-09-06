@@ -56,22 +56,17 @@ public class ScalarsTest {
         testTemporal(ZonedDateTime.class, "2017-06-24T23:15:44.510Z", 1498346144510L);
     }
 
-    @Test
-    public void testNullDate() {
-        testSerialiseTemporal(Date.class, null, null);
-    }
-
-    private void testSerialiseTemporal(Class type, String expected, Object temporal) {
-        GraphQLScalarType scalar = Scalars.toGraphQLScalarType(type);
-        assertEquals(expected, scalar.getCoercing().serialize(temporal));
-    }
-
 
     private void testTemporal(Class type, String expected, long literal) {
         GraphQLScalarType scalar = Scalars.toGraphQLScalarType(type);
+        testNullTemporalSerialization(scalar.getCoercing());
         testStringTemporal(type, scalar.getCoercing(), expected);
         testEpochMilliTemporal(type, scalar.getCoercing(), expected, literal);
         testTemporalMapping(type, scalar);
+    }
+
+    private void testNullTemporalSerialization(Coercing coercing) {
+        assertEquals(null, coercing.serialize(null));
     }
     
     private void testStringTemporal(Class type, Coercing coercing, String expected) {
