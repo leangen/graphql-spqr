@@ -1,9 +1,7 @@
 package io.leangen.graphql.execution;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.Map;
 
 import graphql.GraphQLException;
@@ -23,8 +21,6 @@ public class OperationExecutor {
     private final ValueMapper valueMapper;
     private final GlobalEnvironment globalEnvironment;
 
-    private static final Logger log = LoggerFactory.getLogger(OperationExecutor.class); 
-    
     public OperationExecutor(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
         this.operation = operation;
         this.valueMapper = valueMapper;
@@ -39,7 +35,7 @@ public class OperationExecutor {
                 context.putExtension("clientMutationId", env.getArguments().get("clientMutationId"));
             }
         }
-        
+
         if (this.operation.getResolvers().size() == 1) {
             resolver = this.operation.getResolvers().iterator().next();
         } else {
@@ -49,19 +45,17 @@ public class OperationExecutor {
                     .toArray(String[]::new);
 
             resolver = this.operation.getResolver(nonNullArgumentNames);
-        }
-        try {
             if (resolver == null) {
                 throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
-                        + env.getArguments().keySet() + " not implemented");
-            } else {
-                ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(env, this.valueMapper, this.globalEnvironment);
-                Object result = execute(resolver, resolutionEnvironment, env.getArguments());
-                return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
+                        + Arrays.toString(nonNullArgumentNames) + " not implemented");
             }
-        } catch (Exception e) {
-            log.error("Operation resolution exception", e);
-            throw new GraphQLException("Operation resolution exception", e);
+        }
+        ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(env, this.valueMapper, this.globalEnvironment);
+        try {
+            Object result = execute(resolver, resolutionEnvironment, env.getArguments());
+            return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
         }
     }
 
