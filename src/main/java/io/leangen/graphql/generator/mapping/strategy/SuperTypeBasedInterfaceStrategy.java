@@ -12,7 +12,8 @@ public class SuperTypeBasedInterfaceStrategy extends AbstractInterfaceMappingStr
 
     private Collection<Class<?>> mappedTypes;
 
-    public SuperTypeBasedInterfaceStrategy(Collection<Class<?>> mappedTypes) {
+    public SuperTypeBasedInterfaceStrategy(Collection<Class<?>> mappedTypes, boolean mapClasses) {
+        super(mapClasses);
         this.mappedTypes = mappedTypes;
     }
 

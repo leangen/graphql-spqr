@@ -11,7 +11,8 @@ public class PackageBasedInterfaceStrategy extends AbstractInterfaceMappingStrat
 
     private String packageName;
 
-    public PackageBasedInterfaceStrategy(String packageName) {
+    public PackageBasedInterfaceStrategy(String packageName, boolean mapClasses) {
+        super(mapClasses);
         this.packageName = packageName;
     }
 
