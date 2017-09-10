@@ -32,6 +32,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, declaringType);
         for (int i = 0; i < resolverMethod.getParameterCount(); i++) {
             Parameter parameter = resolverMethod.getParameters()[i];
+            if (parameter.isSynthetic() || parameter.isImplicit()) continue;
             AnnotatedType parameterType;
             try {
                 parameterType = transformer.transform(parameterTypes[i]);
@@ -86,7 +87,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
     }
 
     private boolean isMappable(Parameter parameter) {
-        return Arrays.stream(parameter.getAnnotations())
+        return !parameter.isAnnotationPresent(GraphQLIgnore.class) && Arrays.stream(parameter.getAnnotations())
                 .noneMatch(ann -> ann.annotationType().isAnnotationPresent(GraphQLIgnore.class));
     }
 }
