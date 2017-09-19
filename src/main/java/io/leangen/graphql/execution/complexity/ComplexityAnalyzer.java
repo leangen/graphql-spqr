@@ -46,7 +46,9 @@ class ComplexityAnalyzer {
 
 
     ResolvedField collectFields(ExecutionContext context) {
-        FieldCollectorParameters parameters = FieldCollectorParameters.newParameters(context.getGraphQLSchema(), context.getGraphQLSchema().getQueryType())
+        FieldCollectorParameters parameters = FieldCollectorParameters.newParameters()
+                .schema(context.getGraphQLSchema())
+                .objectType(context.getGraphQLSchema().getQueryType())
                 .fragments(context.getFragmentsByName())
                 .variables(context.getVariables())
                 .build();

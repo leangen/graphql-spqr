@@ -4,17 +4,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.InstrumentationContext;
-import graphql.execution.instrumentation.parameters.DataFetchParameters;
-import graphql.execution.instrumentation.parameters.ExecutionParameters;
-import graphql.execution.instrumentation.parameters.FieldFetchParameters;
-import graphql.execution.instrumentation.parameters.FieldParameters;
-import graphql.execution.instrumentation.parameters.ValidationParameters;
+import graphql.execution.instrumentation.parameters.InstrumentationDataFetchParameters;
+import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
+import graphql.execution.instrumentation.parameters.InstrumentationExecutionStrategyParameters;
+import graphql.execution.instrumentation.parameters.InstrumentationFieldFetchParameters;
+import graphql.execution.instrumentation.parameters.InstrumentationFieldParameters;
+import graphql.execution.instrumentation.parameters.InstrumentationValidationParameters;
 import graphql.language.Document;
 import graphql.schema.GraphQLSchema;
 import graphql.validation.ValidationError;
@@ -86,45 +88,51 @@ public class GraphQLRuntime extends GraphQL {
         }
 
         @Override
-        public InstrumentationContext<ExecutionResult> beginExecution(ExecutionParameters parameters) {
+        public InstrumentationContext<ExecutionResult> beginExecution(InstrumentationExecutionParameters parameters) {
             return new InstrumentationContextChain<>(instrumentations.stream()
                     .map(instrumentation -> instrumentation.beginExecution(parameters))
                     .collect(Collectors.toList()));
         }
 
         @Override
-        public InstrumentationContext<Document> beginParse(ExecutionParameters parameters) {
+        public InstrumentationContext<Document> beginParse(InstrumentationExecutionParameters parameters) {
             return new InstrumentationContextChain<>(instrumentations.stream()
                     .map(instrumentation -> instrumentation.beginParse(parameters))
                     .collect(Collectors.toList()));
         }
 
         @Override
-        public InstrumentationContext<List<ValidationError>> beginValidation(ValidationParameters parameters) {
+        public InstrumentationContext<List<ValidationError>> beginValidation(InstrumentationValidationParameters parameters) {
             return new InstrumentationContextChain<>(instrumentations.stream()
                     .map(instrumentation -> instrumentation.beginValidation(parameters))
                     .collect(Collectors.toList()));
         }
 
         @Override
-        public InstrumentationContext<ExecutionResult> beginDataFetch(DataFetchParameters parameters) {
+        public InstrumentationContext<ExecutionResult> beginDataFetch(InstrumentationDataFetchParameters parameters) {
             return new InstrumentationContextChain<>(instrumentations.stream()
                     .map(instrumentation -> instrumentation.beginDataFetch(parameters))
                     .collect(Collectors.toList()));
         }
 
         @Override
-        public InstrumentationContext<ExecutionResult> beginField(FieldParameters parameters) {
+        public InstrumentationContext<ExecutionResult> beginField(InstrumentationFieldParameters parameters) {
             return new InstrumentationContextChain<>(instrumentations.stream()
                     .map(instrumentation -> instrumentation.beginField(parameters))
                     .collect(Collectors.toList()));
         }
 
         @Override
-        public InstrumentationContext<Object> beginFieldFetch(FieldFetchParameters parameters) {
+        public InstrumentationContext<Object> beginFieldFetch(InstrumentationFieldFetchParameters parameters) {
             return new InstrumentationContextChain<>(instrumentations.stream()
                     .map(instrumentation -> instrumentation.beginFieldFetch(parameters))
                     .collect(Collectors.toList()));
+        }
+
+        @Override
+        public InstrumentationContext<CompletableFuture<ExecutionResult>> beginExecutionStrategy(
+                InstrumentationExecutionStrategyParameters parameters) {
+            return (result, exception) -> {};
         }
     }
 
@@ -137,14 +145,10 @@ public class GraphQLRuntime extends GraphQL {
         }
 
         @Override
-        public void onEnd(T result) {
-            contexts.forEach(context -> context.onEnd(result));
+        public void onEnd(T result, Throwable exception) {
+            contexts.forEach(context -> context.onEnd(result, exception));
         }
 
-        @Override
-        public void onEnd(Exception e) {
-            contexts.forEach(context -> context.onEnd(e));
-        }
     }
 
 }
