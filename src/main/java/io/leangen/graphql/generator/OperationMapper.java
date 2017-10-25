@@ -123,7 +123,7 @@ public class OperationMapper {
         GraphQLOutputType type = toGraphQLType(operation.getJavaType(), abstractTypes, buildContext);
         GraphQLFieldDefinition.Builder queryBuilder = newFieldDefinition()
                 .name(operation.getName())
-                .description(operation.getName())
+                .description(operation.getDescription())
                 .type(type);
 
         List<GraphQLArgument> arguments = operation.getArguments().stream()
