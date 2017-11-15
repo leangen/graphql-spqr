@@ -12,19 +12,17 @@ import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
 
-import static java.util.Arrays.stream;
-
 public class Operation {
 
     private final String name;
     private final String description;
     private final AnnotatedType javaType;
-    private final List<Type> contextTypes;
+    private final Type contextType;
     private final Map<String, Resolver> resolversByFingerprint;
     private final List<OperationArgument> arguments;
     private final boolean batched;
 
-    public Operation(String name, AnnotatedType javaType, List<Type> contextTypes, 
+    public Operation(String name, AnnotatedType javaType, Type contextType, 
                      List<OperationArgument> arguments, List<Resolver> resolvers, boolean batched) {
 
         if (!(resolvers.stream().allMatch(Resolver::isBatched) || resolvers.stream().noneMatch(Resolver::isBatched))) {
@@ -34,7 +32,7 @@ public class Operation {
         this.name = name;
         this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
         this.javaType = javaType;
-        this.contextTypes = contextTypes;
+        this.contextType = contextType;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
         this.batched = batched;
@@ -55,9 +53,13 @@ public class Operation {
     }
 
     public boolean isEmbeddableForType(Type type) {
-        return this.contextTypes.stream().anyMatch(contextType -> GenericTypeReflector.isSuperType(contextType, type));
+        return contextType != null && GenericTypeReflector.isSuperType(contextType, type);
     }
 
+    public boolean isRoot() {
+        return this.contextType == null;
+    }
+    
     private String getFingerprint(String... argumentNames) {
         StringBuilder fingerPrint = new StringBuilder();
         Arrays.stream(argumentNames).sorted().forEach(fingerPrint::append);
@@ -89,25 +91,23 @@ public class Operation {
     }
 
     @Override
-    public int hashCode() {
-        int typeHash = stream(javaType.getAnnotations())
-                .mapToInt(annotation -> annotation.getClass().getName().hashCode())
-                .reduce((x, y) -> x ^ y).orElse(0);
-        return name.hashCode() ^ typeHash;
-    }
-
-    @Override
     public boolean equals(Object other) {
         if (this == other) return true;
         if (!(other instanceof Operation)) return false;
         Operation that = (Operation) other;
 
-        if ((that.javaType == null && this.javaType != null) || (that.javaType != null && this.javaType == null)) {
+        if (!name.equals(that.name)) return false;
+        if (javaType != null ? !javaType.equals(that.javaType) : that.javaType != null)
             return false;
-        }
+        return contextType != null ? contextType.equals(that.contextType) : that.contextType == null;
+    }
 
-        return that.name.equals(this.name)
-                && (that.javaType == null || that.javaType.equals(this.javaType));
+    @Override
+    public int hashCode() {
+        int result = name.hashCode();
+        result = 31 * result + (javaType != null ? javaType.hashCode() : 0);
+        result = 31 * result + (contextType != null ? contextType.hashCode() : 0);
+        return result;
     }
 
     @Override
@@ -118,7 +118,7 @@ public class Operation {
     private static class UnbatchedOperation extends Operation {
         
         private UnbatchedOperation(Operation operation) {
-            super(operation.name, unbatchJavaType(operation.javaType), unbatchContextTypes(operation.contextTypes),
+            super(operation.name, unbatchJavaType(operation.javaType), unbatchContextType(operation.contextType),
                     operation.arguments, new ArrayList<>(operation.getResolvers()), true);
         }
 
@@ -126,10 +126,8 @@ public class Operation {
             return GenericTypeReflector.getTypeParameter(javaType, List.class.getTypeParameters()[0]);
         }
         
-        private static List<Type> unbatchContextTypes(List<Type> contextTypes) {
-            return contextTypes.stream()
-                    .map(contextType -> GenericTypeReflector.getTypeParameter(contextType, List.class.getTypeParameters()[0]))
-                    .collect(Collectors.toList());
+        private static Type unbatchContextType(Type contextType) {
+            return GenericTypeReflector.getTypeParameter(contextType, List.class.getTypeParameters()[0]);
         }
         
         @Override

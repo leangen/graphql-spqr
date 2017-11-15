@@ -2,9 +2,11 @@ package io.leangen.graphql.generator;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -18,7 +20,7 @@ import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 
 public class OperationRepository {
 
-    private final Set<Operation> rootQueries;
+    private final Set<Operation> queries;
     private final Set<Operation> mutations;
     private final OperationSourceRepository operationSourceRepository;
     private final OperationBuilder operationBuilder;
@@ -26,28 +28,57 @@ public class OperationRepository {
     public OperationRepository(OperationSourceRepository operationSourceRepository, OperationBuilder operationBuilder) {
         this.operationSourceRepository = operationSourceRepository;
         this.operationBuilder = operationBuilder;
-        Collection<Resolver> resolvers = buildQueryResolvers(operationSourceRepository.getOperationSources());
-        Collection<Resolver> mutationResolvers = buildMutationResolvers(operationSourceRepository.getOperationSources());
-        rootQueries = buildQueries(resolvers);
+        List<Resolver> resolvers = buildQueryResolvers(operationSourceRepository.getOperationSources());
+        List<Resolver> mutationResolvers = buildMutationResolvers(operationSourceRepository.getOperationSources());
+        queries = buildQueries(resolvers);
         mutations = buildMutations(mutationResolvers);
     }
 
-    private Set<Operation> buildQueries(Collection<Resolver> resolvers) {
+    private Set<Operation> buildQueries(List<Resolver> resolvers) {
         return resolvers.stream()
-                .collect(Collectors.groupingBy(Resolver::getOperationName)).entrySet().stream()
-                .map(entry -> operationBuilder.buildQuery(entry.getValue()))
+                .collect(Collectors.groupingBy(Resolver::getOperationName)).values().stream()
+                .flatMap(r -> collectContextTypes(r).stream()
+                        .map(contextType -> resolversPerContext(contextType, r))
+                        .filter(contextual -> !contextual.getValue().isEmpty())
+                        .map(contextual -> operationBuilder.buildQuery(contextual.getKey(), contextual.getValue())))
                 .collect(Collectors.toSet());
     }
 
-    private Set<Operation> buildMutations(Collection<Resolver> resolvers) {
+    private Set<Operation> buildMutations(List<Resolver> resolvers) {
         return resolvers.stream()
-                .collect(Collectors.groupingBy(Resolver::getOperationName)).entrySet().stream()
-                .map(entry -> operationBuilder.buildMutation(entry.getValue()))
+                .collect(Collectors.groupingBy(Resolver::getOperationName)).values().stream()
+                .flatMap(r -> collectContextTypes(r).stream()
+                        .map(contextType -> resolversPerContext(contextType, r))
+                        .filter(contextual -> !contextual.getValue().isEmpty())
+                        .map(contextual -> operationBuilder.buildMutation(contextual.getKey(), contextual.getValue())))
                 .collect(Collectors.toSet());
     }
 
-    public Collection<Operation> getQueries() {
-        return rootQueries;
+    private Map.Entry<Type, List<Resolver>> resolversPerContext(Type context, List<Resolver> resolvers) {
+        List<Resolver> contextual;
+        if (context == null) {
+            contextual = resolvers.stream().filter(r -> r.getSourceTypes().isEmpty()).collect(Collectors.toList());
+        } else {
+            contextual = resolvers.stream().filter(r -> r.getSourceTypes().contains(context)).collect(Collectors.toList());
+        }
+        return new AbstractMap.SimpleEntry<>(context, contextual);
+    }
+
+    private List<Type> collectContextTypes(Collection<Resolver> resolvers) {
+        List<Type> contextTypes = resolvers.stream()
+                .flatMap(r -> r.getSourceTypes().stream())
+                .distinct()
+                .collect(Collectors.toList());
+        contextTypes.add(null); //root queries have null context
+        return contextTypes;
+    }
+
+    private Collection<Operation> getAllQueries() {
+        return queries;
+    }
+
+    public Collection<Operation> getRootQueries() {
+        return queries.stream().filter(Operation::isRoot).collect(Collectors.toList());
     }
 
     public Collection<Operation> getMutations() {
@@ -73,7 +104,7 @@ public class OperationRepository {
     }
 
     public Set<Operation> getEmbeddableQueries(Type domainType) {
-        return getQueries().stream()
+        return getAllQueries().stream()
                 .map(Operation::unbatch)
                 .filter(query -> query.isEmbeddableForType(domainType))
                 .collect(Collectors.toSet());
@@ -83,17 +114,17 @@ public class OperationRepository {
         return buildQueries(buildQueryResolvers(Collections.singleton(operationSource)));
     }
 
-    private Collection<Resolver> buildQueryResolvers(Collection<OperationSource> operationSources) {
+    private List<Resolver> buildQueryResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
                 builder.buildQueryResolvers(operationSource.getServiceSingleton(), operationSource.getJavaType())));
     }
 
-    private Collection<Resolver> buildMutationResolvers(Collection<OperationSource> operationSources) {
+    private List<Resolver> buildMutationResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
                 builder.buildMutationResolvers(operationSource.getServiceSingleton(), operationSource.getJavaType())));
     }
 
-    private Collection<Resolver> buildResolvers(Collection<OperationSource> operationSources, BiFunction<OperationSource, ResolverBuilder, Collection<Resolver>> building) {
+    private List<Resolver> buildResolvers(Collection<OperationSource> operationSources, BiFunction<OperationSource, ResolverBuilder, Collection<Resolver>> building) {
         return operationSources.stream()
                 .flatMap(operationSource ->
                         operationSource.getResolverBuilders().stream()

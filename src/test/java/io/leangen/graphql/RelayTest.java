@@ -108,9 +108,14 @@ public class RelayTest {
         assertTrue(result.getErrors().isEmpty());
     }
 
-    public class Book {
+    public static class Book {
         private String title;
         private String isbn;
+
+        public Book(String title, String isbn) {
+            this.title = title;
+            this.isbn = isbn;
+        }
 
         public String getTitle() {
             return title;
@@ -125,7 +130,7 @@ public class RelayTest {
         @GraphQLQuery(name = "books")
         public Page<Book> getBooks(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             List<Book> books = new ArrayList<>();
-            books.add(new Book());
+            books.add(new Book("Tesseract", "x123"));
             return PageFactory.createOffsetBasedPage(books, 100, 10);
         }
 

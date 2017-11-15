@@ -2,12 +2,10 @@ package io.leangen.graphql.metadata.strategy.query;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.leangen.geantyref.GenericTypeReflector;
@@ -55,18 +53,17 @@ public class DefaultOperationBuilder implements OperationBuilder {
     }
 
     @Override
-    public Operation buildQuery(List<Resolver> resolvers) {
+    public Operation buildQuery(Type contextType, List<Resolver> resolvers) {
         String name = resolveName(resolvers);
         AnnotatedType javaType = resolveJavaType(name, resolvers);
-        List<Type> contextTypes = resolveContextTypes(name, resolvers);
         List<OperationArgument> arguments = collectArguments(name, resolvers);
         boolean batched = isBatched(resolvers);
-        return new Operation(name, javaType, contextTypes, arguments, resolvers, batched);
+        return new Operation(name, javaType, contextType, arguments, resolvers, batched);
     }
 
     @Override
-    public Operation buildMutation(List<Resolver> resolvers) {
-        return buildQuery(resolvers);
+    public Operation buildMutation(Type context, List<Resolver> resolvers) {
+        return buildQuery(context, resolvers);
     }
 
     protected String resolveName(List<Resolver> resolvers) {
@@ -83,16 +80,6 @@ public class DefaultOperationBuilder implements OperationBuilder {
         }
 
         return resolveJavaType(returnTypes, "Multiple methods detected for operation \"" + operationName + "\" with different return types.");
-    }
-
-    protected List<Type> resolveContextTypes(String operationName, List<Resolver> resolvers) {
-        Set<Type> sourceTypes = resolvers.get(0).getSourceTypes();
-        boolean allSame = resolvers.stream().map(Resolver::getSourceTypes)
-                .allMatch(types -> types.size() == sourceTypes.size() && types.containsAll(sourceTypes));
-        if (!allSame) {
-            throw new IllegalStateException("Not all resolver methods for operation \"" + operationName + "\" expect the same source types");
-        }
-        return new ArrayList<>(sourceTypes);
     }
 
     //TODO do annotations or overloading decide what arg is required? should that decision be externalized?
@@ -127,7 +114,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
         errorPrefix = errorPrefix + " Types found: " + Arrays.toString(types.stream().map(type -> type.getType().getTypeName()).toArray()) + ". ";
         if (!typeInference.inferTypes && !types.stream().map(AnnotatedType::getType).allMatch(type -> type.equals(types.get(0).getType()))) {
             throw new TypeMappingException(errorPrefix + "If this is intentional, and you wish GraphQL SPQR to infer the most " +
-                    "common super type automatically, see https://github.com/leangen/graphql-spqr/wiki/Errors#operation-with-multiple-resolver-methods-with-different-types");
+                    "common super type automatically, see https://github.com/leangen/graphql-spqr/wiki/Errors#operation-with-multiple-resolver-methods-of-different-types");
         }
         try {
             return ClassUtils.getCommonSuperType(types, typeInference.allowObject ? GenericTypeReflector.annotate(Object.class) : null);

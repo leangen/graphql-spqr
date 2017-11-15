@@ -78,7 +78,7 @@ public class OperationMapper {
      * @return A list of {@link GraphQLFieldDefinition}s representing all top-level queries
      */
     private List<GraphQLFieldDefinition> generateQueries(BuildContext buildContext) {
-        List<Operation> rootQueries = new ArrayList<>(buildContext.operationRepository.getQueries());
+        List<Operation> rootQueries = new ArrayList<>(buildContext.operationRepository.getRootQueries());
         List<GraphQLFieldDefinition> queries = rootQueries.stream()
                 .map(query -> toGraphQLOperation(query, buildContext))
                 .collect(Collectors.toList());
@@ -137,10 +137,6 @@ public class OperationMapper {
                             .anyMatch(arg -> arg.getName().equals(connArg.getName()) && !arg.getType().getName().equals(connArg.getType().getName())))) {
                 throw new TypeMappingException("Operation \"" + operation.getName() + "\" has arguments of types incompatible with the Relay Connection spec");
             }
-            //add only the argument that are not explicitly overridden
-            queryBuilder.argument(buildContext.relay.getConnectionFieldArguments().stream()
-                    .filter(connArg -> arguments.stream().noneMatch(arg -> arg.getName().equals(connArg.getName())))
-                    .collect(Collectors.toList()));
         }
         ValueMapper valueMapper = buildContext.valueMapperFactory.getValueMapper(abstractTypes);
         queryBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));

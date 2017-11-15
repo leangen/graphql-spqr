@@ -40,14 +40,15 @@ public class BatchingTest {
         assertTrue(result.getErrors().isEmpty());
         assertEquals(3, ((Map<String, List>) result.getData()).get("candidates").size());
 
-        runBatched.getAndSet(false);
+        //TODO put this back when/if the ability to expose nested queries as top-level is reintroduced
+        /*runBatched.getAndSet(false);
         GraphQL simpleExe = GraphQLRuntime.newGraphQL(schema).build();
         result = simpleExe.execute("{stuff(users: [" +
                     "{fullName: \"One\"}," +
                     "{fullName: \"Two\"}," +
                     "{fullName: \"Three\"}" +
                 "]) {startYear}}", runBatched);
-        assertTrue(result.getErrors().isEmpty());
+        assertTrue(result.getErrors().isEmpty());*/
     }
 
     public static class CandidatesService {
