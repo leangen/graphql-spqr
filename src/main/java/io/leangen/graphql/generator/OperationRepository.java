@@ -6,6 +6,7 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +42,7 @@ public class OperationRepository {
                         .map(contextType -> resolversPerContext(contextType, r))
                         .filter(contextual -> !contextual.getValue().isEmpty())
                         .map(contextual -> operationBuilder.buildQuery(contextual.getKey(), contextual.getValue())))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private Set<Operation> buildMutations(List<Resolver> resolvers) {
@@ -51,7 +52,7 @@ public class OperationRepository {
                         .map(contextType -> resolversPerContext(contextType, r))
                         .filter(contextual -> !contextual.getValue().isEmpty())
                         .map(contextual -> operationBuilder.buildMutation(contextual.getKey(), contextual.getValue())))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private Map.Entry<Type, List<Resolver>> resolversPerContext(Type context, List<Resolver> resolvers) {
