@@ -5,6 +5,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,9 +22,12 @@ import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
+import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
+import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -34,6 +38,7 @@ import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOf;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOfNonNull;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOfRelayIds;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;
+import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static io.leangen.graphql.util.GraphQLUtils.isRelayId;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -207,5 +212,34 @@ public class GenericsTest {
         Object[] expected = arrayNumberService.getAllItems().toArray();
         Object[] actual = arrayNumberService.getAllItems().toArray();
         assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    public void testVariableBoundGenerics() {
+        Type type = TypeFactory.parameterizedClass(EchoService.class, Number.class);
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withResolverBuilders(new PublicResolverBuilder("io.leangen"))
+                .withOperationsFromSingleton(new EchoService(), type)
+                .generate();
+
+        GraphQLFieldDefinition query = schema.getQueryType().getFieldDefinition("echo");
+        assertEquals(Scalars.GraphQLBigDecimal, query.getType());
+        assertEquals(Scalars.GraphQLBigDecimal, query.getArgument("in").getType());
+
+        GraphQL graphQL = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = graphQL.execute("{ echo (in: 3) }");
+        assertTrue(ERRORS, result.getErrors().isEmpty());
+        assertValueAtPathEquals(new BigDecimal(3), result, "echo");
+    }
+
+    public interface GenericEcho<T> {
+        <S extends T> S echo(S input);
+    }
+
+    public static class EchoService<G> implements GenericEcho<G> {
+        @Override
+        public <S extends G> S echo(@GraphQLArgument(name = "in") S input) {
+            return input;
+        }
     }
 }

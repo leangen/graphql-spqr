@@ -115,7 +115,7 @@ public class ClassUtils {
         if (GenericTypeReflector.isMissingTypeParameters(exactDeclaringType.getType())) {
             return method.getAnnotatedReturnType();
         }
-        return GenericTypeReflector.getExactReturnType(method, declaringType);
+        return GenericTypeReflector.getReturnType(method, declaringType);
     }
 
     /**
@@ -130,7 +130,7 @@ public class ClassUtils {
         if (GenericTypeReflector.isMissingTypeParameters(exactDeclaringType.getType())) {
             return field.getAnnotatedType();
         }
-        return GenericTypeReflector.getExactFieldType(field, declaringType);
+        return GenericTypeReflector.getFieldType(field, declaringType);
     }
 
     /**
@@ -145,7 +145,7 @@ public class ClassUtils {
         if (GenericTypeReflector.isMissingTypeParameters(exactDeclaringType.getType())) {
             return executable.getAnnotatedParameterTypes();
         }
-        return GenericTypeReflector.getExactParameterTypes(executable, declaringType);
+        return GenericTypeReflector.getParameterTypes(executable, declaringType);
     }
 
     public static Class<?> getRawType(Type type) {
@@ -402,7 +402,7 @@ public class ClassUtils {
         }
         else if (type instanceof AnnotatedWildcardType || type instanceof AnnotatedTypeVariable) {
             //can only happen if bounds haven't been erased (via eraseBounds) prior to invoking this method
-            throw new TypeMappingException(type.getType().getTypeName() + " can not completed. Call eraseBounds first?");
+            throw new TypeMappingException(type.getType().getTypeName() + " can not be completed. Call eraseBounds first?");
         }
         return type;
     }

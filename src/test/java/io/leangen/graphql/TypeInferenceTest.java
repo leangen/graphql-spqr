@@ -154,7 +154,7 @@ public class TypeInferenceTest {
         AnnotatedType expected = new TypeToken<AbstractList<?>>(){}.getAnnotatedType();
         assertTrue(GenericTypeReflector.equals(expected, ClassUtils.getCommonSuperType(Arrays.asList(t1, t2))));
     }
-    
+
     @Test
     public void testMixedWildcardTypes() throws AnnotationFormatException {
         AnnotatedType t1 = new TypeToken<ArrayList<? extends Long>>(){}.getAnnotatedType();
@@ -162,7 +162,31 @@ public class TypeInferenceTest {
         AnnotatedType expected = new TypeToken<AbstractList<Number>>(){}.getAnnotatedType();
         assertTrue(GenericTypeReflector.equals(expected, ClassUtils.getCommonSuperType(Arrays.asList(t1, t2))));
     }
-    
+
+    @Test
+    public <T> void testUnboundedTypeVariables() throws AnnotationFormatException {
+        AnnotatedType t1 = new TypeToken<ArrayList<T>>(){}.getAnnotatedType();
+        AnnotatedType t2 = new TypeToken<LinkedList<T>>(){}.getAnnotatedType();
+        AnnotatedType expected = new TypeToken<AbstractList<T>>(){}.getAnnotatedType();
+        assertTrue(GenericTypeReflector.equals(expected, ClassUtils.getCommonSuperType(Arrays.asList(t1, t2))));
+    }
+
+    @Test(expected = TypeMappingException.class)
+    public <T, S> void testIncompatibleUnboundedTypeVariables() throws AnnotationFormatException {
+        AnnotatedType t1 = new TypeToken<ArrayList<T>>(){}.getAnnotatedType();
+        AnnotatedType t2 = new TypeToken<LinkedList<S>>(){}.getAnnotatedType();
+        AnnotatedType expected = new TypeToken<AbstractList<T>>(){}.getAnnotatedType();
+        assertTrue(GenericTypeReflector.equals(expected, ClassUtils.getCommonSuperType(Arrays.asList(t1, t2))));
+    }
+
+    @Test
+    public <T extends Long, S extends Double> void testBoundedTypeVariables() throws AnnotationFormatException {
+        AnnotatedType t1 = new TypeToken<ArrayList<T>>(){}.getAnnotatedType();
+        AnnotatedType t2 = new TypeToken<LinkedList<S>>(){}.getAnnotatedType();
+        AnnotatedType expected = new TypeToken<AbstractList<Number>>(){}.getAnnotatedType();
+        assertTrue(GenericTypeReflector.equals(expected, ClassUtils.getCommonSuperType(Arrays.asList(t1, t2))));
+    }
+
     @Test
     public void testLists() throws AnnotationFormatException {
         Annotation[] annotations = new Annotation[] {TypeFactory.annotation(GraphQLNonNull.class, Collections.emptyMap())};
