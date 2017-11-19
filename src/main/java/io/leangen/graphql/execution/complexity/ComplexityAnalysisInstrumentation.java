@@ -26,7 +26,7 @@ public class ComplexityAnalysisInstrumentation implements Instrumentation {
     private final int maximumComplexity;
 
     private static final Logger log = LoggerFactory.getLogger(ComplexityAnalysisInstrumentation.class);
-    
+
     public ComplexityAnalysisInstrumentation(ComplexityFunction complexityFunction, int maximumComplexity) {
         this.complexityFunction = complexityFunction;
         this.maximumComplexity = maximumComplexity;

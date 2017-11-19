@@ -11,7 +11,7 @@ public class TypeResolutionEnvironment extends graphql.TypeResolutionEnvironment
     public TypeResolutionEnvironment(graphql.TypeResolutionEnvironment environment,
                                      TypeRepository typeRepository,
                                      TypeInfoGenerator typeInfoGenerator) {
-        super(environment.getObject(), environment.getArguments(), environment.getField(), environment.getFieldType(), environment.getSchema());
+        super(environment.getObject(), environment.getArguments(), environment.getField(), environment.getFieldType(), environment.getSchema(), environment.getContext());
         this.typeRepository = typeRepository;
         this.typeInfoGenerator = typeInfoGenerator;
     }

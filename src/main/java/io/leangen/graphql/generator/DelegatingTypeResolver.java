@@ -78,7 +78,7 @@ public class DelegatingTypeResolver implements TypeResolver {
             return descriptor.value().newInstance().resolveType(
                     new io.leangen.graphql.execution.TypeResolutionEnvironment(env, typeRepository, typeInfoGenerator));
         } catch (ReflectiveOperationException e) {
-            throw new UnresolvableTypeException(env.getObject(), e);
+            throw new UnresolvableTypeException(env.<Object>getObject(), e);
         }
     }
 }
