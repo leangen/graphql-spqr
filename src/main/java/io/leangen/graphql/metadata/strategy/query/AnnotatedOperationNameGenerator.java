@@ -7,6 +7,7 @@ import java.lang.reflect.Method;
 
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.GraphQLSubscription;
 import io.leangen.graphql.util.ClassUtils;
 
 /**
@@ -32,7 +33,7 @@ public class AnnotatedOperationNameGenerator implements OperationNameGenerator {
             return declaringClass.getDeclaringClass().getAnnotation(GraphQLQuery.class).name();
         }
         throw new IllegalArgumentException("Neither the method/field " + resolver.toString() +
-                " nor the declaring class are annotated with GraphQLQuery");
+                " nor the declaring class are annotated with " + GraphQLQuery.class.getSimpleName());
     }
 
     @Override
@@ -45,6 +46,19 @@ public class AnnotatedOperationNameGenerator implements OperationNameGenerator {
             return declaringClass.getAnnotation(GraphQLMutation.class).name();
         }
         throw new IllegalArgumentException("Neither the method " + mutationMethod.toString() +
-                " nor the declaring class are annotated with GraphQLQuery");
+                " nor the declaring class are annotated with " + GraphQLMutation.class.getSimpleName());
+    }
+
+    @Override
+    public String generateSubscriptionName(Method subscriptionMethod, AnnotatedType declaringType, Object instance) {
+        if (subscriptionMethod.isAnnotationPresent(GraphQLSubscription.class)) {
+            return subscriptionMethod.getAnnotation(GraphQLSubscription.class).name();
+        }
+        Class<?> declaringClass = ClassUtils.getRawType(declaringType.getType());
+        if (declaringClass.isAnnotationPresent(GraphQLSubscription.class)) {
+            return declaringClass.getAnnotation(GraphQLSubscription.class).name();
+        }
+        throw new IllegalArgumentException("Neither the method " + subscriptionMethod.toString() +
+                " nor the declaring class are annotated with " + GraphQLSubscription.class.getSimpleName());
     }
 }

@@ -15,4 +15,5 @@ public interface ResolverBuilder {
 
     Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType);
     Collection<Resolver> buildMutationResolvers(Object querySourceBean, AnnotatedType beanType);
+    Collection<Resolver> buildSubscriptionResolvers(Object querySourceBean, AnnotatedType beanType);
 }

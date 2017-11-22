@@ -37,17 +37,19 @@ public class DelegatingOperationNameGenerator implements OperationNameGenerator 
         if (queryName.isPresent()) return queryName.get();
 
         throw new IllegalStateException(
-                "Operation name impossible to determine from method " + query + " using the configured query name generator: " + this.toString());
+                "Operation name impossible to determine from method " + query + " using the configured operation name generators: " + this.toString());
     }
 
     @Override
     public String generateMutationName(Method mutationMethod, AnnotatedType declaringType, Object instance) {
         Optional<String> mutationName = generateName(queryNameGenerator -> queryNameGenerator.generateMutationName(mutationMethod, declaringType, instance));
+        return requireName(mutationName, mutationMethod);
+    }
 
-        if (mutationName.isPresent()) return mutationName.get();
-
-        throw new IllegalStateException(
-                "Mutation name impossible to determine from method " + mutationMethod + " using the configured query name generator: " + this.toString());
+    @Override
+    public String generateSubscriptionName(Method subscriptionMethod, AnnotatedType declaringType, Object instance) {
+        Optional<String> subscriptionName = generateName(queryNameGenerator -> queryNameGenerator.generateSubscriptionName(subscriptionMethod, declaringType, instance));
+        return requireName(subscriptionName, subscriptionMethod);
     }
 
     private Optional<String> generateName(Function<OperationNameGenerator, String> nameGeneratorFunction) {

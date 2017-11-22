@@ -59,6 +59,7 @@ public class OperationMapper {
 
     private List<GraphQLFieldDefinition> queries; //The list of all mapped queries
     private List<GraphQLFieldDefinition> mutations; //The list of all mapped mutations
+    private List<GraphQLFieldDefinition> subscriptions; //The list of all mapped subscriptions
 
     /**
      *
@@ -67,6 +68,7 @@ public class OperationMapper {
     public OperationMapper(BuildContext buildContext) {
         this.queries = generateQueries(buildContext);
         this.mutations = generateMutations(buildContext);
+        this.subscriptions = generateSubscriptions(buildContext);
     }
 
     /**
@@ -107,6 +109,12 @@ public class OperationMapper {
                 .map(mutation -> buildContext.relayMappingConfig.relayCompliantMutations
                         ? toRelayMutation(toGraphQLOperation(mutation, buildContext), buildContext.relayMappingConfig)
                         : toGraphQLOperation(mutation, buildContext))
+                .collect(Collectors.toList());
+    }
+
+    private List<GraphQLFieldDefinition> generateSubscriptions(BuildContext buildContext) {
+        return buildContext.operationRepository.getSubscriptions().stream()
+                .map(subscription -> toGraphQLOperation(subscription, buildContext))
                 .collect(Collectors.toList());
     }
 
@@ -359,5 +367,9 @@ public class OperationMapper {
      */
     public List<GraphQLFieldDefinition> getMutations() {
         return mutations;
+    }
+
+    public List<GraphQLFieldDefinition> getSubscriptions() {
+        return subscriptions;
     }
 }

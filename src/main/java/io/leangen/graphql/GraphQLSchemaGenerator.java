@@ -48,6 +48,7 @@ import io.leangen.graphql.generator.mapping.common.OptionalDoubleAdapter;
 import io.leangen.graphql.generator.mapping.common.OptionalIntAdapter;
 import io.leangen.graphql.generator.mapping.common.OptionalLongAdapter;
 import io.leangen.graphql.generator.mapping.common.PageMapper;
+import io.leangen.graphql.generator.mapping.common.PublisherMapper;
 import io.leangen.graphql.generator.mapping.common.RootContextInjector;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
 import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
@@ -143,6 +144,7 @@ public class GraphQLSchemaGenerator {
 
     private static final String QUERY_ROOT = "QUERY_ROOT";
     private static final String MUTATION_ROOT = "MUTATION_ROOT";
+    private static final String SUBSCRIPTION_ROOT = "SUBSCRIPTION_ROOT";
 
     /**
      * Default constructor
@@ -652,7 +654,7 @@ public class GraphQLSchemaGenerator {
             ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
             withTypeMappers(
                     new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
-                    new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
+                    new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                     new ObjectScalarAdapter(scalarStrategy), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
                     new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(scalarStrategy),
                     new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
@@ -720,6 +722,15 @@ public class GraphQLSchemaGenerator {
                     .name(MUTATION_ROOT)
                     .description("Mutation root type")
                     .fields(mutations)
+                    .build());
+        }
+
+        List<GraphQLFieldDefinition> subscriptions = operationMapper.getSubscriptions();
+        if (!subscriptions.isEmpty()) {
+            builder.subscription(newObject()
+                    .name(SUBSCRIPTION_ROOT)
+                    .description("Subscription root type")
+                    .fields(subscriptions)
                     .build());
         }
         applyProcessors(builder);

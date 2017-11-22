@@ -47,6 +47,11 @@ public class ResolverBuilderTest {
                     public String generateMutationName(Method mutationMethod, AnnotatedType declaringType, Object instance) {
                         return null;
                     }
+
+                    @Override
+                    public String generateSubscriptionName(Method subscriptionMethod, AnnotatedType declaringType, Object instance) {
+                        return null;
+                    }
                 }))
                 .withOperationsFromSingleton(new One(), new TypeToken<BaseService<Person, Long>>(){}.getAnnotatedType())
                 .withOperationsFromSingleton(new Two(), new TypeToken<BaseService<Number, Long>>(){}.getAnnotatedType())

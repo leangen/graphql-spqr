@@ -66,6 +66,11 @@ public class DefaultOperationBuilder implements OperationBuilder {
         return buildQuery(context, resolvers);
     }
 
+    @Override
+    public Operation buildSubscription(Type context, List<Resolver> resolvers) {
+        return buildQuery(context, resolvers);
+    }
+
     protected String resolveName(List<Resolver> resolvers) {
         return resolvers.get(0).getOperationName();
     }

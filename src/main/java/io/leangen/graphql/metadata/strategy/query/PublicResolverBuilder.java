@@ -1,5 +1,7 @@
 package io.leangen.graphql.metadata.strategy.query;
 
+import org.reactivestreams.Publisher;
+
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -47,6 +49,11 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         return buildMutationResolvers(querySourceBean, beanType, getFilters());
     }
 
+    @Override
+    public Collection<Resolver> buildSubscriptionResolvers(Object querySourceBean, AnnotatedType beanType) {
+        return buildSubscriptionResolvers(querySourceBean, beanType, getFilters());
+    }
+
     private Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType, List<Predicate<Member>> filters) {
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         if (rawType.isArray() || rawType.isPrimitive()) return Collections.emptyList();
@@ -78,7 +85,27 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .map(method -> new Resolver(
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
-                        method.isAnnotationPresent(Batched.class),
+                        false,
+                        querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
+                        getReturnType(method, beanType),
+                        argumentBuilder.buildResolverArguments(method, beanType),
+                        method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
+                ))
+                .collect(Collectors.toList());
+    }
+
+    private Collection<Resolver> buildSubscriptionResolvers(Object querySourceBean, AnnotatedType beanType, List<Predicate<Member>> filters) {
+        Class<?> rawType = ClassUtils.getRawType(beanType.getType());
+        if (rawType.isArray()|| rawType.isPrimitive()) return Collections.emptyList();
+        return Arrays.stream(rawType.getMethods())
+                .filter(REAL_ONLY)
+                .filter(method -> isPackageAcceptable(method, rawType))
+                .filter(this::isSubscription)
+                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
+                .map(method -> new Resolver(
+                        operationNameGenerator.generateSubscriptionName(method, beanType, querySourceBean),
+                        operationNameGenerator.generateSubscriptionName(method, beanType, querySourceBean),
+                        false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
                         argumentBuilder.buildResolverArguments(method, beanType),
@@ -88,11 +115,15 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
     }
 
     protected boolean isQuery(Method method) {
-        return !isMutation(method);
+        return !isMutation(method) && !isSubscription(method);
     }
 
     protected boolean isMutation(Method method) {
         return method.getReturnType() == void.class;
+    }
+
+    protected boolean isSubscription(Method method) {
+        return method.getReturnType() == Publisher.class;
     }
 
     private boolean isPackageAcceptable(Method method, Class<?> beanType) {

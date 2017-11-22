@@ -14,4 +14,6 @@ public interface OperationNameGenerator {
     String generateQueryName(Field queryField, AnnotatedType declaringType, Object instance);
 
     String generateMutationName(Method mutationMethod, AnnotatedType declaringType, Object instance);
+
+    String generateSubscriptionName(Method subscriptionMethod, AnnotatedType declaringType, Object instance);
 }

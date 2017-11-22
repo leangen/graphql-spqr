@@ -14,6 +14,7 @@ import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.GraphQLSubscription;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.execution.FieldAccessor;
 import io.leangen.graphql.metadata.execution.MethodInvoker;
@@ -82,7 +83,23 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(method -> new Resolver(
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLMutation.class).description(),
-                        method.isAnnotationPresent(Batched.class),
+                        false,
+                        querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
+                        getReturnType(method, beanType),
+                        argumentBuilder.buildResolverArguments(method, beanType),
+                        method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
+                )).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Collection<Resolver> buildSubscriptionResolvers(Object querySourceBean, AnnotatedType beanType) {
+        return ClassUtils.getAnnotatedMethods(ClassUtils.getRawType(beanType.getType()), GraphQLSubscription.class).stream()
+                .filter(REAL_ONLY)
+                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
+                .map(method -> new Resolver(
+                        operationNameGenerator.generateSubscriptionName(method, beanType, querySourceBean),
+                        method.getAnnotation(GraphQLSubscription.class).description(),
+                        false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
                         argumentBuilder.buildResolverArguments(method, beanType),

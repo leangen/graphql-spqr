@@ -13,4 +13,5 @@ public interface OperationBuilder {
 
     Operation buildQuery(Type context, List<Resolver> resolvers);
     Operation buildMutation(Type context, List<Resolver> resolvers);
+    Operation buildSubscription(Type context, List<Resolver> resolvers);
 }

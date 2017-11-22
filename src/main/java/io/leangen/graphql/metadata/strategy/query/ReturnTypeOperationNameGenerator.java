@@ -32,6 +32,11 @@ public class ReturnTypeOperationNameGenerator implements OperationNameGenerator 
         return generateQueryName(mutationMethod, declaringType, instance);
     }
 
+    @Override
+    public String generateSubscriptionName(Method subscriptionMethod, AnnotatedType declaringType, Object instance) {
+        return generateQueryName(subscriptionMethod, declaringType, instance);
+    }
+
     @SuppressWarnings("WeakerAccess")
     protected String pluralize(String noun) {
         if (noun.endsWith("man")) {

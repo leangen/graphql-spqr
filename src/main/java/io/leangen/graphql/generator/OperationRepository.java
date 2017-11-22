@@ -23,6 +23,7 @@ public class OperationRepository {
 
     private final Set<Operation> queries;
     private final Set<Operation> mutations;
+    private final Set<Operation> subscriptions;
     private final OperationSourceRepository operationSourceRepository;
     private final OperationBuilder operationBuilder;
 
@@ -31,8 +32,10 @@ public class OperationRepository {
         this.operationBuilder = operationBuilder;
         List<Resolver> resolvers = buildQueryResolvers(operationSourceRepository.getOperationSources());
         List<Resolver> mutationResolvers = buildMutationResolvers(operationSourceRepository.getOperationSources());
+        List<Resolver> subscriptionResolvers = buildSubscriptionResolvers(operationSourceRepository.getOperationSources());
         queries = buildQueries(resolvers);
         mutations = buildMutations(mutationResolvers);
+        subscriptions = buildSubscriptions(subscriptionResolvers);
     }
 
     private Set<Operation> buildQueries(List<Resolver> resolvers) {
@@ -52,6 +55,16 @@ public class OperationRepository {
                         .map(contextType -> resolversPerContext(contextType, r))
                         .filter(contextual -> !contextual.getValue().isEmpty())
                         .map(contextual -> operationBuilder.buildMutation(contextual.getKey(), contextual.getValue())))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private Set<Operation> buildSubscriptions(List<Resolver> resolvers) {
+        return resolvers.stream()
+                .collect(Collectors.groupingBy(Resolver::getOperationName)).values().stream()
+                .flatMap(r -> collectContextTypes(r).stream()
+                        .map(contextType -> resolversPerContext(contextType, r))
+                        .filter(contextual -> !contextual.getValue().isEmpty())
+                        .map(contextual -> operationBuilder.buildSubscription(contextual.getKey(), contextual.getValue())))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
@@ -84,6 +97,10 @@ public class OperationRepository {
 
     public Collection<Operation> getMutations() {
         return mutations;
+    }
+
+    public Collection<Operation> getSubscriptions() {
+        return subscriptions;
     }
 
     public Set<Operation> getNestedQueries(AnnotatedType domainType) {
@@ -123,6 +140,11 @@ public class OperationRepository {
     private List<Resolver> buildMutationResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
                 builder.buildMutationResolvers(operationSource.getServiceSingleton(), operationSource.getJavaType())));
+    }
+
+    private List<Resolver> buildSubscriptionResolvers(Collection<OperationSource> operationSources) {
+        return buildResolvers(operationSources, ((operationSource, builder) ->
+                builder.buildSubscriptionResolvers(operationSource.getServiceSingleton(), operationSource.getJavaType())));
     }
 
     private List<Resolver> buildResolvers(Collection<OperationSource> operationSources, BiFunction<OperationSource, ResolverBuilder, Collection<Resolver>> building) {

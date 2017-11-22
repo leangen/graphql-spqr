@@ -23,4 +23,9 @@ public class MethodOperationNameGenerator implements OperationNameGenerator {
     public String generateMutationName(Method mutationMethod, AnnotatedType declaringType, Object instance) {
         return mutationMethod.getName();
     }
+
+    @Override
+    public String generateSubscriptionName(Method subscriptionMethod, AnnotatedType declaringType, Object instance) {
+        return subscriptionMethod.getName();
+    }
 }
