@@ -22,7 +22,7 @@ public class JsonDefaultValueProvider implements DefaultValueProvider {
 
     @Override
     public OperationArgumentDefaultValue getDefaultValue(Parameter parameter, AnnotatedType parameterType, OperationArgumentDefaultValue initialValue) {
-        if (initialValue.isEmpty()) {
+        if (initialValue.isEmpty() || (parameterType.getType().equals(String.class) && !initialValue.<String>get().startsWith("\""))) {
             return initialValue;
         } else {
             return new OperationArgumentDefaultValue(valueMapper.fromString(initialValue.get(), parameterType));
