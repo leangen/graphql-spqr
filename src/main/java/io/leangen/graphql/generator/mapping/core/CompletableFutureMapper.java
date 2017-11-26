@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator.mapping.common;
+package io.leangen.graphql.generator.mapping.core;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Set;
@@ -8,6 +8,7 @@ import graphql.schema.GraphQLInputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMapper;
 import io.leangen.graphql.util.ClassUtils;
 
 public class CompletableFutureMapper extends AbstractTypeSubstitutingMapper {
