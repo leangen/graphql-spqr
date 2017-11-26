@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator.mapping.common;
+package io.leangen.graphql.generator.mapping.core;
 
 import org.reactivestreams.Publisher;
 
@@ -9,6 +9,7 @@ import graphql.schema.GraphQLInputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMapper;
 import io.leangen.graphql.util.ClassUtils;
 
 public class PublisherMapper extends AbstractTypeSubstitutingMapper {
