@@ -68,7 +68,7 @@ Maven
 Gradle
 
 ```groovy
-compile 'io.leangen.graphql:spqr:0.9.4'
+compile 'io.leangen.graphql:spqr:0.9.5'
 ```
 
 ## Hello world
