@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.execution.batched.Batched;
@@ -35,7 +36,9 @@ public class BatchingTest {
         AtomicBoolean runBatched = new AtomicBoolean(false);
         GraphQL batchExe = GraphQLRuntime.newGraphQL(schema).queryExecutionStrategy(new BatchedExecutionStrategy()).build();
         ExecutionResult result;
-        result = batchExe.execute("{candidates {stuff {startYear}}}", runBatched);
+        result = batchExe.execute(ExecutionInput.newExecutionInput()
+                .query("{candidates {educations {startYear}}}")
+                .context(runBatched).build());
         assertTrue("Query didn't run in batched mode", runBatched.get());
         assertTrue(result.getErrors().isEmpty());
         assertEquals(3, ((Map<String, List>) result.getData()).get("candidates").size());
@@ -43,7 +46,7 @@ public class BatchingTest {
         //TODO put this back when/if the ability to expose nested queries as top-level is reintroduced
         /*runBatched.getAndSet(false);
         GraphQL simpleExe = GraphQLRuntime.newGraphQL(schema).build();
-        result = simpleExe.execute("{stuff(users: [" +
+        result = simpleExe.execute("{educations(users: [" +
                     "{fullName: \"One\"}," +
                     "{fullName: \"Two\"}," +
                     "{fullName: \"Three\"}" +
@@ -67,7 +70,7 @@ public class BatchingTest {
 
         @Batched
         @GraphQLQuery
-        public List<Education> stuff(@GraphQLArgument(name = "users") @GraphQLContext List<SimpleUser> users, @GraphQLRootContext AtomicBoolean flag) {
+        public List<Education> educations(@GraphQLArgument(name = "users") @GraphQLContext List<SimpleUser> users, @GraphQLRootContext AtomicBoolean flag) {
             assertEquals(3, users.size());
             flag.getAndSet(true);
             return users.stream()
