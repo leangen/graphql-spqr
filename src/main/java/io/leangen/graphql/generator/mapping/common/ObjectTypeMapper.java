@@ -3,8 +3,12 @@ package io.leangen.graphql.generator.mapping.common;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import graphql.Scalars;
@@ -14,6 +18,7 @@ import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLTypeReference;
+import io.leangen.graphql.annotations.types.GraphQLType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.types.MappedGraphQLObjectType;
@@ -34,7 +39,9 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
 
-        List<GraphQLFieldDefinition> fields = getFields(javaType, buildContext, operationMapper);
+        GraphQLType graphQLType = javaType.getAnnotation(GraphQLType.class);
+        List<String> fieldOrder = graphQLType != null ? Arrays.asList(graphQLType.fieldOrder()) : Collections.emptyList();
+        List<GraphQLFieldDefinition> fields = getFields(javaType, fieldOrder, buildContext, operationMapper);
         fields.forEach(typeBuilder::field);
 
         List<GraphQLOutputType> interfaces = getInterfaces(javaType, abstractTypes, fields, buildContext, operationMapper);
@@ -76,7 +83,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected List<GraphQLFieldDefinition> getFields(AnnotatedType javaType, BuildContext buildContext, OperationMapper operationMapper) {
+    protected List<GraphQLFieldDefinition> getFields(AnnotatedType javaType, List<String> specifiedFieldOrder, BuildContext buildContext, OperationMapper operationMapper) {
         List<GraphQLFieldDefinition> fields = buildContext.operationRepository.getChildQueries(javaType).stream()
                 .map(childQuery -> operationMapper.toGraphQLOperation(childQuery, buildContext))
                 .collect(Collectors.toList());
@@ -87,7 +94,8 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                     .dataFetcher(env -> env.getSource() == null ? null : env.getSource().getClass().getSimpleName())
                     .build());
         }
-        return fields;
+        List<GraphQLFieldDefinition> sortedFields = sortFieldsBySpecifiedOrderAndTheRestAlphabetically(fields, specifiedFieldOrder);
+        return sortedFields;
     }
 
     @SuppressWarnings("WeakerAccess")
@@ -102,5 +110,20 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 inter -> interfaces.add(operationMapper.toGraphQLType(inter, abstractTypes, buildContext)));
 
         return interfaces;
+    }
+
+    private static List<GraphQLFieldDefinition> sortFieldsBySpecifiedOrderAndTheRestAlphabetically(List<GraphQLFieldDefinition> fields, List<String> specifiedFieldOrder) {
+        Map<String, GraphQLFieldDefinition> fieldMap = new TreeMap<>();
+        for (GraphQLFieldDefinition field : fields) {
+            fieldMap.put(field.getName(), field);
+        }
+        List<GraphQLFieldDefinition> result = new ArrayList<>();
+        for (String name : specifiedFieldOrder) {
+            if (fieldMap.containsKey(name)) {
+                result.add(fieldMap.remove(name));
+            }
+        }
+        result.addAll(fieldMap.values());
+        return result;
     }
 }
