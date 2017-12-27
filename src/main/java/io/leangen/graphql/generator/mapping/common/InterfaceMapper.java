@@ -2,6 +2,8 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,7 +42,9 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
 
-        List<GraphQLFieldDefinition> fields = objectTypeMapper.getFields(javaType, buildContext, operationMapper);
+        GraphQLInterface graphQLInterface = javaType.getAnnotation(GraphQLInterface.class);
+        List<String> fieldOrder = graphQLInterface != null ? Arrays.asList(graphQLInterface.fieldOrder()) : Collections.emptyList();
+        List<GraphQLFieldDefinition> fields = objectTypeMapper.getFields(javaType, fieldOrder, buildContext, operationMapper);
         fields.forEach(typeBuilder::field);
 
         typeBuilder.typeResolver(buildContext.typeResolver);
