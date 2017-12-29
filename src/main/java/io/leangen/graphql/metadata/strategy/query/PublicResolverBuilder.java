@@ -64,7 +64,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
-                        operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
+                        "",
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
@@ -84,7 +84,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
-                        operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
+                        "",
                         false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
@@ -104,7 +104,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateSubscriptionName(method, beanType, querySourceBean),
-                        operationNameGenerator.generateSubscriptionName(method, beanType, querySourceBean),
+                        "",
                         false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
