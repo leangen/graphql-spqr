@@ -150,9 +150,7 @@ public class GraphQLSchemaGenerator {
      * Default constructor
      */
     public GraphQLSchemaGenerator() {
-        this.queryRoot = "QUERY_ROOT";
-        this.mutationRoot = "MUTATION_ROOT";
-        this.subscriptionRoot = "SUBSCRIPTION_ROOT";
+        this("Query", "Mutation", "Subscription");
     }
 
     /**
@@ -165,18 +163,6 @@ public class GraphQLSchemaGenerator {
         this.queryRoot = queryRoot;
         this.mutationRoot = mutationRoot;
         this.subscriptionRoot = subscriptionRoot;
-    }
-
-    /**
-     * Construct with {@code serviceSingletons} as singleton query sources with default builders
-     * <p>Equivalent to: {@code new GraphQLSchemaGenerator().withOperationsFromType(serviceSingletons)}</p>
-     * <p>See {@link #withOperationsFromSingletons(Object...)}</p>
-     *
-     * @param serviceSingletons Singletons to register as query sources
-     */
-    public GraphQLSchemaGenerator(Object... serviceSingletons) {
-        this();
-        this.withOperationsFromSingletons(serviceSingletons);
     }
 
     /**
@@ -764,7 +750,10 @@ public class GraphQLSchemaGenerator {
     }
 
     private boolean isInternalType(GraphQLType type) {
-        return type.getName().startsWith("__") || type.getName().equals(queryRoot) || type.getName().equals(mutationRoot);
+        return type.getName().startsWith("__") ||
+                type.getName().equals(queryRoot) ||
+                type.getName().equals(mutationRoot) ||
+                type.getName().equals(subscriptionRoot);
     }
 
     private void checkType(Type type) {
