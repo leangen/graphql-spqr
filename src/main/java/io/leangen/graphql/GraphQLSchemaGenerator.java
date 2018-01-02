@@ -142,14 +142,30 @@ public class GraphQLSchemaGenerator {
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Set<GraphQLType> additionalTypes = new HashSet<>();
 
-    private static final String QUERY_ROOT = "QUERY_ROOT";
-    private static final String MUTATION_ROOT = "MUTATION_ROOT";
-    private static final String SUBSCRIPTION_ROOT = "SUBSCRIPTION_ROOT";
+    private final String queryRoot;
+    private final String mutationRoot;
+    private final String subscriptionRoot;
 
     /**
      * Default constructor
      */
-    public GraphQLSchemaGenerator() {}
+    public GraphQLSchemaGenerator() {
+        this.queryRoot = "QUERY_ROOT";
+        this.mutationRoot = "MUTATION_ROOT";
+        this.subscriptionRoot = "SUBSCRIPTION_ROOT";
+    }
+
+    /**
+     * Constructor which allows to customize names of root types.
+     * @param queryRoot name of query root type
+     * @param mutationRoot name of mutation root type
+     * @param subscriptionRoot name of subscription root type
+     */
+    public GraphQLSchemaGenerator(String queryRoot, String mutationRoot, String subscriptionRoot) {
+        this.queryRoot = queryRoot;
+        this.mutationRoot = mutationRoot;
+        this.subscriptionRoot = subscriptionRoot;
+    }
 
     /**
      * Construct with {@code serviceSingletons} as singleton query sources with default builders
@@ -159,6 +175,7 @@ public class GraphQLSchemaGenerator {
      * @param serviceSingletons Singletons to register as query sources
      */
     public GraphQLSchemaGenerator(Object... serviceSingletons) {
+        this();
         this.withOperationsFromSingletons(serviceSingletons);
     }
 
@@ -711,7 +728,7 @@ public class GraphQLSchemaGenerator {
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema()
                 .query(newObject()
-                        .name(QUERY_ROOT)
+                        .name(queryRoot)
                         .description("Query root type")
                         .fields(operationMapper.getQueries())
                         .build());
@@ -719,7 +736,7 @@ public class GraphQLSchemaGenerator {
         List<GraphQLFieldDefinition> mutations = operationMapper.getMutations();
         if (!mutations.isEmpty()) {
             builder.mutation(newObject()
-                    .name(MUTATION_ROOT)
+                    .name(mutationRoot)
                     .description("Mutation root type")
                     .fields(mutations)
                     .build());
@@ -728,7 +745,7 @@ public class GraphQLSchemaGenerator {
         List<GraphQLFieldDefinition> subscriptions = operationMapper.getSubscriptions();
         if (!subscriptions.isEmpty()) {
             builder.subscription(newObject()
-                    .name(SUBSCRIPTION_ROOT)
+                    .name(subscriptionRoot)
                     .description("Subscription root type")
                     .fields(subscriptions)
                     .build());
@@ -747,7 +764,7 @@ public class GraphQLSchemaGenerator {
     }
 
     private boolean isInternalType(GraphQLType type) {
-        return type.getName().startsWith("__") || type.getName().equals(QUERY_ROOT) || type.getName().equals(MUTATION_ROOT);
+        return type.getName().startsWith("__") || type.getName().equals(queryRoot) || type.getName().equals(mutationRoot);
     }
 
     private void checkType(Type type) {
