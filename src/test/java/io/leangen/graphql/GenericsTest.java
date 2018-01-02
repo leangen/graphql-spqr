@@ -132,7 +132,7 @@ public class GenericsTest {
         
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithDateIds).build();
         String jsonDate = valueMapperFactory.getValueMapper().toString(firstEvent);
-        String relayId = new Relay().toGlobalId("QUERY_ROOT", jsonDate);
+        String relayId = new Relay().toGlobalId("Query", jsonDate);
         ExecutionResult result = graphQL.execute("{ contains(id: \"" + relayId+ "\") }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
         assertEquals(relayId, ((Map<String, Object>) result.getData()).get("contains"));
