@@ -13,8 +13,6 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.generator.mapping.ArgumentInjectorRepository;
-import io.leangen.graphql.generator.mapping.ConverterRepository;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
@@ -44,23 +42,30 @@ public class BuildContext {
     public final Map<Type, Set<Type>> abstractComponentTypes = new HashMap<>();
 
     /**
+     * The shared context accessible throughout the schema generation process
      *
      * @param operationRepository Repository that can be used to fetch all known (singleton and domain) queries
      * @param typeMappers Repository of all registered {@link io.leangen.graphql.generator.mapping.TypeMapper}s
-     * @param converters Repository of all registered {@link io.leangen.graphql.generator.mapping.InputConverter}s
-     *                   and {@link io.leangen.graphql.generator.mapping.OutputConverter}s
+     * @param environment The globally shared environment
+     * @param interfaceStrategy The strategy deciding what Java type gets mapped to a GraphQL interface
+     * @param basePackage The base (root) package of the entire project
+     * @param typeInfoGenerator Generates type name/description
+     * @param valueMapperFactory The factory used to produce {@link io.leangen.graphql.metadata.strategy.value.ValueMapper} instances
+     * @param inputFieldStrategy The strategy deciding how GraphQL input fields are discovered from Java types
+     * @param knownTypes The cache of known type names
+     * @param relayMappingConfig Relay specific configuration
      */
     public BuildContext(OperationRepository operationRepository, TypeMapperRepository typeMappers,
-                        ConverterRepository converters, ArgumentInjectorRepository inputProviders,
+                        GlobalEnvironment environment,
                         InterfaceMappingStrategy interfaceStrategy, String basePackage,
                         TypeInfoGenerator typeInfoGenerator, ValueMapperFactory valueMapperFactory,
                         InputFieldDiscoveryStrategy inputFieldStrategy, Set<GraphQLType> knownTypes,
                         RelayMappingConfig relayMappingConfig) {
         this.operationRepository = operationRepository;
-        this.typeRepository = new TypeRepository(knownTypes);
+        this.typeRepository = environment.typeRepository;
         this.typeMappers = typeMappers;
         this.typeInfoGenerator = typeInfoGenerator;
-        this.relay = new Relay();
+        this.relay = environment.relay;
         this.node = knownTypes.stream()
                 .filter(GraphQLUtils::isRelayNodeInterface)
                 .findFirst().map(type -> (GraphQLInterfaceType) type)
@@ -70,7 +75,7 @@ public class BuildContext {
         this.basePackage = basePackage;
         this.valueMapperFactory = valueMapperFactory;
         this.inputFieldStrategy = inputFieldStrategy;
-        this.globalEnvironment = new GlobalEnvironment(relay, typeRepository, converters, inputProviders);
+        this.globalEnvironment = environment;
         this.knownTypes = knownTypes.stream()
                 .filter(type -> type instanceof GraphQLOutputType)
                 .map(GraphQLType::getName)

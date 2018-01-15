@@ -15,8 +15,7 @@ public class InputValueDeserializer implements ArgumentInjector {
         if (input == null) {
             return null;
         }
-        AnnotatedType argValueType = resolutionEnvironment.getMappableType(type);
-        return resolutionEnvironment.valueMapper.fromInput(input, argValueType);
+        return resolutionEnvironment.valueMapper.fromInput(input, type);
     }
 
     @Override

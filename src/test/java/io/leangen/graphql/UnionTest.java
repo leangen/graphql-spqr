@@ -17,6 +17,8 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
+import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
+import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOf;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertMapOf;
@@ -34,6 +36,8 @@ public class UnionTest {
         InlineUnionService unionService = new InlineUnionService();
 
         GraphQLSchema schema = new TestSchemaGenerator()
+                .withTypeAdapters(new MapToListTypeAdapter<>(new ObjectScalarStrategy()))
+                .withDefaults()
                 .withOperationsFromSingleton(unionService)
                 .generate();
 

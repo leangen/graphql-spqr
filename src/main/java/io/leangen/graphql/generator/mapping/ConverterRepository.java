@@ -22,12 +22,18 @@ public class ConverterRepository {
         this.outputConverters = Collections.unmodifiableList(outputConverters);
     }
 
-    public InputConverter getInputConverter(AnnotatedType inputType) {
-        return inputConverters.stream().filter(conv -> conv.supports(inputType)).findFirst().orElse(null);
+    public List<InputConverter> getInputConverters() {
+        return inputConverters;
     }
 
-    public OutputConverter getOutputConverter(AnnotatedType outputType) {
-        return outputConverters.stream().filter(conv -> conv.supports(outputType)).findFirst().orElse(null);
+    @SuppressWarnings("unchecked")
+    public <T, S> InputConverter<T, S> getInputConverter(AnnotatedType inputType) {
+        return (InputConverter<T, S>) inputConverters.stream().filter(conv -> conv.supports(inputType)).findFirst().orElse(null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T, S> OutputConverter<T, S> getOutputConverter(AnnotatedType outputType) {
+        return (OutputConverter<T, S>) outputConverters.stream().filter(conv -> conv.supports(outputType)).findFirst().orElse(null);
     }
 
     public AnnotatedType getMappableType(AnnotatedType type) {

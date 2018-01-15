@@ -5,21 +5,25 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import graphql.relay.Relay;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLNonNull;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.OperationRepository;
 import io.leangen.graphql.generator.OperationSource;
 import io.leangen.graphql.generator.OperationSourceRepository;
 import io.leangen.graphql.generator.RelayMappingConfig;
+import io.leangen.graphql.generator.TypeRepository;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
@@ -38,7 +42,6 @@ import io.leangen.graphql.generator.mapping.common.IdAdapter;
 import io.leangen.graphql.generator.mapping.common.InputValueDeserializer;
 import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
 import io.leangen.graphql.generator.mapping.common.ListMapper;
-import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.NonNullMapper;
 import io.leangen.graphql.generator.mapping.common.ObjectScalarAdapter;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
@@ -122,10 +125,11 @@ public class GraphQLSchemaGenerator {
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy(true);
     private ScalarMappingStrategy scalarStrategy = new DefaultScalarStrategy();
     private OperationBuilder operationBuilder = new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.NONE);
-    private ValueMapperFactory valueMapperFactory;
+    private ValueMapperFactory<?> valueMapperFactory;
     private InputFieldDiscoveryStrategy inputFieldStrategy;
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
     private TypeTransformer typeTransformer = new DefaultTypeTransformer(false, false);
+    private GlobalEnvironment environment;
     private String basePackage;
     private boolean defaultTypeMappers = false;
     private boolean defaultOutputConverters = false;
@@ -403,7 +407,7 @@ public class GraphQLSchemaGenerator {
         this.interfaceStrategy = interfaceStrategy;
         return this;
     }
-    
+
     public GraphQLSchemaGenerator withScalarMappingStrategy(ScalarMappingStrategy scalarStrategy) {
         this.scalarStrategy = scalarStrategy;
         return this;
@@ -474,7 +478,8 @@ public class GraphQLSchemaGenerator {
      * be convenient to group the logic for mapping and converting to/from the same Java type in one place.
      * For example, because GraphQL type system has no notion of maps, {@link java.util.Map}s require special logic
      * both when mapping them to a GraphQL type and when converting them before and after invoking a Java method.
-     * For this reason, all code dealing with translating {@link java.util.Map}s is kept in one place in {@link MapToListTypeAdapter}.
+     * For this reason, all code dealing with translating {@link java.util.Map}s is kept in one place in
+     * {@link io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter}.
      * <p><b>Ordering of mappers/converters is strictly important as the first one supporting the given Java type
      * will be used to map/convert it.</b></p>
      * <p>See {@link #withDefaultMappers()}</p>
@@ -496,12 +501,12 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withMetaDataGenerator(TypeInfoGenerator typeInfoGenerator) {
+    public GraphQLSchemaGenerator withTypeInfoGenerator(TypeInfoGenerator typeInfoGenerator) {
         this.typeInfoGenerator = typeInfoGenerator;
         return this;
     }
 
-    public GraphQLSchemaGenerator withValueMapperFactory(ValueMapperFactory valueMapperFactory) {
+    public GraphQLSchemaGenerator withValueMapperFactory(ValueMapperFactory<?> valueMapperFactory) {
         this.valueMapperFactory = valueMapperFactory;
         return this;
     }
@@ -515,7 +520,7 @@ public class GraphQLSchemaGenerator {
         this.typeTransformer = transformer;
         return this;
     }
-    
+
     public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes) {
         additionalTypes.stream()
                 .filter(type -> !isInternalType(type))
@@ -527,7 +532,7 @@ public class GraphQLSchemaGenerator {
         this.operationBuilder = operationBuilder;
         return this;
     }
-    
+
     /**
      * Sets a flag that all mutations should be mapped in a Relay-compliant way,
      * using the default name and description for output wrapper fields.
@@ -659,13 +664,13 @@ public class GraphQLSchemaGenerator {
                     new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                     new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                     new ObjectScalarAdapter(scalarStrategy), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
-                    new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new MapToListTypeAdapter<>(scalarStrategy),
+                    new UnionInlineMapper(), new StreamToCollectionTypeAdapter(),
                     new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
                     new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         }
         if (outputConverters.isEmpty() || this.defaultOutputConverters) {
             withOutputConverters(
-                    new IdAdapter(), new ObjectScalarAdapter(scalarStrategy), new MapToListTypeAdapter<>(scalarStrategy),
+                    new IdAdapter(), new ObjectScalarAdapter(scalarStrategy),
                     new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter(),
                     new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                     new OptionalAdapter(), new StreamToCollectionTypeAdapter());
@@ -673,16 +678,18 @@ public class GraphQLSchemaGenerator {
         if (inputConverters.isEmpty() || this.defaultInputConverters) {
             withInputConverters(
                     new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                    new MapToListTypeAdapter<>(scalarStrategy), new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+                    new OptionalAdapter(), new StreamToCollectionTypeAdapter());
         }
         if (argumentInjectors.isEmpty() || this.defaultArgumentInjectors) {
             withArgumentInjectors(
                     new IdAdapter(), new RootContextInjector(), new ContextInjector(),
                     new EnvironmentInjector(), new InputValueDeserializer());
         }
+        environment = new GlobalEnvironment(new Relay(), new TypeRepository(additionalTypes), new ConverterRepository(inputConverters, outputConverters), new ArgumentInjectorRepository(argumentInjectors));
         if (valueMapperFactory == null) {
             valueMapperFactory = Defaults.valueMapperFactory(basePackage, typeInfoGenerator);
         }
+        valueMapperFactory = new WrappedValueMapperFactory<>(environment, valueMapperFactory);
         if (inputFieldStrategy == null) {
             ValueMapper def = valueMapperFactory.getValueMapper();
             if (def instanceof InputFieldDiscoveryStrategy) {
@@ -706,8 +713,7 @@ public class GraphQLSchemaGenerator {
         BuildContext buildContext = new BuildContext(
                 new OperationRepository(operationSourceRepository, operationBuilder),
                 new TypeMapperRepository(typeMappers),
-                new ConverterRepository(inputConverters, outputConverters),
-                new ArgumentInjectorRepository(argumentInjectors),
+                environment,
                 interfaceStrategy, basePackage, typeInfoGenerator, valueMapperFactory,
                 inputFieldStrategy, additionalTypes, relayMappingConfig);
         OperationMapper operationMapper = new OperationMapper(buildContext);
@@ -718,7 +724,7 @@ public class GraphQLSchemaGenerator {
                         .description("Query root type")
                         .fields(operationMapper.getQueries())
                         .build());
-        
+
         List<GraphQLFieldDefinition> mutations = operationMapper.getMutations();
         if (!mutations.isEmpty()) {
             builder.mutation(newObject()
@@ -779,5 +785,24 @@ public class GraphQLSchemaGenerator {
             throw new TypeMappingException();
         }
         checkType(type.getType());
+    }
+
+    private static class WrappedValueMapperFactory<T extends ValueMapper> implements ValueMapperFactory<T> {
+
+        private final T defaultValueMapper;
+        private final ValueMapperFactory<T> delegate;
+
+        public WrappedValueMapperFactory(GlobalEnvironment environment, ValueMapperFactory<T> delegate) {
+            this.defaultValueMapper = delegate.getValueMapper(Collections.emptySet(), environment);
+            this.delegate = delegate;
+        }
+
+        @Override
+        public T getValueMapper(Set<Type> abstractTypes, GlobalEnvironment environment) {
+            if (abstractTypes.isEmpty()) {
+                return this.defaultValueMapper;
+            }
+            return delegate.getValueMapper(abstractTypes, environment);
+        }
     }
 }

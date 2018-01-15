@@ -8,7 +8,6 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
-import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
@@ -42,29 +41,15 @@ public class ResolutionEnvironment {
     }
 
     @SuppressWarnings("unchecked")
-    public Object convertOutput(Object output, AnnotatedType type) {
+    public <T, S> S convertOutput(T output, AnnotatedType type) {
         if (output == null) {
             return null;
         }
-        OutputConverter outputConverter = this.globalEnvironment.converters.getOutputConverter(type);
-        return outputConverter == null ? output : outputConverter.convertOutput(output, type, this);
-    }
-
-    @SuppressWarnings("unchecked")
-    public Object convertInput(Object input, AnnotatedType type) {
-        if (input == null) {
-            return null;
-        }
-        InputConverter inputConverter = this.globalEnvironment.converters.getInputConverter(type);
-        return inputConverter == null ? input : inputConverter.convertInput(input, type, this);
+        OutputConverter<T, S> outputConverter = this.globalEnvironment.converters.getOutputConverter(type);
+        return outputConverter == null ? (S) output : outputConverter.convertOutput(output, type, this);
     }
 
     public Object getInputValue(Object input, AnnotatedType type) {
-        Object in = this.globalEnvironment.injectors.getInjector(type).getArgumentValue(input, type, this);
-        return convertInput(in, type);
-    }
-    
-    public AnnotatedType getMappableType(AnnotatedType type) {
-        return this.globalEnvironment.converters.getMappableType(type);
+        return this.globalEnvironment.injectors.getInjector(type).getArgumentValue(input, type, this);
     }
 }

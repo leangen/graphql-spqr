@@ -16,6 +16,8 @@ import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.User;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
+import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
+import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.services.UserService;
 
 import static org.junit.Assert.assertFalse;
@@ -79,6 +81,8 @@ public class RelayTest {
     public void relayMutationTest() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
+                .withTypeAdapters(new MapToListTypeAdapter<>(new ObjectScalarStrategy()))
+                .withDefaults()
                 .withRelayCompliantMutations()
                 .generate();
 

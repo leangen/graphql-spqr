@@ -2,7 +2,8 @@ package io.leangen.graphql.generator.mapping;
 
 import java.lang.reflect.AnnotatedType;
 
-import io.leangen.graphql.execution.ResolutionEnvironment;
+import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 /**
  * @param <T> The actual argument type of an exposed method
@@ -10,7 +11,7 @@ import io.leangen.graphql.execution.ResolutionEnvironment;
  */
 public interface InputConverter<T, S> {
 
-    T convertInput(S substitute, AnnotatedType type, ResolutionEnvironment resolutionEnvironment);
+    T convertInput(S substitute, AnnotatedType type, GlobalEnvironment environment, ValueMapper valueMapper);
     
     boolean supports(AnnotatedType type);
 

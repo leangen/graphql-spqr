@@ -7,11 +7,14 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.List;
 
+import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.domain.Education;
+import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
+import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -95,6 +98,8 @@ public class SchemaTest {
     public void testSchema() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
+                .withTypeAdapters(new MapToListTypeAdapter<>(new ObjectScalarStrategy()))
+                .withDefaults()
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .generate();
 
@@ -102,15 +107,19 @@ public class SchemaTest {
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
         ExecutionResult result;
 
-        result = exe.execute(simpleFragmentQuery, context);
+        result = execute(exe, simpleFragmentQuery, context);
         assertTrue(result.getErrors().isEmpty());
-        result = exe.execute(complexGenericInputQuery, context);
+        result = execute(exe, complexGenericInputQuery, context);
         assertTrue(result.getErrors().isEmpty());
-        result = exe.execute(simpleQuery, context);
+        result = execute(exe, simpleQuery, context);
         assertTrue(result.getErrors().isEmpty());
-        result = exe.execute(simpleQueryWithNullInput, context);
+        result = execute(exe, simpleQueryWithNullInput, context);
         assertTrue(result.getErrors().isEmpty());
-        result = exe.execute(mapInputMutation, context);
+        result = execute(exe, mapInputMutation, context);
         assertTrue(result.getErrors().isEmpty());
+    }
+
+    private ExecutionResult execute(GraphQL graphQL, String operation, Object context) {
+        return graphQL.execute(ExecutionInput.newExecutionInput().query(operation).context(context).build());
     }
 }

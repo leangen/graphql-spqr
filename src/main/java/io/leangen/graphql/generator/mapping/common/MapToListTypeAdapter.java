@@ -2,9 +2,12 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import graphql.schema.GraphQLInputType;
@@ -13,11 +16,14 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.strategy.ScalarMappingStrategy;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.util.ClassUtils;
 
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
@@ -35,7 +41,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     public MapToListTypeAdapter(ScalarMappingStrategy scalarStrategy) {
         this.scalarStrategy = scalarStrategy;
     }
-    
+
     @Override
     public List<MapToListTypeAdapter.MapEntry<K,V>> convertOutput(Map<K, V> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         return original.entrySet().stream()
@@ -44,8 +50,9 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     }
 
     @Override
-    public Map<K,V> convertInput(List<MapToListTypeAdapter.MapEntry<K, V>> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        return original.stream().collect(Collectors.toMap(MapToListTypeAdapter.MapEntry::getKey, MapToListTypeAdapter.MapEntry::getValue));
+    public Map<K,V> convertInput(List<MapEntry<K, V>> original, AnnotatedType type, GlobalEnvironment environment, ValueMapper valueMapper) {
+        Map<K, V> initial = GenericTypeReflector.isSuperType(type.getType(), HashMap.class) ? new HashMap<>() : ClassUtils.instance(type);
+        return original.stream().collect(toMap(MapEntry::getKey, MapEntry::getValue, initial));
     }
 
     @Override
@@ -83,7 +90,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
             return new GraphQLTypeReference(typeName);
         }
         buildContext.knownTypes.add(typeName);
-        
+
         return newObject()
                 .name(typeName)
                 .description("Map entry")
@@ -106,7 +113,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
             return new GraphQLTypeReference(typeName);
         }
         buildContext.knownInputTypes.add(typeName);
-        
+
         return newInputObject()
                 .name(typeName)
                 .description("Map entry input")
@@ -125,6 +132,17 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
 
     private AnnotatedType getElementType(AnnotatedType javaType, int index) {
         return GenericTypeReflector.getTypeParameter(javaType, Map.class.getTypeParameters()[index]);
+    }
+
+    private static <T, K, U> Collector<T, ?, Map<K,U>> toMap(
+            Function<? super T, ? extends K> keyMapper,
+            Function<? super T, ? extends U> valueMapper,
+            Map<K,U> initial) {
+        return Collectors.toMap(keyMapper, valueMapper,
+                (u, v) -> {
+                    throw new IllegalStateException(String.format("Duplicate key %s", u));
+                },
+                () -> initial);
     }
 
     public static class MapEntry<K, V> {

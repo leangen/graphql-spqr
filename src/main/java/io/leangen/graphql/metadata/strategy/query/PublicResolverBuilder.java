@@ -126,7 +126,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         return method.getReturnType() == Publisher.class;
     }
 
-    private boolean isPackageAcceptable(Method method, Class<?> beanType) {
+    protected boolean isPackageAcceptable(Method method, Class<?> beanType) {
         String basePackage = Utils.notEmpty(this.basePackage) ? this.basePackage : beanType.getPackage().getName();
         return method.getDeclaringClass().equals(beanType) || method.getDeclaringClass().getPackage().getName().startsWith(basePackage);
     }

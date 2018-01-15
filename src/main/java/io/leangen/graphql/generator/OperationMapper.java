@@ -146,7 +146,7 @@ public class OperationMapper {
                 throw new TypeMappingException("Operation \"" + operation.getName() + "\" has arguments of types incompatible with the Relay Connection spec");
             }
         }
-        ValueMapper valueMapper = buildContext.valueMapperFactory.getValueMapper(abstractTypes);
+        ValueMapper valueMapper = buildContext.valueMapperFactory.getValueMapper(abstractTypes, buildContext.globalEnvironment);
         queryBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
 
         return new MappedGraphQLFieldDefinition(queryBuilder.build(), operation);
@@ -259,7 +259,7 @@ public class OperationMapper {
                         .name("input")
                         .type(new GraphQLNonNull(inputObjectType)))
                 .dataFetcher(env -> {
-                    Map<String, Object> input = (Map<String, Object>) env.getArguments().get("input");
+                    @SuppressWarnings("unchecked") Map<String, Object> input = (Map<String, Object>) env.getArguments().get("input");
                     env.getArguments().clear();
                     env.getArguments().putAll(input);
                     if (env.getContext() instanceof ContextWrapper) {

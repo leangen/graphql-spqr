@@ -7,10 +7,10 @@ import com.google.gson.TypeAdapterFactory;
 import net.dongliu.gson.GsonJava8TypeAdapterFactory;
 
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.Set;
 
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
@@ -26,7 +26,6 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
     private final FieldNamingStrategy fieldNamingStrategy;
     private final TypeInfoGenerator typeInfoGenerator;
     private final Configurer configurer;
-    private final GsonValueMapper defaultValueMapper;
 
     public GsonValueMapperFactory() {
         this(null);
@@ -35,7 +34,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
     public GsonValueMapperFactory(String basePackage) {
         this(basePackage, new DefaultTypeInfoGenerator());
     }
-    
+
     public GsonValueMapperFactory(String basePackage, TypeInfoGenerator typeInfoGenerator) {
         this(basePackage, typeInfoGenerator, new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
     }
@@ -45,35 +44,34 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
         this.fieldNamingStrategy = fieldNamingStrategy;
         this.typeInfoGenerator = typeInfoGenerator;
         this.configurer = configurer;
-        this.defaultValueMapper = new GsonValueMapper(initBuilder(fieldNamingStrategy, Collections.emptySet(), configurer).create());
     }
 
     @Override
-    public GsonValueMapper getValueMapper(Set<Type> abstractTypes) {
-        if (abstractTypes.isEmpty()) {
-            return defaultValueMapper;
-        }
-
-        return new GsonValueMapper(initBuilder(this.fieldNamingStrategy, abstractTypes, this.configurer).create());
+    public GsonValueMapper getValueMapper(Set<Type> abstractTypes, GlobalEnvironment environment) {
+        return new GsonValueMapper(initBuilder(this.fieldNamingStrategy, abstractTypes, this.configurer, environment).create());
     }
 
-    private GsonBuilder initBuilder(FieldNamingStrategy fieldNamingStrategy, Set<Type> abstractTypes, Configurer configurer) {
+    private GsonBuilder initBuilder(FieldNamingStrategy fieldNamingStrategy, Set<Type> abstractTypes, Configurer configurer, GlobalEnvironment environment) {
         GsonBuilder gsonBuilder = new GsonBuilder()
                 .setFieldNamingStrategy(fieldNamingStrategy)
                 .registerTypeAdapterFactory(new GsonJava8TypeAdapterFactory());
-        return configurer.configure(gsonBuilder, abstractTypes, basePackage, this.typeInfoGenerator);
+        return configurer.configure(gsonBuilder, abstractTypes, basePackage, this.typeInfoGenerator, environment);
     }
-    
+
     public static class AbstractClassAdapterConfigurer implements Configurer {
 
         @Override
-        public GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, String basePackage, TypeInfoGenerator infoGenerator) {
+        public GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, String basePackage, TypeInfoGenerator infoGenerator, GlobalEnvironment environment) {
             abstractTypes.stream()
                     .map(ClassUtils::getRawType)
                     .distinct()
                     .map(abstractType -> adapterFor(abstractType, basePackage, infoGenerator))
                     .forEach(gsonBuilder::registerTypeAdapterFactory);
-            
+
+            if (environment != null && !environment.getInputConverters().isEmpty()) {
+                gsonBuilder.registerTypeAdapterFactory(new ConvertingAdapterFactory(environment));
+            }
+
             return gsonBuilder;
         }
 
@@ -91,7 +89,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
 
     @FunctionalInterface
     public interface Configurer {
-        GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, String basePackage, TypeInfoGenerator infoGenerator);
+        GsonBuilder configure(GsonBuilder gsonBuilder, Set<Type> abstractTypes, String basePackage, TypeInfoGenerator infoGenerator, GlobalEnvironment environment);
     }
 
     @Override

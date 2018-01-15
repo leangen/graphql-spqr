@@ -7,26 +7,28 @@ import java.util.stream.Stream;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class StreamToCollectionTypeAdapter extends AbstractTypeAdapter<Stream<?>, List<?>> {
+public class StreamToCollectionTypeAdapter<T> extends AbstractTypeAdapter<Stream<T>, List<T>> {
 
     @Override
-    public List<?> convertOutput(Stream<?> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        try (Stream<?> stream = original) {
+    public List<T> convertOutput(Stream<T> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        try (Stream<T> stream = original) {
             return stream
-                    .map(item -> resolutionEnvironment.convertOutput(item, getElementType(type)))
+                    .map(item -> resolutionEnvironment.<T, T>convertOutput(item, getElementType(type)))
                     .collect(Collectors.toList());
         }
     }
 
     @Override
-    public Stream<?> convertInput(List<?> substitute, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        return substitute.stream().map(item -> resolutionEnvironment.convertInput(item, getElementType(type)));
+    public Stream<T> convertInput(List<T> substitute, AnnotatedType type, GlobalEnvironment environment, ValueMapper valueMapper) {
+        return substitute.stream().map(item -> environment.convertInput(item, getElementType(type), valueMapper));
     }
 
     @Override

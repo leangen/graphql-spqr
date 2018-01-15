@@ -11,6 +11,7 @@ import java.lang.reflect.AnnotatedWildcardType;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -156,6 +157,19 @@ public class ClassUtils {
                     "methods, or customizing the mapping process.");
         }
         return erased;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T instance(AnnotatedType type) {
+        return instance((Class<T>) getRawType(type.getType()));
+    }
+
+    public static <T> T instance(Class<T> clazz) {
+        try {
+            return clazz.getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -406,7 +420,7 @@ public class ClassUtils {
         }
         return type;
     }
-    
+
     /**
      * Finds the most specific common super type of all the given types, merging the original annotations at each level.
      * If no common ancestors are found (except Object) a {@link TypeMappingException} is thrown.
