@@ -6,7 +6,7 @@ import java.util.Map;
 import io.leangen.geantyref.GenericTypeReflector;
 
 /**
- * The default strategy. Treats raw {@link Object} and the types annotated by
+ * The default strategy. Treats raw {@link Object}, maps and the types annotated by
  * {@link io.leangen.graphql.annotations.GraphQLScalar} as scalars.
  */
 public class DefaultScalarStrategy extends ObjectScalarStrategy {

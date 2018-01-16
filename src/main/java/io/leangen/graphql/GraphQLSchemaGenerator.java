@@ -57,6 +57,7 @@ import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
 import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
 import io.leangen.graphql.generator.mapping.core.CompletableFutureMapper;
+import io.leangen.graphql.generator.mapping.core.DataFetcherResultMapper;
 import io.leangen.graphql.generator.mapping.core.PublisherMapper;
 import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
 import io.leangen.graphql.generator.mapping.strategy.DefaultScalarStrategy;
@@ -663,8 +664,8 @@ public class GraphQLSchemaGenerator {
             withTypeMappers(
                     new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                     new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                    new ObjectScalarAdapter(scalarStrategy), new EnumMapper(), new ArrayMapper<>(), new UnionTypeMapper(),
-                    new UnionInlineMapper(), new StreamToCollectionTypeAdapter(),
+                    new ObjectScalarAdapter(scalarStrategy), new EnumMapper(), new ArrayMapper(), new UnionTypeMapper(),
+                    new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(),
                     new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
                     new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         }

@@ -9,7 +9,7 @@ import io.leangen.geantyref.TypeFactory;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class ArrayMapper<S> extends AbstractTypeSubstitutingMapper<S[]> {
+public class ArrayMapper extends AbstractTypeSubstitutingMapper {
 
     @Override
     public AnnotatedType getSubstituteType(AnnotatedType original) {

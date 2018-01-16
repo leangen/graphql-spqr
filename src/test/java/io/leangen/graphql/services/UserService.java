@@ -91,7 +91,7 @@ public class UserService<T> {
     public List<User<String>> getUsersByRegDate(@GraphQLArgument(name = "regDate") Optional<Date> date) {
         return getUsersById(1);
     }
-    
+
     @GraphQLQuery(name = "usersByDate")
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public List<User<String>> getUsersByDate(@GraphQLArgument(name = "regDate") Optional<Date> date) {
@@ -127,79 +127,10 @@ public class UserService<T> {
         return getUsersById(1);
     }
 
-    //
-//	@GraphQLQuery(name = "user")
-//	public User getUserByName(@GraphQLArgument(name = "name") String name) {
-//		User user = new User();
-//		user.id = 1;
-//		user.name = name;
-//		user.addresses = addresses;
-//		return user;
-//	}
-//
-//	@GraphQLQuery(name = "names")
-//	public List<String> getNames() {
-//	 return Arrays.asList("macka", "bec");
-//	}
-//
-//    @GraphQLQuery(name = "addresses", description = "Service :: 1st override")
-//    public Page<Address> getByType(@GraphQLContext User<String> owner, @GraphQLArgument(name = "type") String type) {
-//        List<Address> addresses = owner.getAddresses().stream()
-//                .filter(address -> address.getTypes().contains(type))
-//                .collect(Collectors.toList());
-//
-//        return GraphQLUtils.createOffsetBasedPage(addresses, 20, 0);
-//    }
-
-    //
     @GraphQLQuery(name = "zmajs")
     public Collection<String> extraFieldAll(@GraphQLContext User<String> source) {
         return Arrays.asList("zmaj", "azdaha");
     }
-//
-//	@GraphQLQuery(name = "zmajs", parentQueries = {"user","users"})
-//	public Collection<String> extraFieldFiltered(@GraphQLContext User source, @GraphQLArgument(name = "type") String type) {
-//		return Arrays.asList("zmaj");
-//	}
-//
-//	@GraphQLQuery(name = "addresses", parentQueries = "users")
-//	public Collection<Address> getAll(@GraphQLContext User<String> source) {
-//		return source.addresses;
-//	}
-//
-//	@GraphQLQuery(name = "streets", parentQueries = {"user.addresses"}) // or just "addresses" if there's no ambiguity
-//	public Collection<Street> getByStreetName(@GraphQLContext Address source, @GraphQLArgument(name = "name") String name) {
-//		return source.getStreets().stream()
-//				.filter(street -> street.getName().equals(name))
-//				.collect(Collectors.toList());
-//	}
-
-//	@GraphQLQuery(name = "addresses", parentQueries = {"addresses.owner"})
-//	public Collection<Address> getLandlordAddressByType(@GraphQLContext User<String> source, @GraphQLArgument(name = "type") String type) {
-//		return source.getAddresses().stream()
-//				.filter(address -> address.getTypes().contains(type))
-//				.collect(Collectors.toList());
-//	}
-
-//	@GraphQLQuery
-//	public List<User> getNewestUsers() {
-//		List<User> users = new ArrayList<>();
-//		User u1 = new User();
-//		u1.id = 666;
-//		u1.name = "One";
-//		u1.addresses = addresses;
-//		User u2 = new User();
-//		u2.id = 777;
-//		u2.name = "Two";
-//		users.add(u1);
-//		users.add(u2);
-//		return users;
-//	}
-
-//	@GraphQLQuery(name = "user", wrapper = User.class, attribute = "name")
-//	public String getName() {
-//		return "Jack!";
-//	}
 
     @GraphQLQuery(name = "me")
     public Map<String, String> getCurrentUser() {
