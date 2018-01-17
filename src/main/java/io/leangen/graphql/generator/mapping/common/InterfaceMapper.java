@@ -54,8 +54,8 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
             GraphQLInterface meta = javaType.getAnnotation(GraphQLInterface.class);
             if (meta.implementationAutoDiscovery()) {
                 String[] scanPackages = meta.scanPackages();
-                if (scanPackages.length == 0 && Utils.notEmpty(buildContext.basePackage)) {
-                    scanPackages = new String[] {buildContext.basePackage};
+                if (scanPackages.length == 0 && Utils.arrayNotEmpty(buildContext.basePackages)) {
+                    scanPackages = buildContext.basePackages;
                 }
                 ClassUtils.findImplementations(javaType, scanPackages).forEach(impl ->
                         getImplementingType(impl, abstractTypes, operationMapper, buildContext)

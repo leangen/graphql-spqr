@@ -10,14 +10,14 @@ public class Defaults {
 
     private enum JsonLib {
         JACKSON("com.fasterxml.jackson.databind.ObjectMapper"), GSON("com.google.gson.Gson"), SCALAR("java.lang.Object");
-        
+
         public final String requiredClass;
-        
+
         JsonLib(String requiredClass) {
             this.requiredClass = requiredClass;
         }
     }
-    
+
     private static JsonLib jsonLibrary() {
         for (JsonLib jsonLib : JsonLib.values()) {
             try {
@@ -27,11 +27,17 @@ public class Defaults {
         }
         throw new IllegalStateException("No JSON deserialization library found on classpath");
     }
-    
-    public static ValueMapperFactory valueMapperFactory(String basePackage, TypeInfoGenerator typeInfoGenerator) {
+
+    public static ValueMapperFactory valueMapperFactory(String[] basePackages, TypeInfoGenerator typeInfoGenerator) {
         switch (jsonLibrary()) {
-            case GSON: return new GsonValueMapperFactory(basePackage, typeInfoGenerator);
-            case JACKSON: return new JacksonValueMapperFactory(basePackage, typeInfoGenerator);
+            case GSON: return GsonValueMapperFactory.builder()
+                    .withBasePackages(basePackages)
+                    .withTypeInfoGenerator(typeInfoGenerator)
+                    .build();
+            case JACKSON: return JacksonValueMapperFactory.builder()
+                    .withBasePackages(basePackages)
+                    .withTypeInfoGenerator(typeInfoGenerator)
+                    .build();
             default: return new ScalarOnlyValueMapperFactory();
         }
     }

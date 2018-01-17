@@ -1,5 +1,14 @@
 package io.leangen.graphql;
 
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.introspection.IntrospectionQuery;
@@ -7,13 +16,6 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.annotations.types.GraphQLType;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import org.junit.Assert;
-import org.junit.Test;
 
 public class FieldOrderTest {
 
@@ -38,11 +40,11 @@ public class FieldOrderTest {
     }
 
     @GraphQLInterface(name = "Character", implementationAutoDiscovery = true, fieldOrder = {"id", "name", "friends", "appearsIn"})
-    public static interface Character {
-        public String getId();
-        public String getName();
-        public String getFriends();
-        public String getAppearsIn();
+    public interface Character {
+        String getId();
+        String getName();
+        String getFriends();
+        String getAppearsIn();
     }
 
     @GraphQLType(name = "Human", fieldOrder = {"id", "name", "friends", "appearsIn", "starships", "totalCredits"})
@@ -66,12 +68,11 @@ public class FieldOrderTest {
 
     private static ExecutionResult executeQuery(String query) {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
-                .withBasePackage(FieldOrderTest.class.getPackage().getName())
+                .withBasePackages(FieldOrderTest.class.getPackage().getName())
                 .withOperationsFromSingletons(new Query())
                 .generate();
         GraphQL graphQL = GraphQL.newGraphQL(schema).build();
-        ExecutionResult executionResult = graphQL.execute(query);
-        return executionResult;
+        return graphQL.execute(query);
     }
 
     @SuppressWarnings("unchecked")

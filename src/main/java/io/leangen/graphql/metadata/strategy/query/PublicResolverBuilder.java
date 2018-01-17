@@ -28,12 +28,12 @@ import io.leangen.graphql.util.Utils;
 @SuppressWarnings("WeakerAccess")
 public class PublicResolverBuilder extends FilteredResolverBuilder {
 
-    public PublicResolverBuilder(String basePackage) {
-        this(basePackage, new DefaultTypeTransformer(false, false));
+    public PublicResolverBuilder(String... basePackages) {
+        this(new DefaultTypeTransformer(false, false), basePackages);
     }
 
-    public PublicResolverBuilder(String basePackage, TypeTransformer transformer) {
-        this.basePackage = basePackage;
+    public PublicResolverBuilder(TypeTransformer transformer, String... basePackages) {
+        this.basePackages = basePackages;
         this.transformer = transformer;
         this.operationNameGenerator = new MethodOperationNameGenerator();
         this.argumentBuilder = new AnnotatedArgumentBuilder(transformer);
@@ -125,7 +125,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
     }
 
     protected boolean isPackageAcceptable(Method method, Class<?> beanType) {
-        String basePackage = Utils.notEmpty(this.basePackage) ? this.basePackage : beanType.getPackage().getName();
-        return method.getDeclaringClass().equals(beanType) || method.getDeclaringClass().getPackage().getName().startsWith(basePackage);
+        String[] basePackages = Utils.arrayNotEmpty(this.basePackages) ? this.basePackages : new String[] {beanType.getPackage().getName()};
+        return method.getDeclaringClass().equals(beanType)
+                || Arrays.stream(basePackages).anyMatch(basePackage -> method.getDeclaringClass().getPackage().getName().startsWith(basePackage));
     }
 }

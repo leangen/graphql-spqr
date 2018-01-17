@@ -10,13 +10,13 @@ import io.leangen.graphql.util.ClassUtils;
  */
 public class BeanResolverBuilder extends PublicResolverBuilder {
 
-    public BeanResolverBuilder(String basePackage) {
-        super(basePackage);
+    public BeanResolverBuilder(String... basePackages) {
+        super(basePackages);
         this.operationNameGenerator = new BeanOperationNameGenerator();
     }
 
-    public BeanResolverBuilder(String basePackage, TypeTransformer transformer) {
-        super(basePackage, transformer);
+    public BeanResolverBuilder(TypeTransformer transformer, String... basePackages) {
+        super(transformer, basePackages);
         this.operationNameGenerator = new BeanOperationNameGenerator();
     }
 

@@ -131,7 +131,7 @@ public class GraphQLSchemaGenerator {
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
     private TypeTransformer typeTransformer = new DefaultTypeTransformer(false, false);
     private GlobalEnvironment environment;
-    private String basePackage;
+    private String[] basePackages;
     private boolean defaultTypeMappers = false;
     private boolean defaultOutputConverters = false;
     private boolean defaultInputConverters = false;
@@ -414,8 +414,8 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withBasePackage(String basePackage) {
-        this.basePackage = basePackage;
+    public GraphQLSchemaGenerator withBasePackages(String... basePackage) {
+        this.basePackages = basePackage;
         return this;
     }
 
@@ -657,7 +657,7 @@ public class GraphQLSchemaGenerator {
         if (!operationSourceRepository.hasGlobalNestedResolverBuilders() || defaultNestedResolverBuilders) {
             withNestedResolverBuilders(
                     new AnnotatedResolverBuilder(typeTransformer),
-                    new BeanResolverBuilder(basePackage, typeTransformer));
+                    new BeanResolverBuilder(typeTransformer, basePackages));
         }
         if (typeMappers.isEmpty() || this.defaultTypeMappers) {
             ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
@@ -688,7 +688,7 @@ public class GraphQLSchemaGenerator {
         }
         environment = new GlobalEnvironment(new Relay(), new TypeRepository(additionalTypes), new ConverterRepository(inputConverters, outputConverters), new ArgumentInjectorRepository(argumentInjectors));
         if (valueMapperFactory == null) {
-            valueMapperFactory = Defaults.valueMapperFactory(basePackage, typeInfoGenerator);
+            valueMapperFactory = Defaults.valueMapperFactory(basePackages, typeInfoGenerator);
         }
         valueMapperFactory = new WrappedValueMapperFactory<>(environment, valueMapperFactory);
         if (inputFieldStrategy == null) {
@@ -696,7 +696,7 @@ public class GraphQLSchemaGenerator {
             if (def instanceof InputFieldDiscoveryStrategy) {
                 inputFieldStrategy = (InputFieldDiscoveryStrategy) def;
             } else {
-                inputFieldStrategy = (InputFieldDiscoveryStrategy) Defaults.valueMapperFactory(basePackage, typeInfoGenerator).getValueMapper();
+                inputFieldStrategy = (InputFieldDiscoveryStrategy) Defaults.valueMapperFactory(basePackages, typeInfoGenerator).getValueMapper();
             }
         }
     }
@@ -715,7 +715,7 @@ public class GraphQLSchemaGenerator {
                 new OperationRepository(operationSourceRepository, operationBuilder),
                 new TypeMapperRepository(typeMappers),
                 environment,
-                interfaceStrategy, basePackage, typeInfoGenerator, valueMapperFactory,
+                interfaceStrategy, basePackages, typeInfoGenerator, valueMapperFactory,
                 inputFieldStrategy, additionalTypes, relayMappingConfig);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 

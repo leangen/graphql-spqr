@@ -31,7 +31,7 @@ public class BuildContext {
     public final GraphQLInterfaceType node; //Node interface, as defined by the Relay GraphQL spec
     public final TypeResolver typeResolver;
     public final InterfaceMappingStrategy interfaceStrategy;
-    public final String basePackage;
+    public final String[] basePackages;
     public final ValueMapperFactory valueMapperFactory;
     public final InputFieldDiscoveryStrategy inputFieldStrategy;
     public final TypeInfoGenerator typeInfoGenerator;
@@ -48,7 +48,7 @@ public class BuildContext {
      * @param typeMappers Repository of all registered {@link io.leangen.graphql.generator.mapping.TypeMapper}s
      * @param environment The globally shared environment
      * @param interfaceStrategy The strategy deciding what Java type gets mapped to a GraphQL interface
-     * @param basePackage The base (root) package of the entire project
+     * @param basePackages The base (root) package of the entire project
      * @param typeInfoGenerator Generates type name/description
      * @param valueMapperFactory The factory used to produce {@link io.leangen.graphql.metadata.strategy.value.ValueMapper} instances
      * @param inputFieldStrategy The strategy deciding how GraphQL input fields are discovered from Java types
@@ -57,7 +57,7 @@ public class BuildContext {
      */
     public BuildContext(OperationRepository operationRepository, TypeMapperRepository typeMappers,
                         GlobalEnvironment environment,
-                        InterfaceMappingStrategy interfaceStrategy, String basePackage,
+                        InterfaceMappingStrategy interfaceStrategy, String[] basePackages,
                         TypeInfoGenerator typeInfoGenerator, ValueMapperFactory valueMapperFactory,
                         InputFieldDiscoveryStrategy inputFieldStrategy, Set<GraphQLType> knownTypes,
                         RelayMappingConfig relayMappingConfig) {
@@ -72,7 +72,7 @@ public class BuildContext {
                 .orElse(relay.nodeInterface(new RelayNodeTypeResolver(this.typeRepository, typeInfoGenerator)));
         this.typeResolver = new DelegatingTypeResolver(this.typeRepository, typeInfoGenerator);
         this.interfaceStrategy = interfaceStrategy;
-        this.basePackage = basePackage;
+        this.basePackages = basePackages;
         this.valueMapperFactory = valueMapperFactory;
         this.inputFieldStrategy = inputFieldStrategy;
         this.globalEnvironment = environment;

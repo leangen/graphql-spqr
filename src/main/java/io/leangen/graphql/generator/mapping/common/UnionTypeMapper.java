@@ -53,8 +53,8 @@ public class UnionTypeMapper extends UnionMapper {
         }
         if (possibleTypes.isEmpty() && annotation.possibleTypeAutoDiscovery()) {
             String[] scanPackages = annotation.scanPackages();
-            if (scanPackages.length == 0 && Utils.notEmpty(buildContext.basePackage)) {
-                scanPackages = new String[] {buildContext.basePackage};
+            if (scanPackages.length == 0 && Utils.arrayNotEmpty(buildContext.basePackages)) {
+                scanPackages = buildContext.basePackages;
             }
             possibleTypes = ClassUtils.findImplementations(javaType, scanPackages).stream()
                     .peek(impl -> {

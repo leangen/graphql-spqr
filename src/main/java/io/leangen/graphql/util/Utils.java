@@ -1,5 +1,6 @@
 package io.leangen.graphql.util;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -23,7 +24,11 @@ public class Utils {
     public static boolean notEmpty(String string) {
         return string != null && !string.isEmpty();
     }
-    
+
+    public static boolean arrayNotEmpty(Object array) {
+        return array != null && Array.getLength(array) != 0;
+    }
+
     @SafeVarargs
     public static <T> Stream<T> concat(Stream<T>... streams) {
         return Arrays.stream(streams).reduce(Stream::concat).orElse(Stream.empty());

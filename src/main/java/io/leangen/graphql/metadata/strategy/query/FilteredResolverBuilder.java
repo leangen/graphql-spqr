@@ -22,7 +22,7 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
     protected OperationNameGenerator operationNameGenerator;
     protected ResolverArgumentBuilder argumentBuilder;
     protected TypeTransformer transformer;
-    protected String basePackage;
+    protected String[] basePackages;
     protected List<Predicate<Member>> filters = new ArrayList<>();
     
     public FilteredResolverBuilder withOperationNameGenerator(OperationNameGenerator operationNameGenerator) {
@@ -40,8 +40,8 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
         return this;
     }
     
-    public FilteredResolverBuilder withBasePackage(String basePackage) {
-        this.basePackage = basePackage;
+    public FilteredResolverBuilder withBasePackage(String... basePackages) {
+        this.basePackages = basePackages;
         return this;
     }
     

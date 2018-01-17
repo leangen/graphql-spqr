@@ -16,10 +16,10 @@ import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFact
  */
 public class TestSchemaGenerator extends GraphQLSchemaGenerator {
 
-    private static final String basePackage = "io.leangen";
+    private static final String[] basePackages = new String[] {"io.leangen"};
 
     public TestSchemaGenerator() {
-        withBasePackage(basePackage);
+        withBasePackages(basePackages);
         withOperationBuilder(new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.LIMITED));
     }
 
@@ -36,14 +36,23 @@ public class TestSchemaGenerator extends GraphQLSchemaGenerator {
     private JacksonValueMapperFactory clone(JacksonValueMapperFactory valueMapperFactory) {
         TypeInfoGenerator infoGen = getFieldValue(valueMapperFactory, "typeInfoGenerator");
         JacksonValueMapperFactory.Configurer configurer = getFieldValue(valueMapperFactory, "configurer");
-        return new JacksonValueMapperFactory(basePackage, infoGen, configurer);
+        return JacksonValueMapperFactory.builder()
+                .withBasePackages(basePackages)
+                .withTypeInfoGenerator(infoGen)
+                .withConfigurer(configurer)
+                .build();
     }
 
     private GsonValueMapperFactory clone(GsonValueMapperFactory valueMapperFactory) {
         TypeInfoGenerator infoGen = getFieldValue(valueMapperFactory, "typeInfoGenerator");
         GsonValueMapperFactory.Configurer configurer = getFieldValue(valueMapperFactory, "configurer");
         FieldNamingStrategy fieldNamingStrategy = getFieldValue(valueMapperFactory, "fieldNamingStrategy");
-        return new GsonValueMapperFactory(basePackage, infoGen, fieldNamingStrategy, configurer);
+        return GsonValueMapperFactory.builder()
+                .withBasePackages(basePackages)
+                .withTypeInfoGenerator(infoGen)
+                .withFieldNamingStrategy(fieldNamingStrategy)
+                .withConfigurer(configurer)
+                .build();
     }
 
     @SuppressWarnings("unchecked")
