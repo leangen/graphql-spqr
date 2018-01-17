@@ -4,7 +4,6 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +17,7 @@ import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 
+@SuppressWarnings("WeakerAccess")
 public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
 
     private final TypeTransformer transformer;
@@ -46,7 +46,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
                     getArgumentDescription(parameter, parameterType),
                     defaultValue(parameter, parameterType),
                     parameter.isAnnotationPresent(GraphQLContext.class),
-                    isMappable(parameter)
+                    !ClassUtils.hasAnnotation(parameter, GraphQLIgnore.class)
             ));
         }
         return operationArguments;
@@ -84,10 +84,5 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
             return OperationArgumentDefaultValue.NULL;
         }
         return new OperationArgumentDefaultValue(value);
-    }
-
-    private boolean isMappable(Parameter parameter) {
-        return !parameter.isAnnotationPresent(GraphQLIgnore.class) && Arrays.stream(parameter.getAnnotations())
-                .noneMatch(ann -> ann.annotationType().isAnnotationPresent(GraphQLIgnore.class));
     }
 }

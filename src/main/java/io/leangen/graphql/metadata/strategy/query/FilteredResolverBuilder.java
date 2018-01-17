@@ -50,7 +50,11 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
         Collections.addAll(this.filters, filters);
         return this;
     }
-    
+
+    public FilteredResolverBuilder withDefaultFilters() {
+        return withFilters(REAL_ONLY, NOT_IGNORED);
+    }
+
     protected List<Predicate<Member>> getFilters() {
         return filters.isEmpty() ? Collections.singletonList(ACCEPT_ALL) : filters;
     }

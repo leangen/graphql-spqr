@@ -10,29 +10,42 @@ import java.math.BigInteger;
 import java.util.Collection;
 
 import graphql.schema.GraphQLSchema;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.domain.Person;
 import io.leangen.graphql.metadata.Resolver;
+import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.OperationNameGenerator;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 
 import static org.junit.Assert.assertEquals;
 
 public class ResolverBuilderTest {
-    
+
+    private static final String BASE_PACKAGE = "io.leangen";
+
     @Test
     public void bridgeMethodTest() {
-        Collection<Resolver> resolvers = new PublicResolverBuilder("io.leangen")
+        Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGE)
                 .buildQueryResolvers(new BaseServiceImpl<Number, String>(), new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType());
         assertEquals(1, resolvers.size());
         assertEquals(resolvers.iterator().next().getReturnType().getType(), Number.class);
     }
 
     @Test
+    public void explicitIgnoreTest() {
+        Collection<Resolver> resolvers = new BeanResolverBuilder(BASE_PACKAGE)
+                .buildQueryResolvers(new Ignorables(), GenericTypeReflector.annotate(Ignorables.class));
+        assertEquals(1, resolvers.size());
+        assertEquals("notIgnored", resolvers.iterator().next().getOperationName());
+    }
+
+    @Test
     public void impreciseBeanTypeTest() {
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withResolverBuilders(new PublicResolverBuilder("io.leangen").withOperationNameGenerator(new OperationNameGenerator() {
+                .withResolverBuilders(new PublicResolverBuilder(BASE_PACKAGE).withOperationNameGenerator(new OperationNameGenerator() {
                     @Override
                     public String generateQueryName(Method queryMethod, AnnotatedType declaringType, Object instance) {
                         return instance.getClass().getSimpleName() + "_" + queryMethod.getName();
@@ -95,6 +108,18 @@ public class ResolverBuilderTest {
         @Override
         public Number findOne(Long aLong) {
             return new BigInteger("2");
+        }
+    }
+
+    private static class Ignorables {
+
+        public String getNotIgnored() {
+            return null;
+        }
+
+        @GraphQLIgnore
+        public String getIgnored() {
+            return null;
         }
     }
 }

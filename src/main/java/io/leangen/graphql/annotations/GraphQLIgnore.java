@@ -6,10 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Meta-annotation meant to signify that the marked annotation renders the annotated object
- * ignorable by the mapping process
+ * Can be used either directly or as a meta-annotation to render the annotated object ignorable
+ * by the mapping process
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})
 public @interface GraphQLIgnore {
 }

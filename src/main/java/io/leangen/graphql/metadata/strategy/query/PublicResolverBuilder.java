@@ -25,9 +25,9 @@ import io.leangen.graphql.util.Utils;
 /**
  * A resolver builder that exposes all public methods
  */
+@SuppressWarnings("WeakerAccess")
 public class PublicResolverBuilder extends FilteredResolverBuilder {
 
-    @SuppressWarnings("WeakerAccess")
     public PublicResolverBuilder(String basePackage) {
         this(basePackage, new DefaultTypeTransformer(false, false));
     }
@@ -37,6 +37,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         this.transformer = transformer;
         this.operationNameGenerator = new MethodOperationNameGenerator();
         this.argumentBuilder = new AnnotatedArgumentBuilder(transformer);
+        withDefaultFilters();
     }
 
     @Override
@@ -58,7 +59,6 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         if (rawType.isArray() || rawType.isPrimitive()) return Collections.emptyList();
         return Arrays.stream(rawType.getMethods())
-                .filter(REAL_ONLY)
                 .filter(method -> isPackageAcceptable(method, rawType))
                 .filter(this::isQuery)
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
@@ -78,7 +78,6 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         if (rawType.isArray()|| rawType.isPrimitive()) return Collections.emptyList();
         return Arrays.stream(rawType.getMethods())
-                .filter(REAL_ONLY)
                 .filter(method -> isPackageAcceptable(method, rawType))
                 .filter(this::isMutation)
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
@@ -98,7 +97,6 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         if (rawType.isArray()|| rawType.isPrimitive()) return Collections.emptyList();
         return Arrays.stream(rawType.getMethods())
-                .filter(REAL_ONLY)
                 .filter(method -> isPackageAcceptable(method, rawType))
                 .filter(this::isSubscription)
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))

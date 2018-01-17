@@ -4,6 +4,7 @@ import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedArrayType;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.AnnotatedTypeVariable;
@@ -292,6 +293,11 @@ public class ClassUtils {
 
     public static String toString(AnnotatedType type) {
         return type.getType().getTypeName() + "(" + Arrays.toString(type.getAnnotations()) + ")";
+    }
+
+    public static boolean hasAnnotation(AnnotatedElement element, Class<? extends Annotation> annotation) {
+        return element.isAnnotationPresent(annotation) || Arrays.stream(element.getAnnotations())
+                .anyMatch(ann -> ann.annotationType().isAnnotationPresent(annotation));
     }
 
     public static boolean containsTypeAnnotation(AnnotatedType type, Class<? extends Annotation> annotation) {
