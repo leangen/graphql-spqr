@@ -65,6 +65,16 @@ public class ConversionTest {
         assertValueAtPathEquals(2, result, "echo.mapList.0.1.value");
     }
 
+    @Test
+    public void testByteArrayConversion() {
+        GraphQL api = getApi();
+
+        ExecutionResult result = api.execute("{echo(in:{binaries: [\"Y2F0cyBhcmUgY3VkZGx5\", \"YnVubmllcyBhcmUgY3VkZGx5IHRvbw==\"]}) {binaries}}");
+        assertTrue(result.getErrors().isEmpty());
+        assertValueAtPathEquals("Y2F0cyBhcmUgY3VkZGx5", result, "echo.binaries.0");
+        assertValueAtPathEquals("YnVubmllcyBhcmUgY3VkZGx5IHRvbw==", result, "echo.binaries.1");
+    }
+
     /**
      * Due to the lack of support for {@code AnnotatedType} in <i>all</i> JSON libraries for Java,
      * {@link ElementType#TYPE_USE} annotations on input field types or nested operation argument types are lost.
@@ -112,6 +122,7 @@ public class ConversionTest {
         private String name;
         private Stream<Stream<String>> stream;
         private List<Optional<LinkedHashMap<String, Integer>>> mapList;
+        private List<byte[]> binaries;
 
         public String getName() {
             return name;
@@ -135,6 +146,14 @@ public class ConversionTest {
 
         public void setMapList(List<Optional<LinkedHashMap<String, Integer>>> mapList) {
             this.mapList = mapList;
+        }
+
+        public List<byte[]> getBinaries() {
+            return binaries;
+        }
+
+        public void setBinaries(List<byte[]> binaries) {
+            this.binaries = binaries;
         }
     }
 

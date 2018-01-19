@@ -22,6 +22,7 @@ import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -50,6 +51,7 @@ public class ClassUtils {
     private static final Map<Class, List<Class>> implementationCache = new ConcurrentHashMap<>();
     private static final Class<?> javassistProxyClass;
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
+    private static final Map<Class<?>, Class<?>> BOX_TYPES;
     private static final Set<Class> ROOT_TYPES = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(Object.class, Annotation.class, Cloneable.class, Comparable.class, Serializable.class)));
 
@@ -61,6 +63,20 @@ public class ClassUtils {
             proxy = null;
         }
         javassistProxyClass = proxy;
+    }
+
+    static {
+        Map<Class<?>, Class<?>> boxTypes = new HashMap<>();
+        boxTypes.put(boolean.class, Boolean.class);
+        boxTypes.put(byte.class, Byte.class);
+        boxTypes.put(char.class, Character.class);
+        boxTypes.put(double.class, Double.class);
+        boxTypes.put(float.class, Float.class);
+        boxTypes.put(int.class, Integer.class);
+        boxTypes.put(long.class, Long.class);
+        boxTypes.put(short.class, Short.class);
+        boxTypes.put(void.class, Void.class);
+        BOX_TYPES = Collections.unmodifiableMap(boxTypes);
     }
 
     /**
@@ -264,6 +280,12 @@ public class ClassUtils {
         }
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public static Type box(Type type) {
+        Class<?> boxed = BOX_TYPES.get(type);
+        return boxed != null ? boxed : type;
+    }
+
     public static boolean isAbstract(AnnotatedType type) {
         return isAbstract(getRawType(type.getType()));
     }
@@ -280,14 +302,7 @@ public class ClassUtils {
                 || (superType instanceof GenericArrayType &&
                 ((GenericArrayType) superType).getGenericComponentType() instanceof TypeVariable))
                 && ClassUtils.getRawType(superType).isAssignableFrom(ClassUtils.getRawType(subType)))
-                || (superType == Byte.class && subType == byte.class)
-                || (superType == Short.class && subType == short.class)
-                || (superType == Integer.class && subType == int.class)
-                || (superType == Long.class && subType == long.class)
-                || (superType == Float.class && subType == float.class)
-                || (superType == Double.class && subType == double.class)
-                || (superType == Boolean.class && subType == boolean.class)
-                || (superType == Void.class && subType == void.class)
+                || (box(subType) == superType)
                 || GenericTypeReflector.isSuperType(superType, subType);
     }
 
@@ -390,7 +405,7 @@ public class ClassUtils {
         }
         return type;
     }
-    
+
     public static AnnotatedType completeGenerics(AnnotatedType type, AnnotatedType replacement) {
         if (type.getType() instanceof Class) {
             Class clazz = (Class) type.getType();
@@ -440,19 +455,19 @@ public class ClassUtils {
 
     /**
      * Finds the most specific common super type of all the given types, merging the original annotations at each level.
-     * 
+     *
      * <p>If no common ancestors are found (except Object) returns {@code fallback} or throws a
      * {@link TypeMappingException} if {@code fallback} is {@code null}.</p>
      *
      * @param types Types whose most specific super types is to be found
      * @param fallback The type to return as the result when no common ancestors except Object are found (at any level)
-     * 
+     *
      * @return The most specific super type
      */
     public static AnnotatedType getCommonSuperType(List<AnnotatedType> types, AnnotatedType fallback) {
         return getCommonSuperType(types, new HashSet<>(), fallback);
     }
-    
+
     private static AnnotatedType getCommonSuperType(List<AnnotatedType> types, Set<String> seenTypeCombos, AnnotatedType fallback) {
         if (types == null || types.isEmpty()) {
             throw new IllegalArgumentException("At least one type must be provided");
@@ -549,7 +564,7 @@ public class ClassUtils {
         }
         throw new TypeMappingException("Automatic type inference failed because some of the types had no common ancestors except for Object class");
     }
-    
+
     /**
      * Attempts to discover if the given class is a dynamically generated proxy class.
      * Standard Java proxies, cglib and Javassist proxies are detected.

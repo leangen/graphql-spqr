@@ -33,8 +33,9 @@ import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
-import io.leangen.graphql.generator.mapping.common.ArrayMapper;
-import io.leangen.graphql.generator.mapping.common.CollectionToListOutputConverter;
+import io.leangen.graphql.generator.mapping.common.ArrayAdapter;
+import io.leangen.graphql.generator.mapping.common.ByteArrayToBase64Adapter;
+import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
 import io.leangen.graphql.generator.mapping.common.ContextInjector;
 import io.leangen.graphql.generator.mapping.common.EnumMapper;
 import io.leangen.graphql.generator.mapping.common.EnvironmentInjector;
@@ -414,8 +415,8 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withBasePackages(String... basePackage) {
-        this.basePackages = basePackage;
+    public GraphQLSchemaGenerator withBasePackages(String... basePackages) {
+        this.basePackages = basePackages;
         return this;
     }
 
@@ -664,22 +665,22 @@ public class GraphQLSchemaGenerator {
             withTypeMappers(
                     new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                     new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                    new ObjectScalarAdapter(scalarStrategy), new EnumMapper(), new ArrayMapper(), new UnionTypeMapper(),
-                    new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(),
-                    new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
-                    new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
+                    new ObjectScalarAdapter(scalarStrategy), new ByteArrayToBase64Adapter(), new EnumMapper(),
+                    new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(), new StreamToCollectionTypeAdapter(),
+                    new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(),
+                    new OptionalAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         }
         if (outputConverters.isEmpty() || this.defaultOutputConverters) {
             withOutputConverters(
-                    new IdAdapter(), new ObjectScalarAdapter(scalarStrategy),
-                    new VoidToBooleanTypeAdapter(), new CollectionToListOutputConverter(),
+                    new IdAdapter(), new ObjectScalarAdapter(scalarStrategy), new VoidToBooleanTypeAdapter(),
+                    new ByteArrayToBase64Adapter(), new ArrayAdapter(), new CollectionOutputConverter(),
                     new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                     new OptionalAdapter(), new StreamToCollectionTypeAdapter());
         }
         if (inputConverters.isEmpty() || this.defaultInputConverters) {
             withInputConverters(
                     new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                    new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+                    new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new ByteArrayToBase64Adapter());
         }
         if (argumentInjectors.isEmpty() || this.defaultArgumentInjectors) {
             withArgumentInjectors(
