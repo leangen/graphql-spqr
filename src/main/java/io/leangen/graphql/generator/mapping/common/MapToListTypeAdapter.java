@@ -5,6 +5,7 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -39,7 +40,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     private final ScalarMappingStrategy scalarStrategy;
 
     public MapToListTypeAdapter(ScalarMappingStrategy scalarStrategy) {
-        this.scalarStrategy = scalarStrategy;
+        this.scalarStrategy = Objects.requireNonNull(scalarStrategy);
     }
 
     @Override

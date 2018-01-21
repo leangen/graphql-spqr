@@ -33,7 +33,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
     }
     
     public AnnotatedResolverBuilder(TypeTransformer transformer) {
-        this.transformer = transformer;
+        this.transformer = Objects.requireNonNull(transformer);
         this.operationNameGenerator = new DelegatingOperationNameGenerator(new AnnotatedOperationNameGenerator(), new MethodOperationNameGenerator());
         this.argumentBuilder = new AnnotatedArgumentBuilder(transformer);
         withDefaultFilters();

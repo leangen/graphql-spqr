@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -34,7 +35,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
 
     public PublicResolverBuilder(TypeTransformer transformer, String... basePackages) {
         this.basePackages = basePackages;
-        this.transformer = transformer;
+        this.transformer = Objects.requireNonNull(transformer);
         this.operationNameGenerator = new MethodOperationNameGenerator();
         this.argumentBuilder = new AnnotatedArgumentBuilder(transformer);
         withDefaultFilters();

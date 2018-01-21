@@ -5,6 +5,7 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -32,8 +33,8 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
     private final ObjectTypeMapper objectTypeMapper;
 
     public InterfaceMapper(InterfaceMappingStrategy interfaceStrategy, ObjectTypeMapper objectTypeMapper) {
-        this.interfaceStrategy = interfaceStrategy;
-        this.objectTypeMapper = objectTypeMapper;
+        this.interfaceStrategy = Objects.requireNonNull(interfaceStrategy);
+        this.objectTypeMapper = Objects.requireNonNull(objectTypeMapper);
     }
 
     @Override

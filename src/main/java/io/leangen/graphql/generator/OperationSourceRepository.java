@@ -9,8 +9,6 @@ import java.util.Map;
 import io.leangen.geantyref.AnnotatedTypeMap;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 
-import static java.util.Collections.addAll;
-
 /**
  * Created by bojan.tomic on 7/12/16.
  */
@@ -45,12 +43,12 @@ public class OperationSourceRepository {
         this.nestedOperationSources.put(domainType, new OperationSource(domainType, extractors));
     }
 
-    public void registerGlobalResolverBuilders(ResolverBuilder... resolverDetectionStrategies) {
-        addAll(this.topLevelResolverBuilders, resolverDetectionStrategies);
+    public void registerGlobalResolverBuilders(Collection<ResolverBuilder> resolverDetectionStrategies) {
+        this.topLevelResolverBuilders.addAll(resolverDetectionStrategies);
     }
     
-    public void registerGlobalNestedResolverBuilders(ResolverBuilder... resolverDetectionStrategies) {
-        addAll(this.nestedResolverBuilders, resolverDetectionStrategies);
+    public void registerGlobalNestedResolverBuilders(Collection<ResolverBuilder> resolverDetectionStrategies) {
+        this.nestedResolverBuilders.addAll(resolverDetectionStrategies);
     }
 
     public OperationSource nestedSourceForType(AnnotatedType domainType) {
@@ -63,14 +61,6 @@ public class OperationSourceRepository {
 
     public Collection<OperationSource> getNestedOperationSources() {
         return nestedOperationSources.values();
-    }
-
-    public boolean hasGlobalResolverBuilders() {
-        return !topLevelResolverBuilders.isEmpty();
-    }
-    
-    public boolean hasGlobalNestedResolverBuilders() {
-        return !nestedResolverBuilders.isEmpty();
     }
 
     public boolean isEmpty() {

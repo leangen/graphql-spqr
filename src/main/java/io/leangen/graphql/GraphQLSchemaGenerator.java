@@ -7,8 +7,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import graphql.relay.Relay;
 import graphql.schema.GraphQLFieldDefinition;
@@ -133,17 +136,17 @@ public class GraphQLSchemaGenerator {
     private TypeTransformer typeTransformer = new DefaultTypeTransformer(false, false);
     private GlobalEnvironment environment;
     private String[] basePackages;
-    private boolean defaultTypeMappers = false;
-    private boolean defaultOutputConverters = false;
-    private boolean defaultInputConverters = false;
-    private boolean defaultArgumentInjectors = false;
-    private boolean defaultResolverBuilders = false;
-    private boolean defaultNestedResolverBuilders = false;
-    private final List<TypeMapper> typeMappers = new ArrayList<>();
-    private final List<InputConverter> inputConverters = new ArrayList<>();
-    private final List<OutputConverter> outputConverters = new ArrayList<>();
-    private final List<ArgumentInjector> argumentInjectors = new ArrayList<>();
+    private List<TypeMapper> typeMappers;
+    private List<InputConverter> inputConverters;
+    private List<OutputConverter> outputConverters;
+    private List<ArgumentInjector> argumentInjectors;
     private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
+    private final Set<ExtensionProvider<TypeMapper>> typeMapperProviders = new LinkedHashSet<>();
+    private final Set<ExtensionProvider<InputConverter>> inputConverterProviders = new LinkedHashSet<>();
+    private final Set<ExtensionProvider<OutputConverter>> outputConverterProviders = new LinkedHashSet<>();
+    private final Set<ExtensionProvider<ArgumentInjector>> argumentInjectorProviders = new LinkedHashSet<>();
+    private final Set<ExtensionProvider<ResolverBuilder>> resolverBuilderProviders = new LinkedHashSet<>();
+    private final Set<ExtensionProvider<ResolverBuilder>> nestedResolverBuilderProviders = new LinkedHashSet<>();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Set<GraphQLType> additionalTypes = new HashSet<>();
@@ -389,7 +392,12 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withResolverBuilders(ResolverBuilder... resolverBuilders) {
-        this.operationSourceRepository.registerGlobalResolverBuilders(resolverBuilders);
+        this.resolverBuilderProviders.add(fixedConfig(resolverBuilders));
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withResolverBuilders(ExtensionProvider<ResolverBuilder> provider) {
+        this.resolverBuilderProviders.add(provider);
         return this;
     }
 
@@ -401,7 +409,12 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withNestedResolverBuilders(ResolverBuilder... resolverBuilders) {
-        this.operationSourceRepository.registerGlobalNestedResolverBuilders(resolverBuilders);
+        this.nestedResolverBuilderProviders.add(fixedConfig(resolverBuilders));
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withNestedResolverBuilders(ExtensionProvider<ResolverBuilder> provider) {
+        this.nestedResolverBuilderProviders.add(provider);
         return this;
     }
 
@@ -431,7 +444,12 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withTypeMappers(TypeMapper... typeMappers) {
-        addAll(this.typeMappers, typeMappers);
+        this.typeMapperProviders.add(fixedConfig(typeMappers));
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withTypeMappers(ExtensionProvider<TypeMapper> provider) {
+        this.typeMapperProviders.add(provider);
         return this;
     }
 
@@ -450,7 +468,12 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withInputConverters(InputConverter<?,?>... inputConverters) {
-        addAll(this.inputConverters, inputConverters);
+        this.inputConverterProviders.add(fixedConfig(inputConverters));
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withInputConverters(ExtensionProvider<InputConverter> provider) {
+        this.inputConverterProviders.add(provider);
         return this;
     }
 
@@ -469,7 +492,12 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOutputConverters(OutputConverter<?,?>... outputConverters) {
-        addAll(this.outputConverters, outputConverters);
+        this.outputConverterProviders.add(fixedConfig(outputConverters));
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withOutputConverters(ExtensionProvider<OutputConverter> provider) {
+        this.outputConverterProviders.add(provider);
         return this;
     }
 
@@ -499,7 +527,12 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withArgumentInjectors(ArgumentInjector... argumentInjectors) {
-        addAll(this.argumentInjectors, argumentInjectors);
+        this.argumentInjectorProviders.add(fixedConfig(argumentInjectors));
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withArgumentInjectors(ExtensionProvider<ArgumentInjector> provider) {
+        this.argumentInjectorProviders.add(provider);
         return this;
     }
 
@@ -592,18 +625,15 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withDefaultMappers() {
-        this.defaultTypeMappers = true;
-        return this;
+        return withTypeMappers(defaultConfig());
     }
 
     public GraphQLSchemaGenerator withDefaultInputConverters() {
-        this.defaultInputConverters = true;
-        return this;
+        return withInputConverters(defaultConfig());
     }
 
     public GraphQLSchemaGenerator withDefaultOutputConverters() {
-        this.defaultOutputConverters = true;
-        return this;
+        return withOutputConverters(defaultConfig());
     }
 
     /**
@@ -618,8 +648,7 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withDefaultArgumentInjectors() {
-        this.defaultArgumentInjectors = true;
-        return this;
+        return withArgumentInjectors(defaultConfig());
     }
 
     /**
@@ -629,8 +658,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withDefaultResolverBuilders() {
-        this.defaultResolverBuilders = true;
-        return this;
+        return withResolverBuilders(defaultConfig());
     }
 
     /**
@@ -640,8 +668,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withDefaultNestedResolverBuilders() {
-        this.defaultNestedResolverBuilders = true;
-        return this;
+        return withNestedResolverBuilders(defaultConfig());
     }
 
     /**
@@ -649,44 +676,92 @@ public class GraphQLSchemaGenerator {
      * ensuring the builder is in a valid state
      */
     private void init() {
+        Configuration configuration = new Configuration(interfaceStrategy, scalarStrategy, typeTransformer, basePackages);
         if (operationSourceRepository.isEmpty()) {
             throw new IllegalStateException("At least one top-level operation source must be registered");
         }
-        if (!operationSourceRepository.hasGlobalResolverBuilders() || defaultResolverBuilders) {
-            withResolverBuilders(new AnnotatedResolverBuilder(typeTransformer));
+
+        if (resolverBuilderProviders.isEmpty()) {
+            resolverBuilderProviders.add(defaultConfig());
         }
-        if (!operationSourceRepository.hasGlobalNestedResolverBuilders() || defaultNestedResolverBuilders) {
-            withNestedResolverBuilders(
-                    new AnnotatedResolverBuilder(typeTransformer),
-                    new BeanResolverBuilder(typeTransformer, basePackages));
+        List<ResolverBuilder> defaultResolverBuilders = Collections.singletonList(new AnnotatedResolverBuilder(typeTransformer));
+        Set<ResolverBuilder> collectedResolverBuilders = new LinkedHashSet<>();
+        resolverBuilderProviders.forEach(config -> collectedResolverBuilders.addAll(config.getExtensions(configuration, new ExtensionList<>(defaultResolverBuilders))));
+        if (collectedResolverBuilders.isEmpty()) {
+            throw new IllegalStateException("Configuration error: No resolver builders registered");
         }
-        if (typeMappers.isEmpty() || this.defaultTypeMappers) {
-            ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
-            withTypeMappers(
-                    new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
-                    new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                    new ObjectScalarAdapter(scalarStrategy), new ByteArrayToBase64Adapter(), new EnumMapper(),
-                    new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(), new StreamToCollectionTypeAdapter(),
-                    new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(),
-                    new OptionalAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
+        operationSourceRepository.registerGlobalResolverBuilders(collectedResolverBuilders);
+
+        if (nestedResolverBuilderProviders.isEmpty()) {
+            nestedResolverBuilderProviders.add(defaultConfig());
         }
-        if (outputConverters.isEmpty() || this.defaultOutputConverters) {
-            withOutputConverters(
-                    new IdAdapter(), new ObjectScalarAdapter(scalarStrategy), new VoidToBooleanTypeAdapter(),
-                    new ByteArrayToBase64Adapter(), new ArrayAdapter(), new CollectionOutputConverter(),
-                    new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                    new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+        List<ResolverBuilder> defaultNestedResolverBuilders = Arrays.asList(
+                new AnnotatedResolverBuilder(typeTransformer),
+                new BeanResolverBuilder(typeTransformer, basePackages));
+        Set<ResolverBuilder> collectedNestedResolverBuilders = new LinkedHashSet<>();
+        nestedResolverBuilderProviders.forEach(config -> collectedNestedResolverBuilders.addAll(config.getExtensions(configuration, new ExtensionList<>(defaultNestedResolverBuilders))));
+        if (collectedNestedResolverBuilders.isEmpty()) {
+            throw new IllegalStateException("Configuration error: No nested resolver builders registered");
         }
-        if (inputConverters.isEmpty() || this.defaultInputConverters) {
-            withInputConverters(
-                    new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                    new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new ByteArrayToBase64Adapter());
+        operationSourceRepository.registerGlobalNestedResolverBuilders(collectedNestedResolverBuilders);
+
+        if (typeMapperProviders.isEmpty()) {
+            typeMapperProviders.add(defaultConfig());
         }
-        if (argumentInjectors.isEmpty() || this.defaultArgumentInjectors) {
-            withArgumentInjectors(
-                    new IdAdapter(), new RootContextInjector(), new ContextInjector(),
-                    new EnvironmentInjector(), new InputValueDeserializer());
+        ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
+        List<TypeMapper> defaultMappers = Arrays.asList(
+                new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
+                new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
+                new ObjectScalarAdapter(scalarStrategy), new ByteArrayToBase64Adapter(), new EnumMapper(),
+                new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(), new StreamToCollectionTypeAdapter(),
+                new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(),
+                new OptionalAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
+        typeMappers = typeMapperProviders.stream()
+                .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultMappers)).stream())
+                .distinct()
+                .collect(Collectors.toList());
+        if (typeMappers.isEmpty()) {
+            throw new IllegalStateException("Configuration error: No type mappers registered");
         }
+
+        if (outputConverterProviders.isEmpty()) {
+            outputConverterProviders.add(defaultConfig());
+        }
+        List<OutputConverter> defaultOutputConverters = Arrays.asList(
+                new IdAdapter(), new ObjectScalarAdapter(scalarStrategy), new VoidToBooleanTypeAdapter(),
+                new ByteArrayToBase64Adapter(), new ArrayAdapter(), new CollectionOutputConverter(),
+                new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
+                new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+        outputConverters = outputConverterProviders.stream()
+                .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultOutputConverters)).stream())
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (inputConverterProviders.isEmpty()) {
+            inputConverterProviders.add(defaultConfig());
+        }
+        List<InputConverter> defaultInputConverters = Arrays.asList(
+                new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
+                new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new ByteArrayToBase64Adapter());
+        inputConverters = inputConverterProviders.stream()
+                .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultInputConverters)).stream())
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (argumentInjectorProviders.isEmpty()) {
+            argumentInjectorProviders.add(defaultConfig());
+        }
+        List<ArgumentInjector> defaultArgumentInjectors = Arrays.asList(
+                new IdAdapter(), new RootContextInjector(), new ContextInjector(),
+                new EnvironmentInjector(), new InputValueDeserializer());
+        argumentInjectors = argumentInjectorProviders.stream()
+                .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultArgumentInjectors)).stream())
+                .distinct()
+                .collect(Collectors.toList());
+        if (argumentInjectors.isEmpty()) {
+            throw new IllegalStateException("Configuration error: No argument injector registered");
+        }
+
         environment = new GlobalEnvironment(new Relay(), new TypeRepository(additionalTypes), new ConverterRepository(inputConverters, outputConverters), new ArgumentInjectorRepository(argumentInjectors));
         if (valueMapperFactory == null) {
             valueMapperFactory = Defaults.valueMapperFactory(basePackages, typeInfoGenerator);
@@ -787,6 +862,101 @@ public class GraphQLSchemaGenerator {
             throw new TypeMappingException();
         }
         checkType(type.getType());
+    }
+
+    private <T> ExtensionProvider<T> defaultConfig() {
+        return (config, defaults) -> defaults;
+    }
+
+    private <T> ExtensionProvider<T> fixedConfig(T[] additions) {
+        return (config, defaults) -> Arrays.asList(additions);
+    }
+
+    public static class Configuration {
+        public final InterfaceMappingStrategy interfaceMappingStrategy;
+        public final ScalarMappingStrategy scalarMappingStrategy;
+        public final TypeTransformer typeTransformer;
+        public final String[] basePackages;
+
+        public Configuration(InterfaceMappingStrategy interfaceMappingStrategy, ScalarMappingStrategy scalarMappingStrategy, TypeTransformer typeTransformer, String[] basePackages) {
+            this.interfaceMappingStrategy = interfaceMappingStrategy;
+            this.scalarMappingStrategy = scalarMappingStrategy;
+            this.typeTransformer = typeTransformer;
+            this.basePackages = basePackages;
+        }
+    }
+
+    @FunctionalInterface
+    public interface ExtensionProvider<T> {
+        List<T> getExtensions(Configuration config, ExtensionList<T> defaults);
+    }
+
+    public static final class ExtensionList<E> extends ArrayList<E> {
+
+        ExtensionList(Collection<? extends E> c) {
+            super(c);
+        }
+
+        @SafeVarargs
+        public final ExtensionList<E> append(E... extensions) {
+            Collections.addAll(this, extensions);
+            return this;
+        }
+
+        public ExtensionList<E> append(Collection<E> extensions) {
+            super.addAll(extensions);
+            return this;
+        }
+
+        @SafeVarargs
+        public final ExtensionList<E> insert(int index, E... extensions) {
+            for (int i = 0; i < extensions.length; i++) {
+                add(index + i, extensions[i]);
+            }
+            return this;
+        }
+
+        @SafeVarargs
+        public final ExtensionList<E> insertAfter(Class<? extends E> extensionType, E... extensions) {
+            return insert(firstIndexOfType(extensionType) + 1, extensions);
+        }
+
+        @SafeVarargs
+        public final ExtensionList<E> insertBefore(Class<? extends E> extensionType, E... extensions) {
+            return insert(firstIndexOfType(extensionType), extensions);
+        }
+
+        public ExtensionList<E> drop(int index) {
+            super.remove(index);
+            return this;
+        }
+
+        public ExtensionList<E> drop(Class<? extends E> extensionType) {
+            return drop(firstIndexOfType(extensionType));
+        }
+
+        public ExtensionList<E> dropAll(Predicate<? super E> filter) {
+            super.removeIf(filter);
+            return this;
+        }
+
+        public ExtensionList<E> replace(int index, E replacement) {
+            super.set(index, replacement);
+            return this;
+        }
+
+        public ExtensionList<E> replace(Class<? extends E> extensionType, E replacement) {
+            return replace(firstIndexOfType(extensionType), replacement);
+        }
+
+        private int firstIndexOfType(Class<? extends E> extensionType) {
+            for (int i = 0; i < size(); i++) {
+                if (extensionType.isInstance(get(i))) {
+                    return i;
+                }
+            }
+            throw new IllegalArgumentException("Extension of type " + extensionType.getName() + " not found");
+        }
     }
 
     private static class WrappedValueMapperFactory<T extends ValueMapper> implements ValueMapperFactory<T> {
