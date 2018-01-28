@@ -30,7 +30,7 @@ public class TypeRepository {
     private final Map<String, Map<String, MappedType>> covariantOutputTypes = new ConcurrentHashMap<>();
     private final Map<String, GraphQLObjectType> knownObjectTypes = new HashMap<>();
     private final Set<GraphQLObjectType> discoveredTypes = new HashSet<>();
-    
+
     private static final Logger log = LoggerFactory.getLogger(TypeRepository.class);
 
     public TypeRepository(Set<GraphQLType> knownTypes) {

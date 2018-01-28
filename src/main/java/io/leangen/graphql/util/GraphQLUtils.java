@@ -36,6 +36,14 @@ public class GraphQLUtils {
                 && isRelayId(((GraphQLInterfaceType) node).getFieldDefinition("id"));
     }
 
+    public static boolean isRelayConnectionField(GraphQLFieldDefinition fieldDefinition) {
+        return fieldDefinition.getName().equals("edges") || fieldDefinition.getName().equals("pageInfo");
+    }
+
+    public static boolean isRelayEdgeField(GraphQLFieldDefinition fieldDefinition) {
+        return fieldDefinition.getName().equals("node") || fieldDefinition.getName().equals("cursor");
+    }
+
     public static GraphQLType unwrapNonNull(GraphQLType type) {
         if (type instanceof GraphQLNonNull) {
             return unwrapNonNull(((GraphQLNonNull) type).getWrappedType());

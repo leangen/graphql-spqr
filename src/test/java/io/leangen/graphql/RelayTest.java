@@ -8,11 +8,14 @@ import java.util.List;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.Scalars;
+import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.domain.Education;
+import io.leangen.graphql.domain.ExtendedPage;
 import io.leangen.graphql.domain.User;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
@@ -20,7 +23,9 @@ import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.services.UserService;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -102,6 +107,30 @@ public class RelayTest {
         testPagedQuery("empty");
     }
 
+    @Test
+    public void testExtendedPageMapping() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new BookService())
+                .generate();
+
+        GraphQLFieldDefinition totalCount = schema.getObjectType("Book2Connection")
+                .getFieldDefinition("totalCount");
+        assertNotEquals(null, totalCount);
+        assertEquals(Scalars.GraphQLLong, totalCount.getType());
+        GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
+
+        ExecutionResult result = exe.execute("{extended(first:10, after:\"20\") {" +
+                "   totalCount" +
+                "   pageInfo {" +
+                "       hasNextPage" +
+                "   }," +
+                "   edges {" +
+                "       cursor, node {" +
+                "           title" +
+                "}}}}");
+        assertTrue(result.getErrors().isEmpty());
+    }
+
     private void testPagedQuery(String query) {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new BookService())
@@ -141,6 +170,13 @@ public class RelayTest {
         @GraphQLQuery(name = "empty")
         public Page<Book> getEmpty(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             return PageFactory.createOffsetBasedPage(Collections.emptyList(), 100, 10);
+        }
+
+        @GraphQLQuery(name = "extended")
+        public ExtendedPage<Book> getExtended(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+            List<Book> books = new ArrayList<>();
+            books.add(new Book("Tesseract", "x123"));
+            return new ExtendedPage<>(books, 100, 10);
         }
     }
 }

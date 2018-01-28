@@ -17,13 +17,13 @@ public interface TypeInfoGenerator {
     default String generateInputTypeName(AnnotatedType type) {
         return generateTypeName(type) + INPUT_SUFFIX;
     }
-    
-    default String generateScalarTypeName(AnnotatedType type) {
-        return generateTypeName(type) + SCALAR_SUFFIX;
-    }
-    
+
     default String generateInputTypeDescription(AnnotatedType type) {
         return generateTypeDescription(type);
+    }
+
+    default String generateScalarTypeName(AnnotatedType type) {
+        return generateTypeName(type) + SCALAR_SUFFIX;
     }
     
     default String generateScalarTypeDescription(AnnotatedType type) {

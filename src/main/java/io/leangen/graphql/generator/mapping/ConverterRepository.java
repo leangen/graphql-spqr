@@ -1,5 +1,6 @@
 package io.leangen.graphql.generator.mapping;
 
+import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
@@ -51,6 +52,9 @@ public class ConverterRepository {
                     .toArray(AnnotatedType[]::new);
             return TypeFactory.parameterizedAnnotatedClass(GenericTypeReflector.erase(type.getType()), type.getAnnotations(), arguments);
         }
-        throw new IllegalArgumentException("Can not deserialize type: " + type.getType().getTypeName());
+        if (type instanceof AnnotatedArrayType) {
+            return TypeFactory.arrayOf(getMappableType(((AnnotatedArrayType) type).getAnnotatedGenericComponentType()), type.getAnnotations());
+        }
+        throw new IllegalArgumentException("Can not find the mappable type for: " + type.getType().getTypeName());
     }
 }

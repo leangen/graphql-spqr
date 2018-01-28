@@ -2,9 +2,9 @@ package io.leangen.graphql.execution.relay.generic;
 
 import java.util.List;
 
-import io.leangen.graphql.execution.relay.Edge;
+import graphql.relay.Edge;
+import graphql.relay.PageInfo;
 import io.leangen.graphql.execution.relay.Page;
-import io.leangen.graphql.execution.relay.PageInfo;
 
 /**
  * Created by bojan.tomic on 5/16/16.
@@ -15,7 +15,7 @@ public class GenericPage<N> implements Page<N> {
     private PageInfo pageInfo;
 
     @SuppressWarnings("WeakerAccess")
-    public GenericPage(List<Edge<N>> edges, PageInfo<N> pageInfo) {
+    public GenericPage(List<Edge<N>> edges, PageInfo pageInfo) {
         this.edges = edges;
         this.pageInfo = pageInfo;
     }

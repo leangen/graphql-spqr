@@ -82,7 +82,7 @@ public class OperationMapper {
     private List<GraphQLFieldDefinition> generateQueries(BuildContext buildContext) {
         List<Operation> rootQueries = new ArrayList<>(buildContext.operationRepository.getRootQueries());
         List<GraphQLFieldDefinition> queries = rootQueries.stream()
-                .map(query -> toGraphQLOperation(query, buildContext))
+                .map(query -> toGraphQLField(query, buildContext))
                 .collect(Collectors.toList());
 
         buildContext.typeRepository.replaceTypeReferences();
@@ -107,14 +107,14 @@ public class OperationMapper {
         Collection<Operation> mutations = buildContext.operationRepository.getMutations();
         return mutations.stream()
                 .map(mutation -> buildContext.relayMappingConfig.relayCompliantMutations
-                        ? toRelayMutation(toGraphQLOperation(mutation, buildContext), buildContext.relayMappingConfig)
-                        : toGraphQLOperation(mutation, buildContext))
+                        ? toRelayMutation(toGraphQLField(mutation, buildContext), buildContext.relayMappingConfig)
+                        : toGraphQLField(mutation, buildContext))
                 .collect(Collectors.toList());
     }
 
     private List<GraphQLFieldDefinition> generateSubscriptions(BuildContext buildContext) {
         return buildContext.operationRepository.getSubscriptions().stream()
-                .map(subscription -> toGraphQLOperation(subscription, buildContext))
+                .map(subscription -> toGraphQLField(subscription, buildContext))
                 .collect(Collectors.toList());
     }
 
@@ -126,7 +126,7 @@ public class OperationMapper {
      *
      * @return GraphQL output field representing the given operation
      */
-    public GraphQLFieldDefinition toGraphQLOperation(Operation operation, BuildContext buildContext) {
+    public GraphQLFieldDefinition toGraphQLField(Operation operation, BuildContext buildContext) {
         Set<Type> abstractTypes = new HashSet<>();
         GraphQLOutputType type = toGraphQLType(operation.getJavaType(), abstractTypes, buildContext);
         GraphQLFieldDefinition.Builder queryBuilder = newFieldDefinition()

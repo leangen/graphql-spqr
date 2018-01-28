@@ -45,7 +45,7 @@ public abstract class AbstractionCollectingMapper implements TypeMapper {
     }
 
     protected Set<Type> collectAbstract(AnnotatedType javaType, Set<Type> seen, BuildContext buildContext) {
-        javaType = buildContext.globalEnvironment.converters.getMappableType(javaType);
+        javaType = buildContext.globalEnvironment.getMappableType(javaType);
         if (Scalars.isScalar(javaType.getType())) {
             return Collections.emptySet();
         }

@@ -137,9 +137,6 @@ public class GraphQLSchemaGenerator {
     private GlobalEnvironment environment;
     private String[] basePackages;
     private List<TypeMapper> typeMappers;
-    private List<InputConverter> inputConverters;
-    private List<OutputConverter> outputConverters;
-    private List<ArgumentInjector> argumentInjectors;
     private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
     private final Set<ExtensionProvider<TypeMapper>> typeMapperProviders = new LinkedHashSet<>();
     private final Set<ExtensionProvider<InputConverter>> inputConverterProviders = new LinkedHashSet<>();
@@ -732,7 +729,7 @@ public class GraphQLSchemaGenerator {
                 new ByteArrayToBase64Adapter(), new ArrayAdapter(), new CollectionOutputConverter(),
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 new OptionalAdapter(), new StreamToCollectionTypeAdapter());
-        outputConverters = outputConverterProviders.stream()
+        List<OutputConverter> outputConverters = outputConverterProviders.stream()
                 .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultOutputConverters)).stream())
                 .distinct()
                 .collect(Collectors.toList());
@@ -743,7 +740,7 @@ public class GraphQLSchemaGenerator {
         List<InputConverter> defaultInputConverters = Arrays.asList(
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new ByteArrayToBase64Adapter());
-        inputConverters = inputConverterProviders.stream()
+        List<InputConverter> inputConverters = inputConverterProviders.stream()
                 .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultInputConverters)).stream())
                 .distinct()
                 .collect(Collectors.toList());
@@ -754,7 +751,7 @@ public class GraphQLSchemaGenerator {
         List<ArgumentInjector> defaultArgumentInjectors = Arrays.asList(
                 new IdAdapter(), new RootContextInjector(), new ContextInjector(),
                 new EnvironmentInjector(), new InputValueDeserializer());
-        argumentInjectors = argumentInjectorProviders.stream()
+        List<ArgumentInjector> argumentInjectors = argumentInjectorProviders.stream()
                 .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultArgumentInjectors)).stream())
                 .distinct()
                 .collect(Collectors.toList());

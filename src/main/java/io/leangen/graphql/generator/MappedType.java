@@ -12,7 +12,7 @@ public class MappedType {
     public final AnnotatedType javaType;
     public final GraphQLOutputType graphQLType;
 
-    public MappedType(AnnotatedType javaType, GraphQLOutputType graphQLType) {
+    MappedType(AnnotatedType javaType, GraphQLOutputType graphQLType) {
         this.javaType = javaType;
         this.graphQLType = graphQLType;
     }

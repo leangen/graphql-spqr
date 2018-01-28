@@ -85,7 +85,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     @SuppressWarnings("WeakerAccess")
     protected List<GraphQLFieldDefinition> getFields(AnnotatedType javaType, List<String> specifiedFieldOrder, BuildContext buildContext, OperationMapper operationMapper) {
         List<GraphQLFieldDefinition> fields = buildContext.operationRepository.getChildQueries(javaType).stream()
-                .map(childQuery -> operationMapper.toGraphQLOperation(childQuery, buildContext))
+                .map(childQuery -> operationMapper.toGraphQLField(childQuery, buildContext))
                 .collect(Collectors.toList());
         if (ClassUtils.isAbstract(javaType) || !buildContext.interfaceStrategy.getInterfaces(javaType).isEmpty()) {
             fields.add(newFieldDefinition()
@@ -94,8 +94,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                     .dataFetcher(env -> env.getSource() == null ? null : env.getSource().getClass().getSimpleName())
                     .build());
         }
-        List<GraphQLFieldDefinition> sortedFields = sortFieldsBySpecifiedOrderAndTheRestAlphabetically(fields, specifiedFieldOrder);
-        return sortedFields;
+        return sortFieldsBySpecifiedOrderAndTheRestAlphabetically(fields, specifiedFieldOrder);
     }
 
     @SuppressWarnings("WeakerAccess")
