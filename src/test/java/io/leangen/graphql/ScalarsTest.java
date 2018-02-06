@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.Date;
 
@@ -56,11 +57,19 @@ public class ScalarsTest {
         testTemporal(ZonedDateTime.class, "2017-06-24T23:15:44.510Z", 1498346144510L);
     }
 
+    @Test
+    public void testOffsetDateTime() {
+        testTemporal(OffsetDateTime.class, "2017-06-24T23:15:44.510Z", "2017-06-24T22:15:44.510-01:00", 1498346144510L);
+    }
 
     private void testTemporal(Class type, String expected, long literal) {
+        testTemporal(type, expected, expected, literal);
+    }
+
+    private void testTemporal(Class type, String expected, String stringLiteral, long literal) {
         GraphQLScalarType scalar = Scalars.toGraphQLScalarType(type);
         testNullTemporalSerialization(scalar.getCoercing());
-        testStringTemporal(type, scalar.getCoercing(), expected);
+        testStringTemporal(type, scalar.getCoercing(), stringLiteral, stringLiteral);
         testEpochMilliTemporal(type, scalar.getCoercing(), expected, literal);
         testTemporalMapping(type, scalar);
     }
@@ -69,12 +78,12 @@ public class ScalarsTest {
         assertEquals(null, coercing.serialize(null));
     }
     
-    private void testStringTemporal(Class type, Coercing coercing, String expected) {
-        Object parsed = coercing.parseLiteral(new StringValue(expected));
+    private void testStringTemporal(Class type, Coercing coercing, String expected, String stringLiteral) {
+        Object parsed = coercing.parseLiteral(new StringValue(stringLiteral));
         assertTrue(type.isInstance(parsed));
         assertEquals(expected, coercing.serialize(parsed));
 
-        parsed = coercing.parseValue(expected);
+        parsed = coercing.parseValue(stringLiteral);
         assertTrue(type.isInstance(parsed));
         assertEquals(expected, coercing.serialize(parsed));
         
