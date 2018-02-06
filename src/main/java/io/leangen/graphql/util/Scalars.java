@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -132,9 +133,11 @@ public class Scalars {
     public static final GraphQLScalarType GraphQLLocalTime = temporalScalar(LocalTime.class, LocalTime::parse, i -> i.atZone(ZoneOffset.UTC).toLocalTime());
     
     public static final GraphQLScalarType GraphQLLocalDateTime = temporalScalar(LocalDateTime.class, LocalDateTime::parse, i -> i.atZone(ZoneOffset.UTC).toLocalDateTime());
-    
+
     public static final GraphQLScalarType GraphQLZonedDateTime = temporalScalar(ZonedDateTime.class, ZonedDateTime::parse, i -> i.atZone(ZoneOffset.UTC));
-    
+
+    public static final GraphQLScalarType GraphQLOffsetDateTime = temporalScalar(OffsetDateTime.class, OffsetDateTime::parse, i -> i.atOffset(ZoneOffset.UTC));
+
     public static final GraphQLScalarType GraphQLDurationScalar = temporalScalar(Duration.class, Duration::parse, instant -> Duration.ofMillis(instant.toEpochMilli()));
     
     public static final GraphQLScalarType GraphQLPeriodScalar = temporalScalar(Period.class, Period::parse, instant -> {
@@ -263,6 +266,7 @@ public class Scalars {
         scalarMapping.put(LocalTime.class, GraphQLLocalTime);
         scalarMapping.put(LocalDateTime.class, GraphQLLocalDateTime);
         scalarMapping.put(ZonedDateTime.class, GraphQLZonedDateTime);
+        scalarMapping.put(OffsetDateTime.class, GraphQLOffsetDateTime);
         scalarMapping.put(Duration.class, GraphQLDurationScalar);
         scalarMapping.put(Period.class, GraphQLPeriodScalar);
         scalarMapping.put(Locale.class, GraphQLLocale);
