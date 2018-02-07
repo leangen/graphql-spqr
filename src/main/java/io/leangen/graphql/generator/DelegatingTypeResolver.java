@@ -13,6 +13,7 @@ import io.leangen.graphql.annotations.GraphQLTypeResolver;
 import io.leangen.graphql.generator.exceptions.UnresolvableTypeException;
 import io.leangen.graphql.generator.types.MappedGraphQLType;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
 public class DelegatingTypeResolver implements TypeResolver {
@@ -60,7 +61,7 @@ public class DelegatingTypeResolver implements TypeResolver {
         //Try to deduce the type
         if (resultTypeName.equals(env.getFieldType().getName())) {
             AnnotatedType resolvedJavaType = GenericTypeReflector.getExactSubType(returnType, resultType);
-            if (resolvedJavaType != null && !GenericTypeReflector.isMissingTypeParameters(resolvedJavaType.getType())) {
+            if (resolvedJavaType != null && !ClassUtils.isMissingTypeParameters(resolvedJavaType.getType())) {
                 GraphQLType resolved = env.getSchema().getType(typeInfoGenerator.generateTypeName(resolvedJavaType));
                 if (resolved == null) {
                     throw new UnresolvableTypeException(env.getFieldType().getName(), result);

@@ -43,6 +43,16 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
         return getFirstNonEmptyOrDefault(descriptions, "");
     }
 
+    @Override
+    public String[] getFieldOrder(AnnotatedType type) {
+        return Utils.or(
+                Optional.ofNullable(type.getAnnotation(GraphQLInterface.class))
+                        .map(GraphQLInterface::fieldOrder),
+                Optional.ofNullable(type.getAnnotation(GraphQLType.class))
+                        .map(GraphQLType::fieldOrder))
+                .orElse(Utils.emptyArray());
+    }
+
     @SuppressWarnings("unchecked")
     private String generateSimpleName(AnnotatedType type) {
         Optional<String>[] names = new Optional[]{

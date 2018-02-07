@@ -1,5 +1,8 @@
 package io.leangen.graphql.metadata.strategy.query;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -16,16 +19,19 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Urls;
 
 @SuppressWarnings("WeakerAccess")
 public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
 
     private final TypeTransformer transformer;
 
+    private static final Logger log = LoggerFactory.getLogger(AnnotatedArgumentBuilder.class);
+
     public AnnotatedArgumentBuilder(TypeTransformer transformer) {
         this.transformer = transformer;
     }
-    
+
     @Override
     public List<OperationArgument> buildResolverArguments(Method resolverMethod, AnnotatedType declaringType) {
         List<OperationArgument> operationArguments = new ArrayList<>(resolverMethod.getParameterCount());
@@ -57,7 +63,16 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
             return GraphQLId.RELAY_ID_FIELD_NAME;
         }
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
-        return meta != null && !meta.name().isEmpty() ? meta.name() : parameter.getName();
+        if (meta != null && !meta.name().isEmpty()) {
+            return meta.name();
+        } else {
+            if (!parameter.isNamePresent()) {
+                log.warn("No explicit argument name given and the parameter name lost in compilation: "
+                        + parameter.getDeclaringExecutable().toGenericString() + "#" + parameter.toString()
+                        + ". For details and possible solutions see " + Urls.Errors.MISSING_ARGUMENT_NAME);
+            }
+            return parameter.getName();
+        }
     }
 
     protected String getArgumentDescription(Parameter parameter, AnnotatedType parameterType) {

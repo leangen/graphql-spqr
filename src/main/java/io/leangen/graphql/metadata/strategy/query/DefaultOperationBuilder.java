@@ -17,6 +17,7 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Urls;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -119,7 +120,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
         errorPrefix = errorPrefix + " Types found: " + Arrays.toString(types.stream().map(type -> type.getType().getTypeName()).toArray()) + ". ";
         if (!typeInference.inferTypes && !types.stream().map(AnnotatedType::getType).allMatch(type -> type.equals(types.get(0).getType()))) {
             throw new TypeMappingException(errorPrefix + "If this is intentional, and you wish GraphQL SPQR to infer the most " +
-                    "common super type automatically, see https://github.com/leangen/graphql-spqr/wiki/Errors#operation-with-multiple-resolver-methods-of-different-types");
+                    "common super type automatically, see " + Urls.Errors.CONFLICTING_RESOLVERS);
         }
         try {
             return ClassUtils.getCommonSuperType(types, typeInference.allowObject ? GenericTypeReflector.annotate(Object.class) : null);

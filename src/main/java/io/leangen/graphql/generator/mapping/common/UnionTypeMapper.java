@@ -58,7 +58,7 @@ public class UnionTypeMapper extends UnionMapper {
             }
             possibleTypes = ClassUtils.findImplementations(javaType, scanPackages).stream()
                     .peek(impl -> {
-                        if (GenericTypeReflector.isMissingTypeParameters(impl.getType())) {
+                        if (ClassUtils.isMissingTypeParameters(impl.getType())) {
                             throw new TypeMappingException(javaType.getType(), impl.getType());
                         }
                     })

@@ -81,6 +81,7 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Defaults;
+import io.leangen.graphql.util.Urls;
 
 import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
@@ -709,10 +710,10 @@ public class GraphQLSchemaGenerator {
         List<TypeMapper> defaultMappers = Arrays.asList(
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                 new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                new ObjectScalarAdapter(scalarStrategy), new ByteArrayToBase64Adapter(), new EnumMapper(),
-                new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(), new StreamToCollectionTypeAdapter(),
-                new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(),
-                new OptionalAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
+                new ByteArrayToBase64Adapter(), new EnumMapper(), new ArrayAdapter(), new UnionTypeMapper(),
+                new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(),
+                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
+                new ObjectScalarAdapter(scalarStrategy), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         typeMappers = typeMapperProviders.stream()
                 .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultMappers)).stream())
                 .distinct()
@@ -725,10 +726,10 @@ public class GraphQLSchemaGenerator {
             outputConverterProviders.add(defaultConfig());
         }
         List<OutputConverter> defaultOutputConverters = Arrays.asList(
-                new IdAdapter(), new ObjectScalarAdapter(scalarStrategy), new VoidToBooleanTypeAdapter(),
-                new ByteArrayToBase64Adapter(), new ArrayAdapter(), new CollectionOutputConverter(),
-                new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                new OptionalAdapter(), new StreamToCollectionTypeAdapter());
+                new IdAdapter(), new VoidToBooleanTypeAdapter(), new ByteArrayToBase64Adapter(),
+                new ArrayAdapter(), new CollectionOutputConverter(), new OptionalIntAdapter(),
+                new OptionalLongAdapter(), new OptionalDoubleAdapter(), new OptionalAdapter(),
+                new StreamToCollectionTypeAdapter(), new ObjectScalarAdapter(scalarStrategy));
         List<OutputConverter> outputConverters = outputConverterProviders.stream()
                 .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultOutputConverters)).stream())
                 .distinct()
@@ -845,12 +846,12 @@ public class GraphQLSchemaGenerator {
             throw new TypeMappingException("The registered object of type " + clazz.getName() +
                     " appears to be a dynamically generated proxy, so its type can not be reliably determined." +
                     " Provide the type explicitly when registering the bean." +
-                    " For details and solutions see https://github.com/leangen/graphql-spqr/wiki/Errors#dynamic-proxies");
+                    " For details and solutions see " + Urls.Errors.DYNAMIC_PROXIES);
         }
-        if (GenericTypeReflector.isMissingTypeParameters(type)) {
+        if (ClassUtils.isMissingTypeParameters(type)) {
             throw new TypeMappingException("The registered object is of generic type " + type.getTypeName() + "." +
                     " Provide the full type explicitly when registering the bean." +
-                    " For details and solutions see https://github.com/leangen/graphql-spqr/wiki/Errors#generic-top-level-singletons");
+                    " For details and solutions see " + Urls.Errors.TOP_LEVEL_GENERICS);
         }
     }
 

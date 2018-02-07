@@ -42,8 +42,8 @@ public class GlobalEnvironment {
         return inputConverter == null ? (T) input : inputConverter.convertInput(input, type, this, valueMapper);
     }
 
-    public AnnotatedType getMappableType(AnnotatedType type) {
-        return this.converters.getMappableType(type);
+    public AnnotatedType getMappableInputType(AnnotatedType type) {
+        return this.converters.getMappableInputType(type);
     }
 
     public List<InputConverter> getInputConverters() {

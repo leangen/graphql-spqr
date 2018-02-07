@@ -2,7 +2,6 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,11 +34,11 @@ public class PageMapper extends ObjectTypeMapper {
         }
         buildContext.knownTypes.add(connectionName);
         GraphQLOutputType type = operationMapper.toGraphQLType(nodeType, abstractTypes, buildContext);
-        List<GraphQLFieldDefinition> edgeFields = getFields(edgeType, Collections.emptyList(), buildContext, operationMapper).stream()
+        List<GraphQLFieldDefinition> edgeFields = getFields(edgeType, buildContext, operationMapper).stream()
                 .filter(field -> !GraphQLUtils.isRelayEdgeField(field) && !field.getName().equals(ValueMapper.TYPE_METADATA_FIELD_NAME))
                 .collect(Collectors.toList());
         GraphQLObjectType edge = buildContext.relay.edgeType(type.getName(), type, null, edgeFields);
-        List<GraphQLFieldDefinition> connectionFields = getFields(javaType, Collections.emptyList(), buildContext, operationMapper).stream()
+        List<GraphQLFieldDefinition> connectionFields = getFields(javaType, buildContext, operationMapper).stream()
                 .filter(field -> !GraphQLUtils.isRelayConnectionField(field) && !field.getName().equals(ValueMapper.TYPE_METADATA_FIELD_NAME))
                 .collect(Collectors.toList());
         return buildContext.relay.connectionType(type.getName(), edge, connectionFields);

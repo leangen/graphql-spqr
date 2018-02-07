@@ -2,8 +2,6 @@ package io.leangen.graphql.generator.mapping.common;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,7 +11,6 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
-import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
@@ -43,9 +40,7 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
 
-        GraphQLInterface graphQLInterface = javaType.getAnnotation(GraphQLInterface.class);
-        List<String> fieldOrder = graphQLInterface != null ? Arrays.asList(graphQLInterface.fieldOrder()) : Collections.emptyList();
-        List<GraphQLFieldDefinition> fields = objectTypeMapper.getFields(javaType, fieldOrder, buildContext, operationMapper);
+        List<GraphQLFieldDefinition> fields = objectTypeMapper.getFields(javaType, buildContext, operationMapper);
         fields.forEach(typeBuilder::field);
 
         typeBuilder.typeResolver(buildContext.typeResolver);
@@ -79,7 +74,7 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
 
     private Optional<GraphQLObjectType> getImplementingType(AnnotatedType implType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
         return Optional.of(implType)
-                .filter(impl -> !GenericTypeReflector.isMissingTypeParameters(impl.getType()))
+                .filter(impl -> !ClassUtils.isMissingTypeParameters(impl.getType()))
                 .filter(impl -> !interfaceStrategy.supports(impl))
                 .map(impl -> operationMapper.toGraphQLType(impl, abstractTypes, buildContext))
                 .filter(impl -> impl instanceof GraphQLObjectType)

@@ -3,6 +3,8 @@ package io.leangen.graphql.util;
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -130,7 +133,7 @@ public class ClassUtils {
      */
     public static AnnotatedType getReturnType(Method method, AnnotatedType declaringType) {
         AnnotatedType exactDeclaringType = GenericTypeReflector.getExactSuperType(capture(declaringType), method.getDeclaringClass());
-        if (GenericTypeReflector.isMissingTypeParameters(exactDeclaringType.getType())) {
+        if (isMissingTypeParameters(exactDeclaringType.getType())) {
             return method.getAnnotatedReturnType();
         }
         return GenericTypeReflector.getReturnType(method, declaringType);
@@ -145,7 +148,7 @@ public class ClassUtils {
      */
     public static AnnotatedType getFieldType(Field field, AnnotatedType declaringType) {
         AnnotatedType exactDeclaringType = GenericTypeReflector.getExactSuperType(capture(declaringType), field.getDeclaringClass());
-        if (GenericTypeReflector.isMissingTypeParameters(exactDeclaringType.getType())) {
+        if (isMissingTypeParameters(exactDeclaringType.getType())) {
             return field.getAnnotatedType();
         }
         return GenericTypeReflector.getFieldType(field, declaringType);
@@ -160,7 +163,7 @@ public class ClassUtils {
      */
     public static AnnotatedType[] getParameterTypes(Executable executable, AnnotatedType declaringType) {
         AnnotatedType exactDeclaringType = GenericTypeReflector.getExactSuperType(capture(declaringType), executable.getDeclaringClass());
-        if (GenericTypeReflector.isMissingTypeParameters(exactDeclaringType.getType())) {
+        if (isMissingTypeParameters(exactDeclaringType.getType())) {
             return executable.getAnnotatedParameterTypes();
         }
         return GenericTypeReflector.getParameterTypes(executable, declaringType);
@@ -174,6 +177,23 @@ public class ClassUtils {
                     "methods, or customizing the mapping process.");
         }
         return erased;
+    }
+
+    public static boolean isMissingTypeParameters(Type type) {
+        if (type instanceof Class
+                && (((Class) type).getEnclosingClass() == null || Modifier.isStatic(((Class) type).getModifiers()))
+                && ((Class) type).getTypeParameters().length == 0) {
+            return false;
+        }
+        return GenericTypeReflector.isMissingTypeParameters(type);
+    }
+
+    public static <T extends AnnotatedType> T normalize(T type) {
+        type = GenericTypeReflector.toCanonical(type);
+        Annotation[] filteredAnnotations = Arrays.stream(type.getAnnotations())
+                .filter(ann -> isTypeUseAnnotation(ann.annotationType()))
+                .toArray(Annotation[]::new);
+        return type.getAnnotations().length == filteredAnnotations.length ? type : GenericTypeReflector.replaceAnnotations(type, filteredAnnotations);
     }
 
     @SuppressWarnings("unchecked")
@@ -412,7 +432,7 @@ public class ClassUtils {
             if (clazz.isArray()) {
                 return TypeFactory.arrayOf(completeGenerics(GenericTypeReflector.annotate(clazz.getComponentType()), replacement), type.getAnnotations());
             } else {
-                if (GenericTypeReflector.isMissingTypeParameters(clazz)) {
+                if (isMissingTypeParameters(clazz)) {
                     if (replacement == null) {
                         throw new TypeMappingException(clazz);
                     }
@@ -440,6 +460,24 @@ public class ClassUtils {
             throw new TypeMappingException(type.getType().getTypeName() + " can not be completed. Call eraseBounds first?");
         }
         return type;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends AnnotatedType> T transformType(T type, Function<T, T> transformer) {
+        if (type instanceof AnnotatedArrayType) {
+            return (T) TypeFactory.arrayOf(transformer.apply((T) ((AnnotatedArrayType) type).getAnnotatedGenericComponentType()), type.getAnnotations());
+        }
+        if (type.getType() instanceof Class) {
+            return type;
+        }
+        if (type instanceof AnnotatedParameterizedType) {
+            AnnotatedParameterizedType parameterizedType = (AnnotatedParameterizedType) type;
+            AnnotatedType[] arguments = Arrays.stream(parameterizedType.getAnnotatedActualTypeArguments())
+                    .map(param -> transformer.apply((T) param))
+                    .toArray(AnnotatedType[]::new);
+            return (T) TypeFactory.parameterizedAnnotatedClass(GenericTypeReflector.erase(type.getType()), type.getAnnotations(), arguments);
+        }
+        throw new IllegalArgumentException("Can not find the mappable type for: " + type.getType().getTypeName());
     }
 
     /**
@@ -502,7 +540,7 @@ public class ClassUtils {
         List<AnnotatedType> normalizedTypes = types.stream()
                 .map(type -> GenericTypeReflector.getExactSuperType(type, commonRawSuperType))
                 .collect(Collectors.toList());
-        if (normalizedTypes.stream().anyMatch(type -> GenericTypeReflector.isMissingTypeParameters(type.getType()))) {
+        if (normalizedTypes.stream().anyMatch(type -> isMissingTypeParameters(type.getType()))) {
             throw new TypeMappingException("Automatic type inference failed because some of the types are missing generic type parameter(s).");
         }
         if (normalizedTypes.stream().allMatch(type -> type.getType() instanceof Class)) {
@@ -614,6 +652,10 @@ public class ClassUtils {
                 .flatMap(type -> Arrays.stream(type.getAnnotations()))
                 .distinct()
                 .toArray(Annotation[]::new);
+    }
+
+    private static boolean isTypeUseAnnotation(Class<? extends Annotation> type) {
+        return type.isAnnotationPresent(Target.class) && Arrays.stream(type.getAnnotation(Target.class).value()).anyMatch(target -> target.equals(ElementType.TYPE_USE));
     }
 
     private static class TypeComparator implements Comparator<Class<?>> {

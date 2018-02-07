@@ -55,7 +55,7 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
     @Override
     @SuppressWarnings("unchecked")
     public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-        JavaType substituteType = deserializationContext.getTypeFactory().constructType(environment.getMappableType(detectedType).getType());
+        JavaType substituteType = deserializationContext.getTypeFactory().constructType(environment.getMappableInputType(detectedType).getType());
         Object substitute = deserializationContext.readValue(jsonParser, substituteType);
         return inputConverter.convertInput(substitute, detectedType, environment, valueMapper);
     }

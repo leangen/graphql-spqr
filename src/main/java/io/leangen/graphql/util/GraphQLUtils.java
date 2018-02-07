@@ -32,8 +32,8 @@ public class GraphQLUtils {
         return node instanceof GraphQLInterfaceType
                 && node.getName().equals(Relay.NODE)
                 && ((GraphQLInterfaceType) node).getFieldDefinitions().size() == 1
-                && ((GraphQLInterfaceType) node).getFieldDefinition("id") != null
-                && isRelayId(((GraphQLInterfaceType) node).getFieldDefinition("id"));
+                && ((GraphQLInterfaceType) node).getFieldDefinition(GraphQLId.RELAY_ID_FIELD_NAME) != null
+                && isRelayId(((GraphQLInterfaceType) node).getFieldDefinition(GraphQLId.RELAY_ID_FIELD_NAME));
     }
 
     public static boolean isRelayConnectionField(GraphQLFieldDefinition fieldDefinition) {

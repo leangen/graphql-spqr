@@ -11,6 +11,8 @@ import java.util.stream.Stream;
  */
 public class Utils {
 
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static <T> Optional<T> or(Optional<T> left, Optional<T> right) {
         return left.isPresent() ? left : right;
@@ -20,7 +22,7 @@ public class Utils {
     public static <T> Optional<T> or(Optional<T> left, Supplier<Optional<T>> right) {
         return left.isPresent() ? left : right.get();
     }
-    
+
     public static boolean notEmpty(String string) {
         return string != null && !string.isEmpty();
     }
@@ -32,5 +34,9 @@ public class Utils {
     @SafeVarargs
     public static <T> Stream<T> concat(Stream<T>... streams) {
         return Arrays.stream(streams).reduce(Stream::concat).orElse(Stream.empty());
+    }
+
+    public static String[] emptyArray() {
+        return EMPTY_STRING_ARRAY;
     }
 }

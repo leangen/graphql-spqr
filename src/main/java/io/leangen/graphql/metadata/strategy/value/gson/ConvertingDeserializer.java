@@ -30,7 +30,7 @@ class ConvertingDeserializer implements JsonDeserializer {
     @SuppressWarnings("unchecked")
     public Object deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext deserializationContext) throws JsonParseException {
         AnnotatedType detectedType = GenericTypeReflector.annotate(type);
-        Type substituteType = environment.getMappableType(detectedType).getType();
+        Type substituteType = environment.getMappableInputType(detectedType).getType();
         Object substitute = deserializationContext.deserialize(jsonElement, substituteType);
         return inputConverter.convertInput(substitute, detectedType, environment, valueMapper);
     }

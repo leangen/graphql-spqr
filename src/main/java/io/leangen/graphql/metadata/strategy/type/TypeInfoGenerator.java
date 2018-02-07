@@ -14,6 +14,8 @@ public interface TypeInfoGenerator {
 
     String generateTypeDescription(AnnotatedType type);
 
+    String[] getFieldOrder(AnnotatedType type);
+
     default String generateInputTypeName(AnnotatedType type) {
         return generateTypeName(type) + INPUT_SUFFIX;
     }
