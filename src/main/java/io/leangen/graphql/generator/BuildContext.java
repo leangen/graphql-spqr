@@ -36,6 +36,7 @@ public class BuildContext {
     public final InputFieldDiscoveryStrategy inputFieldStrategy;
     public final TypeInfoGenerator typeInfoGenerator;
     public final RelayMappingConfig relayMappingConfig;
+    public final Validator validator;
 
     public final Set<String> knownTypes;
     public final Set<String> knownInputTypes;
@@ -85,5 +86,6 @@ public class BuildContext {
                 .map(GraphQLType::getName)
                 .collect(Collectors.toSet());
         this.relayMappingConfig = relayMappingConfig;
+        this.validator = new Validator(environment, typeMappers, knownTypes);
     }
 }

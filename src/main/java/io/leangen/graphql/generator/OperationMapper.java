@@ -1,5 +1,8 @@
 package io.leangen.graphql.generator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -60,6 +63,8 @@ public class OperationMapper {
     private List<GraphQLFieldDefinition> queries; //The list of all mapped queries
     private List<GraphQLFieldDefinition> mutations; //The list of all mapped mutations
     private List<GraphQLFieldDefinition> subscriptions; //The list of all mapped subscriptions
+
+    private static final Logger log = LoggerFactory.getLogger(OperationMapper.class);
 
     /**
      *
@@ -163,7 +168,9 @@ public class OperationMapper {
      * @return GraphQL output type corresponding to the given Java type
      */
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, BuildContext buildContext) {
-        return buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, abstractTypes, this, buildContext);
+        GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, abstractTypes, this, buildContext);
+        log(buildContext.validator.checkUniqueness(type, javaType));
+        return type;
     }
 
     /**
@@ -193,8 +200,9 @@ public class OperationMapper {
      * @return GraphQL input type corresponding to the given Java type
      */
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, BuildContext buildContext) {
-        TypeMapper mapper = buildContext.typeMappers.getTypeMapper(javaType);
-        return mapper.toGraphQLInputType(javaType, abstractTypes, this, buildContext);
+        GraphQLInputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLInputType(javaType, abstractTypes, this, buildContext);
+        log(buildContext.validator.checkUniqueness(type, javaType));
+        return type;
     }
 
     private GraphQLArgument toGraphQLArgument(OperationArgument operationArgument, Set<Type> abstractTypes, BuildContext buildContext) {
@@ -349,6 +357,12 @@ public class OperationMapper {
         //this way more precise queries (returning node types directly) override interface/union queries
         nodeQueriesByType.putAll(directNodeQueriesByType);
         return nodeQueriesByType;
+    }
+
+    private void log(Validator.ValidationResult result) {
+        if (!result.isValid()) {
+            log.warn(result.getMessage());
+        }
     }
 
     /**
