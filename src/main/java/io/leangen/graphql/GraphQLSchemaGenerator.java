@@ -1,18 +1,5 @@
 package io.leangen.graphql;
 
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import graphql.relay.Relay;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
@@ -81,7 +68,21 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Defaults;
+import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
+
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
@@ -831,7 +832,7 @@ public class GraphQLSchemaGenerator {
     }
 
     private boolean isInternalType(GraphQLType type) {
-        return type.getName().startsWith("__") ||
+        return GraphQLUtils.isIntrospectionType(type) ||
                 type.getName().equals(queryRoot) ||
                 type.getName().equals(mutationRoot) ||
                 type.getName().equals(subscriptionRoot);

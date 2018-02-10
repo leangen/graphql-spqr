@@ -23,6 +23,10 @@ public class Utils {
         return left.isPresent() ? left : right.get();
     }
 
+    public static boolean isEmpty(String string) {
+        return !notEmpty(string);
+    }
+
     public static boolean notEmpty(String string) {
         return string != null && !string.isEmpty();
     }

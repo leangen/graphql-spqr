@@ -1,19 +1,5 @@
 package io.leangen.graphql.generator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import graphql.execution.batched.BatchedDataFetcher;
 import graphql.relay.Relay;
 import graphql.schema.DataFetcher;
@@ -43,6 +29,19 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.GraphQLUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
@@ -144,7 +143,7 @@ public class OperationMapper {
                 .map(argument -> toGraphQLArgument(argument, abstractTypes, buildContext))
                 .collect(Collectors.toList());
         queryBuilder.argument(arguments);
-        if (type.getName() != null && !type.getName().equals("Connection") && type.getName().endsWith("Connection")) {
+        if (GraphQLUtils.isRelayConnectionType(type)) {
             if (buildContext.relay.getConnectionFieldArguments().stream()
                     .anyMatch(connArg -> arguments.stream()
                             .anyMatch(arg -> arg.getName().equals(connArg.getName()) && !arg.getType().getName().equals(connArg.getType().getName())))) {

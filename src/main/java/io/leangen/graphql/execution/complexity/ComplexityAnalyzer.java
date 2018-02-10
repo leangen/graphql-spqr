@@ -1,26 +1,32 @@
 package io.leangen.graphql.execution.complexity;
 
+import graphql.execution.ConditionalNodes;
+import graphql.execution.ExecutionContext;
+import graphql.execution.FieldCollectorParameters;
+import graphql.execution.ValuesResolver;
+import graphql.introspection.Introspection;
+import graphql.language.Field;
+import graphql.language.FragmentDefinition;
+import graphql.language.FragmentSpread;
+import graphql.language.InlineFragment;
+import graphql.language.OperationDefinition;
+import graphql.language.Selection;
+import graphql.language.SelectionSet;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLFieldsContainer;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.util.GraphQLUtils;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import graphql.execution.ConditionalNodes;
-import graphql.execution.ExecutionContext;
-import graphql.execution.FieldCollectorParameters;
-import graphql.execution.ValuesResolver;
-import graphql.language.Field;
-import graphql.language.FragmentDefinition;
-import graphql.language.FragmentSpread;
-import graphql.language.InlineFragment;
-import graphql.language.Selection;
-import graphql.language.SelectionSet;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLFieldsContainer;
 
 import static graphql.execution.TypeFromAST.getTypeFromAST;
 
@@ -56,7 +62,14 @@ class ComplexityAnalyzer {
                 .map(selection -> (Field) selection)
                 .collect(Collectors.toList());
         Field field = fields.get(0);
-        GraphQLFieldDefinition fieldDefinition = context.getGraphQLSchema().getQueryType().getFieldDefinition(field.getName());
+        GraphQLFieldDefinition fieldDefinition;
+        if (GraphQLUtils.isIntrospectionField(field)) {
+            fieldDefinition = Introspection.SchemaMetaFieldDef;
+        } else {
+            fieldDefinition = Objects.requireNonNull(
+                    getRootType(context.getGraphQLSchema(), context.getOperationDefinition())
+                            .getFieldDefinition(field.getName()));
+        }
         Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), context.getVariables());
         return collectFields(parameters, fields.stream().map(f -> new ResolvedField(f, fieldDefinition, argumentValues)).collect(Collectors.toList()));
     }
@@ -115,7 +128,8 @@ class ComplexityAnalyzer {
         return node;
     }
 
-    private void collectFields(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, List<Selection> selectionSet, List<String> visitedFragments, GraphQLFieldsContainer parent) {
+    private void collectFields(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, List<Selection> selectionSet,
+                               List<String> visitedFragments, GraphQLFieldsContainer parent) {
 
         for (Selection selection : selectionSet) {
             if (selection instanceof Field) {
@@ -128,7 +142,9 @@ class ComplexityAnalyzer {
         }
     }
 
-    private void collectFragmentSpread(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, List<String> visitedFragments, FragmentSpread fragmentSpread, GraphQLFieldsContainer parent) {
+    private void collectFragmentSpread(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields,
+                                       List<String> visitedFragments,FragmentSpread fragmentSpread, GraphQLFieldsContainer parent) {
+
         if (visitedFragments.contains(fragmentSpread.getName())) {
             return;
         }
@@ -147,7 +163,9 @@ class ComplexityAnalyzer {
         collectFields(parameters, fields, fragmentDefinition.getSelectionSet().getSelections(), visitedFragments, parent);
     }
 
-    private void collectInlineFragment(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, List<String> visitedFragments, InlineFragment inlineFragment, GraphQLFieldsContainer parent) {
+    private void collectInlineFragment(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields,
+                                       List<String> visitedFragments, InlineFragment inlineFragment, GraphQLFieldsContainer parent) {
+
         if (!conditionalNodes.shouldInclude(parameters.getVariables(), inlineFragment.getDirectives())) {
             return;
         }
@@ -176,7 +194,8 @@ class ComplexityAnalyzer {
         for (Map.Entry<String, Map<String, List<ResolvedField>>> conditional : conditionalSubFields.entrySet()) {
             Map<String, List<ResolvedField>> merged = new HashMap<>(conditional.getValue());
             for (Map.Entry<String, List<ResolvedField>> unconditional : unconditionalSubFields.entrySet()) {
-                merged.merge(unconditional.getKey(), unconditional.getValue(), (condNodes, uncondNodes) -> Stream.concat(condNodes.stream(), uncondNodes.stream()).collect(Collectors.toList()));
+                merged.merge(unconditional.getKey(), unconditional.getValue(),
+                        (condNodes, uncondNodes) -> Stream.concat(condNodes.stream(), uncondNodes.stream()).collect(Collectors.toList()));
             }
             Map<String, ResolvedField> flat = merged.values().stream()
                     .map(nodes -> collectFields(parameters, nodes))
@@ -207,10 +226,22 @@ class ComplexityAnalyzer {
                         ? ((FragmentDefinition) s).getTypeCondition().getName()
                         : ((InlineFragment) s).getTypeCondition().getName()));
     }
-    
+
     private boolean isConditional(Selection selection) {
         return (selection instanceof FragmentDefinition && ((FragmentDefinition) selection).getTypeCondition() != null)
                 || (selection instanceof InlineFragment && ((InlineFragment) selection).getTypeCondition() != null);
+    }
+
+    private GraphQLObjectType getRootType(GraphQLSchema schema, OperationDefinition operationDefinition) {
+        if (operationDefinition.getOperation() == OperationDefinition.Operation.MUTATION) {
+            return Objects.requireNonNull(schema.getMutationType());
+        } else if (operationDefinition.getOperation() == OperationDefinition.Operation.QUERY) {
+            return Objects.requireNonNull(schema.getQueryType());
+        } else if (operationDefinition.getOperation() == OperationDefinition.Operation.SUBSCRIPTION) {
+            return Objects.requireNonNull(schema.getSubscriptionType());
+        } else {
+            throw new IllegalStateException("Unknown operation type encountered. Incompatible graphql-java version?");
+        }
     }
 }
 

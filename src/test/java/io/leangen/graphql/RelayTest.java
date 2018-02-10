@@ -1,13 +1,5 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import graphql.ExecutionResult;
@@ -33,6 +25,13 @@ import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.services.UserService;
 import io.leangen.graphql.support.TestLog;
 import io.leangen.graphql.util.Urls;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.hamcrest.core.Is.is;
@@ -215,7 +214,7 @@ public class RelayTest {
         }
     }
 
-    public class BookService {
+    public static class BookService {
         @GraphQLQuery(name = "books")
         public Page<Book> getBooks(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             List<Book> books = new ArrayList<>();
@@ -229,7 +228,7 @@ public class RelayTest {
         }
     }
 
-    public class ExtendedPageBookService {
+    public static class ExtendedPageBookService {
         @GraphQLQuery(name = "extended")
         public ExtendedPage<Book> getExtended(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             List<Book> books = new ArrayList<>();
@@ -240,7 +239,7 @@ public class RelayTest {
         }
     }
 
-    public class ExtendedEdgeBookService {
+    public static class ExtendedEdgeBookService {
         @GraphQLQuery(name = "extended")
         public ExtendedConnection<ExtendedEdge<Book>> getExtended(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             List<Book> books = new ArrayList<>();
@@ -253,7 +252,7 @@ public class RelayTest {
         }
     }
 
-    public class ConflictingBookService {
+    public static class ConflictingBookService {
         @GraphQLQuery(name = "empty")
         public Page<Book> getEmpty(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             return null;

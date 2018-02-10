@@ -1,11 +1,13 @@
 package io.leangen.graphql.execution.complexity;
 
-public class ComplexityLimitExceededException extends RuntimeException {
+import graphql.execution.AbortExecutionException;
+
+public class ComplexityLimitExceededException extends AbortExecutionException {
 
     private final int complexity;
     private final int maximumComplexity;
 
-    public ComplexityLimitExceededException(int complexity, int maximumComplexity) {
+    ComplexityLimitExceededException(int complexity, int maximumComplexity) {
         super("Requested operation exceeds the permitted complexity limit: " + complexity + " > " + maximumComplexity);
         this.complexity = complexity;
         this.maximumComplexity = maximumComplexity;

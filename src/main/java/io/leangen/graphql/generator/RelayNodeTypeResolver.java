@@ -1,13 +1,14 @@
 package io.leangen.graphql.generator;
 
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
+import io.leangen.graphql.util.GraphQLUtils;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class RelayNodeTypeResolver extends DelegatingTypeResolver {
+class RelayNodeTypeResolver extends DelegatingTypeResolver {
 
-    public RelayNodeTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
-        super("node", typeRepository, typeInfoGenerator);
+    RelayNodeTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
+        super(GraphQLUtils.NODE, typeRepository, typeInfoGenerator);
     }
 }
