@@ -9,7 +9,9 @@ import graphql.relay.ConnectionCursor;
 import graphql.relay.DefaultEdge;
 import graphql.relay.Edge;
 import graphql.relay.PageInfo;
+import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
@@ -153,10 +155,18 @@ public class RelayTest {
                 .withOperationsFromSingleton(new ExtendedEdgeBookService())
                 .generate();
 
-        GraphQLFieldDefinition totalCount = schema.getObjectType("BookConnection")
-                .getFieldDefinition("totalCount");
+        GraphQLObjectType bookConnection = schema.getObjectType("BookConnection");
+        assertEquals(3, bookConnection.getFieldDefinitions().size());
+        GraphQLFieldDefinition totalCount = bookConnection.getFieldDefinition("totalCount");
         assertNotEquals(null, totalCount);
         assertEquals(Scalars.GraphQLLong, totalCount.getType());
+
+        GraphQLObjectType bookEdge = schema.getObjectType("BookEdge");
+        assertEquals(3, bookEdge.getFieldDefinitions().size());
+        GraphQLFieldDefinition color = bookEdge.getFieldDefinition("color");
+        assertNotEquals(null, color);
+        assertTrue(color.getType() instanceof GraphQLEnumType);
+
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
 
         ExecutionResult result = exe.execute("{extended(first:10, after:\"20\") {" +
@@ -200,7 +210,7 @@ public class RelayTest {
         private String title;
         private String isbn;
 
-        public Book(String title, String isbn) {
+        Book(String title, String isbn) {
             this.title = title;
             this.isbn = isbn;
         }

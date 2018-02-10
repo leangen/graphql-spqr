@@ -1,14 +1,5 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectType;
@@ -23,12 +14,27 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
 
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
 import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
 
 public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLInputObjectType> {
+
+    private final boolean includeTypeMetaInOutput;
+
+    public ObjectTypeMapper(boolean includeTypeMetaInOutput) {
+        this.includeTypeMetaInOutput = includeTypeMetaInOutput;
+    }
 
     @Override
     public GraphQLObjectType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
@@ -82,7 +88,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         List<GraphQLFieldDefinition> fields = buildContext.operationRepository.getChildQueries(javaType).stream()
                 .map(childQuery -> operationMapper.toGraphQLField(childQuery, buildContext))
                 .collect(Collectors.toList());
-        if (ClassUtils.isAbstract(javaType) || !buildContext.interfaceStrategy.getInterfaces(javaType).isEmpty()) {
+        if (includeTypeMetaInOutput && (ClassUtils.isAbstract(javaType) || !buildContext.interfaceStrategy.getInterfaces(javaType).isEmpty())) {
             fields.add(newFieldDefinition()
                     .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
                     .type(Scalars.GraphQLString)

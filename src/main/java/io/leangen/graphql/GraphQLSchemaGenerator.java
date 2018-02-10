@@ -707,7 +707,7 @@ public class GraphQLSchemaGenerator {
         if (typeMapperProviders.isEmpty()) {
             typeMapperProviders.add(defaultConfig());
         }
-        ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
+        ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper(true);
         List<TypeMapper> defaultMappers = Arrays.asList(
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                 new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
@@ -765,7 +765,7 @@ public class GraphQLSchemaGenerator {
         if (valueMapperFactory == null) {
             valueMapperFactory = Defaults.valueMapperFactory(basePackages, typeInfoGenerator);
         }
-        valueMapperFactory = new WrappedValueMapperFactory<>(environment, valueMapperFactory);
+        valueMapperFactory = new MemoizedValueMapperFactory<>(environment, valueMapperFactory);
         if (inputFieldStrategy == null) {
             ValueMapper def = valueMapperFactory.getValueMapper();
             if (def instanceof InputFieldDiscoveryStrategy) {
@@ -958,12 +958,12 @@ public class GraphQLSchemaGenerator {
         }
     }
 
-    private static class WrappedValueMapperFactory<T extends ValueMapper> implements ValueMapperFactory<T> {
+    private static class MemoizedValueMapperFactory<T extends ValueMapper> implements ValueMapperFactory<T> {
 
         private final T defaultValueMapper;
         private final ValueMapperFactory<T> delegate;
 
-        public WrappedValueMapperFactory(GlobalEnvironment environment, ValueMapperFactory<T> delegate) {
+        public MemoizedValueMapperFactory(GlobalEnvironment environment, ValueMapperFactory<T> delegate) {
             this.defaultValueMapper = delegate.getValueMapper(Collections.emptySet(), environment);
             this.delegate = delegate;
         }

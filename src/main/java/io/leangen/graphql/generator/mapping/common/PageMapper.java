@@ -1,11 +1,5 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import graphql.relay.Edge;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputType;
@@ -16,13 +10,22 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.relay.Connection;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.GraphQLUtils;
+
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
 public class PageMapper extends ObjectTypeMapper {
+
+    public PageMapper() {
+        super(false);
+    }
 
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
@@ -35,11 +38,11 @@ public class PageMapper extends ObjectTypeMapper {
         buildContext.knownTypes.add(connectionName);
         GraphQLOutputType type = operationMapper.toGraphQLType(nodeType, abstractTypes, buildContext);
         List<GraphQLFieldDefinition> edgeFields = getFields(edgeType, buildContext, operationMapper).stream()
-                .filter(field -> !GraphQLUtils.isRelayEdgeField(field) && !field.getName().equals(ValueMapper.TYPE_METADATA_FIELD_NAME))
+                .filter(field -> !GraphQLUtils.isRelayEdgeField(field))
                 .collect(Collectors.toList());
         GraphQLObjectType edge = buildContext.relay.edgeType(type.getName(), type, null, edgeFields);
         List<GraphQLFieldDefinition> connectionFields = getFields(javaType, buildContext, operationMapper).stream()
-                .filter(field -> !GraphQLUtils.isRelayConnectionField(field) && !field.getName().equals(ValueMapper.TYPE_METADATA_FIELD_NAME))
+                .filter(field -> !GraphQLUtils.isRelayConnectionField(field))
                 .collect(Collectors.toList());
         return buildContext.relay.connectionType(type.getName(), edge, connectionFields);
     }
