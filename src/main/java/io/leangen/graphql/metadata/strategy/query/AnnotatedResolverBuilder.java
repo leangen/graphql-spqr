@@ -1,15 +1,5 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Member;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLMutation;
@@ -22,6 +12,17 @@ import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Utils;
+
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Member;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A resolver builder that exposes only the methods explicitly annotated with {@link GraphQLQuery}
@@ -55,6 +56,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(method -> new Resolver(
                         operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLQuery.class).description(),
+                        Utils.decodeNullable(method.getAnnotation(GraphQLQuery.class).deprecationReason()),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
@@ -66,6 +68,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(field -> new Resolver(
                         operationNameGenerator.generateQueryName(field, beanType, querySourceBean),
                         field.getAnnotation(GraphQLQuery.class).description(),
+                        Utils.decodeNullable(field.getAnnotation(GraphQLQuery.class).deprecationReason()),
                         false,
                         new FieldAccessor(field, beanType),
                         getFieldType(field, beanType),
@@ -81,6 +84,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(method -> new Resolver(
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLMutation.class).description(),
+                        Utils.decodeNullable(method.getAnnotation(GraphQLMutation.class).deprecationReason()),
                         false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
@@ -96,6 +100,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(method -> new Resolver(
                         operationNameGenerator.generateSubscriptionName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLSubscription.class).description(),
+                        Utils.decodeNullable(method.getAnnotation(GraphQLSubscription.class).deprecationReason()),
                         false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),

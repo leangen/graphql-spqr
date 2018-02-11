@@ -1,15 +1,15 @@
 package io.leangen.graphql.metadata.strategy.type;
 
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.AnnotatedType;
-import java.util.Arrays;
-import java.util.Optional;
-
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.annotations.types.GraphQLType;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
+
+import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.AnnotatedType;
+import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -66,7 +66,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
         return getFirstNonEmptyOrDefault(names, ClassUtils.getRawType(type.getType()).getSimpleName());
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    @SuppressWarnings({"OptionalGetWithoutIsPresent", "ConstantConditions"})
     private String getFirstNonEmptyOrDefault(Optional<String>[] optionals, String defaultValue) {
         return Arrays.stream(optionals)
                 .map(opt -> opt.filter(Utils::notEmpty))

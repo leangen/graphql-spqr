@@ -1,5 +1,8 @@
 package io.leangen.graphql.metadata;
 
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.util.Utils;
+
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -8,14 +11,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
-
-import io.leangen.geantyref.GenericTypeReflector;
 
 public class Operation {
 
     private final String name;
     private final String description;
+    private final String deprecationReason;
     private final AnnotatedType javaType;
     private final Type contextType;
     private final Map<String, Resolver> resolversByFingerprint;
@@ -30,7 +33,8 @@ public class Operation {
         }
         
         this.name = name;
-        this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(desc -> !desc.isEmpty()).findFirst().orElse("");
+        this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(Utils::notEmpty).findFirst().orElse(null);
+        this.deprecationReason = resolvers.stream().map(Resolver::getOperationDeprecationReason).filter(Objects::nonNull).findFirst().orElse(null);
         this.javaType = javaType;
         this.contextType = contextType;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
@@ -74,6 +78,10 @@ public class Operation {
         return description;
     }
 
+    public String getDeprecationReason() {
+        return deprecationReason;
+    }
+
     public AnnotatedType getJavaType() {
         return javaType;
     }
@@ -91,6 +99,7 @@ public class Operation {
     }
 
     @Override
+    @SuppressWarnings("SimplifiableIfStatement")
     public boolean equals(Object other) {
         if (this == other) return true;
         if (!(other instanceof Operation)) return false;

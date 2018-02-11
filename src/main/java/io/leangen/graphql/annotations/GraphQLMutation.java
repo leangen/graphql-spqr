@@ -1,5 +1,7 @@
 package io.leangen.graphql.annotations;
 
+import io.leangen.graphql.util.Utils;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -15,4 +17,6 @@ public @interface GraphQLMutation {
     String name() default "";
 
     String description() default "";
+
+    String deprecationReason() default Utils.NULL;
 }

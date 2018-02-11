@@ -139,6 +139,7 @@ public class GraphQLSchemaGenerator {
     private GlobalEnvironment environment;
     private String[] basePackages;
     private List<TypeMapper> typeMappers;
+    private boolean respectJavaDeprecation = true;
     private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
     private final Set<ExtensionProvider<TypeMapper>> typeMapperProviders = new LinkedHashSet<>();
     private final Set<ExtensionProvider<InputConverter>> inputConverterProviders = new LinkedHashSet<>();
@@ -432,6 +433,11 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withJavaDeprecationRespected(boolean respectJavaDeprecation) {
+        this.respectJavaDeprecation = respectJavaDeprecation;
+        return this;
+    }
+
     /**
      * Registers custom {@link TypeMapper}s to be used for mapping Java type to GraphQL types.
      * <p><b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type
@@ -696,7 +702,7 @@ public class GraphQLSchemaGenerator {
         }
         List<ResolverBuilder> defaultNestedResolverBuilders = Arrays.asList(
                 new AnnotatedResolverBuilder(typeTransformer),
-                new BeanResolverBuilder(typeTransformer, basePackages));
+                new BeanResolverBuilder(typeTransformer, basePackages).withJavaDeprecationRespected(respectJavaDeprecation));
         Set<ResolverBuilder> collectedNestedResolverBuilders = new LinkedHashSet<>();
         nestedResolverBuilderProviders.forEach(config -> collectedNestedResolverBuilders.addAll(config.getExtensions(configuration, new ExtensionList<>(defaultNestedResolverBuilders))));
         if (collectedNestedResolverBuilders.isEmpty()) {
@@ -711,7 +717,7 @@ public class GraphQLSchemaGenerator {
         List<TypeMapper> defaultMappers = Arrays.asList(
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                 new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                new ByteArrayToBase64Adapter(), new EnumMapper(), new ArrayAdapter(), new UnionTypeMapper(),
+                new ByteArrayToBase64Adapter(), new EnumMapper(respectJavaDeprecation), new ArrayAdapter(), new UnionTypeMapper(),
                 new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(),
                 new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
                 new ObjectScalarAdapter(scalarStrategy), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);

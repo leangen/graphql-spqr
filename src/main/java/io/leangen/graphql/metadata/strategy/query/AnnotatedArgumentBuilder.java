@@ -1,15 +1,5 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
@@ -20,6 +10,16 @@ import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Urls;
+import io.leangen.graphql.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @SuppressWarnings("WeakerAccess")
 public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
@@ -95,7 +95,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
     private OperationArgumentDefaultValue defaultValue(String value) {
         if (GraphQLArgument.NONE.equals(value)) {
             return OperationArgumentDefaultValue.EMPTY;
-        } else if (GraphQLArgument.NULL.equals(value)) {
+        } else if (Utils.NULL.equals(value)) {
             return OperationArgumentDefaultValue.NULL;
         }
         return new OperationArgumentDefaultValue(value);

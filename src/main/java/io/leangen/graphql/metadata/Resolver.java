@@ -1,5 +1,8 @@
 package io.leangen.graphql.metadata;
 
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.metadata.execution.Executable;
+
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
@@ -8,9 +11,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.metadata.execution.Executable;
 
 /**
  * Class representing a single method used to resolve a specific query given specific arguments.
@@ -24,6 +24,7 @@ public class Resolver {
 
     private final String operationName;
     private final String operationDescription;
+    private final String operationDeprecationReason;
     private final List<OperationArgument> arguments;
     private final AnnotatedType returnType;
     private final Set<OperationArgument> contextArguments;
@@ -31,7 +32,9 @@ public class Resolver {
     private final Executable executable;
     private final boolean batched;
 
-    public Resolver(String operationName, String operationDescription, boolean batched, Executable executable, AnnotatedType returnType, List<OperationArgument> arguments, String complexityExpression) {
+    public Resolver(String operationName, String operationDescription, String operationDeprecationReason, boolean batched,
+                    Executable executable, AnnotatedType returnType, List<OperationArgument> arguments, String complexityExpression) {
+
         Set<OperationArgument> contextArguments = resolveContexts(arguments);
         
         if (batched) {
@@ -40,6 +43,7 @@ public class Resolver {
         
         this.executable = executable;
         this.operationName = operationName;
+        this.operationDeprecationReason = operationDeprecationReason;
         this.batched = batched;
         this.operationDescription = operationDescription;
         this.arguments = arguments;
@@ -107,6 +111,10 @@ public class Resolver {
 
     public String getOperationDescription() {
         return operationDescription;
+    }
+
+    public String getOperationDeprecationReason() {
+        return operationDeprecationReason;
     }
 
     /**

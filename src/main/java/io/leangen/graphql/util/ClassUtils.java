@@ -1,5 +1,12 @@
 package io.leangen.graphql.util;
 
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.geantyref.TypeFactory;
+import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import io.leangen.graphql.util.classpath.ClassFinder;
+import io.leangen.graphql.util.classpath.ClassReadingException;
+import io.leangen.graphql.util.classpath.SubclassClassFilter;
+
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -36,13 +43,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
-import io.leangen.graphql.util.classpath.ClassFinder;
-import io.leangen.graphql.util.classpath.ClassReadingException;
-import io.leangen.graphql.util.classpath.SubclassClassFilter;
 
 import static io.leangen.geantyref.GenericTypeReflector.annotate;
 import static io.leangen.geantyref.GenericTypeReflector.capture;
@@ -154,6 +154,14 @@ public class ClassUtils {
         return GenericTypeReflector.getFieldType(field, declaringType);
     }
 
+    public static Field getEnumConstantField(Enum<?> constant) {
+        try {
+            return constant.getClass().getField(constant.name());
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Returns the exact annotated parameter types of the executable declared by the given type, with type variables resolved (if possible)
      *
@@ -179,6 +187,7 @@ public class ClassUtils {
         return erased;
     }
 
+    @SuppressWarnings("SimplifiableIfStatement")
     public static boolean isMissingTypeParameters(Type type) {
         if (type instanceof Class
                 && (((Class) type).getEnclosingClass() == null || Modifier.isStatic(((Class) type).getModifiers()))
@@ -356,10 +365,7 @@ public class ClassUtils {
                     Arrays.stream(wildcard.getAnnotatedUpperBounds()))
                     .anyMatch(param -> containsTypeAnnotation(param, annotation));
         }
-        if (type instanceof AnnotatedArrayType) {
-            return containsTypeAnnotation(((AnnotatedArrayType) type).getAnnotatedGenericComponentType(), annotation);
-        }
-        return false;
+        return type instanceof AnnotatedArrayType && containsTypeAnnotation(((AnnotatedArrayType) type).getAnnotatedGenericComponentType(), annotation);
     }
 
     public static Annotation[] getAllAnnotations(Stream<AnnotatedType> types) {
@@ -561,6 +567,7 @@ public class ClassUtils {
      * @return The most specific super type
      * @see ClassUtils#getCommonSuperType(List)
      */
+    @SuppressWarnings("WeakerAccess")
     public static List<Class<?>> getCommonSuperTypes(List<Class<?>> classes) {
         // start off with set from first hierarchy
         Set<Class<?>> rollingIntersect = new LinkedHashSet<>(
@@ -577,6 +584,7 @@ public class ClassUtils {
         return result;
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static Set<Class<?>> getSuperTypes(Class<?> clazz) {
         Set<Class<?>> classes = new LinkedHashSet<>();
         Set<Class<?>> nextLevel = new LinkedHashSet<>();

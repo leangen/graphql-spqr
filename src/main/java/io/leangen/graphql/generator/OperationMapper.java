@@ -136,6 +136,7 @@ public class OperationMapper {
         GraphQLFieldDefinition.Builder queryBuilder = newFieldDefinition()
                 .name(operation.getName())
                 .description(operation.getDescription())
+                .deprecate(operation.getDeprecationReason())
                 .type(type);
 
         List<GraphQLArgument> arguments = operation.getArguments().stream()

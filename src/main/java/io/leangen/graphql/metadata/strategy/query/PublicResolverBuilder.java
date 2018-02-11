@@ -1,5 +1,14 @@
 package io.leangen.graphql.metadata.strategy.query;
 
+import graphql.execution.batched.Batched;
+import io.leangen.graphql.annotations.GraphQLComplexity;
+import io.leangen.graphql.metadata.Resolver;
+import io.leangen.graphql.metadata.execution.MethodInvoker;
+import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Utils;
 import org.reactivestreams.Publisher;
 
 import java.lang.reflect.AnnotatedType;
@@ -10,18 +19,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import graphql.execution.batched.Batched;
-import io.leangen.graphql.annotations.GraphQLComplexity;
-import io.leangen.graphql.metadata.Resolver;
-import io.leangen.graphql.metadata.execution.MethodInvoker;
-import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
-import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
-import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.Utils;
 
 /**
  * A resolver builder that exposes all public methods
@@ -29,16 +29,42 @@ import io.leangen.graphql.util.Utils;
 @SuppressWarnings("WeakerAccess")
 public class PublicResolverBuilder extends FilteredResolverBuilder {
 
+    private String[] basePackages;
+    private boolean javaDeprecation;
+    private Function<Method, String> descriptionMapper = method -> "";
+    private Function<Method, String> deprecationReasonMapper = method -> javaDeprecation && method.isAnnotationPresent(Deprecated.class) ? "" : null;
+
     public PublicResolverBuilder(String... basePackages) {
         this(new DefaultTypeTransformer(false, false), basePackages);
     }
 
     public PublicResolverBuilder(TypeTransformer transformer, String... basePackages) {
-        this.basePackages = basePackages;
         this.transformer = Objects.requireNonNull(transformer);
         this.operationNameGenerator = new MethodOperationNameGenerator();
         this.argumentBuilder = new AnnotatedArgumentBuilder(transformer);
+        withBasePackages(basePackages);
+        withJavaDeprecationRespected(true);
         withDefaultFilters();
+    }
+
+    public PublicResolverBuilder withBasePackages(String... basePackages) {
+        this.basePackages = basePackages;
+        return this;
+    }
+
+    public PublicResolverBuilder withJavaDeprecationRespected(boolean javaDeprecation) {
+        this.javaDeprecation = javaDeprecation;
+        return this;
+    }
+
+    public PublicResolverBuilder withDescriptionMapper(Function<Method, String> descriptionMapper) {
+        this.descriptionMapper = descriptionMapper;
+        return this;
+    }
+
+    public PublicResolverBuilder withDeprecationReasonMapper(Function<Method, String> deprecationReasonMapper) {
+        this.deprecationReasonMapper = deprecationReasonMapper;
+        return this;
     }
 
     @Override
@@ -65,7 +91,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
-                        "",
+                        descriptionMapper.apply(method),
+                        deprecationReasonMapper.apply(method),
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
@@ -84,7 +111,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
-                        "",
+                        descriptionMapper.apply(method),
+                        deprecationReasonMapper.apply(method),
                         false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
@@ -103,7 +131,8 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateSubscriptionName(method, beanType, querySourceBean),
-                        "",
+                        descriptionMapper.apply(method),
+                        deprecationReasonMapper.apply(method),
                         false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
