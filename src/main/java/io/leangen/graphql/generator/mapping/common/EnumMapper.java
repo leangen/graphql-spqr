@@ -1,16 +1,20 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import graphql.schema.GraphQLEnumType;
-import io.leangen.graphql.annotations.types.GraphQLEnumValue;
+import io.leangen.graphql.annotations.GraphQLEnumValue;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import static graphql.schema.GraphQLEnumType.newEnum;
 
@@ -30,7 +34,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
-        addOptions(enumBuilder, ClassUtils.getRawType(javaType.getType()));
+        addOptions(enumBuilder, javaType, buildContext.typeInfoGenerator);
         return enumBuilder.build();
     }
 
@@ -39,12 +43,12 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType));
-        addOptions(enumBuilder, ClassUtils.getRawType(javaType.getType()));
+        addOptions(enumBuilder, javaType, buildContext.typeInfoGenerator);
         return enumBuilder.build();
     }
 
-    private void addOptions(GraphQLEnumType.Builder enumBuilder, Class<?> enumClass) {
-        Arrays.stream(enumClass.getEnumConstants())
+    private void addOptions(GraphQLEnumType.Builder enumBuilder, AnnotatedType javaType, TypeInfoGenerator infoGenerator) {
+        sortEnumValues((Enum[]) ClassUtils.getRawType(javaType.getType()).getEnumConstants(), infoGenerator.getFieldOrder(javaType)).stream()
                 .map(enumConst -> (Enum<?>) enumConst)
                 .forEach(enumConst -> enumBuilder.value(
                         getValueName(enumConst), enumConst, getValueDescription(enumConst), getValueDeprecationReason(enumConst)));
@@ -85,5 +89,20 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
     @Override
     protected String getInputTypeName(AnnotatedType type, BuildContext buildContext) {
         return buildContext.typeInfoGenerator.generateInputTypeName(type);
+    }
+
+    private List<Enum> sortEnumValues(Enum[] values, String[] order) {
+        Map<String, Enum> fieldMap = new TreeMap<>();
+        for (Enum value : values) {
+            fieldMap.put(getValueName(value), value);
+        }
+        List<Enum> result = new ArrayList<>();
+        for (String name : order) {
+            if (fieldMap.containsKey(name)) {
+                result.add(fieldMap.remove(name));
+            }
+        }
+        result.addAll(fieldMap.values());
+        return result;
     }
 }

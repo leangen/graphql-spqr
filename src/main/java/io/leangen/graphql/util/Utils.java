@@ -37,6 +37,20 @@ public class Utils {
         return NULL.equals(string) ? null : string;
     }
 
+    public static String capitalize(final String str) {
+        final char firstChar = str.charAt(0);
+        final char newChar = Character.toUpperCase(firstChar);
+        if (firstChar == newChar) {
+            // already capitalized
+            return str;
+        }
+
+        char[] newChars = new char[str.length()];
+        newChars[0] = newChar;
+        str.getChars(1, str.length(), newChars, 1);
+        return String.valueOf(newChars);
+    }
+
     public static boolean arrayNotEmpty(Object array) {
         return array != null && Array.getLength(array) != 0;
     }
