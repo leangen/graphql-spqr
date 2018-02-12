@@ -4,6 +4,13 @@ import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -12,13 +19,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
-import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
-import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
-import io.leangen.graphql.util.ClassUtils;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -62,7 +62,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         public ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, String[] basePackages, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
             ObjectMapper mapper = objectMapper
                     .findAndRegisterModules()
-                    .setAnnotationIntrospector(new AnnotationIntrospector(collectSubtypes(abstractTypes, basePackages, metaDataGen)));
+                    .registerModule(getAnnotationIntrospectorModule(collectSubtypes(abstractTypes, basePackages, metaDataGen)));
             if (environment != null && !environment.getInputConverters().isEmpty()) {
                 mapper.registerModule(getDeserializersModule(environment));
             }
@@ -100,6 +100,16 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
                 @Override
                 public void setupModule(SetupContext setupContext) {
                     setupContext.addDeserializers(new ConvertingDeserializers(environment));
+                }
+            };
+        }
+
+        private Module getAnnotationIntrospectorModule(Map<Type, List<NamedType>> typeMap) {
+            return new SimpleModule("graphql-spqr-annotation-introspector") {
+                @Override
+                public void setupModule(SetupContext context) {
+                    super.setupModule(context);
+                    context.insertAnnotationIntrospector(new AnnotationIntrospector(typeMap));
                 }
             };
         }
