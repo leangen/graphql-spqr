@@ -130,7 +130,7 @@ public class Scalars {
             s -> new Date(Instant.parse(s).toEpochMilli()), i -> new Date(i.toEpochMilli()), d -> d.toInstant().toString());
 
     public static final GraphQLScalarType GraphQLSqlDate = temporalScalar("SqlDate", "a SQL compliant local date",
-            s -> java.sql.Date.valueOf(LocalDate.parse(s)), i -> new java.sql.Date(i.toEpochMilli()), d -> d.toLocalDate().toString());
+            s -> java.sql.Date.valueOf(LocalDate.parse(s)), i -> java.sql.Date.valueOf(i.atZone(ZoneOffset.UTC).toLocalDate()), d -> d.toLocalDate().toString());
 
     public static final GraphQLScalarType GraphQLCalendar = temporalScalar("Calendar", "a date-time with a time-zone",
             s -> GregorianCalendar.from(ZonedDateTime.parse(s)), i -> GregorianCalendar.from(i.atZone(ZoneOffset.UTC)), c -> c.toInstant().toString());

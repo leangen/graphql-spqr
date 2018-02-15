@@ -34,7 +34,7 @@ public class ScalarsTest {
 
     @Test
     public void testSqlDate() {
-        testTemporal(java.sql.Date.class, "2017-06-24", 1498255200000L);
+        testTemporal(java.sql.Date.class, "2017-06-24", 1498346554120L);
     }
 
     @Test
