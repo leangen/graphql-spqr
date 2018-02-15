@@ -1,16 +1,5 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.math.BigInteger;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
-import java.util.Date;
-
 import graphql.language.IntValue;
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
@@ -21,6 +10,17 @@ import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.util.Scalars;
+import org.junit.Test;
+
+import java.math.BigInteger;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
+import java.util.Calendar;
+import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -30,6 +30,16 @@ public class ScalarsTest {
     @Test
     public void testDate() {
         testTemporal(Date.class, "2017-06-24T23:22:34.120Z", 1498346554120L);
+    }
+
+    @Test
+    public void testSqlDate() {
+        testTemporal(java.sql.Date.class, "2017-06-24", 1498255200000L);
+    }
+
+    @Test
+    public void testCalendar() {
+        testTemporal(Calendar.class, "2017-06-24T23:22:34.120Z", 1498346554120L);
     }
 
     @Test
