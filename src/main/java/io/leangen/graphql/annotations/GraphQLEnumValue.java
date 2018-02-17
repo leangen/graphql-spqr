@@ -1,4 +1,4 @@
-package io.leangen.graphql.annotations.types;
+package io.leangen.graphql.annotations;
 
 import io.leangen.graphql.util.Utils;
 

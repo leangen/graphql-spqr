@@ -54,19 +54,16 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
                         getValueName(enumConst), enumConst, getValueDescription(enumConst), getValueDeprecationReason(enumConst)));
     }
 
-    @SuppressWarnings("WeakerAccess")
     protected String getValueName(Enum<?> value) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
         return annotation != null && !annotation.name().isEmpty() ? annotation.name() : value.name();
     }
 
-    @SuppressWarnings("WeakerAccess")
     protected String getValueDescription(Enum<?> value) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
         return annotation != null ? annotation.description() : null;
     }
 
-    @SuppressWarnings("WeakerAccess")
     protected String getValueDeprecationReason(Enum<?> value) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
         if (annotation != null) {

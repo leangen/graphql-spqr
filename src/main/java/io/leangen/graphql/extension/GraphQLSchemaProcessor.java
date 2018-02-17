@@ -1,4 +1,4 @@
-package io.leangen.graphql;
+package io.leangen.graphql.extension;
 
 import graphql.schema.GraphQLSchema;
 

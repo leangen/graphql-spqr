@@ -177,8 +177,8 @@ public class ClassUtils {
         return GenericTypeReflector.getParameterTypes(executable, declaringType);
     }
 
-    public static Class<?> getRawType(Type type) {
-        Class<?> erased = GenericTypeReflector.erase(type);
+    public static <T> Class<T> getRawType(Type type) {
+        @SuppressWarnings("unchecked") Class<T> erased = (Class<T>) GenericTypeReflector.erase(type);
         if (erased == Object.class && type != Object.class) {
             throw new TypeMappingException("Type of " + type.getTypeName() + " is lost to erasure. " +
                     "Consider explicitly providing the type to GraphQLSchemaGenerator#withOperationsFrom... " +
@@ -207,7 +207,7 @@ public class ClassUtils {
 
     @SuppressWarnings("unchecked")
     public static <T> T instance(AnnotatedType type) {
-        return instance((Class<T>) getRawType(type.getType()));
+        return instance(getRawType(type.getType()));
     }
 
     public static <T> T instance(Class<T> clazz) {
@@ -253,13 +253,13 @@ public class ClassUtils {
 
     public static Method findGetter(Class<?> type, String fieldName) throws NoSuchMethodException {
         try {
-            return type.getMethod("get" + capitalize(fieldName));
+            return type.getMethod("get" + Utils.capitalize(fieldName));
         } catch (NoSuchMethodException e) { /*no-op*/}
-        return type.getMethod("is" + capitalize(fieldName));
+        return type.getMethod("is" + Utils.capitalize(fieldName));
     }
 
     public static Method findSetter(Class<?> type, String fieldName, Class<?> fieldType) throws NoSuchMethodException {
-        return type.getMethod("set" + capitalize(fieldName), fieldType);
+        return type.getMethod("set" + Utils.capitalize(fieldName), fieldType);
     }
 
     @SuppressWarnings("unchecked")
@@ -625,20 +625,6 @@ public class ClassUtils {
 
     public static Class<?> forName(String className) throws ClassNotFoundException {
         return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
-    }
-
-    private static String capitalize(final String str) {
-        final char firstChar = str.charAt(0);
-        final char newChar = Character.toUpperCase(firstChar);
-        if (firstChar == newChar) {
-            // already capitalized
-            return str;
-        }
-
-        char[] newChars = new char[str.length()];
-        newChars[0] = newChar;
-        str.getChars(1, str.length(), newChars, 1);
-        return String.valueOf(newChars);
     }
 
     private static Class<?> loadClass(String className) {

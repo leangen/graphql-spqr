@@ -12,7 +12,12 @@ import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
-
+import io.leangen.graphql.annotations.GraphQLEnumValue;
+import io.leangen.graphql.annotations.GraphQLInputField;
+import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +35,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import io.leangen.graphql.annotations.GraphQLInputField;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.metadata.strategy.value.ValueMapper;
-import io.leangen.graphql.util.Utils;
-
 import static io.leangen.graphql.util.Utils.or;
 
 public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
@@ -51,7 +51,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
                 .typeProperty(ValueMapper.TYPE_METADATA_FIELD_NAME);
     }
 
-    public AnnotationIntrospector(Map<Type, List<NamedType>> typeMap) {
+    AnnotationIntrospector(Map<Type, List<NamedType>> typeMap) {
         this.typeMap = typeMap == null ? Collections.emptyMap() : Collections.unmodifiableMap(typeMap);
     }
 
@@ -105,6 +105,18 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
             return typeMap.get(a.getRawType());
         }
         return original;
+    }
+
+    @Override
+    public String[] findEnumValues(Class<?> enumType, Enum<?>[] enumValues, String[] defaultNames) {
+        String[] jacksonNames = super.findEnumValues(enumType, enumValues, defaultNames);
+        for (int i = 0; i < enumValues.length; i++) {
+            GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(enumValues[i]).getAnnotation(GraphQLEnumValue.class);
+            if (annotation != null && Utils.notEmpty(annotation.name())) {
+                jacksonNames[i] = annotation.name();
+            }
+        }
+        return jacksonNames;
     }
 
     private List<AnnotatedElement> getNamedCandidates(Annotated annotated) {

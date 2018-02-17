@@ -7,6 +7,7 @@ import graphql.schema.GraphQLType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.extension.GraphQLSchemaProcessor;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.OperationRepository;
@@ -27,6 +28,7 @@ import io.leangen.graphql.generator.mapping.common.ArrayAdapter;
 import io.leangen.graphql.generator.mapping.common.ByteArrayToBase64Adapter;
 import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
 import io.leangen.graphql.generator.mapping.common.ContextInjector;
+import io.leangen.graphql.generator.mapping.common.EnumMapToObjectTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.EnumMapper;
 import io.leangen.graphql.generator.mapping.common.EnvironmentInjector;
 import io.leangen.graphql.generator.mapping.common.IdAdapter;
@@ -111,7 +113,7 @@ import static java.util.Collections.addAll;
  * {@code
  * UserService userService = new UserService(); //could also be injected by a framework
  * GraphQLSchema schema = new GraphQLSchemaGenerator()
- *      .withOperationsFromType(userService) //register an operations source and use the default strategy
+ *      .withOperationsFromSingletons(userService) //register an operations source and use the default strategy
  *      .withNestedResolverBuildersForType(User.class, new BeanResolverBuilder()) //customize how queries are extracted from User.class
  *      .generate();
  * GraphQL graphQL = new GraphQL(schema);
@@ -714,12 +716,13 @@ public class GraphQLSchemaGenerator {
             typeMapperProviders.add(defaultConfig());
         }
         ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper(true);
+        EnumMapper enumMapper = new EnumMapper(respectJavaDeprecation);
         List<TypeMapper> defaultMappers = Arrays.asList(
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                 new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                new ByteArrayToBase64Adapter(), new EnumMapper(respectJavaDeprecation), new ArrayAdapter(), new UnionTypeMapper(),
+                new ByteArrayToBase64Adapter(), enumMapper, new ArrayAdapter(), new UnionTypeMapper(),
                 new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(),
-                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(),
+                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
                 new ObjectScalarAdapter(scalarStrategy), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         typeMappers = typeMapperProviders.stream()
                 .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultMappers)).stream())
@@ -747,7 +750,7 @@ public class GraphQLSchemaGenerator {
         }
         List<InputConverter> defaultInputConverters = Arrays.asList(
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new ByteArrayToBase64Adapter());
+                new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new ByteArrayToBase64Adapter(), new EnumMapToObjectTypeAdapter(enumMapper));
         List<InputConverter> inputConverters = inputConverterProviders.stream()
                 .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultInputConverters)).stream())
                 .distinct()
