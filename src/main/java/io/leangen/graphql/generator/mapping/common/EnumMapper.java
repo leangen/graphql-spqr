@@ -9,11 +9,9 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 import static graphql.schema.GraphQLEnumType.newEnum;
@@ -30,7 +28,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
     }
 
     @Override
-    public GraphQLEnumType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLEnumType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
@@ -39,7 +37,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
     }
 
     @Override
-    public GraphQLEnumType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLEnumType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType));

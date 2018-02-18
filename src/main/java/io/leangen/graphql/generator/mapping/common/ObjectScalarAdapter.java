@@ -1,13 +1,5 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
 import graphql.schema.GraphQLScalarType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.ResolutionEnvironment;
@@ -16,6 +8,11 @@ import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.strategy.ScalarMappingStrategy;
 import io.leangen.graphql.util.Scalars;
+
+import java.lang.reflect.AnnotatedType;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -31,20 +28,15 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
     }
 
     @Override
-    public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         buildContext.knownInputTypes.add(typeName);
         return Scalars.graphQLObjectScalar(typeName);
     }
     
     @Override
-    public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         buildContext.knownTypes.add(typeName);
-        return toGraphQLType(typeName, javaType, abstractTypes, operationMapper, buildContext);
-    }
-
-    @Override
-    protected void registerAbstract(AnnotatedType type, Set<Type> abstractTypes, BuildContext buildContext) {
-        abstractTypes.addAll(collectAbstract(type, new HashSet<>(), buildContext));
+        return toGraphQLType(typeName, javaType, operationMapper, buildContext);
     }
 
     @Override

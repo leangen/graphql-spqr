@@ -3,13 +3,6 @@ package io.leangen.graphql.metadata.strategy.value.gson;
 import com.google.gson.FieldNamingStrategy;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapterFactory;
-
-import net.dongliu.gson.GsonJava8TypeAdapterFactory;
-
-import java.lang.reflect.Type;
-import java.util.Objects;
-import java.util.Set;
-
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
@@ -17,6 +10,12 @@ import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
+import net.dongliu.gson.GsonJava8TypeAdapterFactory;
+
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -32,6 +31,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
         this(new String[0]);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public GsonValueMapperFactory(String... basePackages) {
         this(basePackages, new DefaultTypeInfoGenerator(), new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
     }
@@ -67,6 +67,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
                     .map(ClassUtils::getRawType)
                     .distinct()
                     .map(abstractType -> adapterFor(abstractType, basePackages, infoGenerator))
+                    .filter(Objects::nonNull)
                     .forEach(gsonBuilder::registerTypeAdapterFactory);
 
             if (environment != null && !environment.getInputConverters().isEmpty()) {
@@ -79,8 +80,11 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
         @SuppressWarnings("unchecked")
         private TypeAdapterFactory adapterFor(Class superClass, String[] basePackages, TypeInfoGenerator infoGen) {
             RuntimeTypeAdapterFactory adapterFactory = RuntimeTypeAdapterFactory.of(superClass, ValueMapper.TYPE_METADATA_FIELD_NAME);
-
-            ClassUtils.findImplementations(superClass, basePackages).stream()
+            List<Class> implementations = ClassUtils.findImplementations(superClass, basePackages);
+            if (implementations.isEmpty()) {
+                return null;
+            }
+            implementations.stream()
                     .filter(impl -> !ClassUtils.isAbstract(impl))
                     .forEach(impl -> adapterFactory.registerSubtype(impl, infoGen.generateTypeName(GenericTypeReflector.annotate(impl))));
 

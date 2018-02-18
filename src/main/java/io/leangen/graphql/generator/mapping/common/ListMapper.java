@@ -1,10 +1,5 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.Set;
-
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLOutputType;
@@ -13,19 +8,22 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 
+import java.lang.reflect.AnnotatedType;
+import java.util.Collection;
+
 /**
  * @author Bojan Tomic (kaqqao)
  */
 public class ListMapper implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
-        return new GraphQLList(operationMapper.toGraphQLType(getElementType(javaType), abstractTypes, buildContext));
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+        return new GraphQLList(operationMapper.toGraphQLType(getElementType(javaType), buildContext));
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
-        return new GraphQLList(operationMapper.toGraphQLInputType(getElementType(javaType), abstractTypes, buildContext));
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+        return new GraphQLList(operationMapper.toGraphQLInputType(getElementType(javaType), buildContext));
     }
 
     @Override

@@ -1,13 +1,11 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.util.Set;
-
 import graphql.schema.GraphQLScalarType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.util.Scalars;
+
+import java.lang.reflect.AnnotatedType;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -15,15 +13,15 @@ import io.leangen.graphql.util.Scalars;
 public class ScalarMapper extends CachingMapper<GraphQLScalarType, GraphQLScalarType> {
 
     @Override
-    public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         buildContext.knownInputTypes.add(typeName);
         return Scalars.toGraphQLScalarType(javaType.getType());
     }
 
     @Override
-    public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         buildContext.knownTypes.add(typeName);
-        return toGraphQLType(typeName, javaType, abstractTypes, operationMapper, buildContext);
+        return toGraphQLType(typeName, javaType, operationMapper, buildContext);
     }
 
     @Override

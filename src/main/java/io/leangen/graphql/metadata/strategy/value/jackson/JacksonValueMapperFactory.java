@@ -34,6 +34,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         this(new String[0]);
     }
 
+    @SuppressWarnings("WeakerAccess")
     public JacksonValueMapperFactory(String... basePackages) {
         this(basePackages, null, new DefaultTypeInfoGenerator(), new AbstractClassAdapterConfigurer());
     }
@@ -80,7 +81,9 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
                         .filter(impl -> !ClassUtils.isAbstract(impl))
                         .map(sub -> new NamedType(sub, metaDataGen.generateTypeName(GenericTypeReflector.annotate(sub))))
                         .collect(Collectors.toList());
-                types.put(abstractClass, subTypes);
+                if (!subTypes.isEmpty()) {
+                    types.put(abstractClass, subTypes);
+                }
             }
             return types;
         }

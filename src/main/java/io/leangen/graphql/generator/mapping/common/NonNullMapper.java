@@ -1,14 +1,5 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -17,6 +8,14 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.util.ClassUtils;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedType;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -38,13 +37,13 @@ public class NonNullMapper implements TypeMapper {
     }
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper OperationMapper, BuildContext buildContext) {
-        return new graphql.schema.GraphQLNonNull(OperationMapper.toGraphQLType(removeNonNull(javaType), abstractTypes, buildContext));
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper OperationMapper, BuildContext buildContext) {
+        return new graphql.schema.GraphQLNonNull(OperationMapper.toGraphQLType(removeNonNull(javaType), buildContext));
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper OperationMapper, BuildContext buildContext) {
-        return new graphql.schema.GraphQLNonNull(OperationMapper.toGraphQLInputType(removeNonNull(javaType), abstractTypes, buildContext));
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper OperationMapper, BuildContext buildContext) {
+        return new graphql.schema.GraphQLNonNull(OperationMapper.toGraphQLInputType(removeNonNull(javaType), buildContext));
     }
 
     @Override

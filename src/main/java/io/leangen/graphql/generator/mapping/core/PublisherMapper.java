@@ -1,21 +1,19 @@
 package io.leangen.graphql.generator.mapping.core;
 
-import org.reactivestreams.Publisher;
-
-import java.lang.reflect.AnnotatedType;
-import java.util.Set;
-
 import graphql.schema.GraphQLInputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMapper;
 import io.leangen.graphql.util.ClassUtils;
+import org.reactivestreams.Publisher;
+
+import java.lang.reflect.AnnotatedType;
 
 public class PublisherMapper extends AbstractTypeSubstitutingMapper {
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         throw new UnsupportedOperationException(Publisher.class.getSimpleName() + " can not be used as an input type");
     }
 

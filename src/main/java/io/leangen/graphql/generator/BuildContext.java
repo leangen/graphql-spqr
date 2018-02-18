@@ -1,11 +1,5 @@
 package io.leangen.graphql.generator;
 
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import graphql.relay.Relay;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
@@ -17,8 +11,16 @@ import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.GraphQLUtils;
+
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 public class BuildContext {
@@ -87,5 +89,13 @@ public class BuildContext {
                 .collect(Collectors.toSet());
         this.relayMappingConfig = relayMappingConfig;
         this.validator = new Validator(environment, typeMappers, knownTypes);
+    }
+
+    public ValueMapper createValueMapper(Set<Type> abstractTypes) {
+        return valueMapperFactory.getValueMapper(abstractTypes, globalEnvironment);
+    }
+
+    public Set<Type> findAbstractTypes(AnnotatedType rootType) {
+        return typeInfoGenerator.findAbstractTypes(rootType, this);
     }
 }

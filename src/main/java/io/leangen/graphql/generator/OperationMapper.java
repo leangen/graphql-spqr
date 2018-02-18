@@ -37,7 +37,6 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -131,8 +130,7 @@ public class OperationMapper {
      * @return GraphQL output field representing the given operation
      */
     public GraphQLFieldDefinition toGraphQLField(Operation operation, BuildContext buildContext) {
-        Set<Type> abstractTypes = new HashSet<>();
-        GraphQLOutputType type = toGraphQLType(operation.getJavaType(), abstractTypes, buildContext);
+        GraphQLOutputType type = toGraphQLType(operation.getJavaType(), buildContext);
         GraphQLFieldDefinition.Builder queryBuilder = newFieldDefinition()
                 .name(operation.getName())
                 .description(operation.getDescription())
@@ -141,7 +139,7 @@ public class OperationMapper {
 
         List<GraphQLArgument> arguments = operation.getArguments().stream()
                 .filter(OperationArgument::isMappable)
-                .map(argument -> toGraphQLArgument(argument, abstractTypes, buildContext))
+                .map(argument -> toGraphQLArgument(argument, buildContext))
                 .collect(Collectors.toList());
         queryBuilder.argument(arguments);
         if (GraphQLUtils.isRelayConnectionType(type)) {
@@ -151,7 +149,12 @@ public class OperationMapper {
                 throw new TypeMappingException("Operation \"" + operation.getName() + "\" has arguments of types incompatible with the Relay Connection spec");
             }
         }
-        ValueMapper valueMapper = buildContext.valueMapperFactory.getValueMapper(abstractTypes, buildContext.globalEnvironment);
+
+        Set<Type> abstractTypes = operation.getArguments().stream()
+                .filter(OperationArgument::isMappable)
+                .flatMap(arg -> buildContext.findAbstractTypes(arg.getJavaType()).stream())
+                .collect(Collectors.toSet());
+        ValueMapper valueMapper = buildContext.createValueMapper(abstractTypes);
         queryBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
 
         return new MappedGraphQLFieldDefinition(queryBuilder.build(), operation);
@@ -160,15 +163,15 @@ public class OperationMapper {
     /**
      * Maps a Java type to a GraphQL output type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link TypeMapper#toGraphQLType(AnnotatedType, Set, OperationMapper, BuildContext)}</p>
+     * <p>See {@link TypeMapper#toGraphQLType(AnnotatedType, OperationMapper, BuildContext)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL output type
      * @param buildContext The shared context containing all the global information needed for mapping
      *
      * @return GraphQL output type corresponding to the given Java type
      */
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, BuildContext buildContext) {
-        GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, abstractTypes, this, buildContext);
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
+        GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, this, buildContext);
         log(buildContext.validator.checkUniqueness(type, javaType));
         return type;
     }
@@ -181,38 +184,36 @@ public class OperationMapper {
      *
      * @return GraphQL input field representing the given field/property
      */
-    public GraphQLInputObjectField toGraphQLInputField(InputField inputField, Set<Type> abstractTypes, BuildContext buildContext) {
+    public GraphQLInputObjectField toGraphQLInputField(InputField inputField, BuildContext buildContext) {
         GraphQLInputObjectField.Builder builder = newInputObjectField()
                 .name(inputField.getName())
                 .description(inputField.getDescription())
-                .type(toGraphQLInputType(inputField.getJavaType(), abstractTypes, buildContext));
+                .type(toGraphQLInputType(inputField.getJavaType(), buildContext));
         return builder.build();
     }
 
     /**
      * Maps a Java type to a GraphQL input type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link TypeMapper#toGraphQLInputType(AnnotatedType, Set, OperationMapper, BuildContext)}</p>
+     * <p>See {@link TypeMapper#toGraphQLInputType(AnnotatedType, OperationMapper, BuildContext)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL input type
      * @param buildContext The shared context containing all the global information needed for mapping
      *
      * @return GraphQL input type corresponding to the given Java type
      */
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, BuildContext buildContext) {
-        GraphQLInputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLInputType(javaType, abstractTypes, this, buildContext);
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
+        GraphQLInputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLInputType(javaType, this, buildContext);
         log(buildContext.validator.checkUniqueness(type, javaType));
         return type;
     }
 
-    private GraphQLArgument toGraphQLArgument(OperationArgument operationArgument, Set<Type> abstractTypes, BuildContext buildContext) {
-        Set<Type> argumentAbstractTypes = new HashSet<>();
+    private GraphQLArgument toGraphQLArgument(OperationArgument operationArgument, BuildContext buildContext) {
         GraphQLArgument.Builder argument = newArgument()
                 .name(operationArgument.getName())
                 .description(operationArgument.getDescription())
-                .type(toGraphQLInputType(operationArgument.getJavaType(), argumentAbstractTypes, buildContext));
+                .type(toGraphQLInputType(operationArgument.getJavaType(), buildContext));
 
-        abstractTypes.addAll(argumentAbstractTypes);
         OperationArgumentDefaultValue defaultValue = operationArgument.getDefaultValue();
         if (defaultValue.isPresent()) {
             argument.defaultValue(defaultValue.get());

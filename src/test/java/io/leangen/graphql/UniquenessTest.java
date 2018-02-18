@@ -1,22 +1,26 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
+import graphql.ExecutionResult;
+import graphql.GraphQL;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import io.leangen.graphql.annotations.GraphQLEnumValue;
 import io.leangen.graphql.domain.SimpleUser;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
+import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
+import org.junit.Test;
+
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -48,12 +52,27 @@ public class UniquenessTest {
         testRootQueryArgumentTypeUniqueness(schema, type -> ((GraphQLList) type).getWrappedType());
     }
 
+    @Test
+    public void testEnumMapUniqueness() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new EnumMapService(), new PublicResolverBuilder(thisPackage))
+                .withValueMapperFactory(new GsonValueMapperFactory())
+                .generate();
+        testRootQueryTypeUniqueness(schema);
+        testRootQueryArgumentTypeUniqueness(schema);
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        ExecutionResult res = exe.execute("{map(in: {Lucidus: 12, Tenebris: 13}) {Tenebris, Lucidus}}");
+        assertEquals(0, res.getErrors().size());
+        res = exe.execute("{mapAgain(in: {Lucidus: 12, Tenebris: 13}) {Tenebris, Lucidus}}");
+        assertEquals(0, res.getErrors().size());
+    }
+
     private GraphQLSchema schemaFor(Object service) {
         return new TestSchemaGenerator()
                 .withOperationsFromSingleton(service, new PublicResolverBuilder(thisPackage))
                 .generate();
     }
-    
+
     private void testRootQueryTypeUniqueness(GraphQLSchema schema) {
         testRootQueryTypeUniqueness(schema, Function.identity());
     }
@@ -70,7 +89,7 @@ public class UniquenessTest {
     private void testRootQueryArgumentTypeUniqueness(GraphQLSchema schema) {
         testRootQueryArgumentTypeUniqueness(schema, Function.identity());
     }
-    
+
     private void testRootQueryArgumentTypeUniqueness(GraphQLSchema schema, Function<GraphQLType, GraphQLType> unwrapper) {
         List<GraphQLType> inputTypes = schema.getQueryType().getFieldDefinitions().stream()
                 .flatMap(def -> def.getArguments().stream())
@@ -80,7 +99,7 @@ public class UniquenessTest {
         assertEquals(2, inputTypes.size());
         assertTrue(inputTypes.stream().allMatch(type -> inputTypes.get(0) == type));
     }
-    
+
     public static class EnumService {
 
         enum BLACK_OR_WHITE {
@@ -96,6 +115,22 @@ public class UniquenessTest {
         }
     }
 
+    public static class EnumMapService {
+
+        enum LIGHT_OR_DARK {
+            @GraphQLEnumValue(name = "Lucidus", description = "Bright") LIGHT,
+            @GraphQLEnumValue(name = "Tenebris", description = "Shady") DARK
+        }
+
+        public EnumMap<LIGHT_OR_DARK, Number> map(@io.leangen.graphql.annotations.GraphQLArgument(name = "in") EnumMap<LIGHT_OR_DARK, Number> in) {
+            return in;
+        }
+
+        public EnumMap<LIGHT_OR_DARK, Number> mapAgain(@io.leangen.graphql.annotations.GraphQLArgument(name = "in") EnumMap<LIGHT_OR_DARK, Number> in) {
+            return in;
+        }
+    }
+
     public static class PagingService {
 
         public Page<SimpleUser> getUsers() {
@@ -106,7 +141,7 @@ public class UniquenessTest {
             return null;
         }
     }
-    
+
     public static class MapService {
 
         public Map<String, SimpleUser> getUsers(Map<String, SimpleUser> in) {

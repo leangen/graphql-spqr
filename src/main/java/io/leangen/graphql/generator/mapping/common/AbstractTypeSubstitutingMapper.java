@@ -9,8 +9,6 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeSubstituter;
 
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.util.Set;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -20,13 +18,13 @@ import java.util.Set;
 public abstract class AbstractTypeSubstitutingMapper<S> implements TypeMapper, TypeSubstituter {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
-        return operationMapper.toGraphQLType(getSubstituteType(javaType), abstractTypes, buildContext);
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+        return operationMapper.toGraphQLType(getSubstituteType(javaType), buildContext);
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
-        return operationMapper.toGraphQLInputType(getSubstituteType(javaType), abstractTypes, buildContext);
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+        return operationMapper.toGraphQLInputType(getSubstituteType(javaType), buildContext);
     }
 
     /**

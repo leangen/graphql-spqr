@@ -11,6 +11,8 @@ import com.google.gson.internal.Streams;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -106,10 +108,13 @@ import java.util.Map;
  * }</pre>
  */
 public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
+
     private final Class<?> baseType;
     private final String typeFieldName;
     private final Map<String, Class<?>> labelToSubtype = new LinkedHashMap<>();
     private final Map<Class<?>, String> subtypeToLabel = new LinkedHashMap<>();
+
+    private static final Logger log = LoggerFactory.getLogger(RuntimeTypeAdapterFactory.class);
 
     private RuntimeTypeAdapterFactory(Class<?> baseType, String typeFieldName) {
         if (typeFieldName == null || baseType == null) {
@@ -166,7 +171,7 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
     }
 
     public <R> TypeAdapter<R> create(Gson gson, TypeToken<R> type) {
-        if (type.getRawType() != baseType) {
+        if (type.getRawType() != baseType || labelToSubtype.isEmpty()) {
             return null;
         }
 
@@ -179,20 +184,25 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
             labelToDelegate.put(entry.getKey(), delegate);
             subtypeToDelegate.put(entry.getValue(), delegate);
         }
+        TypeAdapter<R> defaultDelegate = gson.getDelegateAdapter(this, type);
 
         return new TypeAdapter<R>() {
-            @Override public R read(JsonReader in) throws IOException {
+            @Override public R read(JsonReader in) {
                 JsonElement jsonElement = Streams.parse(in);
+                if (!jsonElement.isJsonObject()) {
+                    return defaultDelegate.fromJsonTree(jsonElement);
+                }
                 JsonElement labelJsonElement = jsonElement.getAsJsonObject().remove(typeFieldName);
                 if (labelJsonElement == null) {
-                    throw new JsonParseException("cannot deserialize " + baseType
-                            + " because it does not define a field named " + typeFieldName);
+                    log.warn("Cannot properly deserialize " + baseType
+                            + " because it does not define a field named " + typeFieldName + "; falling back to defaults");
+                    return defaultDelegate.fromJsonTree(jsonElement);
                 }
                 String label = labelJsonElement.getAsString();
                 @SuppressWarnings("unchecked") // registration requires that subtype extends T
                         TypeAdapter<R> delegate = (TypeAdapter<R>) labelToDelegate.get(label);
                 if (delegate == null) {
-                    throw new JsonParseException("cannot deserialize " + baseType + " subtype named "
+                    throw new JsonParseException("Cannot deserialize " + baseType + " subtype named "
                             + label + "; did you forget to register a subtype?");
                 }
                 return delegate.fromJsonTree(jsonElement);

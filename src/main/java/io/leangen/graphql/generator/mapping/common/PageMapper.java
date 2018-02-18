@@ -13,9 +13,7 @@ import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -28,7 +26,7 @@ public class PageMapper extends ObjectTypeMapper {
     }
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         AnnotatedType edgeType = GenericTypeReflector.getTypeParameter(javaType, Connection.class.getTypeParameters()[0]);
         AnnotatedType nodeType = GenericTypeReflector.getTypeParameter(edgeType, Edge.class.getTypeParameters()[0]);
         String connectionName = buildContext.typeInfoGenerator.generateTypeName(nodeType) + "Connection";
@@ -36,7 +34,7 @@ public class PageMapper extends ObjectTypeMapper {
             return new GraphQLTypeReference(connectionName);
         }
         buildContext.knownTypes.add(connectionName);
-        GraphQLOutputType type = operationMapper.toGraphQLType(nodeType, abstractTypes, buildContext);
+        GraphQLOutputType type = operationMapper.toGraphQLType(nodeType, buildContext);
         List<GraphQLFieldDefinition> edgeFields = getFields(edgeType, buildContext, operationMapper).stream()
                 .filter(field -> !GraphQLUtils.isRelayEdgeField(field))
                 .collect(Collectors.toList());
@@ -48,7 +46,7 @@ public class PageMapper extends ObjectTypeMapper {
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         throw new UnsupportedOperationException("Replay page type can not be used as input type");
     }
 

@@ -16,11 +16,9 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -34,13 +32,13 @@ public class EnumMapToObjectTypeAdapter<E extends Enum<E>, V> extends CachingMap
 
 
     @Override
-    protected GraphQLObjectType toGraphQLType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    protected GraphQLObjectType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLObjectType.Builder builder = GraphQLObjectType.newObject()
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
 
         Enum<E>[] keys = ClassUtils.<E>getRawType(getElementType(javaType, 0).getType()).getEnumConstants();
-        GraphQLOutputType valueType = operationMapper.toGraphQLType(getElementType(javaType, 1), abstractTypes, buildContext);
+        GraphQLOutputType valueType = operationMapper.toGraphQLType(getElementType(javaType, 1), buildContext);
         Arrays.stream(keys).forEach(enumValue -> builder.field(GraphQLFieldDefinition.newFieldDefinition()
                 .name(enumMapper.getValueName(enumValue))
                 .description(enumMapper.getValueDescription(enumValue))
@@ -52,13 +50,13 @@ public class EnumMapToObjectTypeAdapter<E extends Enum<E>, V> extends CachingMap
     }
 
     @Override
-    protected GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, Set<Type> abstractTypes, OperationMapper operationMapper, BuildContext buildContext) {
+    protected GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject()
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType));
 
         Enum[] keys = (Enum[]) ClassUtils.getRawType(getElementType(javaType, 0).getType()).getEnumConstants();
-        GraphQLInputType valueType = operationMapper.toGraphQLInputType(getElementType(javaType, 1), abstractTypes, buildContext);
+        GraphQLInputType valueType = operationMapper.toGraphQLInputType(getElementType(javaType, 1), buildContext);
         Arrays.stream(keys).forEach(enumValue -> builder.field(GraphQLInputObjectField.newInputObjectField()
                 .name(enumMapper.getValueName(enumValue))
                 .description(enumMapper.getValueDescription(enumValue))
