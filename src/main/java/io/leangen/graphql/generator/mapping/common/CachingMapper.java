@@ -20,20 +20,20 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         String typeName = getTypeName(javaType, buildContext);
-        if (buildContext.knownTypes.contains(typeName)) {
+        if (buildContext.isKnownType(typeName)) {
             return new GraphQLTypeReference(typeName);
         }
-        buildContext.knownTypes.add(typeName);
+        buildContext.registerTypeName(typeName);
         return toGraphQLType(typeName, javaType, operationMapper, buildContext);
     }
 
     @Override
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         String typeName = getInputTypeName(javaType, buildContext);
-        if (buildContext.knownInputTypes.contains(typeName)) {
+        if (buildContext.isKnownInputType(typeName)) {
             return new GraphQLTypeReference(typeName);
         }
-        buildContext.knownInputTypes.add(typeName);
+        buildContext.registerInputTypeName(typeName);
         return toGraphQLInputType(typeName, javaType, operationMapper, buildContext);
     }
     

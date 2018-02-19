@@ -1,9 +1,5 @@
 package io.leangen.graphql.generator;
 
-import java.lang.reflect.AnnotatedType;
-import java.util.List;
-import java.util.Optional;
-
 import graphql.TypeResolutionEnvironment;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLType;
@@ -15,6 +11,10 @@ import io.leangen.graphql.generator.types.MappedGraphQLType;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
+
+import java.lang.reflect.AnnotatedType;
+import java.util.List;
+import java.util.Optional;
 
 public class DelegatingTypeResolver implements TypeResolver {
 
@@ -37,7 +37,6 @@ public class DelegatingTypeResolver implements TypeResolver {
         Object result = env.getObject();
         Class<?> resultType = result.getClass();
         String resultTypeName = typeInfoGenerator.generateTypeName(GenericTypeReflector.annotate(resultType));
-        AnnotatedType returnType = ((MappedGraphQLType) env.getFieldType()).getJavaType();
         String abstractTypeName = this.abstractTypeName != null ? this.abstractTypeName : env.getFieldType().getName();
 
         //Check if the type is already unambiguous
@@ -48,18 +47,19 @@ public class DelegatingTypeResolver implements TypeResolver {
         if (mappedTypes.size() == 1) {
             return mappedTypes.get(0).getAsObjectType();
         }
-        
+
+        AnnotatedType returnType = ((MappedGraphQLType) env.getFieldType()).getJavaType();
         //Try to find an explicit resolver
         Optional<GraphQLObjectType> resolvedType = Utils.or(
-                Optional.ofNullable(returnType.getAnnotation(GraphQLTypeResolver.class)),
+                Optional.ofNullable(returnType != null ? returnType.getAnnotation(GraphQLTypeResolver.class) : null),
                 Optional.ofNullable(resultType.getAnnotation(GraphQLTypeResolver.class)))
                 .map(ann -> resolveType(env, ann));
         if (resolvedType.isPresent()) {
             return resolvedType.get();
         }
-        
+
         //Try to deduce the type
-        if (resultTypeName.equals(env.getFieldType().getName())) {
+        if (returnType != null && resultTypeName.equals(env.getFieldType().getName())) {
             AnnotatedType resolvedJavaType = GenericTypeReflector.getExactSubType(returnType, resultType);
             if (resolvedJavaType != null && !ClassUtils.isMissingTypeParameters(resolvedJavaType.getType())) {
                 GraphQLType resolved = env.getSchema().getType(typeInfoGenerator.generateTypeName(resolvedJavaType));

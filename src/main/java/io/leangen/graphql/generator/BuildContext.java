@@ -5,6 +5,7 @@ import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLTypeReference;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
@@ -20,7 +21,6 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 public class BuildContext {
@@ -40,8 +40,8 @@ public class BuildContext {
     public final RelayMappingConfig relayMappingConfig;
     public final Validator validator;
 
-    public final Set<String> knownTypes;
-    public final Set<String> knownInputTypes;
+    public final Map<String, GraphQLOutputType> knownTypes;
+    public final Map<String, GraphQLInputType> knownInputTypes;
     public final Map<Type, Set<Type>> abstractComponentTypes = new HashMap<>();
 
     /**
@@ -79,14 +79,8 @@ public class BuildContext {
         this.valueMapperFactory = valueMapperFactory;
         this.inputFieldStrategy = inputFieldStrategy;
         this.globalEnvironment = environment;
-        this.knownTypes = knownTypes.stream()
-                .filter(type -> type instanceof GraphQLOutputType)
-                .map(GraphQLType::getName)
-                .collect(Collectors.toSet());
-        this.knownInputTypes = knownTypes.stream()
-                .filter(type -> type instanceof GraphQLInputType)
-                .map(GraphQLType::getName)
-                .collect(Collectors.toSet());
+        this.knownTypes = new HashMap<>();
+        this.knownInputTypes = new HashMap<>();
         this.relayMappingConfig = relayMappingConfig;
         this.validator = new Validator(environment, typeMappers, knownTypes);
     }
@@ -97,5 +91,47 @@ public class BuildContext {
 
     public Set<Type> findAbstractTypes(AnnotatedType rootType) {
         return typeInfoGenerator.findAbstractTypes(rootType, this);
+    }
+
+    public void registerTypeName(String typeName) {
+        if (knownTypes.putIfAbsent(typeName, null) != null) {
+            throw new IllegalStateException("Type name " + typeName + " is already in use");
+        }
+    }
+
+    public void registerInputTypeName(String typeName) {
+        if (knownInputTypes.putIfAbsent(typeName, null) != null) {
+            throw new IllegalStateException("Type name " + typeName + " is already in use");
+        }
+    }
+
+    public boolean isKnownType(String typeName) {
+        return knownTypes.containsKey(typeName);
+    }
+
+    public boolean isKnownInputType(String typeName) {
+        return knownInputTypes.containsKey(typeName);
+    }
+
+    public void completeType(GraphQLOutputType type) {
+        type = (GraphQLOutputType) GraphQLUtils.unwrap(type);
+        if (!(type instanceof GraphQLTypeReference)) {
+            knownTypes.put(type.getName(), type);
+        }
+    }
+
+    public void completeType(GraphQLInputType type) {
+        type = (GraphQLInputType) GraphQLUtils.unwrap(type);
+        if (!(type instanceof GraphQLTypeReference)) {
+            knownInputTypes.put(type.getName(), type);
+        }
+    }
+
+    public GraphQLOutputType getType(String typeName) {
+        return knownTypes.get(typeName);
+    }
+
+    public GraphQLInputType getInputType(String typeName) {
+        return knownInputTypes.get(typeName);
     }
 }

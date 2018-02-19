@@ -15,6 +15,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.User;
@@ -196,6 +197,16 @@ public class RelayTest {
         }
     }
 
+    @Test
+    public void testNodeQuery() {
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(new BookService())
+                .generate();
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = exe.execute("{node(id: \"Qm9vazprZXds\") {id}}");
+        assertEquals(0, result.getErrors().size());
+    }
+
     private void testPagedQuery(String query) {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new BookService())
@@ -219,7 +230,8 @@ public class RelayTest {
             return title;
         }
 
-        public String getIsbn() {
+        @GraphQLQuery(name = "id")
+        public @GraphQLId(relayId = true) String getIsbn() {
             return isbn;
         }
     }
@@ -235,6 +247,11 @@ public class RelayTest {
         @GraphQLQuery(name = "empty")
         public Page<Book> getEmpty(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             return PageFactory.createOffsetBasedPage(Collections.emptyList(), 100, 10);
+        }
+
+        @GraphQLQuery
+        public Book book(@GraphQLId(relayId = true) String isbn) {
+            return new Book("Node Book", isbn);
         }
     }
 
