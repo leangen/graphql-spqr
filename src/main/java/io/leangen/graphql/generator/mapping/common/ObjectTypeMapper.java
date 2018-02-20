@@ -55,7 +55,6 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
         GraphQLObjectType type = new MappedGraphQLObjectType(typeBuilder.build(), javaType);
         interfaces.forEach(inter -> buildContext.typeRepository.registerCovariantType(inter.getName(), javaType, type));
-        buildContext.typeRepository.registerObjectType(type);
         return type;
     }
 

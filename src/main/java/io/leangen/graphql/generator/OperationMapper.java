@@ -88,7 +88,7 @@ public class OperationMapper {
                 .map(query -> toGraphQLField(query, buildContext))
                 .collect(Collectors.toList());
 
-        buildContext.typeRepository.replaceTypeReferences();
+        buildContext.resolveTypeReferences();
         Map<String, String> nodeQueriesByType = getNodeQueriesByType(rootQueries, queries, buildContext.typeRepository, buildContext.node, buildContext);
         //Add support for Relay Node query only if Relay-enabled resolvers exist
         if (!nodeQueriesByType.isEmpty()) {
@@ -206,7 +206,6 @@ public class OperationMapper {
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
         GraphQLInputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLInputType(javaType, this, buildContext);
         log(buildContext.validator.checkUniqueness(type, javaType));
-        buildContext.completeType(type);
         return type;
     }
 

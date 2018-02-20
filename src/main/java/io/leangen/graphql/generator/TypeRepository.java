@@ -1,19 +1,5 @@
 package io.leangen.graphql.generator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
@@ -21,6 +7,18 @@ import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.generator.types.MappedGraphQLObjectType;
 import io.leangen.graphql.util.ClassUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.AnnotatedType;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Created by bojan.tomic on 5/7/16.
@@ -28,7 +26,6 @@ import io.leangen.graphql.util.ClassUtils;
 public class TypeRepository {
 
     private final Map<String, Map<String, MappedType>> covariantOutputTypes = new ConcurrentHashMap<>();
-    private final Map<String, GraphQLObjectType> knownObjectTypes = new HashMap<>();
     private final Set<GraphQLObjectType> discoveredTypes = new HashSet<>();
 
     private static final Logger log = LoggerFactory.getLogger(TypeRepository.class);
@@ -49,10 +46,6 @@ public class TypeRepository {
                         .filter(type -> type instanceof MappedGraphQLObjectType)
                         .map(type -> (MappedGraphQLObjectType) type)
                         .forEach(obj -> registerCovariantType(union.getName(), obj.getJavaType(), obj)));
-    }
-
-    public void registerObjectType(GraphQLObjectType objectType) {
-        this.knownObjectTypes.put(objectType.getName(), objectType);
     }
 
     public void registerDiscoveredCovariantType(String compositeTypeName, AnnotatedType javaSubType, GraphQLObjectType subType) {
@@ -86,12 +79,12 @@ public class TypeRepository {
         return discoveredTypes;
     }
     
-    public void replaceTypeReferences() {
+    public void resolveTypeReferences(Map<String, GraphQLOutputType> resolvedTypes) {
         for (Map<String, MappedType> covariantTypes : this.covariantOutputTypes.values()) {
             Set<String> toRemove = new HashSet<>();
             for (Map.Entry<String, MappedType> entry : covariantTypes.entrySet()) {
                 if (entry.getValue().graphQLType instanceof GraphQLTypeReference) {
-                    GraphQLObjectType resolvedType = knownObjectTypes.get(entry.getKey());
+                    GraphQLOutputType resolvedType = resolvedTypes.get(entry.getKey());
                     if (resolvedType != null) {
                         entry.setValue(new MappedType(entry.getValue().javaType, resolvedType));
                     } else {
@@ -106,8 +99,7 @@ public class TypeRepository {
             }
             toRemove.forEach(covariantTypes::remove);
             covariantTypes.replaceAll((typeName, mapped) -> mapped.graphQLType instanceof GraphQLTypeReference
-                    ? new MappedType(mapped.javaType, knownObjectTypes.get(typeName)) : mapped);
+                    ? new MappedType(mapped.javaType, resolvedTypes.get(typeName)) : mapped);
         }
-        knownObjectTypes.clear();
     }
 }

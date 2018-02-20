@@ -108,20 +108,20 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
     }
 
     private Set<Type> findAbstractInner(AnnotatedType javaType, BuildContext buildContext) {
-        if (buildContext.abstractComponentTypes.get(javaType.getType()) != null) {
-            return buildContext.abstractComponentTypes.get(javaType.getType());
+        if (buildContext.abstractTypeCache.get(javaType.getType()) != null) {
+            return buildContext.abstractTypeCache.get(javaType.getType());
         }
-        if (buildContext.abstractComponentTypes.containsKey(javaType.getType())) {
+        if (buildContext.abstractTypeCache.containsKey(javaType.getType())) {
             return Collections.emptySet();
         }
-        buildContext.abstractComponentTypes.put(javaType.getType(), null);
+        buildContext.abstractTypeCache.put(javaType.getType(), null);
         Set<Type> abstractTypes = new HashSet<>();
         if (ClassUtils.isAbstract(javaType)) {
             abstractTypes.add(javaType.getType());
         }
         buildContext.inputFieldStrategy.getInputFields(javaType)
                 .forEach(childQuery -> abstractTypes.addAll(findAbstract(childQuery.getJavaType(), buildContext)));
-        buildContext.abstractComponentTypes.put(javaType.getType(), abstractTypes);
+        buildContext.abstractTypeCache.put(javaType.getType(), abstractTypes);
         return abstractTypes;
     }
 

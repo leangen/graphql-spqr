@@ -21,6 +21,8 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
 public class BuildContext {
@@ -41,8 +43,8 @@ public class BuildContext {
     public final Validator validator;
 
     public final Map<String, GraphQLOutputType> knownTypes;
-    public final Map<String, GraphQLInputType> knownInputTypes;
-    public final Map<Type, Set<Type>> abstractComponentTypes = new HashMap<>();
+    public final Set<String> knownInputTypes;
+    public final Map<Type, Set<Type>> abstractTypeCache = new HashMap<>();
 
     /**
      * The shared context accessible throughout the schema generation process
@@ -79,8 +81,14 @@ public class BuildContext {
         this.valueMapperFactory = valueMapperFactory;
         this.inputFieldStrategy = inputFieldStrategy;
         this.globalEnvironment = environment;
-        this.knownTypes = new HashMap<>();
-        this.knownInputTypes = new HashMap<>();
+        this.knownTypes = knownTypes.stream()
+                .filter(type -> type instanceof GraphQLOutputType)
+                .map(type -> (GraphQLOutputType) type)
+                .collect(Collectors.toMap(GraphQLType::getName, Function.identity()));
+        this.knownInputTypes = knownTypes.stream()
+                .filter(type -> type instanceof GraphQLInputType)
+                .map(GraphQLType::getName)
+                .collect(Collectors.toSet());
         this.relayMappingConfig = relayMappingConfig;
         this.validator = new Validator(environment, typeMappers, knownTypes);
     }
@@ -93,6 +101,10 @@ public class BuildContext {
         return typeInfoGenerator.findAbstractTypes(rootType, this);
     }
 
+    public void resolveTypeReferences() {
+        typeRepository.resolveTypeReferences(knownTypes);
+    }
+
     public void registerTypeName(String typeName) {
         if (knownTypes.putIfAbsent(typeName, null) != null) {
             throw new IllegalStateException("Type name " + typeName + " is already in use");
@@ -100,7 +112,7 @@ public class BuildContext {
     }
 
     public void registerInputTypeName(String typeName) {
-        if (knownInputTypes.putIfAbsent(typeName, null) != null) {
+        if (!knownInputTypes.add(typeName)) {
             throw new IllegalStateException("Type name " + typeName + " is already in use");
         }
     }
@@ -110,7 +122,7 @@ public class BuildContext {
     }
 
     public boolean isKnownInputType(String typeName) {
-        return knownInputTypes.containsKey(typeName);
+        return knownInputTypes.contains(typeName);
     }
 
     public void completeType(GraphQLOutputType type) {
@@ -120,18 +132,7 @@ public class BuildContext {
         }
     }
 
-    public void completeType(GraphQLInputType type) {
-        type = (GraphQLInputType) GraphQLUtils.unwrap(type);
-        if (!(type instanceof GraphQLTypeReference)) {
-            knownInputTypes.put(type.getName(), type);
-        }
-    }
-
     public GraphQLOutputType getType(String typeName) {
         return knownTypes.get(typeName);
-    }
-
-    public GraphQLInputType getInputType(String typeName) {
-        return knownInputTypes.get(typeName);
     }
 }
