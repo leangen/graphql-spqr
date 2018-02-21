@@ -14,17 +14,13 @@ public class ScalarMapper extends CachingMapper<GraphQLScalarType, GraphQLScalar
 
     @Override
     public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        if (!buildContext.isKnownInputType(typeName)) {
-            buildContext.registerInputTypeName(typeName);
-        }
+        buildContext.typeCache.registerInput(typeName);
         return Scalars.toGraphQLScalarType(javaType.getType());
     }
 
     @Override
     public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        if (!buildContext.isKnownType(typeName)) {
-            buildContext.registerTypeName(typeName);
-        }
+        buildContext.typeCache.register(typeName);
         return toGraphQLType(typeName, javaType, operationMapper, buildContext);
     }
 

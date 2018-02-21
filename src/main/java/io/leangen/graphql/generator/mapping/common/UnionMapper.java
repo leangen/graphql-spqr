@@ -25,10 +25,10 @@ public abstract class UnionMapper implements TypeMapper {
     protected GraphQLOutputType toGraphQLUnion(String name, String description, AnnotatedType javaType, List<AnnotatedType> possibleJavaTypes,
                                                OperationMapper operationMapper, BuildContext buildContext) {
 
-        if (buildContext.isKnownType(name)) {
+        if (buildContext.typeCache.contains(name)) {
             return new GraphQLTypeReference(name);
         }
-        buildContext.registerTypeName(name);
+        buildContext.typeCache.register(name);
         GraphQLUnionType.Builder builder = newUnionType()
                 .name(name)
                 .description(description)

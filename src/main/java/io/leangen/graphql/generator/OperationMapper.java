@@ -173,7 +173,7 @@ public class OperationMapper {
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
         GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, this, buildContext);
         log(buildContext.validator.checkUniqueness(type, javaType));
-        buildContext.completeType(type);
+        buildContext.typeCache.completeType(type);
         return type;
     }
 
@@ -345,7 +345,7 @@ public class OperationMapper {
                     && query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME) != null) {
 
                 GraphQLType unwrappedQueryType = GraphQLUtils.unwrapNonNull(graphQlQuery.getType());
-                unwrappedQueryType = buildContext.getType(unwrappedQueryType.getName());
+                unwrappedQueryType = buildContext.typeCache.resolveType(unwrappedQueryType.getName());
                 if (unwrappedQueryType instanceof GraphQLObjectType
                         && ((GraphQLObjectType) unwrappedQueryType).getInterfaces().contains(node)) {
                     directNodeQueriesByType.put(unwrappedQueryType.getName(), query.getName());

@@ -1,11 +1,8 @@
 package io.leangen.graphql.generator;
 
 import graphql.relay.Relay;
-import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
-import graphql.schema.GraphQLTypeReference;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
@@ -14,14 +11,12 @@ import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("WeakerAccess")
@@ -30,6 +25,7 @@ public class BuildContext {
     public final GlobalEnvironment globalEnvironment;
     public final OperationRepository operationRepository;
     public final TypeRepository typeRepository;
+    public final TypeCache typeCache;
     public final TypeMapperRepository typeMappers;
     public final Relay relay;
     public final GraphQLInterfaceType node; //Node interface, as defined by the Relay GraphQL spec
@@ -40,11 +36,8 @@ public class BuildContext {
     public final InputFieldDiscoveryStrategy inputFieldStrategy;
     public final TypeInfoGenerator typeInfoGenerator;
     public final RelayMappingConfig relayMappingConfig;
-    public final Validator validator;
 
-    public final Map<String, GraphQLOutputType> knownTypes;
-    public final Set<String> knownInputTypes;
-    public final Map<Type, Set<Type>> abstractTypeCache = new HashMap<>();
+    final Validator validator;
 
     /**
      * The shared context accessible throughout the schema generation process
@@ -68,6 +61,7 @@ public class BuildContext {
                         RelayMappingConfig relayMappingConfig) {
         this.operationRepository = operationRepository;
         this.typeRepository = environment.typeRepository;
+        this.typeCache = new TypeCache(knownTypes);
         this.typeMappers = typeMappers;
         this.typeInfoGenerator = typeInfoGenerator;
         this.relay = environment.relay;
@@ -81,58 +75,22 @@ public class BuildContext {
         this.valueMapperFactory = valueMapperFactory;
         this.inputFieldStrategy = inputFieldStrategy;
         this.globalEnvironment = environment;
-        this.knownTypes = knownTypes.stream()
-                .filter(type -> type instanceof GraphQLOutputType)
-                .map(type -> (GraphQLOutputType) type)
-                .collect(Collectors.toMap(GraphQLType::getName, Function.identity()));
-        this.knownInputTypes = knownTypes.stream()
-                .filter(type -> type instanceof GraphQLInputType)
-                .map(GraphQLType::getName)
-                .collect(Collectors.toSet());
         this.relayMappingConfig = relayMappingConfig;
         this.validator = new Validator(environment, typeMappers, knownTypes);
     }
 
-    public ValueMapper createValueMapper(Set<Type> abstractTypes) {
+    ValueMapper createValueMapper(Set<Type> abstractTypes) {
         return valueMapperFactory.getValueMapper(abstractTypes, globalEnvironment);
     }
 
-    public Set<Type> findAbstractTypes(AnnotatedType rootType) {
-        return typeInfoGenerator.findAbstractTypes(rootType, this);
+    Set<Type> findAbstractTypes(AnnotatedType rootType) {
+        return typeCache.findAbstract(rootType, this).stream()
+                //ignore built-in types by default as Jackson & Gson *should* be able to deal with them on their own
+                .filter(type -> !ClassUtils.getRawType(type).getPackage().getName().startsWith("java."))
+                .collect(Collectors.toSet());
     }
 
-    public void resolveTypeReferences() {
-        typeRepository.resolveTypeReferences(knownTypes);
-    }
-
-    public void registerTypeName(String typeName) {
-        if (knownTypes.putIfAbsent(typeName, null) != null) {
-            throw new IllegalStateException("Type name " + typeName + " is already in use");
-        }
-    }
-
-    public void registerInputTypeName(String typeName) {
-        if (!knownInputTypes.add(typeName)) {
-            throw new IllegalStateException("Type name " + typeName + " is already in use");
-        }
-    }
-
-    public boolean isKnownType(String typeName) {
-        return knownTypes.containsKey(typeName);
-    }
-
-    public boolean isKnownInputType(String typeName) {
-        return knownInputTypes.contains(typeName);
-    }
-
-    public void completeType(GraphQLOutputType type) {
-        type = (GraphQLOutputType) GraphQLUtils.unwrap(type);
-        if (!(type instanceof GraphQLTypeReference)) {
-            knownTypes.put(type.getName(), type);
-        }
-    }
-
-    public GraphQLOutputType getType(String typeName) {
-        return knownTypes.get(typeName);
+    void resolveTypeReferences() {
+        typeCache.resolveTypeReferences(typeRepository);
     }
 }
