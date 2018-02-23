@@ -1,6 +1,5 @@
 package io.leangen.graphql.generator;
 
-import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
@@ -26,20 +25,12 @@ import java.util.stream.Collectors;
 
 public class TypeCache {
 
-    private final Map<String, GraphQLOutputType> knownTypes;
-    private final Set<String> knownInputTypes;
+    private final Map<String, GraphQLType> knownTypes;
     private final Map<Type, Set<Type>> abstractComponents;
 
 
     TypeCache(Set<GraphQLType> knownTypes) {
-        this.knownTypes = knownTypes.stream()
-                .filter(type -> type instanceof GraphQLOutputType)
-                .map(type -> (GraphQLOutputType) type)
-                .collect(Collectors.toMap(GraphQLType::getName, Function.identity()));
-        this.knownInputTypes = knownTypes.stream()
-                .filter(type -> type instanceof GraphQLInputType)
-                .map(GraphQLType::getName)
-                .collect(Collectors.toSet());
+        this.knownTypes = knownTypes.stream().collect(Collectors.toMap(GraphQLType::getName, Function.identity()));
         this.abstractComponents = new HashMap<>();
     }
 
@@ -47,20 +38,12 @@ public class TypeCache {
         knownTypes.put(typeName, null);
     }
 
-    public void registerInput(String typeName) {
-        knownInputTypes.add(typeName);
-    }
-
     public boolean contains(String typeName) {
         return knownTypes.containsKey(typeName);
     }
 
-    public boolean containsInput(String typeName) {
-        return knownInputTypes.contains(typeName);
-    }
-
-    public GraphQLOutputType resolveType(String typeName) {
-        GraphQLOutputType resolved = knownTypes.get(typeName);
+    public GraphQLType resolveType(String typeName) {
+        GraphQLType resolved = knownTypes.get(typeName);
         if (resolved instanceof GraphQLTypeReference) {
             throw new IllegalStateException("Type " + typeName + " is not yet resolvable");
         }

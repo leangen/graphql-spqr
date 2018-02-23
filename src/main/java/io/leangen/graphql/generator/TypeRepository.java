@@ -79,12 +79,12 @@ public class TypeRepository {
         return discoveredTypes;
     }
     
-    public void resolveTypeReferences(Map<String, GraphQLOutputType> resolvedTypes) {
+    public void resolveTypeReferences(Map<String, GraphQLType> resolvedTypes) {
         for (Map<String, MappedType> covariantTypes : this.covariantOutputTypes.values()) {
             Set<String> toRemove = new HashSet<>();
             for (Map.Entry<String, MappedType> entry : covariantTypes.entrySet()) {
                 if (entry.getValue().graphQLType instanceof GraphQLTypeReference) {
-                    GraphQLOutputType resolvedType = resolvedTypes.get(entry.getKey());
+                    GraphQLOutputType resolvedType = (GraphQLOutputType) resolvedTypes.get(entry.getKey());
                     if (resolvedType != null) {
                         entry.setValue(new MappedType(entry.getValue().javaType, resolvedType));
                     } else {
@@ -99,7 +99,7 @@ public class TypeRepository {
             }
             toRemove.forEach(covariantTypes::remove);
             covariantTypes.replaceAll((typeName, mapped) -> mapped.graphQLType instanceof GraphQLTypeReference
-                    ? new MappedType(mapped.javaType, resolvedTypes.get(typeName)) : mapped);
+                    ? new MappedType(mapped.javaType, (GraphQLOutputType) resolvedTypes.get(typeName)) : mapped);
         }
     }
 }

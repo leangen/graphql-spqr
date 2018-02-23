@@ -2,6 +2,8 @@ package io.leangen.graphql;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
@@ -27,6 +29,7 @@ import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.services.UserService;
 import io.leangen.graphql.support.TestLog;
+import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
 import org.junit.Test;
 
@@ -35,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.hamcrest.core.Is.is;
@@ -100,7 +104,7 @@ public class RelayTest {
     }
 
     @Test
-    public void relayMutationTest() {
+    public void testRelayMutations() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .withTypeAdapters(new MapToListTypeAdapter<>(new ObjectScalarStrategy()))
@@ -200,10 +204,17 @@ public class RelayTest {
     @Test
     public void testNodeQuery() {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
-                .withOperationsFromSingleton(new BookService())
+                .withOperationsFromSingletons(new BookService(), new DescriptorService())
                 .generate();
+
+        assertNotEquals(null, schema.getQueryType().getFieldDefinition("node"));
+        assertTrue(GraphQLUtils.isRelayId(((GraphQLObjectType)schema.getType("Descriptor")).getFieldDefinition("id")));
+        assertTrue(GraphQLUtils.isRelayId((schema.getQueryType().getFieldDefinition("descriptor").getArgument("id"))));
+
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = exe.execute("{node(id: \"Qm9vazprZXds\") {id}}");
+        assertEquals(0, result.getErrors().size());
+        result = exe.execute("{node(id: \"Qm9vazp7InRpdGxlIjoiVGhlIGtleSBib29rIiwiaWQiOiI3NzcifQ==\") {id ... on Descriptor {text}}}");
         assertEquals(0, result.getErrors().size());
     }
 
@@ -221,7 +232,8 @@ public class RelayTest {
         private String title;
         private String isbn;
 
-        Book(String title, String isbn) {
+        @JsonCreator
+        Book(@JsonProperty("title") String title, @JsonProperty("id") String isbn) {
             this.title = title;
             this.isbn = isbn;
         }
@@ -233,6 +245,26 @@ public class RelayTest {
         @GraphQLQuery(name = "id")
         public @GraphQLId(relayId = true) String getIsbn() {
             return isbn;
+        }
+    }
+
+    public static class Descriptor {
+        private Book book;
+        private String text;
+
+        @JsonCreator
+        Descriptor(@JsonProperty("id") Book book, @JsonProperty("text") String text) {
+            this.book = book;
+            this.text = text;
+        }
+
+        @GraphQLQuery(name = "id")
+        public @GraphQLId(relayId = true) Book getBook() {
+            return book;
+        }
+
+        public String getText() {
+            return text;
         }
     }
 
@@ -252,6 +284,19 @@ public class RelayTest {
         @GraphQLQuery
         public Book book(@GraphQLId(relayId = true) String isbn) {
             return new Book("Node Book", isbn);
+        }
+    }
+
+    public static class DescriptorService {
+
+        @GraphQLQuery
+        public Descriptor descriptor(@GraphQLId(relayId = true) Book book) {
+            return new Descriptor(book, "An imaginative book description");
+        }
+
+        @GraphQLQuery
+        public Descriptor random() {
+            return new Descriptor(null, UUID.randomUUID().toString());
         }
     }
 

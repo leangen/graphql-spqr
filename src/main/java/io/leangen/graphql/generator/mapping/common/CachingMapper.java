@@ -30,10 +30,10 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
     @Override
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         String typeName = getInputTypeName(javaType, buildContext);
-        if (buildContext.typeCache.containsInput(typeName)) {
+        if (buildContext.typeCache.contains(typeName)) {
             return new GraphQLTypeReference(typeName);
         }
-        buildContext.typeCache.registerInput(typeName);
+        buildContext.typeCache.register(typeName);
         return toGraphQLInputType(typeName, javaType, operationMapper, buildContext);
     }
 

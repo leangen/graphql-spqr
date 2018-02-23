@@ -29,13 +29,11 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
 
     @Override
     public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        buildContext.typeCache.registerInput(typeName);
         return Scalars.graphQLObjectScalar(typeName);
     }
     
     @Override
     public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        buildContext.typeCache.register(typeName);
         return toGraphQLType(typeName, javaType, operationMapper, buildContext);
     }
 
