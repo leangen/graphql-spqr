@@ -4,6 +4,7 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.GraphQLRootContext;
 import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
@@ -66,7 +67,9 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         if (meta != null && !meta.name().isEmpty()) {
             return meta.name();
         } else {
-            if (!parameter.isNamePresent()) {
+            if (!parameter.isNamePresent()
+                    && !parameter.isAnnotationPresent(GraphQLContext.class)
+                    && !parameter.isAnnotationPresent(GraphQLRootContext.class)) {
                 log.warn("No explicit argument name given and the parameter name lost in compilation: "
                         + parameter.getDeclaringExecutable().toGenericString() + "#" + parameter.toString()
                         + ". For details and possible solutions see " + Urls.Errors.MISSING_ARGUMENT_NAME);
