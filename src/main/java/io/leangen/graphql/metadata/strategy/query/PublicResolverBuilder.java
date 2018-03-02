@@ -155,8 +155,13 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
     }
 
     protected boolean isPackageAcceptable(Method method, Class<?> beanType) {
-        String[] basePackages = Utils.arrayNotEmpty(this.basePackages) ? this.basePackages : new String[] {beanType.getPackage().getName()};
+        String[] basePackages = new String[0];
+        if (Utils.arrayNotEmpty(this.basePackages)) {
+            basePackages = this.basePackages;
+        } else if (beanType.getPackage() != null) {
+            basePackages = new String[] {beanType.getPackage().getName()};
+        }
         return method.getDeclaringClass().equals(beanType)
-                || Arrays.stream(basePackages).anyMatch(basePackage -> method.getDeclaringClass().getPackage().getName().startsWith(basePackage));
+                || Arrays.stream(basePackages).anyMatch(basePackage -> ClassUtils.isSubPackage(method.getDeclaringClass().getPackage(), basePackage));
     }
 }

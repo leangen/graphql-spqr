@@ -86,7 +86,7 @@ public class BuildContext {
     Set<Type> findAbstractTypes(AnnotatedType rootType) {
         return typeCache.findAbstract(rootType, this).stream()
                 //ignore built-in types by default as Jackson & Gson *should* be able to deal with them on their own
-                .filter(type -> !ClassUtils.getRawType(type).getPackage().getName().startsWith("java."))
+                .filter(type -> !ClassUtils.isSubPackage(ClassUtils.getRawType(type).getPackage(), "java."))
                 .collect(Collectors.toSet());
     }
 

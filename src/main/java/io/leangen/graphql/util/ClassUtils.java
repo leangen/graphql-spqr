@@ -335,6 +335,10 @@ public class ClassUtils {
                 || GenericTypeReflector.isSuperType(superType, subType);
     }
 
+    public static boolean isSubPackage(Package pkg, String prefix) {
+        return pkg != null && pkg.getName().startsWith(prefix);
+    }
+
     public static String toString(AnnotatedType type) {
         return type.getType().getTypeName() + "(" + Arrays.toString(type.getAnnotations()) + ")";
     }
