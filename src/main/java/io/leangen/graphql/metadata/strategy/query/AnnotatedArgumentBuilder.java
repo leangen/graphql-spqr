@@ -66,7 +66,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         if (meta != null && !meta.name().isEmpty()) {
             return meta.name();
         } else {
-            if (!parameter.isNamePresent()) {
+            if (!parameter.isNamePresent() && !ClassUtils.hasAnnotation(parameter, GraphQLIgnore.class)) {
                 log.warn("No explicit argument name given and the parameter name lost in compilation: "
                         + parameter.getDeclaringExecutable().toGenericString() + "#" + parameter.toString()
                         + ". For details and possible solutions see " + Urls.Errors.MISSING_ARGUMENT_NAME);
