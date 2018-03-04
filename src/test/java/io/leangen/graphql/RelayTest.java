@@ -298,22 +298,6 @@ public class RelayTest {
         assertValueAtPathEquals("Correct", result, "node.name");
     }
 
-    @Test
-    public void testNodesQuery() {
-        GraphQLSchema schema = new TestSchemaGenerator()
-                .withResolverBuilders(new PublicResolverBuilder())
-                .withOperationsFromSingletons(new DirectAndPolymorphicPrimaryResolverService())
-                .generate();
-
-        assertNotNull(schema.getQueryType().getFieldDefinition("nodes"));
-
-        GraphQL exe = GraphQL.newGraphQL(schema).build();
-        ExecutionResult result = exe.execute("{nodes(ids: [\"Q2F0Ojg=\", \"Q2F0Ojg=\"]) {id ... on Cat {name}}}");
-        assertTrue(result.getErrors().isEmpty());
-        assertValueAtPathEquals("Correct", result, "nodes.0.name");
-        assertValueAtPathEquals("Correct", result, "nodes.1.name");
-    }
-
     private void testPagedQuery(String query) {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new BookService())
