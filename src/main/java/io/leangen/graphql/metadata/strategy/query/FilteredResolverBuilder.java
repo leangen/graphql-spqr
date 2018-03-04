@@ -1,6 +1,6 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 

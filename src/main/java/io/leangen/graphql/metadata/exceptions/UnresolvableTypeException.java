@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator.exceptions;
+package io.leangen.graphql.metadata.exceptions;
 
 import graphql.GraphQLException;
 

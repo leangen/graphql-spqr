@@ -160,7 +160,7 @@ public class Scalars {
             Period::parse, instant -> { throw new GraphQLException("Period can not be deserialized from a numeric value"); });
     
     public static GraphQLScalarType graphQLObjectScalar(String name) {
-        return new GraphQLScalarType(name, "Built-in object scalar", new Coercing() {
+        return new GraphQLScalarType(name, "Built-in scalar for dynamic structures", new Coercing() {
 
             @Override
             public Object serialize(Object input) {

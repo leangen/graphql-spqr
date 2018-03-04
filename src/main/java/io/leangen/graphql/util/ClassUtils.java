@@ -2,7 +2,8 @@ package io.leangen.graphql.util;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import io.leangen.graphql.annotations.GraphQLUnion;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.classpath.ClassFinder;
 import io.leangen.graphql.util.classpath.ClassReadingException;
 import io.leangen.graphql.util.classpath.SubclassClassFilter;
@@ -201,6 +202,7 @@ public class ClassUtils {
         type = GenericTypeReflector.toCanonical(type);
         Annotation[] filteredAnnotations = Arrays.stream(type.getAnnotations())
                 .filter(ann -> isTypeUseAnnotation(ann.annotationType()))
+                .filter(ann -> !ann.annotationType().equals(GraphQLUnion.class))
                 .toArray(Annotation[]::new);
         return type.getAnnotations().length == filteredAnnotations.length ? type : GenericTypeReflector.replaceAnnotations(type, filteredAnnotations);
     }
@@ -333,6 +335,10 @@ public class ClassUtils {
                 && ClassUtils.getRawType(superType).isAssignableFrom(ClassUtils.getRawType(subType)))
                 || (box(subType) == superType)
                 || GenericTypeReflector.isSuperType(superType, subType);
+    }
+
+    public static boolean isSubPackage(Package pkg, String prefix) {
+        return pkg != null && pkg.getName().startsWith(prefix);
     }
 
     public static String toString(AnnotatedType type) {

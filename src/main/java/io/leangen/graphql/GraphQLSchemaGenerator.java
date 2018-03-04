@@ -15,7 +15,6 @@ import io.leangen.graphql.generator.OperationSource;
 import io.leangen.graphql.generator.OperationSourceRepository;
 import io.leangen.graphql.generator.RelayMappingConfig;
 import io.leangen.graphql.generator.TypeRepository;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRepository;
@@ -56,6 +55,7 @@ import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
 import io.leangen.graphql.generator.mapping.strategy.DefaultScalarStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.generator.mapping.strategy.ScalarMappingStrategy;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.DefaultOperationBuilder;
@@ -599,6 +599,19 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
+     * Sets the flag controlling whether the Node interface (as defined by the Relay spec) should be automatically
+     * inferred for types that have an ID field.
+     *
+     * @param enabled Whether the inference should be enabled
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withRelayNodeInterfaceInference(boolean enabled) {
+        this.relayMappingConfig.inferNodeInterface = enabled;
+        return this;
+    }
+
+    /**
      * Registers custom schema processors that can perform arbitrary transformations on the schema just before it is built.
      *
      * @param processors Custom processors to call right before the GraphQL schema is built
@@ -827,16 +840,16 @@ public class GraphQLSchemaGenerator {
                     .fields(subscriptions)
                     .build());
         }
-        applyProcessors(builder);
+        applyProcessors(builder, buildContext);
 
         additionalTypes.addAll(buildContext.typeRepository.getDiscoveredTypes());
 
         return builder.build(additionalTypes);
     }
 
-    private void applyProcessors(GraphQLSchema.Builder builder) {
+    private void applyProcessors(GraphQLSchema.Builder builder, BuildContext buildContext) {
         for (GraphQLSchemaProcessor processor : processors) {
-            processor.process(builder);
+            processor.process(builder, buildContext);
         }
     }
 

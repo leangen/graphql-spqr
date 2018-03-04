@@ -1,10 +1,10 @@
 package io.leangen.graphql.metadata.strategy.type;
 
-import java.lang.reflect.AnnotatedType;
-
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
+
+import java.lang.reflect.AnnotatedType;
 
 public class DefaultTypeTransformer implements TypeTransformer {
     

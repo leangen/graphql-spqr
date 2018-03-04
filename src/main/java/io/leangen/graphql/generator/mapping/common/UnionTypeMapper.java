@@ -5,7 +5,7 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
