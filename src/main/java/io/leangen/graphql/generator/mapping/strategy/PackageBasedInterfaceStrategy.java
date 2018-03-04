@@ -1,8 +1,8 @@
 package io.leangen.graphql.generator.mapping.strategy;
 
-import java.lang.reflect.AnnotatedType;
-
 import io.leangen.graphql.util.ClassUtils;
+
+import java.lang.reflect.AnnotatedType;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -18,7 +18,6 @@ public class PackageBasedInterfaceStrategy extends AbstractInterfaceMappingStrat
 
     @Override
     public boolean supportsInterface(AnnotatedType interfase) {
-        Package pack = ClassUtils.getRawType(interfase.getType()).getPackage();
-        return pack != null && pack.getName().startsWith(packageName);
+        return ClassUtils.isSubPackage(ClassUtils.getRawType(interfase.getType()).getPackage(), packageName);
     }
 }

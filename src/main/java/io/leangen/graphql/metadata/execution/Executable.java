@@ -40,4 +40,9 @@ public abstract class Executable {
     public boolean equals(Object other) {
         return other instanceof Executable && ((Executable) other).delegate.equals(this.delegate);
     }
+
+    @Override
+    public String toString() {
+        return delegate.toString();
+    }
 }

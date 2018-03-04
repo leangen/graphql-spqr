@@ -86,10 +86,10 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
 
     private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType, BuildContext buildContext) {
         String typeName = "mapEntry_" + keyType.getName() + "_" + valueType.getName();
-        if (buildContext.knownTypes.contains(typeName)) {
+        if (buildContext.typeCache.contains(typeName)) {
             return new GraphQLTypeReference(typeName);
         }
-        buildContext.knownTypes.add(typeName);
+        buildContext.typeCache.register(typeName);
 
         return newObject()
                 .name(typeName)
@@ -109,10 +109,10 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
 
     private GraphQLInputType mapEntry(GraphQLInputType keyType, GraphQLInputType valueType, BuildContext buildContext) {
         String typeName = "mapEntry_" + keyType.getName() + "_" + valueType.getName() + "_input";
-        if (buildContext.knownInputTypes.contains(typeName)) {
+        if (buildContext.typeCache.contains(typeName)) {
             return new GraphQLTypeReference(typeName);
         }
-        buildContext.knownInputTypes.add(typeName);
+        buildContext.typeCache.register(typeName);
 
         return newInputObject()
                 .name(typeName)

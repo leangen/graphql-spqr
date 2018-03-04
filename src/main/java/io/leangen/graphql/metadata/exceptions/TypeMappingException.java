@@ -1,4 +1,6 @@
-package io.leangen.graphql.generator.exceptions;
+package io.leangen.graphql.metadata.exceptions;
+
+import io.leangen.graphql.util.Urls;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Executable;
@@ -6,13 +8,11 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 
-import io.leangen.graphql.util.Urls;
-
 /**
  * Thrown from the mapping process when the type of the object to be mapped can not be determined.
  * Commonly occurs when type information was lost due to type erasure or dynamic proxying.
  */
-public class TypeMappingException extends IllegalArgumentException {
+public class TypeMappingException extends RuntimeException {
 
     public TypeMappingException() {
         super("The provided object is of an unknown type. Provide the type explicitly when registering the bean.");

@@ -7,9 +7,9 @@ import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.types.MappedGraphQLUnionType;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
@@ -25,10 +25,10 @@ public abstract class UnionMapper implements TypeMapper {
     protected GraphQLOutputType toGraphQLUnion(String name, String description, AnnotatedType javaType, List<AnnotatedType> possibleJavaTypes,
                                                OperationMapper operationMapper, BuildContext buildContext) {
 
-        if (buildContext.knownTypes.contains(name)) {
+        if (buildContext.typeCache.contains(name)) {
             return new GraphQLTypeReference(name);
         }
-        buildContext.knownTypes.add(name);
+        buildContext.typeCache.register(name);
         GraphQLUnionType.Builder builder = newUnionType()
                 .name(name)
                 .description(description)

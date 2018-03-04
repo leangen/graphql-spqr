@@ -28,10 +28,12 @@ public class NonNullMapper implements TypeMapper {
     public NonNullMapper() {
         Set<Class<? extends Annotation>> annotations = new HashSet<>();
         annotations.add(GraphQLNonNull.class);
-        try {
-            annotations.add((Class<? extends Annotation>) ClassUtils.forName("javax.annotation.Nonnull"));
-        } catch (ClassNotFoundException e) {
-            /*no-op*/
+        for (String additional : new String[] {"javax.annotation.Nonnull", "javax.validation.constraints.NotNull", "org.jetbrains.annotations.NotNull"}) {
+            try {
+                annotations.add((Class<? extends Annotation>) ClassUtils.forName(additional));
+            } catch (ClassNotFoundException e) {
+                /*no-op*/
+            }
         }
         this.nonNullAnnotations = Collections.unmodifiableSet(annotations);
     }

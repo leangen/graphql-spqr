@@ -13,8 +13,10 @@ import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLSubscription;
-import io.leangen.graphql.annotations.types.GraphQLInterface;
+import io.leangen.graphql.domain.Cat;
+import io.leangen.graphql.domain.Dog;
 import io.leangen.graphql.domain.Education;
+import io.leangen.graphql.domain.Pet;
 import io.leangen.graphql.execution.complexity.ComplexityLimitExceededException;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
@@ -163,64 +165,6 @@ public class ComplexityTest {
         assertThat((ComplexityLimitExceededException) error, complexityScore(expectedComplexity));
     }
 
-    @GraphQLInterface(name = "Pet", implementationAutoDiscovery = true)
-    public interface Pet {
-        String getSound();
-        Human getOwner();
-    }
-    
-    public static class Cat implements Pet {
-
-        @Override
-        public String getSound() {
-            return "meow";
-        }
-        
-        public int getClawLength() {
-            return 3;
-        }
-
-        @Override
-        public Human getOwner() {
-            return new Human("Catherin", "Kat");
-        }
-    }
-    
-    public static class Dog implements Pet {
-        @Override
-        public String getSound() {
-            return "woof";
-        }
-        
-        @GraphQLComplexity("2")
-        public int getBoneCount() {
-            return 5;
-        }
-
-        @Override
-        public Human getOwner() {
-            return new Human("John", "Dawg");
-        }
-    }
-    
-    public static class Human {
-        private String name;
-        private String nickName;
-
-        public Human(String name, String nickName) {
-            this.name = name;
-            this.nickName = nickName;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getNickName() {
-            return nickName;
-        }
-    }
-    
     public static class PetService {
 
         @GraphQLQuery(name = "pet")

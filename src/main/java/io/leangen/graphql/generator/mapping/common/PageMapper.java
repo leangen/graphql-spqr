@@ -30,10 +30,10 @@ public class PageMapper extends ObjectTypeMapper {
         AnnotatedType edgeType = GenericTypeReflector.getTypeParameter(javaType, Connection.class.getTypeParameters()[0]);
         AnnotatedType nodeType = GenericTypeReflector.getTypeParameter(edgeType, Edge.class.getTypeParameters()[0]);
         String connectionName = buildContext.typeInfoGenerator.generateTypeName(nodeType) + "Connection";
-        if (buildContext.knownTypes.contains(connectionName)) {
+        if (buildContext.typeCache.contains(connectionName)) {
             return new GraphQLTypeReference(connectionName);
         }
-        buildContext.knownTypes.add(connectionName);
+        buildContext.typeCache.register(connectionName);
         GraphQLOutputType type = operationMapper.toGraphQLType(nodeType, buildContext);
         List<GraphQLFieldDefinition> edgeFields = getFields(edgeType, buildContext, operationMapper).stream()
                 .filter(field -> !GraphQLUtils.isRelayEdgeField(field))

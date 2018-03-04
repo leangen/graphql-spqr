@@ -1,11 +1,11 @@
 package io.leangen.graphql.metadata.execution;
 
+import io.leangen.graphql.util.ClassUtils;
+
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-
-import io.leangen.graphql.util.ClassUtils;
 
 /**
  * Created by bojan.tomic on 7/20/16.
@@ -53,12 +53,5 @@ public class MethodInvoker extends Executable {
     @Override
     public Parameter[] getParameters() {
         return ((Method) delegate).getParameters();
-    }
-
-    @Override
-    public String toString() {
-        return ((Method) delegate).getDeclaringClass().getName() + "#"
-                + ((Method) delegate).getName()
-                + " -> " + returnType.toString();
     }
 }
