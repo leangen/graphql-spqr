@@ -33,9 +33,10 @@ public class BeanResolverBuilderTest {
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
     }
     
-    static class NicknameService {
+    @SuppressWarnings("WeakerAccess")
+    public static class NicknameService {
         
-        String getNickname(String name) {
+        public String getNickname(String name) {
             return Utils.notEmpty(name) && name.length() > 3 ? name.substring(0, 3) : name;
         }
     }
