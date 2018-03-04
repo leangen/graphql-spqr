@@ -102,7 +102,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                                                     List<GraphQLFieldDefinition> fields, BuildContext buildContext, OperationMapper operationMapper) {
 
         List<GraphQLOutputType> interfaces = new ArrayList<>();
-        if (fields.stream().anyMatch(GraphQLUtils::isRelayId)) {
+        if (buildContext.relayMappingConfig.inferNodeInterface && fields.stream().anyMatch(GraphQLUtils::isRelayId)) {
             interfaces.add(buildContext.node);
         }
         buildContext.interfaceStrategy.getInterfaces(javaType).forEach(

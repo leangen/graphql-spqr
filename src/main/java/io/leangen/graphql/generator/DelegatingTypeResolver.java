@@ -6,8 +6,8 @@ import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLTypeResolver;
-import io.leangen.graphql.generator.exceptions.UnresolvableTypeException;
 import io.leangen.graphql.generator.types.MappedGraphQLType;
+import io.leangen.graphql.metadata.exceptions.UnresolvableTypeException;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
@@ -22,11 +22,11 @@ public class DelegatingTypeResolver implements TypeResolver {
     private final TypeInfoGenerator typeInfoGenerator;
     private final String abstractTypeName;
 
-    public DelegatingTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
+    DelegatingTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
         this(null, typeRepository, typeInfoGenerator);
     }
 
-    public DelegatingTypeResolver(String abstractTypeName, TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
+    DelegatingTypeResolver(String abstractTypeName, TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
         this.typeRepository = typeRepository;
         this.typeInfoGenerator = typeInfoGenerator;
         this.abstractTypeName = abstractTypeName;

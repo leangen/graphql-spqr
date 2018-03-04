@@ -19,7 +19,15 @@ import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.GraphQLUnion;
+import io.leangen.graphql.domain.Cat;
+import io.leangen.graphql.domain.Character;
+import io.leangen.graphql.domain.Dog;
 import io.leangen.graphql.domain.Education;
+import io.leangen.graphql.domain.Human;
+import io.leangen.graphql.domain.Pet;
+import io.leangen.graphql.domain.Robot;
+import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.domain.User;
 import io.leangen.graphql.execution.relay.Connection;
 import io.leangen.graphql.execution.relay.Page;
@@ -27,6 +35,8 @@ import io.leangen.graphql.execution.relay.generic.PageFactory;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.services.UserService;
 import io.leangen.graphql.support.TestLog;
 import io.leangen.graphql.util.GraphQLUtils;
@@ -45,7 +55,7 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -136,7 +146,7 @@ public class RelayTest {
 
         GraphQLFieldDefinition totalCount = schema.getObjectType("BookConnection")
                 .getFieldDefinition("totalCount");
-        assertNotEquals(null, totalCount);
+        assertNotNull(totalCount);
         assertEquals(Scalars.GraphQLLong, totalCount.getType());
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
 
@@ -163,13 +173,13 @@ public class RelayTest {
         GraphQLObjectType bookConnection = schema.getObjectType("BookConnection");
         assertEquals(3, bookConnection.getFieldDefinitions().size());
         GraphQLFieldDefinition totalCount = bookConnection.getFieldDefinition("totalCount");
-        assertNotEquals(null, totalCount);
+        assertNotNull(totalCount);
         assertEquals(Scalars.GraphQLLong, totalCount.getType());
 
         GraphQLObjectType bookEdge = schema.getObjectType("BookEdge");
         assertEquals(3, bookEdge.getFieldDefinitions().size());
         GraphQLFieldDefinition color = bookEdge.getFieldDefinition("color");
-        assertNotEquals(null, color);
+        assertNotNull(color);
         assertTrue(color.getType() instanceof GraphQLEnumType);
 
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
@@ -201,21 +211,107 @@ public class RelayTest {
         }
     }
 
+    @Test(expected = TypeMappingException.class)
+    public void testInvalidPaginationArguments() {
+        new TestSchemaGenerator()
+                .withOperationsFromSingleton(new InvalidPagingService())
+                .generate();
+    }
+
     @Test
-    public void testNodeQuery() {
+    public void testDirectNodeQuery() {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
                 .withOperationsFromSingletons(new BookService(), new DescriptorService())
                 .generate();
 
-        assertNotEquals(null, schema.getQueryType().getFieldDefinition("node"));
+        assertNotNull(schema.getQueryType().getFieldDefinition("node"));
         assertTrue(GraphQLUtils.isRelayId(((GraphQLObjectType)schema.getType("Descriptor")).getFieldDefinition("id")));
         assertTrue(GraphQLUtils.isRelayId((schema.getQueryType().getFieldDefinition("descriptor").getArgument("id"))));
 
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = exe.execute("{node(id: \"Qm9vazprZXds\") {id}}");
-        assertEquals(0, result.getErrors().size());
+        assertTrue(result.getErrors().isEmpty());
         result = exe.execute("{node(id: \"Qm9vazp7InRpdGxlIjoiVGhlIGtleSBib29rIiwiaWQiOiI3NzcifQ==\") {id ... on Descriptor {text}}}");
-        assertEquals(0, result.getErrors().size());
+        assertTrue(result.getErrors().isEmpty());
+    }
+
+    @Test
+    public void testPolymorphicNodeQuery() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withResolverBuilders(new PublicResolverBuilder())
+                .withOperationsFromSingletons(new PolymorphicPrimaryResolverService())
+                .generate();
+
+        assertNotNull(schema.getQueryType().getFieldDefinition("node"));
+
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = exe.execute("{node(id: \"Q2F0OjY2Ng==\") {id}}");
+        assertTrue(result.getErrors().isEmpty());
+        result = exe.execute("{node(id: \"Um9ib3Q6NjY2\") {id ... on Robot {name}}}");
+        assertTrue(result.getErrors().isEmpty());
+    }
+
+    @Test
+    public void testPartialUnionNodeQuery() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withResolverBuilders(new PublicResolverBuilder())
+                .withOperationsFromSingletons(new PartialUnionPrimaryResolverService())
+                .generate();
+
+        assertNotNull(schema.getQueryType().getFieldDefinition("node"));
+
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = exe.execute("{node(id: \"Um9ib3Q6NjY2\") {id ... on Robot {name}}}");
+        assertTrue(result.getErrors().isEmpty());
+    }
+
+    @Test
+    public void testDirectNodeQueryPriority() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withResolverBuilders(new PublicResolverBuilder())
+                .withOperationsFromSingletons(new DirectAndPolymorphicPrimaryResolverService())
+                .generate();
+
+        assertNotNull(schema.getQueryType().getFieldDefinition("node"));
+
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = exe.execute("{node(id: \"Q2F0Ojg=\") {id ... on Cat {name}}}");
+        assertTrue(result.getErrors().isEmpty());
+        assertValueAtPathEquals("Correct", result, "node.name");
+        result = exe.execute("{node(id: \"RG9nOjk=\") {id ... on Dog {sound}}}");
+        assertTrue(result.getErrors().isEmpty());
+        assertValueAtPathEquals("Correct", result, "node.sound");
+    }
+
+    @Test
+    public void testExplicitNodeQuery() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withResolverBuilders(new PublicResolverBuilder())
+                .withOperationsFromSingletons(new ExplicitNodeService())
+                .generate();
+
+        assertNotNull(schema.getQueryType().getFieldDefinition("node"));
+
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = exe.execute("{node(id: \"Q2F0Ojg=\") {id ... on Cat {name}}}");
+        assertTrue(result.getErrors().isEmpty());
+        assertValueAtPathEquals("Correct", result, "node.name");
+    }
+
+    @Test
+    public void testNodesQuery() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withResolverBuilders(new PublicResolverBuilder())
+                .withOperationsFromSingletons(new DirectAndPolymorphicPrimaryResolverService())
+                .generate();
+
+        assertNotNull(schema.getQueryType().getFieldDefinition("nodes"));
+
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = exe.execute("{nodes(ids: [\"Q2F0Ojg=\", \"Q2F0Ojg=\"]) {id ... on Cat {name}}}");
+        assertTrue(result.getErrors().isEmpty());
+        assertValueAtPathEquals("Correct", result, "nodes.0.name");
+        assertValueAtPathEquals("Correct", result, "nodes.1.name");
     }
 
     private void testPagedQuery(String query) {
@@ -297,6 +393,58 @@ public class RelayTest {
         @GraphQLQuery
         public Descriptor random() {
             return new Descriptor(null, UUID.randomUUID().toString());
+        }
+    }
+
+    public static class PolymorphicPrimaryResolverService {
+
+        public Pet pet(@GraphQLId(relayId = true) int id) {
+            return id % 2 == 0 ? new Cat() : new Dog();
+        }
+
+        public Character character(@GraphQLId(relayId = true) int id) {
+            return id % 2 == 0 ? new Robot("X3R0", "Zero") : new Human("Jack Alman", "Jackal");
+        }
+    }
+
+    public static class PartialUnionPrimaryResolverService {
+
+        public @GraphQLUnion(name = "Character") Human character(@GraphQLId(relayId = true) int id, String name) {
+            return new Human("Jack Alman", "Jackal");
+        }
+
+        public @GraphQLUnion(name = "Character") Robot character(@GraphQLId(relayId = true) int id) {
+            return new Robot("X3R0", "Zero");
+        }
+    }
+
+    public static class DirectAndPolymorphicPrimaryResolverService {
+
+        public Pet pet(@GraphQLId(relayId = true) int id) {
+            return id % 2 == 0 ? new Cat("Wrong") : new Dog("Correct");
+        }
+
+        public Cat cat(@GraphQLId(relayId = true) int id) {
+            return new Cat("Correct");
+        }
+    }
+
+    public static class ExplicitNodeService {
+
+        public Cat node(@GraphQLId(relayId = true) int id) {
+            return new Cat("Correct");
+        }
+
+        public Cat cat(@GraphQLId(relayId = true) int id) {
+            return new Cat("Wrong");
+        }
+    }
+
+    private static class InvalidPagingService {
+
+        @GraphQLQuery(name = "streets")
+        public Page<Street> streets(@GraphQLArgument(name = "first") String first) {
+            return null;
         }
     }
 

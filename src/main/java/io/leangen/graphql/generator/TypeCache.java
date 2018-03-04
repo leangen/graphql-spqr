@@ -3,7 +3,7 @@ package io.leangen.graphql.generator;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Scalars;

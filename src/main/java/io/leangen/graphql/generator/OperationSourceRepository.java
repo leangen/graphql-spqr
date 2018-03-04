@@ -1,13 +1,13 @@
 package io.leangen.graphql.generator;
 
+import io.leangen.geantyref.AnnotatedTypeMap;
+import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
+
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
-
-import io.leangen.geantyref.AnnotatedTypeMap;
-import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 
 /**
  * Created by bojan.tomic on 7/12/16.
@@ -24,7 +24,7 @@ public class OperationSourceRepository {
     }
 
     public void registerOperationSource(Object querySourceBean, AnnotatedType beanType, Collection<ResolverBuilder> extractors) {
-        this.operationSources.add(new OperationSource(querySourceBean, beanType, extractors));
+        this.operationSources.add(new OperationSource(querySourceBean, beanType, extractors.isEmpty() ? topLevelResolverBuilders : extractors));
     }
 
     public void registerOperationSource(AnnotatedType serviceType) {
@@ -40,7 +40,7 @@ public class OperationSourceRepository {
     }
 
     public void registerNestedOperationSource(AnnotatedType domainType, Collection<ResolverBuilder> extractors) {
-        this.nestedOperationSources.put(domainType, new OperationSource(domainType, extractors));
+        this.nestedOperationSources.put(domainType, new OperationSource(domainType, extractors.isEmpty() ? nestedResolverBuilders : extractors));
     }
 
     public void registerGlobalResolverBuilders(Collection<ResolverBuilder> resolverDetectionStrategies) {

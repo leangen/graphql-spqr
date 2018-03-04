@@ -7,9 +7,9 @@ import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.types.MappedGraphQLUnionType;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
