@@ -9,6 +9,8 @@ import io.leangen.graphql.util.classpath.ClassFinder;
 import io.leangen.graphql.util.classpath.ClassModifiersClassFilter;
 import io.leangen.graphql.util.classpath.ClassReadingException;
 import io.leangen.graphql.util.classpath.SubclassClassFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.beans.Introspector;
 import java.io.Serializable;
@@ -84,6 +86,8 @@ public class ClassUtils {
         boxTypes.put(void.class, Void.class);
         BOX_TYPES = Collections.unmodifiableMap(boxTypes);
     }
+
+    private static final Logger log = LoggerFactory.getLogger(ClassUtils.class);
 
     /**
      * Retrieves all public methods on the given class (same as {@link Class#getMethods()}) annotated by the given annotation
@@ -306,7 +310,7 @@ public class ClassUtils {
                     .findClasses(ClassFilter.and(
                             new SubclassClassFilter(superType),
                             new ClassModifiersClassFilter(Modifier.PUBLIC))).stream()
-                    .map(classInfo -> loadClass(classInfo.getClassName()))
+                    .flatMap(classInfo -> loadClass(classInfo.getClassName()))
                     .collect(Collectors.toList());
             implementationCache.putIfAbsent(superType, implementations);
             return implementations;
@@ -637,11 +641,12 @@ public class ClassUtils {
         return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
     }
 
-    private static Class<?> loadClass(String className) {
+    private static Stream<Class<?>> loadClass(String className) {
         try {
-            return forName(className);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            return Stream.of(forName(className));
+        } catch (Exception e) {
+            log.warn("Auto discovered type " + className + " failed to load and will be ignored", e);
+            return Stream.empty();
         }
     }
 
