@@ -4,7 +4,9 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.util.classpath.ClassFilter;
 import io.leangen.graphql.util.classpath.ClassFinder;
+import io.leangen.graphql.util.classpath.ClassModifiersClassFilter;
 import io.leangen.graphql.util.classpath.ClassReadingException;
 import io.leangen.graphql.util.classpath.SubclassClassFilter;
 
@@ -301,7 +303,9 @@ public class ClassUtils {
             packages = packages == null ? null : Arrays.stream(packages).filter(Utils::notEmpty).toArray(String[]::new);
             classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(superType.getClassLoader(), packages);
             List<Class> implementations = classFinder
-                    .findClasses(new SubclassClassFilter(superType)).stream()
+                    .findClasses(ClassFilter.and(
+                            new SubclassClassFilter(superType),
+                            new ClassModifiersClassFilter(Modifier.PUBLIC))).stream()
                     .map(classInfo -> loadClass(classInfo.getClassName()))
                     .collect(Collectors.toList());
             implementationCache.putIfAbsent(superType, implementations);

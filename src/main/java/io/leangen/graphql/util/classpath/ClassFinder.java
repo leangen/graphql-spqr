@@ -372,7 +372,7 @@ public class ClassFinder {
 
             if (!entry.isDirectory() && entry.getName().toLowerCase().endsWith(".class")) {
                 try {
-                    log.debug("Reading {} ({})", zipName, entry.getName());
+                    log.trace("Reading {}", entry.getName());
                     readClass(zip.getInputStream(entry), classVisitor);
                 } catch (IOException ex) {
                     log.warn("Can't open '{}' in zip file '{}' : {}", entry.getName(), zipName, ex.getMessage());
