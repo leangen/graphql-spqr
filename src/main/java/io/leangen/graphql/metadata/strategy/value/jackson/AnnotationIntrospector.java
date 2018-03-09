@@ -144,7 +144,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
                 log.warn("Introspection of {} failed. GraphQL input fields might be incorrectly mapped.",
                         setter.getDeclaringClass());
             }
-            if (propertyElements.isEmpty()) {
+            if (propertyElements.isEmpty() && ClassUtils.isGetter(setter)) {
                 propertyElements.add(setter);
             }
         }
