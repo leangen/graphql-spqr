@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
  * by the mapping process
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.ANNOTATION_TYPE, ElementType.METHOD, ElementType.FIELD})
+@Target({ElementType.TYPE, ElementType.ANNOTATION_TYPE, ElementType.METHOD, ElementType.FIELD})
 public @interface GraphQLIgnore {
 }
