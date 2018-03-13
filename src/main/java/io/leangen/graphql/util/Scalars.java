@@ -174,7 +174,7 @@ public class Scalars {
 
             @Override
             public Object parseLiteral(Object input) {
-                if ((input instanceof ObjectValue)) return null;
+                if (!(input instanceof Value)) return null;
                 return parseFieldValue(((Value) input));
             }
 
