@@ -51,7 +51,7 @@ public class OperationExecutor {
             Object result = execute(resolver, resolutionEnvironment, env.getArguments());
             return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
         } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
+            throw unwrap(e);
         }
     }
 
@@ -81,5 +81,13 @@ public class OperationExecutor {
             args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor.getJavaType());
         }
         return resolver.resolve(resolutionEnvironment.context, args);
+    }
+
+    private RuntimeException unwrap(ReflectiveOperationException e) {
+        Throwable cause = e.getCause();
+        if (cause != null && cause != e) {
+            return cause instanceof RuntimeException ? (RuntimeException) cause : new RuntimeException(cause.getMessage(), cause);
+        }
+        return new RuntimeException(e.getMessage(), e);
     }
 }
