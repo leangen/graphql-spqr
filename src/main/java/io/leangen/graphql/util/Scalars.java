@@ -192,7 +192,7 @@ public class Scalars {
                     return ((BooleanValue) value).isValue();
                 }
                 if (value instanceof EnumValue) {
-                    ((EnumValue) value).getName();
+                    return ((EnumValue) value).getName();
                 }
                 if (value instanceof ArrayValue) {
                     return ((ArrayValue) value).getValues().stream()
