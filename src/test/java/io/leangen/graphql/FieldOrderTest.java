@@ -1,5 +1,12 @@
 package io.leangen.graphql;
 
+import graphql.ExecutionResult;
+import graphql.GraphQL;
+import graphql.introspection.IntrospectionQuery;
+import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.types.GraphQLInterface;
+import io.leangen.graphql.annotations.types.GraphQLType;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -9,14 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import graphql.ExecutionResult;
-import graphql.GraphQL;
-import graphql.introspection.IntrospectionQuery;
-import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.types.GraphQLInterface;
-import io.leangen.graphql.annotations.types.GraphQLType;
-
 public class FieldOrderTest {
 
     @Test
@@ -25,13 +24,13 @@ public class FieldOrderTest {
         ExecutionResult result = executeQuery(IntrospectionQuery.INTROSPECTION_QUERY);
 
         List<String> characterFields = getTypeFieldsFromIntrospectionResult(result, "Character");
-        Assert.assertEquals(Arrays.asList("id", "name", "friends", "appearsIn", "_type_"), characterFields);
+        Assert.assertEquals(Arrays.asList("id", "name", "friends", "appearsIn"), characterFields);
 
         List<String> humanFields = getTypeFieldsFromIntrospectionResult(result, "Human");
-        Assert.assertEquals(Arrays.asList("id", "name", "friends", "appearsIn", "starships", "totalCredits", "_type_"), humanFields);
+        Assert.assertEquals(Arrays.asList("id", "name", "friends", "appearsIn", "starships", "totalCredits"), humanFields);
 
         List<String> droidFields = getTypeFieldsFromIntrospectionResult(result, "Droid");
-        Assert.assertEquals(Arrays.asList("id", "_type_", "appearsIn", "friends", "name", "primaryFunction"), droidFields);
+        Assert.assertEquals(Arrays.asList("id", "appearsIn", "friends", "name", "primaryFunction"), droidFields);
     }
 
     public static class Query {

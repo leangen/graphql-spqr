@@ -1,8 +1,10 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import graphql.Scalars;
+import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
+import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
@@ -19,21 +21,15 @@ import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
 import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
 
 public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLInputObjectType> {
-
-    private final boolean includeTypeMetaInOutput;
-
-    public ObjectTypeMapper(boolean includeTypeMetaInOutput) {
-        this.includeTypeMetaInOutput = includeTypeMetaInOutput;
-    }
 
     @Override
     public GraphQLObjectType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
@@ -64,14 +60,11 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType));
 
-        buildContext.inputFieldStrategy.getInputFields(javaType).forEach(
+        buildContext.inputFieldStrategy.getInputFields(javaType, buildContext.inclusionStrategy).forEach(
                 field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));
 
         if (ClassUtils.isAbstract(javaType)) {
-            typeBuilder.field(newInputObjectField()
-                    .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
-                    .type(Scalars.GraphQLString)
-                    .build());
+            createInputDisambiguatorField(javaType, buildContext).ifPresent(typeBuilder::field);
         }
         return typeBuilder.build();
     }
@@ -86,14 +79,6 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         List<GraphQLFieldDefinition> fields = buildContext.operationRepository.getChildQueries(javaType).stream()
                 .map(childQuery -> operationMapper.toGraphQLField(childQuery, buildContext))
                 .collect(Collectors.toList());
-        if (includeTypeMetaInOutput && (ClassUtils.isAbstract(javaType) || !buildContext.interfaceStrategy.getInterfaces(javaType).isEmpty())) {
-            fields.add(newFieldDefinition()
-                    .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
-                    .type(Scalars.GraphQLString)
-                    .dataFetcher(env -> env.getSource() == null ? null : buildContext.typeInfoGenerator.generateTypeName(
-                            GenericTypeReflector.annotate(env.getSource().getClass())))
-                    .build());
-        }
         return sortFields(fields, buildContext.typeInfoGenerator.getFieldOrder(javaType));
     }
 
@@ -124,5 +109,33 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         }
         result.addAll(fieldMap.values());
         return result;
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    protected Optional<GraphQLInputObjectField> createInputDisambiguatorField(AnnotatedType javaType, BuildContext buildContext) {
+        Class<?> raw = ClassUtils.getRawType(javaType.getType());
+        String typeName = buildContext.typeInfoGenerator.generateTypeName(GenericTypeReflector.annotate(raw)) + "TypeDisambiguator";
+        GraphQLInputType fieldType = null;
+        if (buildContext.typeCache.contains(typeName)) {
+            fieldType = new GraphQLTypeReference(typeName);
+        } else {
+            List<AnnotatedType> impls = buildContext.abstractInputHandler.findConcreteSubTypes(raw, buildContext).stream()
+                    .map(GenericTypeReflector::annotate)
+                    .collect(Collectors.toList());
+            if (!impls.isEmpty()) {
+                buildContext.typeCache.register(typeName);
+                GraphQLEnumType.Builder builder = GraphQLEnumType.newEnum()
+                        .name(typeName)
+                        .description("Input type disambiguator");
+                impls.stream()
+                        .map(buildContext.typeInfoGenerator::generateTypeName)
+                        .forEach(builder::value);
+                fieldType = builder.build();
+            }
+        }
+        return Optional.ofNullable(fieldType).map(type -> newInputObjectField()
+                .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
+                .type(type)
+                .build());
     }
 }

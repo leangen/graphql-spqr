@@ -34,7 +34,6 @@ import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
-import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.services.UserService;
@@ -117,8 +116,7 @@ public class RelayTest {
     public void testRelayMutations() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
-                .withTypeAdapters(new MapToListTypeAdapter<>(new ObjectScalarStrategy()))
-                .withDefaults()
+                .withTypeAdapters(new MapToListTypeAdapter<>())
                 .withRelayCompliantMutations()
                 .generate();
 

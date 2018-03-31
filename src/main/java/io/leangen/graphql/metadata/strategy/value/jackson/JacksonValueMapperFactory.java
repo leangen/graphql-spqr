@@ -1,5 +1,6 @@
 package io.leangen.graphql.metadata.strategy.value.jackson;
 
+import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,47 +10,41 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
-import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValueMapper> {
+public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValueMapper>, ScalarDeserializationStrategy {
 
-    private final String[] basePackages;
     private final ObjectMapper prototype;
     private final Configurer configurer;
     private final TypeInfoGenerator typeInfoGenerator;
 
-    public JacksonValueMapperFactory() {
-        this(new String[0]);
-    }
-
     @SuppressWarnings("WeakerAccess")
-    public JacksonValueMapperFactory(String... basePackages) {
-        this(basePackages, null, new DefaultTypeInfoGenerator(), new AbstractClassAdapterConfigurer());
+    public JacksonValueMapperFactory() {
+        this(null, new DefaultTypeInfoGenerator(), new AbstractClassAdapterConfigurer());
     }
 
-    private JacksonValueMapperFactory(String[] basePackages, ObjectMapper prototype, TypeInfoGenerator typeInfoGenerator, Configurer configurer) {
-        this.basePackages = basePackages;
+    private JacksonValueMapperFactory(ObjectMapper prototype, TypeInfoGenerator typeInfoGenerator, Configurer configurer) {
         this.prototype = prototype;
         this.configurer = Objects.requireNonNull(configurer);
         this.typeInfoGenerator = Objects.requireNonNull(typeInfoGenerator);
     }
 
     @Override
-    public JacksonValueMapper getValueMapper(Set<Type> abstractTypes, GlobalEnvironment environment) {
+    public JacksonValueMapper getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
         ObjectMapper mapper = prototype != null ? prototype.copy() : new ObjectMapper();
-        ObjectMapper objectMapper = this.configurer.configure(mapper, abstractTypes, basePackages, this.typeInfoGenerator, environment);
+        ObjectMapper objectMapper = this.configurer.configure(mapper, concreteSubTypes, this.typeInfoGenerator, environment);
         return new JacksonValueMapper(objectMapper);
     }
 
@@ -57,34 +52,34 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         return new Builder();
     }
 
+    @Override
+    public boolean isDirectlyDeserializable(AnnotatedType type) {
+        return GenericTypeReflector.isSuperType(TreeNode.class, type.getType());
+    }
+
     public static class AbstractClassAdapterConfigurer implements Configurer {
 
         @Override
-        public ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, String[] basePackages, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
+        public ObjectMapper configure(ObjectMapper objectMapper, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
             ObjectMapper mapper = objectMapper
                     .findAndRegisterModules()
-                    .registerModule(getAnnotationIntrospectorModule(collectSubtypes(abstractTypes, basePackages, metaDataGen)));
+                    .registerModule(getAnnotationIntrospectorModule(collectSubtypes(concreteSubTypes, metaDataGen)));
             if (environment != null && !environment.getInputConverters().isEmpty()) {
                 mapper.registerModule(getDeserializersModule(environment));
             }
             return mapper;
         }
 
-        private Map<Type, List<NamedType>> collectSubtypes(Set<Type> abstractTypes, String[] basePackages, TypeInfoGenerator metaDataGen) {
+        private Map<Type, List<NamedType>> collectSubtypes(Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen) {
             Map<Type, List<NamedType>> types = new HashMap<>();
-            Set<Class<?>> abstractClasses = abstractTypes.stream()
-                    .map(ClassUtils::getRawType)
-                    .distinct()
-                    .collect(Collectors.toSet());
-            for (Class abstractClass : abstractClasses) {
-                List<NamedType> subTypes = ClassUtils.findImplementations(abstractClass, basePackages).stream()
-                        .filter(impl -> !ClassUtils.isAbstract(impl))
+            concreteSubTypes.forEach((abstractType, concreteTypes) -> {
+                List<NamedType> subTypes = concreteTypes.stream()
                         .map(sub -> new NamedType(sub, metaDataGen.generateTypeName(GenericTypeReflector.annotate(sub))))
                         .collect(Collectors.toList());
                 if (!subTypes.isEmpty()) {
-                    types.put(abstractClass, subTypes);
+                    types.put(abstractType, subTypes);
                 }
-            }
+            });
             return types;
         }
 
@@ -120,7 +115,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
     @FunctionalInterface
     public interface Configurer {
-        ObjectMapper configure(ObjectMapper objectMapper, Set<Type> abstractTypes, String[] basePackages, TypeInfoGenerator metaDataGen, GlobalEnvironment environment);
+        ObjectMapper configure(ObjectMapper objectMapper, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment);
     }
 
     @Override
@@ -130,15 +125,9 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
     public static class Builder {
 
-        private String[] basePackages;
         private Configurer configurer = new AbstractClassAdapterConfigurer();
         private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
         private ObjectMapper prototype;
-
-        public Builder withBasePackages(String... basePackages) {
-            this.basePackages = basePackages;
-            return this;
-        }
 
         public Builder withConfigurer(Configurer configurer) {
             this.configurer = configurer;
@@ -156,7 +145,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         }
 
         public JacksonValueMapperFactory build() {
-            return new JacksonValueMapperFactory(basePackages, prototype, typeInfoGenerator, configurer);
+            return new JacksonValueMapperFactory(prototype, typeInfoGenerator, configurer);
         }
     }
 }

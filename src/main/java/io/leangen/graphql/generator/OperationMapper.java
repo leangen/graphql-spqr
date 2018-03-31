@@ -35,14 +35,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static graphql.Scalars.GraphQLString;
 import static graphql.schema.GraphQLArgument.newArgument;
@@ -154,11 +153,10 @@ public class OperationMapper {
             }
         }
 
-        Set<Type> abstractTypes = operation.getArguments().stream()
+        Stream<AnnotatedType> inputTypes = operation.getArguments().stream()
                 .filter(OperationArgument::isMappable)
-                .flatMap(arg -> buildContext.findAbstractTypes(arg.getJavaType()).stream())
-                .collect(Collectors.toSet());
-        ValueMapper valueMapper = buildContext.createValueMapper(abstractTypes);
+                .map(OperationArgument::getJavaType);
+        ValueMapper valueMapper = buildContext.createValueMapper(inputTypes);
         queryBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
 
         return new MappedGraphQLFieldDefinition(queryBuilder.build(), operation);

@@ -26,10 +26,10 @@ public class Utils {
     }
 
     public static boolean isEmpty(String string) {
-        return !notEmpty(string);
+        return !isNotEmpty(string);
     }
 
-    public static boolean notEmpty(String string) {
+    public static boolean isNotEmpty(String string) {
         return string != null && !string.isEmpty();
     }
 
@@ -51,7 +51,11 @@ public class Utils {
         return String.valueOf(newChars);
     }
 
-    public static boolean arrayNotEmpty(Object array) {
+    public static boolean isArrayEmpty(Object array) {
+        return !isArrayNotEmpty(array);
+    }
+
+    public static boolean isArrayNotEmpty(Object array) {
         return array != null && Array.getLength(array) != 0;
     }
 

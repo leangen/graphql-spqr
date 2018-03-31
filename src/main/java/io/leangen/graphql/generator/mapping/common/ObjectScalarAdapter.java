@@ -2,11 +2,12 @@ package io.leangen.graphql.generator.mapping.common;
 
 import graphql.schema.GraphQLScalarType;
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.OutputConverter;
-import io.leangen.graphql.generator.mapping.strategy.ScalarMappingStrategy;
+import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.util.Scalars;
 
 import java.lang.reflect.AnnotatedType;
@@ -19,11 +20,11 @@ import java.util.Objects;
  */
 public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQLScalarType> implements OutputConverter<Object, Map<String, ?>> {
 
-    private final ScalarMappingStrategy scalarStrategy;
-    
+    private final ScalarDeserializationStrategy scalarStrategy;
+
     private static final AnnotatedType MAP = GenericTypeReflector.annotate(LinkedHashMap.class);
 
-    public ObjectScalarAdapter(ScalarMappingStrategy scalarStrategy) {
+    public ObjectScalarAdapter(ScalarDeserializationStrategy scalarStrategy) {
         this.scalarStrategy = Objects.requireNonNull(scalarStrategy);
     }
 
@@ -31,7 +32,7 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
     public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         return Scalars.graphQLObjectScalar(typeName);
     }
-    
+
     @Override
     public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         return toGraphQLType(typeName, javaType, operationMapper, buildContext);
@@ -44,6 +45,9 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return scalarStrategy.supports(type);
+        return type.isAnnotationPresent(GraphQLScalar.class)
+                || Object.class.equals(type.getType())
+                || GenericTypeReflector.isSuperType(Map.class, type.getType())
+                || scalarStrategy.isDirectlyDeserializable(type);
     }
 }

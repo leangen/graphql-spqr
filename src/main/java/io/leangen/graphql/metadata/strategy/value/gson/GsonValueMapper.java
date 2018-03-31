@@ -2,18 +2,22 @@ package io.leangen.graphql.metadata.strategy.value.gson;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Field;
-import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.Set;
-
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.InputField;
+import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
+
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy {
 
@@ -25,11 +29,11 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T fromInput(Object graphQlInput, Type sourceType, AnnotatedType outputType) {
-        if (graphQlInput.getClass() == outputType.getType()) {
-            return (T) graphQlInput;
+    public <T> T fromInput(Object graphQLInput, Type sourceType, AnnotatedType outputType) {
+        if (graphQLInput.getClass() == outputType.getType()) {
+            return (T) graphQLInput;
         }
-        JsonElement jsonElement = gson.toJsonTree(graphQlInput, sourceType);
+        JsonElement jsonElement = gson.toJsonTree(graphQLInput, sourceType);
         return gson.fromJson(jsonElement, outputType.getType());
     }
 
@@ -50,7 +54,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
      * @return All deserializable fields that could be discovered from this {@link AnnotatedType}
      */
     @Override
-    public Set<InputField> getInputFields(AnnotatedType type) {
+    public Set<InputField> getInputFields(AnnotatedType type, InclusionStrategy inclusionStrategy) {
         Set<InputField> inputFields = new HashSet<>();
         Class<?> raw = ClassUtils.getRawType(type.getType());
         if (raw.isInterface() || raw.isPrimitive()) {
@@ -64,10 +68,15 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
                         || gson.excluder().excludeField(field, false)) {
                     continue;
                 }
-                field.setAccessible(true);
                 AnnotatedType fieldType = ClassUtils.getFieldType(field, type);
+                Optional<Method> setter = ClassUtils.findSetter(field.getDeclaringClass(), field.getName(), field.getType());
+                Member target = setter.isPresent() ? setter.get() : field;
+                if (!inclusionStrategy.includeInputField(target.getDeclaringClass(), (AnnotatedElement) target, fieldType)) {
+                    continue;
+                }
+                field.setAccessible(true);
                 String fieldName = gson.fieldNamingStrategy().translateName(field);
-                if (!inputFields.add(new InputField(fieldName, null, fieldType))) {
+                if (!inputFields.add(new InputField(fieldName, null, fieldType, null))) {
                     throw new IllegalArgumentException(raw + " declares multiple input fields named " + fieldName);
                 }
             }

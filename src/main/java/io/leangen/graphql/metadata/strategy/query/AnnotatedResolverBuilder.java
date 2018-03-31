@@ -9,6 +9,7 @@ import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.execution.FieldAccessor;
 import io.leangen.graphql.metadata.execution.MethodInvoker;
 import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
+import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
@@ -32,7 +33,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
     public AnnotatedResolverBuilder() {
         this(new DefaultTypeTransformer(false, false));
     }
-    
+
     public AnnotatedResolverBuilder(TypeTransformer transformer) {
         this.transformer = Objects.requireNonNull(transformer);
         this.operationNameGenerator = new DelegatingOperationNameGenerator(new AnnotatedOperationNameGenerator(), new MethodOperationNameGenerator());
@@ -41,18 +42,19 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
     }
 
     @Override
-    public Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType) {
-        return buildQueryResolvers(querySourceBean, beanType, getFilters());
+    public Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy) {
+        return buildQueryResolvers(querySourceBean, beanType, inclusionStrategy, getFilters());
     }
 
     @Override
-    public Collection<Resolver> buildMutationResolvers(Object querySourceBean, AnnotatedType beanType) {
-        return buildMutationResolvers(querySourceBean, beanType, getFilters());
+    public Collection<Resolver> buildMutationResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy) {
+        return buildMutationResolvers(querySourceBean, beanType, inclusionStrategy, getFilters());
     }
 
-    private Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType, List<Predicate<Member>> filters) {
+    private Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy, List<Predicate<Member>> filters) {
         Stream<Resolver> methodInvokers = ClassUtils.getAnnotatedMethods(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
+                .filter(method -> inclusionStrategy.includeOperation(method, getReturnType(method, beanType)))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLQuery.class).description(),
@@ -60,11 +62,12 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
-                        argumentBuilder.buildResolverArguments(method, beanType),
+                        argumentBuilder.buildResolverArguments(method, beanType, inclusionStrategy),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ));
         Stream<Resolver> fieldAccessors = ClassUtils.getAnnotatedFields(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
+                .filter(field -> inclusionStrategy.includeOperation(field, getFieldType(field, beanType)))
                 .map(field -> new Resolver(
                         operationNameGenerator.generateQueryName(field, beanType, querySourceBean),
                         field.getAnnotation(GraphQLQuery.class).description(),
@@ -78,9 +81,10 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
         return Stream.concat(methodInvokers, fieldAccessors).collect(Collectors.toSet());
     }
 
-    private Collection<Resolver> buildMutationResolvers(Object querySourceBean, AnnotatedType beanType, List<Predicate<Member>> filters) {
+    private Collection<Resolver> buildMutationResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy, List<Predicate<Member>> filters) {
         return ClassUtils.getAnnotatedMethods(ClassUtils.getRawType(beanType.getType()), GraphQLMutation.class).stream()
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
+                .filter(method -> inclusionStrategy.includeOperation(method, getReturnType(method, beanType)))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLMutation.class).description(),
@@ -88,15 +92,16 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
-                        argumentBuilder.buildResolverArguments(method, beanType),
+                        argumentBuilder.buildResolverArguments(method, beanType, inclusionStrategy),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 )).collect(Collectors.toSet());
     }
 
     @Override
-    public Collection<Resolver> buildSubscriptionResolvers(Object querySourceBean, AnnotatedType beanType) {
+    public Collection<Resolver> buildSubscriptionResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy) {
         return ClassUtils.getAnnotatedMethods(ClassUtils.getRawType(beanType.getType()), GraphQLSubscription.class).stream()
                 .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
+                .filter(method -> inclusionStrategy.includeOperation(method, getReturnType(method, beanType)))
                 .map(method -> new Resolver(
                         operationNameGenerator.generateSubscriptionName(method, beanType, querySourceBean),
                         method.getAnnotation(GraphQLSubscription.class).description(),
@@ -104,7 +109,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                         false,
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, beanType),
-                        argumentBuilder.buildResolverArguments(method, beanType),
+                        argumentBuilder.buildResolverArguments(method, beanType, inclusionStrategy),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 )).collect(Collectors.toSet());
     }

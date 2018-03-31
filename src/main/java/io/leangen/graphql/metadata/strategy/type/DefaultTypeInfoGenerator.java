@@ -69,7 +69,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
     @SuppressWarnings({"OptionalGetWithoutIsPresent", "ConstantConditions"})
     private String getFirstNonEmptyOrDefault(Optional<String>[] optionals, String defaultValue) {
         return Arrays.stream(optionals)
-                .map(opt -> opt.filter(Utils::notEmpty))
+                .map(opt -> opt.filter(Utils::isNotEmpty))
                 .reduce(Utils::or)
                 .map(opt -> opt.orElse(defaultValue))
                 .get();

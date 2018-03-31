@@ -1,18 +1,5 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
@@ -32,6 +19,18 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import io.leangen.graphql.services.GenericItemRepo;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertArgumentsPresent;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOf;
@@ -79,7 +78,6 @@ public class GenericsTest {
         GraphQLSchema schemaWithNonNullGenerics = new TestSchemaGenerator()
                 .withOperationsFromSingleton(nonNullStringService, nonNullString)
                 .withValueMapperFactory(valueMapperFactory)
-                .withDefaults()
                 .generate();
 
         GraphQLOutputType itemType = schemaWithNonNullGenerics.getQueryType().getFieldDefinition("getItem").getType();
@@ -115,7 +113,6 @@ public class GenericsTest {
         GraphQLSchema schemaWithDateIds = new TestSchemaGenerator()
                 .withOperationsFromSingleton(dateIdService, dateId)
                 .withValueMapperFactory(valueMapperFactory)
-                .withDefaults()
                 .generate();
 
         GraphQLOutputType itemType = schemaWithDateIds.getQueryType().getFieldDefinition("getItem").getType();
@@ -151,7 +148,6 @@ public class GenericsTest {
         GraphQLSchema schemaWithGenerics = new TestSchemaGenerator()
                 .withOperationsFromSingleton(wildcardNumberService, listOfWildcardNumbers)
                 .withValueMapperFactory(valueMapperFactory)
-                .withDefaults()
                 .generate();
 
         GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("getItem").getType();
@@ -188,7 +184,6 @@ public class GenericsTest {
         GraphQLSchema schemaWithGenerics = new TestSchemaGenerator()
                 .withOperationsFromSingleton(arrayNumberService, arrayOfListsOfNumbers)
                 .withValueMapperFactory(valueMapperFactory)
-                .withDefaults()
                 .generate();
 
         GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("getItem").getType();

@@ -1,12 +1,5 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.common.ByteArrayToBase64Adapter;
@@ -15,8 +8,12 @@ import io.leangen.graphql.generator.mapping.common.NonNullMapper;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
 import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
-import io.leangen.graphql.generator.mapping.strategy.DefaultScalarStrategy;
-import io.leangen.graphql.generator.mapping.strategy.ScalarMappingStrategy;
+import org.junit.Test;
+
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -67,7 +64,7 @@ public class SchemaGeneratorConfigurationTest {
 
         generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
-                .withTypeMappers((conf, mappers) -> mappers.insert(11, new MapToListTypeAdapter<>(conf.scalarMappingStrategy)));
+                .withTypeMappers((conf, mappers) -> mappers.insert(11, new MapToListTypeAdapter<>()));
         generator.generate();
 
         typeMappers = getTypeMappers(generator);
@@ -79,7 +76,7 @@ public class SchemaGeneratorConfigurationTest {
     public void testExplicitPlusDefaultMappers() {
         GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
-                .withTypeMappers(new MapToListTypeAdapter(new DefaultScalarStrategy()))
+                .withTypeMappers(new MapToListTypeAdapter())
                 .withDefaultMappers();
         generator.generate();
 
@@ -90,11 +87,10 @@ public class SchemaGeneratorConfigurationTest {
 
     @Test
     public void testInsertedMappers() {
-        ScalarMappingStrategy def = new DefaultScalarStrategy();
-        TypeMapper m1 = new MapToListTypeAdapter<>(def);
-        TypeMapper m2 = new MapToListTypeAdapter<>(def);
-        TypeMapper m11 = new MapToListTypeAdapter<>(def);
-        TypeMapper m21 = new MapToListTypeAdapter<>(def);
+        TypeMapper m1 = new MapToListTypeAdapter<>();
+        TypeMapper m2 = new MapToListTypeAdapter<>();
+        TypeMapper m11 = new MapToListTypeAdapter<>();
+        TypeMapper m21 = new MapToListTypeAdapter<>();
         GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
                 .withTypeMappers((config, defaults) -> defaults
@@ -118,7 +114,7 @@ public class SchemaGeneratorConfigurationTest {
     public void testExplicitPlusModifiedDefaultMappers() {
         GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
-                .withTypeMappers(new MapToListTypeAdapter(new DefaultScalarStrategy()))
+                .withTypeMappers(new MapToListTypeAdapter())
                 .withTypeMappers((conf, mappers) -> mappers.drop(NonNullMapper.class));
         generator.generate();
 

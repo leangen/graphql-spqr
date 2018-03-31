@@ -76,7 +76,7 @@ public class ClassModifiersClassFilter implements ClassFilter {
                             Private Data Items
     \*----------------------------------------------------------------------*/
 
-    private int modifiers = 0;
+    private int modifiers;
 
     /*----------------------------------------------------------------------*\
                             Constructor
@@ -91,7 +91,6 @@ public class ClassModifiersClassFilter implements ClassFilter {
      *                  legal values.
      */
     public ClassModifiersClassFilter(int modifiers) {
-        super();
         this.modifiers = modifiers;
     }
 
@@ -107,6 +106,6 @@ public class ClassModifiersClassFilter implements ClassFilter {
      * in the list; <tt>false</tt> otherwise
      */
     public boolean accept(ClassInfo classInfo, ClassFinder classFinder) {
-        return ((classInfo.getModifier() & modifiers) != 0);
+        return (classInfo.getModifier() & modifiers) != 0;
     }
 }

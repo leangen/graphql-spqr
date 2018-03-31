@@ -1,10 +1,5 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.util.List;
-import java.util.Map;
-
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
@@ -18,7 +13,10 @@ import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
-import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
+import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOf;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertMapOf;
@@ -29,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Bojan Tomic (kaqqao)
  */
+@SuppressWarnings("WeakerAccess")
 public class UnionTest {
 
     @Test
@@ -36,8 +35,7 @@ public class UnionTest {
         InlineUnionService unionService = new InlineUnionService();
 
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withTypeAdapters(new MapToListTypeAdapter<>(new ObjectScalarStrategy()))
-                .withDefaults()
+                .withTypeAdapters(new MapToListTypeAdapter<>())
                 .withOperationsFromSingleton(unionService)
                 .generate();
 

@@ -46,6 +46,7 @@
 
 package io.leangen.graphql.util.classpath;
 
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -171,6 +172,11 @@ class ClassInfoClassVisitor extends ClassVisitor {
             signature = name + description;
         return currentClass.visitMethod(access, name, description,
                 signature, exceptions);
+    }
+
+    @Override
+    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+        return currentClass.visitAnnotation(desc, visible);
     }
 
     /**

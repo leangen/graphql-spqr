@@ -93,7 +93,7 @@ public class ComplexityTest {
             "}}}}";
 
     private static final String simpleMutation = "mutation AddPet {" +
-            "   addPet(pet: {_type_: \"Cat\"}) {" +
+            "   addPet(pet: {_type_: Cat}) {" +
             "       sound" +
             "       owner {" +
             "           name" +
@@ -151,6 +151,7 @@ public class ComplexityTest {
 
     private void testComplexity(Object service, AnnotatedType serviceType, String operation, int maxComplexity, int expectedComplexity) {
         GraphQLSchema schema = new TestSchemaGenerator()
+                .withAbstractInputTypeResolution()
                 .withOperationsFromSingleton(service, serviceType)
                 .generate();
 

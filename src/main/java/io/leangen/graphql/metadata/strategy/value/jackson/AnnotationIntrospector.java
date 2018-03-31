@@ -65,7 +65,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
                 namedCandidates.stream()
                         .map(member -> Optional.ofNullable(member.getAnnotation(GraphQLQuery.class))
                                 .map(GraphQLQuery::name)))
-                .map(opt -> opt.filter(Utils::notEmpty))
+                .map(opt -> opt.filter(Utils::isNotEmpty))
                 .reduce(Utils::or)
                 .flatMap(optName -> optName.map(PropertyName::new))
                 .orElse(super.findNameForDeserialization(annotated));
@@ -76,10 +76,10 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
         return or(
                 Optional.ofNullable(annotated.getAnnotation(GraphQLInputField.class))
                         .map(GraphQLInputField::description)
-                        .filter(Utils::notEmpty),
+                        .filter(Utils::isNotEmpty),
                 Optional.ofNullable(annotated.getAnnotation(GraphQLQuery.class))
                         .map(GraphQLQuery::description)
-                        .filter(Utils::notEmpty))
+                        .filter(Utils::isNotEmpty))
                 .orElse(super.findPropertyDescription(annotated));
     }
 
@@ -112,7 +112,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
         String[] jacksonNames = super.findEnumValues(enumType, enumValues, defaultNames);
         for (int i = 0; i < enumValues.length; i++) {
             GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(enumValues[i]).getAnnotation(GraphQLEnumValue.class);
-            if (annotation != null && Utils.notEmpty(annotation.name())) {
+            if (annotation != null && Utils.isNotEmpty(annotation.name())) {
                 jacksonNames[i] = annotation.name();
             }
         }

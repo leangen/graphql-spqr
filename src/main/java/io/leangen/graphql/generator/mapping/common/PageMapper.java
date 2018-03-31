@@ -21,10 +21,6 @@ import java.util.stream.Collectors;
  */
 public class PageMapper extends ObjectTypeMapper {
 
-    public PageMapper() {
-        super(false);
-    }
-
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         AnnotatedType edgeType = GenericTypeReflector.getTypeParameter(javaType, Connection.class.getTypeParameters()[0]);

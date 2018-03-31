@@ -50,7 +50,7 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
     }
 
     public FilteredResolverBuilder withDefaultFilters() {
-        return withFilters(REAL_ONLY, NOT_IGNORED);
+        return withFilters(REAL_ONLY);
     }
 
     protected List<Predicate<Member>> getFilters() {

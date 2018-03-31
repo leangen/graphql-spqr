@@ -46,15 +46,23 @@
 
 package io.leangen.graphql.util.classpath;
 
-import org.objectweb.asm.*;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AnnotationNode;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <p>Holds information about a loaded class in a way that doesn't rely on
@@ -78,7 +86,8 @@ public class ClassInfo extends ClassVisitor {
     private int modifier = 0;
     private String className = null;
     private String superClassName = null;
-    private String[] implementedInterfaces = null;
+    private String[] implementedInterfaces = new String[0];
+    private Set<AnnotationNode> annotations = new HashSet<>();
     private File locationFound = null;
     private Set<FieldInfo> fields = new HashSet<>();
     private Set<MethodInfo> methods = new HashSet<>();
@@ -173,6 +182,19 @@ public class ClassInfo extends ClassVisitor {
     }
 
     /**
+     * Get the names of all <i>direct</i> annotations. To find
+     * indirect annotations, use
+     *
+     * @return an array of the names of all direct annotations,
+     * or null if there are none
+     */
+    public Set<AnnotationInfo> getAnnotations() {
+        return annotations.stream()
+                .map(node -> new AnnotationInfo(translateInternalAnnotationClassName(node.desc), node.values))
+                .collect(Collectors.toSet());
+    }
+
+    /**
      * Get the Reflection API-based modifier bitfield for the class. Use
      * <tt>java.lang.reflect.Modifier</tt> to decode this bitfield.
      *
@@ -218,6 +240,10 @@ public class ClassInfo extends ClassVisitor {
     public String toString() {
         StringBuilder buf = new StringBuilder();
 
+        String sep = " ";
+        buf.append(annotations.stream().map(ann -> "@" + ann.desc).collect(Collectors.joining(sep)));
+        if (buf.length() > 0) buf.append(sep);
+
         if ((modifier & Modifier.PUBLIC) != 0)
             buf.append("public ");
 
@@ -231,7 +257,6 @@ public class ClassInfo extends ClassVisitor {
 
         buf.append(className);
 
-        String sep = " ";
         if (implementedInterfaces.length > 0) {
             buf.append(" implements");
             for (String intf : implementedInterfaces) {
@@ -323,6 +348,16 @@ public class ClassInfo extends ClassVisitor {
         return null;
     }
 
+    @Override
+    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+        if (visible) {
+            AnnotationNode ann = new AnnotationNode(desc);
+            annotations.add(ann);
+            return ann;
+        }
+        return null;
+    }
+
     /*----------------------------------------------------------------------*\
                               Private Methods
     \*----------------------------------------------------------------------*/
@@ -335,6 +370,18 @@ public class ClassInfo extends ClassVisitor {
      */
     private String translateInternalClassName(String internalName) {
         return internalName.replaceAll("/", ".");
+    }
+
+    /**
+     * Translate an internal annotation class name to an external one.
+     *
+     * @param internalName the internal JVM name, from the ASM API
+     * @return the external name
+     */
+    private String translateInternalAnnotationClassName(String internalName) {
+        return translateInternalClassName(internalName)
+                .replaceAll("^L", "") //strip the leading "L"
+                .replaceAll(";$", ""); //strip the tailing ";"
     }
 
     /**
@@ -361,11 +408,9 @@ public class ClassInfo extends ClassVisitor {
         }
 
         if (interfaces != null) {
-            this.implementedInterfaces = new String[interfaces.length];
-            for (int i = 0; i < interfaces.length; i++) {
-                this.implementedInterfaces[i] =
-                        translateInternalClassName(interfaces[i]);
-            }
+            this.implementedInterfaces = Arrays.stream(interfaces)
+                    .map(this::translateInternalClassName)
+                    .toArray(String[]::new);
         }
 
         modifier = convertAccessMaskToModifierMask(asmAccessMask);

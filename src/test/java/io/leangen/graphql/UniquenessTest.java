@@ -14,7 +14,6 @@ import io.leangen.graphql.domain.Address;
 import io.leangen.graphql.domain.SimpleUser;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
-import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import org.junit.Test;
@@ -69,8 +68,7 @@ public class UniquenessTest {
     @Test
     public void testMapUniqueness() {
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withTypeAdapters(new MapToListTypeAdapter<>(new ObjectScalarStrategy()))
-                .withDefaults()
+                .withTypeAdapters(new MapToListTypeAdapter<>())
                 .withOperationsFromSingleton(new MapService(), new PublicResolverBuilder(thisPackage))
                 .generate();
         testRootQueryTypeUniqueness(schema, type -> ((GraphQLList) type).getWrappedType());

@@ -3,10 +3,10 @@ package io.leangen.graphql.metadata.strategy.query;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Urls;
@@ -33,7 +33,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
     }
 
     @Override
-    public List<OperationArgument> buildResolverArguments(Method resolverMethod, AnnotatedType declaringType) {
+    public List<OperationArgument> buildResolverArguments(Method resolverMethod, AnnotatedType declaringType, InclusionStrategy inclusionStrategy) {
         List<OperationArgument> operationArguments = new ArrayList<>(resolverMethod.getParameterCount());
         AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, declaringType);
         for (int i = 0; i < resolverMethod.getParameterCount(); i++) {
@@ -48,17 +48,17 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
             parameterType = ClassUtils.addAnnotations(parameterType, parameter.getAnnotations());
             operationArguments.add(new OperationArgument(
                     parameterType,
-                    getArgumentName(parameter, parameterType),
+                    getArgumentName(parameter, parameterType, inclusionStrategy),
                     getArgumentDescription(parameter, parameterType),
                     defaultValue(parameter, parameterType),
                     parameter.isAnnotationPresent(GraphQLContext.class),
-                    !ClassUtils.hasAnnotation(parameter, GraphQLIgnore.class)
+                    inclusionStrategy.includeArgument(parameter, parameterType)
             ));
         }
         return operationArguments;
     }
 
-    protected String getArgumentName(Parameter parameter, AnnotatedType parameterType) {
+    protected String getArgumentName(Parameter parameter, AnnotatedType parameterType, InclusionStrategy inclusionStrategy) {
         if (Optional.ofNullable(parameterType.getAnnotation(GraphQLId.class)).filter(GraphQLId::relayId).isPresent()) {
             return GraphQLId.RELAY_ID_FIELD_NAME;
         }
@@ -66,7 +66,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         if (meta != null && !meta.name().isEmpty()) {
             return meta.name();
         } else {
-            if (!parameter.isNamePresent() && !ClassUtils.hasAnnotation(parameter, GraphQLIgnore.class)) {
+            if (!parameter.isNamePresent() && inclusionStrategy.includeArgument(parameter, parameterType)) {
                 log.warn("No explicit argument name given and the parameter name lost in compilation: "
                         + parameter.getDeclaringExecutable().toGenericString() + "#" + parameter.toString()
                         + ". For details and possible solutions see " + Urls.Errors.MISSING_ARGUMENT_NAME);

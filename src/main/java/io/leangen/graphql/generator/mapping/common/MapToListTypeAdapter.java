@@ -2,7 +2,9 @@ package io.leangen.graphql.generator.mapping.common;
 
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLModifiedType;
 import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
@@ -11,7 +13,6 @@ import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
-import io.leangen.graphql.generator.mapping.strategy.ScalarMappingStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -20,7 +21,6 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -35,12 +35,6 @@ import static graphql.schema.GraphQLObjectType.newObject;
  * This adapter turns a map into a list of key-value pairs (instances of {@link MapToListTypeAdapter.MapEntry}).
  */
 public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, List<MapToListTypeAdapter.MapEntry<K,V>>> {
-
-    private final ScalarMappingStrategy scalarStrategy;
-
-    public MapToListTypeAdapter(ScalarMappingStrategy scalarStrategy) {
-        this.scalarStrategy = Objects.requireNonNull(scalarStrategy);
-    }
 
     @Override
     public List<MapToListTypeAdapter.MapEntry<K,V>> convertOutput(Map<K, V> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
@@ -79,13 +73,8 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
                         operationMapper.toGraphQLInputType(getElementType(javaType, 1), buildContext), buildContext));
     }
 
-    @Override
-    public boolean supports(AnnotatedType type) {
-        return super.supports(type) && !scalarStrategy.supports(type);
-    }
-
     private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType, BuildContext buildContext) {
-        String typeName = "mapEntry_" + keyType.getName() + "_" + valueType.getName();
+        String typeName = "mapEntry_" + getTypeName(keyType) + "_" + getTypeName(valueType);
         if (buildContext.typeCache.contains(typeName)) {
             return new GraphQLTypeReference(typeName);
         }
@@ -108,7 +97,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     }
 
     private GraphQLInputType mapEntry(GraphQLInputType keyType, GraphQLInputType valueType, BuildContext buildContext) {
-        String typeName = "mapEntry_" + keyType.getName() + "_" + valueType.getName() + "_input";
+        String typeName = "mapEntry_" + getTypeName(keyType) + "_" + getTypeName(valueType) + "_input";
         if (buildContext.typeCache.contains(typeName)) {
             return new GraphQLTypeReference(typeName);
         }
@@ -132,6 +121,23 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
 
     private AnnotatedType getElementType(AnnotatedType javaType, int index) {
         return GenericTypeReflector.getTypeParameter(javaType, Map.class.getTypeParameters()[index]);
+    }
+
+    private String getTypeName(GraphQLType type) {
+        if (type instanceof GraphQLModifiedType) {
+            StringBuilder name = new StringBuilder();
+            while (type instanceof GraphQLModifiedType) {
+                if (type instanceof GraphQLList) {
+                    name.append("list_");
+                } else {
+                    name.append("__");
+                }
+                type = ((GraphQLModifiedType) type).getWrappedType();
+            }
+            return name.append(type.getName()).toString();
+        } else {
+            return type.getName();
+        }
     }
 
     private static <T, K, U> Collector<T, ?, Map<K,U>> toMap(
