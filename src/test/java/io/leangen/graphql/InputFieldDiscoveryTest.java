@@ -8,6 +8,8 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapper;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
@@ -25,7 +27,8 @@ public class InputFieldDiscoveryTest {
     private JacksonValueMapper jackson = new JacksonValueMapperFactory().getValueMapper();
     private GsonValueMapper gson = new GsonValueMapperFactory().getValueMapper();
 
-    private InclusionStrategy inclusionStrategy = new DefaultInclusionStrategy("io.leangen");
+    private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy("io.leangen");
+    private  static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
 
     private static final String[] expectedDefaultFieldNames = {"field1", "field2", "field3"};
     private static final String[] expectedExplicitFieldNames = {"aaa", "bbb", "ccc"};
@@ -123,7 +126,7 @@ public class InputFieldDiscoveryTest {
     }
 
     private Set<InputField> assertFieldNamesEqual(InputFieldDiscoveryStrategy mapper, Class typeToScan, String... fieldNames) {
-        Set<InputField> fields = mapper.getInputFields(GenericTypeReflector.annotate(typeToScan), inclusionStrategy);
+        Set<InputField> fields = mapper.getInputFields(GenericTypeReflector.annotate(typeToScan), INCLUSION_STRATEGY, TYPE_TRANSFORMER);
         assertEquals(fieldNames.length, fields.size());
         for (String fieldName : fieldNames) {
             assertTrue(fields.stream().anyMatch(input -> input.getName().equals(fieldName)));

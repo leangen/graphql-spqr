@@ -7,7 +7,6 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
-import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Urls;
 import io.leangen.graphql.util.Utils;
@@ -24,35 +23,30 @@ import java.util.Optional;
 @SuppressWarnings("WeakerAccess")
 public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
 
-    private final TypeTransformer transformer;
-
     private static final Logger log = LoggerFactory.getLogger(AnnotatedArgumentBuilder.class);
 
-    public AnnotatedArgumentBuilder(TypeTransformer transformer) {
-        this.transformer = transformer;
-    }
-
     @Override
-    public List<OperationArgument> buildResolverArguments(Method resolverMethod, AnnotatedType declaringType, InclusionStrategy inclusionStrategy) {
+    public List<OperationArgument> buildResolverArguments(ArgumentBuilderParams params) {
+        Method resolverMethod = params.getResolverMethod();
         List<OperationArgument> operationArguments = new ArrayList<>(resolverMethod.getParameterCount());
-        AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, declaringType);
+        AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, params.getDeclaringType());
         for (int i = 0; i < resolverMethod.getParameterCount(); i++) {
             Parameter parameter = resolverMethod.getParameters()[i];
             if (parameter.isSynthetic() || parameter.isImplicit()) continue;
             AnnotatedType parameterType;
             try {
-                parameterType = transformer.transform(parameterTypes[i]);
+                parameterType = params.getTypeTransformer().transform(parameterTypes[i]);
             } catch (TypeMappingException e) {
                 throw new TypeMappingException(resolverMethod, parameter, e);
             }
             parameterType = ClassUtils.addAnnotations(parameterType, parameter.getAnnotations());
             operationArguments.add(new OperationArgument(
                     parameterType,
-                    getArgumentName(parameter, parameterType, inclusionStrategy),
+                    getArgumentName(parameter, parameterType, params.getInclusionStrategy()),
                     getArgumentDescription(parameter, parameterType),
                     defaultValue(parameter, parameterType),
                     parameter.isAnnotationPresent(GraphQLContext.class),
-                    inclusionStrategy.includeArgument(parameter, parameterType)
+                    params.getInclusionStrategy().includeArgument(parameter, parameterType)
             ));
         }
         return operationArguments;

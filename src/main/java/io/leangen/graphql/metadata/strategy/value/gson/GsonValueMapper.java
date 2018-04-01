@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.InputField;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
@@ -50,11 +52,15 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
     /**
      * Unlike Jackson, Gson doesn't expose any of its metadata, so this method is more or less a
      * reimplementation of {@link com.google.gson.internal.bind.ReflectiveTypeAdapterFactory#getBoundFields(Gson, com.google.gson.reflect.TypeToken, Class)}
+     *
      * @param type Java type (used as query input) to be analyzed for deserializable fields
+     * @param inclusionStrategy The strategy that decides which input fields are acceptable
+     * @param typeTransformer Transformer used to pre-process the types (can be used to complete the missing generics etc)
+     *
      * @return All deserializable fields that could be discovered from this {@link AnnotatedType}
      */
     @Override
-    public Set<InputField> getInputFields(AnnotatedType type, InclusionStrategy inclusionStrategy) {
+    public Set<InputField> getInputFields(AnnotatedType type, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer) {
         Set<InputField> inputFields = new HashSet<>();
         Class<?> raw = ClassUtils.getRawType(type.getType());
         if (raw.isInterface() || raw.isPrimitive()) {
@@ -68,7 +74,12 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
                         || gson.excluder().excludeField(field, false)) {
                     continue;
                 }
-                AnnotatedType fieldType = ClassUtils.getFieldType(field, type);
+                AnnotatedType fieldType;
+                try {
+                    fieldType = typeTransformer.transform(ClassUtils.getFieldType(field, type));
+                } catch (TypeMappingException e) {
+                    throw new TypeMappingException(field, type, e);
+                }
                 Optional<Method> setter = ClassUtils.findSetter(field.getDeclaringClass(), field.getName(), field.getType());
                 Member target = setter.isPresent() ? setter.get() : field;
                 if (!inclusionStrategy.includeInputField(target.getDeclaringClass(), (AnnotatedElement) target, fieldType)) {

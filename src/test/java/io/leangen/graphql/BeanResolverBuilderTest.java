@@ -5,6 +5,9 @@ import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
+import io.leangen.graphql.metadata.strategy.query.ResolverBuilderParams;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.Utils;
 import org.junit.Test;
 
@@ -16,14 +19,15 @@ import static org.junit.Assert.assertTrue;
 
 public class BeanResolverBuilderTest {
 
-    private final String BASE_PACKAGE = "io.leangen";
-    private final InclusionStrategy inclusionStrategy = new DefaultInclusionStrategy(BASE_PACKAGE);
+    private static final String[] BASE_PACKAGES = {"io.leangen"};
+    private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy(BASE_PACKAGES);
+    private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
 
     @Test
     public void basePackageTest() {
-        PublicResolverBuilder resolverBuilder = new PublicResolverBuilder(BASE_PACKAGE);
-        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(
-                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), inclusionStrategy));
+        PublicResolverBuilder resolverBuilder = new PublicResolverBuilder(BASE_PACKAGES);
+        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
+                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES)));
         assertEquals(2, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getNickname")));
@@ -32,8 +36,8 @@ public class BeanResolverBuilderTest {
     @Test
     public void badBasePackageTest() {
         PublicResolverBuilder resolverBuilder = new PublicResolverBuilder("bad.package");
-        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(
-                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), inclusionStrategy));
+        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
+                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES)));
         assertEquals(1, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
     }

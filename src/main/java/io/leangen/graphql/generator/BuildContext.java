@@ -11,6 +11,7 @@ import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStra
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
@@ -43,6 +44,7 @@ public class BuildContext {
     public final InputFieldDiscoveryStrategy inputFieldStrategy;
     public final InclusionStrategy inclusionStrategy;
     public final ScalarDeserializationStrategy scalarStrategy;
+    public final TypeTransformer typeTransformer;
     public final AbstractInputHandler abstractInputHandler;
     public final ImplementationDiscoveryStrategy implDiscoveryStrategy;
     public final TypeInfoGenerator typeInfoGenerator;
@@ -68,7 +70,7 @@ public class BuildContext {
     public BuildContext(String[] basePackages, GlobalEnvironment environment, OperationRepository operationRepository,
                         TypeMapperRepository typeMappers, ValueMapperFactory valueMapperFactory,
                         TypeInfoGenerator typeInfoGenerator, InterfaceMappingStrategy interfaceStrategy,
-                        ScalarDeserializationStrategy scalarStrategy, AbstractInputHandler abstractInputHandler,
+                        ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldDiscoveryStrategy inputFieldStrategy, InclusionStrategy inclusionStrategy,
                         RelayMappingConfig relayMappingConfig, Set<GraphQLType> knownTypes, ImplementationDiscoveryStrategy implementationStrategy) {
         this.operationRepository = operationRepository;
@@ -88,6 +90,7 @@ public class BuildContext {
         this.inputFieldStrategy = inputFieldStrategy;
         this.inclusionStrategy = inclusionStrategy;
         this.scalarStrategy = scalarStrategy;
+        this.typeTransformer = typeTransformer;
         this.implDiscoveryStrategy = implementationStrategy;
         this.abstractInputHandler = abstractInputHandler;
         this.globalEnvironment = environment;

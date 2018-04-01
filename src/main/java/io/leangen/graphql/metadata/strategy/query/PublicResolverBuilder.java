@@ -5,21 +5,15 @@ import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.execution.MethodInvoker;
 import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
-import io.leangen.graphql.metadata.strategy.InclusionStrategy;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
-import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 import org.reactivestreams.Publisher;
 
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -35,14 +29,13 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
     private Function<Method, String> descriptionMapper = method -> "";
     private Function<Method, String> deprecationReasonMapper = method -> javaDeprecation && method.isAnnotationPresent(Deprecated.class) ? "" : null;
 
-    public PublicResolverBuilder(String... basePackages) {
-        this(new DefaultTypeTransformer(false, false), basePackages);
+    public PublicResolverBuilder() {
+        this(new String[0]);
     }
 
-    public PublicResolverBuilder(TypeTransformer transformer, String... basePackages) {
-        this.transformer = Objects.requireNonNull(transformer);
+    public PublicResolverBuilder(String... basePackages) {
         this.operationNameGenerator = new MethodOperationNameGenerator();
-        this.argumentBuilder = new AnnotatedArgumentBuilder(transformer);
+        this.argumentBuilder = new AnnotatedArgumentBuilder();
         withBasePackages(basePackages);
         withJavaDeprecationRespected(true);
         withDefaultFilters();
@@ -69,78 +62,39 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
     }
 
     @Override
-    public Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy) {
-        return buildQueryResolvers(querySourceBean, beanType, inclusionStrategy, getFilters());
+    public Collection<Resolver> buildQueryResolvers(ResolverBuilderParams params) {
+        return buildResolvers(params, this::isQuery, operationNameGenerator::generateQueryName, true);
     }
 
     @Override
-    public Collection<Resolver> buildMutationResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy) {
-        return buildMutationResolvers(querySourceBean, beanType, inclusionStrategy, getFilters());
+    public Collection<Resolver> buildMutationResolvers(ResolverBuilderParams params) {
+        return buildResolvers(params, this::isMutation, operationNameGenerator::generateMutationName, false);
     }
 
     @Override
-    public Collection<Resolver> buildSubscriptionResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy) {
-        return buildSubscriptionResolvers(querySourceBean, beanType, inclusionStrategy, getFilters());
+    public Collection<Resolver> buildSubscriptionResolvers(ResolverBuilderParams params) {
+        return buildResolvers(params, this::isSubscription, operationNameGenerator::generateSubscriptionName, false);
     }
 
-    private Collection<Resolver> buildQueryResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy, List<Predicate<Member>> filters) {
+    private Collection<Resolver> buildResolvers(ResolverBuilderParams params, Predicate<Method> filter, NameGenerator nameGenerator, boolean batchable) {
+        AnnotatedType beanType = params.getBeanType();
+        Object querySourceBean = params.getQuerySourceBean();
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         if (rawType.isArray() || rawType.isPrimitive()) return Collections.emptyList();
         return Arrays.stream(rawType.getMethods())
-                .filter(method -> isPackageAcceptable(method, rawType))
-                .filter(this::isQuery)
-                .filter(method -> inclusionStrategy.includeOperation(method, getReturnType(method, beanType)))
-                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
+                .filter(method -> isPackageAcceptable(method, rawType, params.getBasePackages()))
+                .filter(filter)
+                .filter(method -> params.getInclusionStrategy().includeOperation(method, getReturnType(method, params)))
+                .filter(getFilters().stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
-                        operationNameGenerator.generateQueryName(method, beanType, querySourceBean),
+                        nameGenerator.name(method, beanType, querySourceBean),
                         descriptionMapper.apply(method),
                         deprecationReasonMapper.apply(method),
-                        method.isAnnotationPresent(Batched.class),
+                        batchable && method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        getReturnType(method, beanType),
-                        argumentBuilder.buildResolverArguments(method, beanType, inclusionStrategy),
-                        method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
-                ))
-                .collect(Collectors.toList());
-    }
-
-    private Collection<Resolver> buildMutationResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy, List<Predicate<Member>> filters) {
-        Class<?> rawType = ClassUtils.getRawType(beanType.getType());
-        if (rawType.isArray()|| rawType.isPrimitive()) return Collections.emptyList();
-        return Arrays.stream(rawType.getMethods())
-                .filter(method -> isPackageAcceptable(method, rawType))
-                .filter(this::isMutation)
-                .filter(method -> inclusionStrategy.includeOperation(method, getReturnType(method, beanType)))
-                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
-                .map(method -> new Resolver(
-                        operationNameGenerator.generateMutationName(method, beanType, querySourceBean),
-                        descriptionMapper.apply(method),
-                        deprecationReasonMapper.apply(method),
-                        false,
-                        querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        getReturnType(method, beanType),
-                        argumentBuilder.buildResolverArguments(method, beanType, inclusionStrategy),
-                        method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
-                ))
-                .collect(Collectors.toList());
-    }
-
-    private Collection<Resolver> buildSubscriptionResolvers(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy, List<Predicate<Member>> filters) {
-        Class<?> rawType = ClassUtils.getRawType(beanType.getType());
-        if (rawType.isArray()|| rawType.isPrimitive()) return Collections.emptyList();
-        return Arrays.stream(rawType.getMethods())
-                .filter(method -> isPackageAcceptable(method, rawType))
-                .filter(this::isSubscription)
-                .filter(method -> inclusionStrategy.includeOperation(method, getReturnType(method, beanType)))
-                .filter(filters.stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
-                .map(method -> new Resolver(
-                        operationNameGenerator.generateSubscriptionName(method, beanType, querySourceBean),
-                        descriptionMapper.apply(method),
-                        deprecationReasonMapper.apply(method),
-                        false,
-                        querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
-                        getReturnType(method, beanType),
-                        argumentBuilder.buildResolverArguments(method, beanType, inclusionStrategy),
+                        getReturnType(method, params),
+                        argumentBuilder.buildResolverArguments(
+                                new ArgumentBuilderParams(method, beanType, params.getInclusionStrategy(), params.getTypeTransformer())),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ))
                 .collect(Collectors.toList());
@@ -158,13 +112,16 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         return method.getReturnType() == Publisher.class;
     }
 
-    protected boolean isPackageAcceptable(Method method, Class<?> beanType) {
+    protected boolean isPackageAcceptable(Method method, Class<?> beanType, String[] defaultPackages) {
         String[] basePackages = new String[0];
         if (Utils.isArrayNotEmpty(this.basePackages)) {
-            basePackages = Arrays.stream(this.basePackages).filter(Utils::isNotEmpty).toArray(String[]::new);
+            basePackages = this.basePackages;
+        } else if (Utils.isArrayNotEmpty(defaultPackages)) {
+            basePackages = defaultPackages;
         } else if (beanType.getPackage() != null) {
             basePackages = new String[] {beanType.getPackage().getName()};
         }
+        basePackages = Arrays.stream(basePackages).filter(Utils::isNotEmpty).toArray(String[]::new); //remove the default package
         return method.getDeclaringClass().equals(beanType)
                 || Arrays.stream(basePackages).anyMatch(basePackage -> ClassUtils.isSubPackage(method.getDeclaringClass().getPackage(), basePackage));
     }

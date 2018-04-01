@@ -7,6 +7,7 @@ import graphql.schema.GraphQLType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.extension.ExtensionProvider;
 import io.leangen.graphql.extension.GraphQLSchemaProcessor;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
@@ -53,7 +54,7 @@ import io.leangen.graphql.generator.mapping.core.DataFetcherResultMapper;
 import io.leangen.graphql.generator.mapping.core.PublisherMapper;
 import io.leangen.graphql.generator.mapping.strategy.AbstractInputHandler;
 import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
-import io.leangen.graphql.generator.mapping.strategy.AutoDiscoveryAbstractInputHandler;
+import io.leangen.graphql.generator.mapping.strategy.AutoScanAbstractInputHandler;
 import io.leangen.graphql.generator.mapping.strategy.DefaultImplementationDiscoveryStrategy;
 import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
@@ -431,7 +432,7 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withAbstractInputTypeResolution() {
-        this.abstractInputHandler = new AutoDiscoveryAbstractInputHandler();
+        this.abstractInputHandler = new AutoScanAbstractInputHandler();
         return this;
     }
 
@@ -577,8 +578,9 @@ public class GraphQLSchemaGenerator {
      * {@link io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter}.
      * <p><b>Ordering of mappers/converters is strictly important as the first one supporting the given Java type
      * will be used to map/convert it.</b></p>
-     * <p>See {@link #withDefaultMappers()}</p>
-     * <p>See {@link #withDefaultConverters()}</p>
+     * <p>See {@link #withTypeMappers(ExtensionProvider)}</p>
+     * <p>See {@link #withInputConverters(ExtensionProvider)}</p>
+     * <p>See {@link #withOutputConverters(ExtensionProvider)}</p>
      *
      * @param typeAdapters Custom type adapters to register with the builder
      *
@@ -663,7 +665,6 @@ public class GraphQLSchemaGenerator {
     /**
      * Registers all built-in {@link TypeMapper}s, {@link InputConverter}s and {@link OutputConverter}s
      * <p>Equivalent to calling {@code withDefaultResolverBuilders().withDefaultMappers().withDefaultConverters()}</p>
-     * <p>See {@link #withDefaultMappers()} and {@link #withDefaultConverters()}</p>
      *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      *
@@ -683,15 +684,26 @@ public class GraphQLSchemaGenerator {
      * <p>See {@link #withTypeMappers(TypeMapper...)}</p>
      *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     *
+     * @deprecated No longer needed, as {@link #withTypeMappers(ExtensionProvider)} provides a better alternative
      */
+    @Deprecated
     public GraphQLSchemaGenerator withDefaultMappers() {
         return withTypeMappers(defaultConfig());
     }
 
+    /**
+     * @deprecated No longer needed, as {@link #withInputConverters(ExtensionProvider)} provides a better alternative
+     */
+    @Deprecated
     public GraphQLSchemaGenerator withDefaultInputConverters() {
         return withInputConverters(defaultConfig());
     }
 
+    /**
+     * @deprecated No longer needed, as {@link #withOutputConverters(ExtensionProvider)} provides a better alternative
+     */
+    @Deprecated
     public GraphQLSchemaGenerator withDefaultOutputConverters() {
         return withOutputConverters(defaultConfig());
     }
@@ -702,11 +714,19 @@ public class GraphQLSchemaGenerator {
      * <p>See {@link #withInputConverters(InputConverter[])} and {@link #withOutputConverters(OutputConverter[])} )}</p>
      *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     *
+     * @deprecated No longer needed, as {@link #withInputConverters(ExtensionProvider)} and
+     * {@link #withOutputConverters(ExtensionProvider)} provide a better alternative
      */
+    @Deprecated
     public GraphQLSchemaGenerator withDefaultConverters() {
         return withDefaultInputConverters().withDefaultOutputConverters();
     }
 
+    /**
+     * @deprecated No longer needed, as {@link #withArgumentInjectors(ExtensionProvider)} provides a better alternative
+     */
+    @Deprecated
     public GraphQLSchemaGenerator withDefaultArgumentInjectors() {
         return withArgumentInjectors(defaultConfig());
     }
@@ -716,7 +736,10 @@ public class GraphQLSchemaGenerator {
      * <p>See {@link #withResolverBuilders(ResolverBuilder...)}</p>
      *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     *
+     * @deprecated No longer needed, as {@link #withResolverBuilders(ExtensionProvider)} provides a better alternative
      */
+    @Deprecated
     public GraphQLSchemaGenerator withDefaultResolverBuilders() {
         return withResolverBuilders(defaultConfig());
     }
@@ -726,7 +749,10 @@ public class GraphQLSchemaGenerator {
      * <p>See {@link #withResolverBuilders(ResolverBuilder...)}</p>
      *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     *
+     * @deprecated No longer needed, as {@link #withNestedResolverBuilders(ExtensionProvider)} provides a better alternative
      */
+    @Deprecated
     public GraphQLSchemaGenerator withDefaultNestedResolverBuilders() {
         return withNestedResolverBuilders(defaultConfig());
     }
@@ -758,7 +784,7 @@ public class GraphQLSchemaGenerator {
         if (resolverBuilderProviders.isEmpty()) {
             resolverBuilderProviders.add(defaultConfig());
         }
-        List<ResolverBuilder> defaultResolverBuilders = Collections.singletonList(new AnnotatedResolverBuilder(typeTransformer));
+        List<ResolverBuilder> defaultResolverBuilders = Collections.singletonList(new AnnotatedResolverBuilder());
         Set<ResolverBuilder> collectedResolverBuilders = new LinkedHashSet<>();
         resolverBuilderProviders.forEach(config -> collectedResolverBuilders.addAll(config.getExtensions(configuration, new ExtensionList<>(defaultResolverBuilders))));
         if (collectedResolverBuilders.isEmpty()) {
@@ -770,8 +796,8 @@ public class GraphQLSchemaGenerator {
             nestedResolverBuilderProviders.add(defaultConfig());
         }
         List<ResolverBuilder> defaultNestedResolverBuilders = Arrays.asList(
-                new AnnotatedResolverBuilder(typeTransformer),
-                new BeanResolverBuilder(typeTransformer, basePackages).withJavaDeprecationRespected(respectJavaDeprecation));
+                new AnnotatedResolverBuilder(),
+                new BeanResolverBuilder(basePackages).withJavaDeprecationRespected(respectJavaDeprecation));
         Set<ResolverBuilder> collectedNestedResolverBuilders = new LinkedHashSet<>();
         nestedResolverBuilderProviders.forEach(config -> collectedNestedResolverBuilders.addAll(config.getExtensions(configuration, new ExtensionList<>(defaultNestedResolverBuilders))));
         if (collectedNestedResolverBuilders.isEmpty()) {
@@ -860,8 +886,8 @@ public class GraphQLSchemaGenerator {
         init();
 
         BuildContext buildContext = new BuildContext(
-                basePackages, environment, new OperationRepository(operationSourceRepository, operationBuilder, inclusionStrategy),
-                new TypeMapperRepository(typeMappers), valueMapperFactory, typeInfoGenerator, interfaceStrategy, scalarStrategy,
+                basePackages, environment, new OperationRepository(operationSourceRepository, operationBuilder, inclusionStrategy, typeTransformer, basePackages),
+                new TypeMapperRepository(typeMappers), valueMapperFactory, typeInfoGenerator, interfaceStrategy, scalarStrategy, typeTransformer,
                 abstractInputHandler, inputFieldStrategy, inclusionStrategy, relayMappingConfig, additionalTypes, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
@@ -954,11 +980,6 @@ public class GraphQLSchemaGenerator {
             this.typeTransformer = typeTransformer;
             this.basePackages = basePackages;
         }
-    }
-
-    @FunctionalInterface
-    public interface ExtensionProvider<T> {
-        List<T> getExtensions(Configuration config, ExtensionList<T> defaults);
     }
 
     public static final class ExtensionList<E> extends ArrayList<E> {

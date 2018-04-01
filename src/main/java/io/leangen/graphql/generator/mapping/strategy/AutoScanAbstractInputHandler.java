@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class AutoDiscoveryAbstractInputHandler implements AbstractInputHandler {
+public class AutoScanAbstractInputHandler implements AbstractInputHandler {
 
     private final Map<Type, Set<Type>> abstractComponents = new HashMap<>();
 
@@ -38,7 +38,7 @@ public class AutoDiscoveryAbstractInputHandler implements AbstractInputHandler {
     protected final static Predicate<ClassInfo> NON_IGNORED = info ->
             info.getAnnotations().stream().noneMatch(ann -> ann.getClassName().equals(GraphQLIgnore.class.getName()));
 
-    private static final Logger log = LoggerFactory.getLogger(AutoDiscoveryAbstractInputHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(AutoScanAbstractInputHandler.class);
 
     @Override
     public Set<Type> findConstituentAbstractTypes(AnnotatedType javaType, BuildContext buildContext) {
@@ -84,7 +84,7 @@ public class AutoDiscoveryAbstractInputHandler implements AbstractInputHandler {
         if (ClassUtils.isAbstract(javaType)) {
             abstractTypes.add(javaType.getType());
         }
-        buildContext.inputFieldStrategy.getInputFields(javaType, buildContext.inclusionStrategy)
+        buildContext.inputFieldStrategy.getInputFields(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer)
                 .forEach(childQuery -> abstractTypes.addAll(findConstituentAbstractTypes(childQuery.getDeserializableType(), buildContext)));
         abstractComponents.put(javaType.getType(), abstractTypes);
         return abstractTypes;

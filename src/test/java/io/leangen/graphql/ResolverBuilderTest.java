@@ -15,6 +15,9 @@ import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.OperationNameGenerator;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
+import io.leangen.graphql.metadata.strategy.query.ResolverBuilderParams;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import org.junit.Test;
 
 import java.io.Serializable;
@@ -29,20 +32,22 @@ import static org.junit.Assert.assertEquals;
 
 public class ResolverBuilderTest {
 
-    private static final String BASE_PACKAGE = "io.leangen";
-    private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy(BASE_PACKAGE);
+    private static final String[] BASE_PACKAGES = {"io.leangen"};
+    private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy(BASE_PACKAGES);
+    private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
 
     @Test
     public void bridgeMethodTest() {
-        Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGE) .buildQueryResolvers(
-                new BaseServiceImpl<Number, String>(), new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType(), INCLUSION_STRATEGY);
+        Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGES) .buildQueryResolvers(new ResolverBuilderParams(
+                new BaseServiceImpl<Number, String>(), new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType(),
+                INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES));
         assertEquals(1, resolvers.size());
         assertEquals(resolvers.iterator().next().getReturnType().getType(), Number.class);
     }
 
     @Test
     public void explicitIgnoreTest() {
-        for(Collection<Resolver> resolvers : resolvers(new IgnoredMethods(), new BeanResolverBuilder(BASE_PACKAGE), new AnnotatedResolverBuilder())) {
+        for(Collection<Resolver> resolvers : resolvers(new IgnoredMethods(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
             assertEquals(1, resolvers.size());
             assertEquals("notIgnored", resolvers.iterator().next().getOperationName());
         }
@@ -50,7 +55,7 @@ public class ResolverBuilderTest {
 
     @Test
     public void fieldIgnoreTest() {
-        for(Collection<Resolver> resolvers : resolvers(new IgnoredFields(), new BeanResolverBuilder(BASE_PACKAGE), new AnnotatedResolverBuilder())) {
+        for(Collection<Resolver> resolvers : resolvers(new IgnoredFields(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
             assertEquals(1, resolvers.size());
             assertEquals("notIgnored", resolvers.iterator().next().getOperationName());
         }
@@ -59,7 +64,7 @@ public class ResolverBuilderTest {
     @Test
     public void impreciseBeanTypeTest() {
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withResolverBuilders(new PublicResolverBuilder(BASE_PACKAGE).withOperationNameGenerator(new OperationNameGenerator() {
+                .withResolverBuilders(new PublicResolverBuilder(BASE_PACKAGES).withOperationNameGenerator(new OperationNameGenerator() {
                     @Override
                     public String generateQueryName(Method queryMethod, AnnotatedType declaringType, Object instance) {
                         return instance.getClass().getSimpleName() + "_" + queryMethod.getName();
@@ -93,8 +98,8 @@ public class ResolverBuilderTest {
     private Collection<Collection<Resolver>> resolvers(Object bean, ResolverBuilder... builders) {
         Collection<Collection<Resolver>> resolvers = new ArrayList<>(builders.length);
         for (ResolverBuilder builder : builders) {
-            resolvers.add(builder
-                    .buildQueryResolvers(bean, GenericTypeReflector.annotate(bean.getClass()), INCLUSION_STRATEGY));
+            resolvers.add(builder.buildQueryResolvers(new ResolverBuilderParams(
+                    bean, GenericTypeReflector.annotate(bean.getClass()), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES)));
         }
         return resolvers;
     }
