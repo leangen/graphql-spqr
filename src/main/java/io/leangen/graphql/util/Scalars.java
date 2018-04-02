@@ -174,8 +174,8 @@ public class Scalars {
 
             @Override
             public Object parseLiteral(Object input) {
-                if (!(input instanceof ObjectValue)) return null;
-                return parseFieldValue(((ObjectValue) input));
+                if (!(input instanceof Value)) return null;
+                return parseFieldValue(((Value) input));
             }
 
             private Object parseFieldValue(Value value) {
@@ -192,7 +192,7 @@ public class Scalars {
                     return ((BooleanValue) value).isValue();
                 }
                 if (value instanceof EnumValue) {
-                    ((EnumValue) value).getName();
+                    return ((EnumValue) value).getName();
                 }
                 if (value instanceof ArrayValue) {
                     return ((ArrayValue) value).getValues().stream()
