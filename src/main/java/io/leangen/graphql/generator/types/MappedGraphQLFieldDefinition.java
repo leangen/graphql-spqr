@@ -13,7 +13,7 @@ public class MappedGraphQLFieldDefinition extends GraphQLFieldDefinition {
     public MappedGraphQLFieldDefinition(GraphQLFieldDefinition fieldDefinition, Operation operation) {
         super(fieldDefinition.getName(), fieldDefinition.getDescription(), fieldDefinition.getType(),
                 toFactory(fieldDefinition.getDataFetcher()), fieldDefinition.getArguments(),
-                fieldDefinition.getDeprecationReason(), fieldDefinition.getDefinition());
+                fieldDefinition.getDeprecationReason(), fieldDefinition.getDirectives(), fieldDefinition.getDefinition());
         this.operation = operation;
     }
 

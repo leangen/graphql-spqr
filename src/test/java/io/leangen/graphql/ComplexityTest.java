@@ -29,7 +29,7 @@ import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
 import java.util.List;
 
-import static io.leangen.graphql.support.Matchers.complexityScore;
+import static io.leangen.graphql.support.Matchers.hasComplexityScore;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -163,7 +163,7 @@ public class ComplexityTest {
         assertEquals(1, res.getErrors().size());
         GraphQLError error = res.getErrors().get(0);
         assertTrue(error instanceof ComplexityLimitExceededException);
-        assertThat((ComplexityLimitExceededException) error, complexityScore(expectedComplexity));
+        assertThat((ComplexityLimitExceededException) error, hasComplexityScore(expectedComplexity));
     }
 
     public static class PetService {
