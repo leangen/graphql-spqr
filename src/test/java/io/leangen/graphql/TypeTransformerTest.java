@@ -1,17 +1,16 @@
 package io.leangen.graphql;
 
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.geantyref.TypeToken;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import org.junit.Test;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
-
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
-import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 
 import static org.junit.Assert.assertEquals;
 

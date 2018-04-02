@@ -1,8 +1,8 @@
 package io.leangen.graphql.metadata.strategy.type;
 
-import java.lang.reflect.AnnotatedType;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import java.lang.reflect.AnnotatedType;
 
 @FunctionalInterface
 public interface TypeTransformer {

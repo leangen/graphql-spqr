@@ -33,7 +33,7 @@ public class Operation {
         }
         
         this.name = name;
-        this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(Utils::notEmpty).findFirst().orElse(null);
+        this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(Utils::isNotEmpty).findFirst().orElse(null);
         this.deprecationReason = resolvers.stream().map(Resolver::getOperationDeprecationReason).filter(Objects::nonNull).findFirst().orElse(null);
         this.javaType = javaType;
         this.contextType = contextType;

@@ -1,5 +1,16 @@
 package io.leangen.graphql;
 
+import graphql.ExecutionResult;
+import graphql.GraphQL;
+import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLId;
+import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
+import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
+import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
+import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -10,19 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import graphql.ExecutionResult;
-import graphql.GraphQL;
-import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
-import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
-import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
-import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
-import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
-import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertTrue;
@@ -102,9 +100,8 @@ public class ConversionTest {
                 new TestSchemaGenerator()
                         .withValueMapperFactory(valueMapperFactory)
                         .withTypeAdapters(
-                                new MapToListTypeAdapter<>(new ObjectScalarStrategy()),
+                                new MapToListTypeAdapter<>(),
                                 new StreamToCollectionTypeAdapter())
-                        .withDefaults()
                         .withOperationsFromSingleton(new ComplexService())
                         .generate())
                 .build();

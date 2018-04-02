@@ -1,11 +1,10 @@
 package io.leangen.graphql.extension;
 
 import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.generator.BuildContext;
 
-/**
- * Created by bojan.tomic on 3/2/16.
- */
+@FunctionalInterface
 public interface GraphQLSchemaProcessor {
 
-    GraphQLSchema.Builder process(GraphQLSchema.Builder schemaBuilder);
+    GraphQLSchema.Builder process(GraphQLSchema.Builder schemaBuilder, BuildContext buildContext);
 }

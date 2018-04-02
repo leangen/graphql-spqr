@@ -1,7 +1,6 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
-import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
@@ -21,7 +20,6 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
 
     protected OperationNameGenerator operationNameGenerator;
     protected ResolverArgumentBuilder argumentBuilder;
-    protected TypeTransformer transformer;
     protected List<Predicate<Member>> filters = new ArrayList<>();
 
     @SuppressWarnings("unchecked")
@@ -36,12 +34,6 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
         return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public FilteredResolverBuilder withTypeTransformer(TypeTransformer transformer) {
-        this.transformer = transformer;
-        return this;
-    }
-
     @SafeVarargs
     @SuppressWarnings("unchecked")
     public final FilteredResolverBuilder withFilters(Predicate<Member>... filters) {
@@ -50,26 +42,30 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
     }
 
     public FilteredResolverBuilder withDefaultFilters() {
-        return withFilters(REAL_ONLY, NOT_IGNORED);
+        return withFilters(REAL_ONLY);
     }
 
     protected List<Predicate<Member>> getFilters() {
         return filters.isEmpty() ? Collections.singletonList(ACCEPT_ALL) : filters;
     }
 
-    protected AnnotatedType getFieldType(Field field, AnnotatedType declaringType) {
+    protected AnnotatedType getFieldType(Field field, ResolverBuilderParams params) {
         try {
-            return transformer.transform(ClassUtils.getFieldType(field, declaringType));
+            return params.getTypeTransformer().transform(ClassUtils.getFieldType(field, params.getBeanType()));
         } catch (TypeMappingException e) {
-            throw new TypeMappingException(field, declaringType, e);
+            throw new TypeMappingException(field, params.getBeanType(), e);
         }
     }
 
-    protected AnnotatedType getReturnType(Method method, AnnotatedType declaringType) {
+    protected AnnotatedType getReturnType(Method method, ResolverBuilderParams params) {
         try {
-            return transformer.transform(ClassUtils.getReturnType(method, declaringType));
+            return params.getTypeTransformer().transform(ClassUtils.getReturnType(method, params.getBeanType()));
         } catch (TypeMappingException e) {
-            throw new TypeMappingException(method, declaringType, e);
+            throw new TypeMappingException(method, params.getBeanType(), e);
         }
+    }
+
+    interface NameGenerator {
+        String name(Method method, AnnotatedType beanType, Object querySourceBean);
     }
 }

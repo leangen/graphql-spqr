@@ -3,11 +3,10 @@ package io.leangen.graphql.metadata.strategy.query;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLIgnore;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
-import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Urls;
 import io.leangen.graphql.util.Utils;
@@ -24,41 +23,36 @@ import java.util.Optional;
 @SuppressWarnings("WeakerAccess")
 public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
 
-    private final TypeTransformer transformer;
-
     private static final Logger log = LoggerFactory.getLogger(AnnotatedArgumentBuilder.class);
 
-    public AnnotatedArgumentBuilder(TypeTransformer transformer) {
-        this.transformer = transformer;
-    }
-
     @Override
-    public List<OperationArgument> buildResolverArguments(Method resolverMethod, AnnotatedType declaringType) {
+    public List<OperationArgument> buildResolverArguments(ArgumentBuilderParams params) {
+        Method resolverMethod = params.getResolverMethod();
         List<OperationArgument> operationArguments = new ArrayList<>(resolverMethod.getParameterCount());
-        AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, declaringType);
+        AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, params.getDeclaringType());
         for (int i = 0; i < resolverMethod.getParameterCount(); i++) {
             Parameter parameter = resolverMethod.getParameters()[i];
             if (parameter.isSynthetic() || parameter.isImplicit()) continue;
             AnnotatedType parameterType;
             try {
-                parameterType = transformer.transform(parameterTypes[i]);
+                parameterType = params.getTypeTransformer().transform(parameterTypes[i]);
             } catch (TypeMappingException e) {
                 throw new TypeMappingException(resolverMethod, parameter, e);
             }
             parameterType = ClassUtils.addAnnotations(parameterType, parameter.getAnnotations());
             operationArguments.add(new OperationArgument(
                     parameterType,
-                    getArgumentName(parameter, parameterType),
+                    getArgumentName(parameter, parameterType, params.getInclusionStrategy()),
                     getArgumentDescription(parameter, parameterType),
                     defaultValue(parameter, parameterType),
                     parameter.isAnnotationPresent(GraphQLContext.class),
-                    !ClassUtils.hasAnnotation(parameter, GraphQLIgnore.class)
+                    params.getInclusionStrategy().includeArgument(parameter, parameterType)
             ));
         }
         return operationArguments;
     }
 
-    protected String getArgumentName(Parameter parameter, AnnotatedType parameterType) {
+    protected String getArgumentName(Parameter parameter, AnnotatedType parameterType, InclusionStrategy inclusionStrategy) {
         if (Optional.ofNullable(parameterType.getAnnotation(GraphQLId.class)).filter(GraphQLId::relayId).isPresent()) {
             return GraphQLId.RELAY_ID_FIELD_NAME;
         }
@@ -66,7 +60,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         if (meta != null && !meta.name().isEmpty()) {
             return meta.name();
         } else {
-            if (!parameter.isNamePresent()) {
+            if (!parameter.isNamePresent() && inclusionStrategy.includeArgument(parameter, parameterType)) {
                 log.warn("No explicit argument name given and the parameter name lost in compilation: "
                         + parameter.getDeclaringExecutable().toGenericString() + "#" + parameter.toString()
                         + ". For details and possible solutions see " + Urls.Errors.MISSING_ARGUMENT_NAME);

@@ -1,7 +1,15 @@
 package io.leangen.graphql;
 
+import io.leangen.geantyref.AnnotationFormatException;
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.geantyref.TypeFactory;
+import io.leangen.geantyref.TypeToken;
+import io.leangen.graphql.annotations.GraphQLNonNull;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.util.ClassUtils;
 import org.junit.Test;
 
+import javax.annotation.Nonnull;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
@@ -13,16 +21,6 @@ import java.util.LinkedList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-
-import javax.annotation.Nonnull;
-
-import io.leangen.geantyref.AnnotationFormatException;
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.geantyref.TypeFactory;
-import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
-import io.leangen.graphql.util.ClassUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -64,21 +62,21 @@ public class TypeInferenceTest {
     }
     
     @Test(expected = TypeMappingException.class)
-    public void testComparableClasses() throws AnnotationFormatException {
+    public void testComparableClasses() {
         AnnotatedType t1 = GenericTypeReflector.annotate(Long.class);
         AnnotatedType t2 = GenericTypeReflector.annotate(String.class);
         ClassUtils.getCommonSuperType(Arrays.asList(t1, t2)).getType();
     }
     
     @Test(expected = TypeMappingException.class)
-    public void testIncompatibleClasses() throws AnnotationFormatException {
+    public void testIncompatibleClasses() {
         AnnotatedType t1 = GenericTypeReflector.annotate(Locale.class);
         AnnotatedType t2 = GenericTypeReflector.annotate(UUID.class);
         ClassUtils.getCommonSuperType(Arrays.asList(t1, t2)).getType();
     }
 
     @Test
-    public void testAllowedIncompatibleClasses() throws AnnotationFormatException {
+    public void testAllowedIncompatibleClasses() {
         AnnotatedType t1 = GenericTypeReflector.annotate(String.class);
         AnnotatedType t2 = GenericTypeReflector.annotate(Integer.class);
         AnnotatedType fallback = GenericTypeReflector.annotate(Object.class);
@@ -87,7 +85,7 @@ public class TypeInferenceTest {
     }
 
     @Test
-    public void testExplicitRootTypes() throws AnnotationFormatException {
+    public void testExplicitRootTypes() {
         AnnotatedType t1 = new TypeToken<Comparable<Long>>(){}.getAnnotatedType();
         AnnotatedType t2 = new TypeToken<Comparable<Double>>(){}.getAnnotatedType();
         Type expected = new TypeToken<Comparable<Number>>(){}.getType();
@@ -106,49 +104,49 @@ public class TypeInferenceTest {
     }
     
     @Test(expected = TypeMappingException.class)
-    public void testIncompatibleInterfaces() throws AnnotationFormatException {
+    public void testIncompatibleInterfaces() {
         AnnotatedType t1 = GenericTypeReflector.annotate(I.class);
         AnnotatedType t2 = GenericTypeReflector.annotate(II.class);
         ClassUtils.getCommonSuperType(Arrays.asList(t1, t2)).getType();
     }
 
     @Test(expected = TypeMappingException.class)
-    public void testAnnotations() throws AnnotationFormatException {
+    public void testAnnotations() {
         AnnotatedType t1 = GenericTypeReflector.annotate(Nonnull.class);
         AnnotatedType t2 = GenericTypeReflector.annotate(GraphQLNonNull.class);
         ClassUtils.getCommonSuperType(Arrays.asList(t1, t2)).getType();
     }
     
     @Test(expected = TypeMappingException.class)
-    public void testRawTypes() throws AnnotationFormatException {
+    public void testRawTypes() {
         AnnotatedType t1 = GenericTypeReflector.annotate(ArrayList.class);
         AnnotatedType t2 = GenericTypeReflector.annotate(LinkedList.class);
         ClassUtils.getCommonSuperType(Arrays.asList(t1, t2));
     }
     
     @Test(expected = TypeMappingException.class)
-    public void testIncompleteArrayTypes() throws AnnotationFormatException {
+    public void testIncompleteArrayTypes() {
         AnnotatedType t1 = GenericTypeReflector.annotate(ArrayList[].class);
         AnnotatedType t2 = GenericTypeReflector.annotate(LinkedList[].class);
         ClassUtils.getCommonSuperType(Arrays.asList(t1, t2));
     }
     
     @Test(expected = TypeMappingException.class)
-    public void testIncompleteListTypes() throws AnnotationFormatException {
+    public void testIncompleteListTypes() {
         AnnotatedType t1 = new TypeToken<ArrayList<ArrayList<ArrayList<String>[]>>[]>(){}.getAnnotatedType();
         AnnotatedType t2 = new TypeToken<LinkedList<LinkedList<LinkedList[]>>[]>(){}.getAnnotatedType();
         ClassUtils.getCommonSuperType(Arrays.asList(t1, t2));
     }
     
     @Test(expected = TypeMappingException.class)
-    public void testMixedRawTypes() throws AnnotationFormatException {
+    public void testMixedRawTypes() {
         AnnotatedType t1 = new TypeToken<ArrayList<String>>(){}.getAnnotatedType();
         AnnotatedType t2 = GenericTypeReflector.annotate(LinkedList.class);
         ClassUtils.getCommonSuperType(Arrays.asList(t1, t2));
     }
 
     @Test
-    public void testUnboundedWildcardTypes() throws AnnotationFormatException {
+    public void testUnboundedWildcardTypes() {
         AnnotatedType t1 = new TypeToken<ArrayList<?>>(){}.getAnnotatedType();
         AnnotatedType t2 = new TypeToken<LinkedList<?>>(){}.getAnnotatedType();
         AnnotatedType expected = new TypeToken<AbstractList<?>>(){}.getAnnotatedType();
@@ -156,7 +154,7 @@ public class TypeInferenceTest {
     }
 
     @Test
-    public void testMixedWildcardTypes() throws AnnotationFormatException {
+    public void testMixedWildcardTypes() {
         AnnotatedType t1 = new TypeToken<ArrayList<? extends Long>>(){}.getAnnotatedType();
         AnnotatedType t2 = new TypeToken<LinkedList<Double>>(){}.getAnnotatedType();
         AnnotatedType expected = new TypeToken<AbstractList<Number>>(){}.getAnnotatedType();
@@ -164,7 +162,7 @@ public class TypeInferenceTest {
     }
 
     @Test
-    public <T> void testUnboundedTypeVariables() throws AnnotationFormatException {
+    public <T> void testUnboundedTypeVariables() {
         AnnotatedType t1 = new TypeToken<ArrayList<T>>(){}.getAnnotatedType();
         AnnotatedType t2 = new TypeToken<LinkedList<T>>(){}.getAnnotatedType();
         AnnotatedType expected = new TypeToken<AbstractList<T>>(){}.getAnnotatedType();
@@ -172,7 +170,7 @@ public class TypeInferenceTest {
     }
 
     @Test(expected = TypeMappingException.class)
-    public <T, S> void testIncompatibleUnboundedTypeVariables() throws AnnotationFormatException {
+    public <T, S> void testIncompatibleUnboundedTypeVariables() {
         AnnotatedType t1 = new TypeToken<ArrayList<T>>(){}.getAnnotatedType();
         AnnotatedType t2 = new TypeToken<LinkedList<S>>(){}.getAnnotatedType();
         AnnotatedType expected = new TypeToken<AbstractList<T>>(){}.getAnnotatedType();
@@ -180,7 +178,7 @@ public class TypeInferenceTest {
     }
 
     @Test
-    public <T extends Long, S extends Double> void testBoundedTypeVariables() throws AnnotationFormatException {
+    public <T extends Long, S extends Double> void testBoundedTypeVariables() {
         AnnotatedType t1 = new TypeToken<ArrayList<T>>(){}.getAnnotatedType();
         AnnotatedType t2 = new TypeToken<LinkedList<S>>(){}.getAnnotatedType();
         AnnotatedType expected = new TypeToken<AbstractList<Number>>(){}.getAnnotatedType();

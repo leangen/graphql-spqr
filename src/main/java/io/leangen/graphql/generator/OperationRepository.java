@@ -1,5 +1,13 @@
 package io.leangen.graphql.generator;
 
+import io.leangen.graphql.metadata.Operation;
+import io.leangen.graphql.metadata.Resolver;
+import io.leangen.graphql.metadata.strategy.InclusionStrategy;
+import io.leangen.graphql.metadata.strategy.query.OperationBuilder;
+import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
+import io.leangen.graphql.metadata.strategy.query.ResolverBuilderParams;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.AbstractMap;
@@ -14,11 +22,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import io.leangen.graphql.metadata.Operation;
-import io.leangen.graphql.metadata.Resolver;
-import io.leangen.graphql.metadata.strategy.query.OperationBuilder;
-import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
-
 public class OperationRepository {
 
     private final Set<Operation> queries;
@@ -26,10 +29,18 @@ public class OperationRepository {
     private final Set<Operation> subscriptions;
     private final OperationSourceRepository operationSourceRepository;
     private final OperationBuilder operationBuilder;
+    private final InclusionStrategy inclusionStrategy;
+    private final TypeTransformer typeTransformer;
+    private final String[] basePackages;
 
-    public OperationRepository(OperationSourceRepository operationSourceRepository, OperationBuilder operationBuilder) {
+    public OperationRepository(OperationSourceRepository operationSourceRepository, OperationBuilder operationBuilder,
+                               InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages) {
+
         this.operationSourceRepository = operationSourceRepository;
         this.operationBuilder = operationBuilder;
+        this.inclusionStrategy = inclusionStrategy;
+        this.typeTransformer = typeTransformer;
+        this.basePackages = basePackages;
         List<Resolver> resolvers = buildQueryResolvers(operationSourceRepository.getOperationSources());
         List<Resolver> mutationResolvers = buildMutationResolvers(operationSourceRepository.getOperationSources());
         List<Resolver> subscriptionResolvers = buildSubscriptionResolvers(operationSourceRepository.getOperationSources());
@@ -103,7 +114,7 @@ public class OperationRepository {
         return subscriptions;
     }
 
-    public Set<Operation> getNestedQueries(AnnotatedType domainType) {
+    private Set<Operation> getNestedQueries(AnnotatedType domainType) {
         OperationSource domainSource = operationSourceRepository.nestedSourceForType(domainType);
         return buildNestedQueries(domainSource);
     }
@@ -121,7 +132,7 @@ public class OperationRepository {
         return children.values();
     }
 
-    public Set<Operation> getEmbeddableQueries(Type domainType) {
+    private Set<Operation> getEmbeddableQueries(Type domainType) {
         return getAllQueries().stream()
                 .map(Operation::unbatch)
                 .filter(query -> query.isEmbeddableForType(domainType))
@@ -134,17 +145,20 @@ public class OperationRepository {
 
     private List<Resolver> buildQueryResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
-                builder.buildQueryResolvers(operationSource.getServiceSingleton(), operationSource.getJavaType())));
+                builder.buildQueryResolvers(new ResolverBuilderParams(
+                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy,typeTransformer, basePackages))));
     }
 
     private List<Resolver> buildMutationResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
-                builder.buildMutationResolvers(operationSource.getServiceSingleton(), operationSource.getJavaType())));
+                builder.buildMutationResolvers(new ResolverBuilderParams(
+                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages))));
     }
 
     private List<Resolver> buildSubscriptionResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
-                builder.buildSubscriptionResolvers(operationSource.getServiceSingleton(), operationSource.getJavaType())));
+                builder.buildSubscriptionResolvers(new ResolverBuilderParams(
+                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages))));
     }
 
     private List<Resolver> buildResolvers(Collection<OperationSource> operationSources, BiFunction<OperationSource, ResolverBuilder, Collection<Resolver>> building) {

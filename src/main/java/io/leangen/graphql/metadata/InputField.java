@@ -1,20 +1,22 @@
 package io.leangen.graphql.metadata;
 
+import io.leangen.geantyref.GenericTypeReflector;
+
 import java.lang.reflect.AnnotatedType;
 import java.util.Objects;
-
-import io.leangen.geantyref.GenericTypeReflector;
 
 public class InputField {
 
     private final String name;
     private final String description;
     private final AnnotatedType javaType;
+    private final AnnotatedType deserializableType;
 
-    public InputField(String name, String description, AnnotatedType javaType) {
+    public InputField(String name, String description, AnnotatedType javaType, AnnotatedType deserializableType) {
         this.name = name;
         this.description = description;
         this.javaType = javaType;
+        this.deserializableType = deserializableType != null ? deserializableType : javaType;
     }
 
     public String getName() {
@@ -27,6 +29,10 @@ public class InputField {
 
     public AnnotatedType getJavaType() {
         return javaType;
+    }
+
+    public AnnotatedType getDeserializableType() {
+        return deserializableType;
     }
 
     @Override

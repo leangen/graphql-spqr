@@ -1,9 +1,5 @@
 package io.leangen.graphql.execution;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.Map;
-
 import graphql.GraphQLException;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
@@ -11,6 +7,10 @@ import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Created by bojan.tomic on 1/29/17.
@@ -39,15 +39,11 @@ public class OperationExecutor {
         if (this.operation.getResolvers().size() == 1) {
             resolver = this.operation.getResolvers().iterator().next();
         } else {
-            String[] nonNullArgumentNames = env.getArguments().entrySet().stream()
-                    .filter(arg -> arg.getValue() != null)
-                    .map(Map.Entry::getKey)
-                    .toArray(String[]::new);
-
-            resolver = this.operation.getResolver(nonNullArgumentNames);
+            String[] argumentNames = env.getArguments().keySet().toArray(new String[env.getArguments().size()]);
+            resolver = this.operation.getResolver(argumentNames);
             if (resolver == null) {
                 throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
-                        + Arrays.toString(nonNullArgumentNames) + " not implemented");
+                        + Arrays.toString(argumentNames) + " not implemented");
             }
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(env, this.valueMapper, this.globalEnvironment);
@@ -55,7 +51,7 @@ public class OperationExecutor {
             Object result = execute(resolver, resolutionEnvironment, env.getArguments());
             return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
         } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
+            throw unwrap(e);
         }
     }
 
@@ -85,5 +81,13 @@ public class OperationExecutor {
             args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor.getJavaType());
         }
         return resolver.resolve(resolutionEnvironment.context, args);
+    }
+
+    private RuntimeException unwrap(ReflectiveOperationException e) {
+        Throwable cause = e.getCause();
+        if (cause != null && cause != e) {
+            return cause instanceof RuntimeException ? (RuntimeException) cause : new RuntimeException(cause.getMessage(), cause);
+        }
+        return new RuntimeException(e.getMessage(), e);
     }
 }

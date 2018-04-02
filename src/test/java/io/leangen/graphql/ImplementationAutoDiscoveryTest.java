@@ -1,11 +1,10 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
+import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -50,10 +49,10 @@ public class ImplementationAutoDiscoveryTest {
     }
     
     @GraphQLInterface(name = "Flat")
-    public interface Flat {}
+    interface Flat {}
     
     @GraphQLInterface(name = "Deep", implementationAutoDiscovery = true)
-    public interface Deep {}
+    interface Deep {}
 
     public static class One implements Flat, Deep {
         public String getOne() {

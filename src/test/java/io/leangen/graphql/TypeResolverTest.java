@@ -1,11 +1,5 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
-
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLObjectType;
@@ -18,6 +12,11 @@ import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.execution.TypeResolutionEnvironment;
 import io.leangen.graphql.execution.TypeResolver;
+import org.junit.Test;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertTrue;
@@ -36,7 +35,6 @@ public class TypeResolverTest {
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         String queryTemplate = "{repo(id: %d) {" +
                 "identifier,  " +
-                "_type_ " +
                 "... on SessionRepo_Street {street: item {name}} " +
                 "... on SessionRepo_Education {school: item {schoolName}}}}";
         ExecutionResult result = exe.execute(String.format(queryTemplate, 2));
@@ -83,7 +81,7 @@ public class TypeResolverTest {
 
         private T item;
 
-        public SessionRepo(T item) {
+        SessionRepo(T item) {
             this.item = item;
         }
 

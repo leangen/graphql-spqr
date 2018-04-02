@@ -8,10 +8,12 @@ import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
+import io.leangen.graphql.annotations.GraphQLId;
+import io.leangen.graphql.annotations.GraphQLScalar;
+import io.leangen.graphql.domain.Address;
 import io.leangen.graphql.domain.SimpleUser;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
-import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import org.junit.Test;
@@ -19,6 +21,7 @@ import org.junit.Test;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,6 +31,27 @@ import static org.junit.Assert.assertTrue;
 public class UniquenessTest {
 
     private static final String thisPackage = UniquenessTest.class.getPackage().getName();
+
+    @Test
+    public void testRelayIdUniqueness() {
+        GraphQLSchema schema = schemaFor(new RelayIdService());
+        testRootQueryTypeUniqueness(schema);
+        testRootQueryArgumentTypeUniqueness(schema);
+    }
+
+    @Test
+    public void testScalarUniqueness() {
+        GraphQLSchema schema = schemaFor(new ScalarService());
+        testRootQueryTypeUniqueness(schema);
+        testRootQueryArgumentTypeUniqueness(schema);
+    }
+
+    @Test
+    public void testObjectScalarUniqueness() {
+        GraphQLSchema schema = schemaFor(new ObjectScalarService());
+        testRootQueryTypeUniqueness(schema);
+        testRootQueryArgumentTypeUniqueness(schema);
+    }
 
     @Test
     public void testPageUniqueness() {
@@ -44,8 +68,7 @@ public class UniquenessTest {
     @Test
     public void testMapUniqueness() {
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withTypeAdapters(new MapToListTypeAdapter<>(new ObjectScalarStrategy()))
-                .withDefaults()
+                .withTypeAdapters(new MapToListTypeAdapter<>())
                 .withOperationsFromSingleton(new MapService(), new PublicResolverBuilder(thisPackage))
                 .generate();
         testRootQueryTypeUniqueness(schema, type -> ((GraphQLList) type).getWrappedType());
@@ -98,6 +121,39 @@ public class UniquenessTest {
                 .collect(Collectors.toList());
         assertEquals(2, inputTypes.size());
         assertTrue(inputTypes.stream().allMatch(type -> inputTypes.get(0) == type));
+    }
+
+    public static class RelayIdService {
+
+        public @GraphQLId(relayId = true) String getId(@GraphQLId(relayId = true) String in) {
+            return in;
+        }
+
+        public @GraphQLId(relayId = true) String getIdAgain(@GraphQLId(relayId = true) String in) {
+            return in;
+        }
+    }
+
+    public static class ScalarService {
+
+        public UUID getUuid(UUID in) {
+            return in;
+        }
+
+        public UUID getUuidAgain(UUID in) {
+            return in;
+        }
+    }
+
+    public static class ObjectScalarService {
+
+        public @GraphQLScalar Address getAddress(@GraphQLScalar Address in) {
+            return in;
+        }
+
+        public @GraphQLScalar Address getAddressAgain(@GraphQLScalar Address in) {
+            return in;
+        }
     }
 
     public static class EnumService {

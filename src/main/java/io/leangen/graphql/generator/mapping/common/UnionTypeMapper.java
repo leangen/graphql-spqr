@@ -5,9 +5,8 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
@@ -50,17 +49,7 @@ public class UnionTypeMapper extends UnionMapper {
             }
         }
         if (possibleTypes.isEmpty() && annotation.possibleTypeAutoDiscovery()) {
-            String[] scanPackages = annotation.scanPackages();
-            if (scanPackages.length == 0 && Utils.arrayNotEmpty(buildContext.basePackages)) {
-                scanPackages = buildContext.basePackages;
-            }
-            possibleTypes = ClassUtils.findImplementations(javaType, scanPackages).stream()
-                    .peek(impl -> {
-                        if (ClassUtils.isMissingTypeParameters(impl.getType())) {
-                            throw new TypeMappingException(javaType.getType(), impl.getType());
-                        }
-                    })
-                    .collect(Collectors.toList());
+            possibleTypes = buildContext.implDiscoveryStrategy.findImplementations(javaType, annotation.scanPackages(), buildContext);
         }
         if (possibleTypes.isEmpty()) {
             throw new TypeMappingException("No possible types found for union type " + javaType.getType().getTypeName());

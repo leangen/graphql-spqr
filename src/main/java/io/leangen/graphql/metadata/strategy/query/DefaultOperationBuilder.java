@@ -1,5 +1,16 @@
 package io.leangen.graphql.metadata.strategy.query;
 
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.annotations.GraphQLUnion;
+import io.leangen.graphql.generator.union.Union;
+import io.leangen.graphql.metadata.Operation;
+import io.leangen.graphql.metadata.OperationArgument;
+import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
+import io.leangen.graphql.metadata.Resolver;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Urls;
+
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -8,20 +19,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLUnion;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
-import io.leangen.graphql.generator.union.Union;
-import io.leangen.graphql.metadata.Operation;
-import io.leangen.graphql.metadata.OperationArgument;
-import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
-import io.leangen.graphql.metadata.Resolver;
-import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.Urls;
-
 /**
  * @author Bojan Tomic (kaqqao)
  */
+@SuppressWarnings("WeakerAccess")
 public class DefaultOperationBuilder implements OperationBuilder {
 
     private final TypeInference typeInference;
@@ -120,7 +121,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
         errorPrefix = errorPrefix + " Types found: " + Arrays.toString(types.stream().map(type -> type.getType().getTypeName()).toArray()) + ". ";
         if (!typeInference.inferTypes && !types.stream().map(AnnotatedType::getType).allMatch(type -> type.equals(types.get(0).getType()))) {
             throw new TypeMappingException(errorPrefix + "If this is intentional, and you wish GraphQL SPQR to infer the most " +
-                    "common super type automatically, see " + Urls.Errors.CONFLICTING_RESOLVERS);
+                    "common super type automatically, see " + Urls.Errors.CONFLICTING_RESOLVER_TYPES);
         }
         try {
             return ClassUtils.getCommonSuperType(types, typeInference.allowObject ? GenericTypeReflector.annotate(Object.class) : null);

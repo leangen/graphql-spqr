@@ -1,12 +1,5 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.List;
-
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
@@ -14,11 +7,16 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
-import io.leangen.graphql.generator.mapping.strategy.ObjectScalarStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import io.leangen.graphql.services.UserService;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 
@@ -98,8 +96,7 @@ public class SchemaTest {
     public void testSchema() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
-                .withTypeAdapters(new MapToListTypeAdapter<>(new ObjectScalarStrategy()))
-                .withDefaults()
+                .withTypeAdapters(new MapToListTypeAdapter<>())
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .generate();
 

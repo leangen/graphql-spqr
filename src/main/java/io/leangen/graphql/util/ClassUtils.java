@@ -2,10 +2,16 @@ package io.leangen.graphql.util;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.generator.exceptions.TypeMappingException;
+import io.leangen.graphql.annotations.GraphQLUnion;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.util.classpath.ClassFilter;
 import io.leangen.graphql.util.classpath.ClassFinder;
+import io.leangen.graphql.util.classpath.ClassInfo;
+import io.leangen.graphql.util.classpath.ClassModifiersClassFilter;
 import io.leangen.graphql.util.classpath.ClassReadingException;
 import io.leangen.graphql.util.classpath.SubclassClassFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.beans.Introspector;
 import java.io.Serializable;
@@ -29,18 +35,20 @@ import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,10 +59,9 @@ import static java.util.Arrays.stream;
 
 public class ClassUtils {
 
-    private static final Map<Class, List<Class>> implementationCache = new ConcurrentHashMap<>();
+    private static final Map<Class, Collection<ClassInfo>> implementationCache = new ConcurrentHashMap<>();
     private static final Class<?> javassistProxyClass;
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
-    private static final Map<Class<?>, Class<?>> BOX_TYPES;
     private static final Set<Class> ROOT_TYPES = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(Object.class, Annotation.class, Cloneable.class, Comparable.class, Serializable.class)));
 
@@ -68,19 +75,7 @@ public class ClassUtils {
         javassistProxyClass = proxy;
     }
 
-    static {
-        Map<Class<?>, Class<?>> boxTypes = new HashMap<>();
-        boxTypes.put(boolean.class, Boolean.class);
-        boxTypes.put(byte.class, Byte.class);
-        boxTypes.put(char.class, Character.class);
-        boxTypes.put(double.class, Double.class);
-        boxTypes.put(float.class, Float.class);
-        boxTypes.put(int.class, Integer.class);
-        boxTypes.put(long.class, Long.class);
-        boxTypes.put(short.class, Short.class);
-        boxTypes.put(void.class, Void.class);
-        BOX_TYPES = Collections.unmodifiableMap(boxTypes);
-    }
+    private static final Logger log = LoggerFactory.getLogger(ClassUtils.class);
 
     /**
      * Retrieves all public methods on the given class (same as {@link Class#getMethods()}) annotated by the given annotation
@@ -198,9 +193,10 @@ public class ClassUtils {
     }
 
     public static <T extends AnnotatedType> T normalize(T type) {
-        type = GenericTypeReflector.toCanonical(type);
+        type = GenericTypeReflector.toCanonicalBoxed(type);
         Annotation[] filteredAnnotations = Arrays.stream(type.getAnnotations())
                 .filter(ann -> isTypeUseAnnotation(ann.annotationType()))
+                .filter(ann -> !ann.annotationType().equals(GraphQLUnion.class))
                 .toArray(Annotation[]::new);
         return type.getAnnotations().length == filteredAnnotations.length ? type : GenericTypeReflector.replaceAnnotations(type, filteredAnnotations);
     }
@@ -251,28 +247,77 @@ public class ClassUtils {
         return Introspector.decapitalize(setter.getName().replaceAll("^set", ""));
     }
 
-    public static Method findGetter(Class<?> type, String fieldName) throws NoSuchMethodException {
-        try {
-            return type.getMethod("get" + Utils.capitalize(fieldName));
-        } catch (NoSuchMethodException e) { /*no-op*/}
-        return type.getMethod("is" + Utils.capitalize(fieldName));
+    public static Optional<Method> findGetter(Class<?> type, String fieldName) {
+        return Utils.or(
+                findMethod(type, "get" + Utils.capitalize(fieldName)),
+                findMethod(type, "is" + Utils.capitalize(fieldName)));
     }
 
-    public static Method findSetter(Class<?> type, String fieldName, Class<?> fieldType) throws NoSuchMethodException {
-        return type.getMethod("set" + Utils.capitalize(fieldName), fieldType);
+    public static Optional<Method> findSetter(Class<?> type, String fieldName, Class<?> fieldType) {
+        return findMethod(type, "set" + Utils.capitalize(fieldName), fieldType);
+    }
+
+    public static Optional<Field> findFieldByGetter(Method getter) {
+        return findField(getter.getDeclaringClass(), getFieldNameFromGetter(getter));
+    }
+
+    public static Optional<Field> findFieldBySetter(Method setter) {
+        return findField(setter.getDeclaringClass(), getFieldNameFromSetter(setter));
+    }
+
+    public static Optional<Field> findField(Class<?> type, String fieldName) {
+        if (type.isInterface()) {
+            return Optional.empty();
+        }
+        while (!type.equals(Object.class)) {
+            try {
+                return Optional.of(type.getDeclaredField(fieldName));
+            } catch (NoSuchFieldException e) {
+                type = type.getSuperclass();
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<Method> findMethod(Class<?> type, String methodName, Class<?>... parameterTypes) {
+        try {
+            return Optional.of(type.getMethod(methodName, parameterTypes));
+        } catch (NoSuchMethodException e) {
+            return Optional.empty();
+        }
     }
 
     @SuppressWarnings("unchecked")
     public static <T> T getFieldValue(Object source, String fieldName) {
         try {
-            try {
-                return (T) findGetter(source.getClass(), fieldName).invoke(source);
-            } catch (NoSuchMethodException e) {
+            Optional<Method> getter = findGetter(source.getClass(), fieldName);
+            if (getter.isPresent()) {
+                return (T) getter.get().invoke(source);
+            } else {
                 return (T) source.getClass().getField(fieldName).get(source);
             }
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Failed to extract the value of field " + fieldName + " from the given instance of " + source.getClass(), e);
         }
+    }
+
+    public static <T extends Annotation> T getAnnotation(Method method, Class<T> annotation) {
+        if (method.isAnnotationPresent(annotation)) {
+            return method.getAnnotation(annotation);
+        }
+        if (isGetter(method)) {
+            return findFieldByGetter(method)
+                    .filter(f -> Modifier.isPrivate(f.getModifiers()))
+                    .map(f -> f.getAnnotation(annotation))
+                    .orElse(null);
+        }
+        if (isSetter(method)) {
+            return findFieldBySetter(method)
+                    .filter(f -> Modifier.isPrivate(f.getModifiers()))
+                    .map(f -> f.getAnnotation(annotation))
+                    .orElse(null);
+        }
+        return null;
     }
 
     /**
@@ -283,36 +328,49 @@ public class ClassUtils {
      * @throws RuntimeException If a class file could not be parsed or a class could not be loaded
      */
     public static List<AnnotatedType> findImplementations(AnnotatedType superType, String... packages) {
+        return findImplementations(superType, info -> true, packages);
+    }
+
+    public static List<AnnotatedType> findImplementations(AnnotatedType superType, Predicate<ClassInfo> filter, String... packages) {
         Class<?> rawType = getRawType(superType.getType());
-        return findImplementations(rawType, packages).stream()
+        return findImplementations(rawType, filter, packages).stream()
                 .map(raw -> GenericTypeReflector.getExactSubType(superType, raw))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     public static List<Class> findImplementations(Class superType, String... packages) {
-        if (implementationCache.containsKey(superType)) {
-            return implementationCache.get(superType);
-        }
-        try {
-            ClassFinder classFinder = new ClassFinder();
-            packages = packages == null ? null : Arrays.stream(packages).filter(Utils::notEmpty).toArray(String[]::new);
-            classFinder = packages == null || packages.length == 0 ? classFinder.addExplicitClassPath() : classFinder.add(superType.getClassLoader(), packages);
-            List<Class> implementations = classFinder
-                    .findClasses(new SubclassClassFilter(superType)).stream()
-                    .map(classInfo -> loadClass(classInfo.getClassName()))
-                    .collect(Collectors.toList());
-            implementationCache.putIfAbsent(superType, implementations);
-            return implementations;
-        } catch (ClassReadingException e) {
-            throw new RuntimeException(e);
-        }
+        return findImplementations(superType, info -> true, packages);
     }
 
-    @SuppressWarnings("SuspiciousMethodCalls")
-    public static Type box(Type type) {
-        Class<?> boxed = BOX_TYPES.get(type);
-        return boxed != null ? boxed : type;
+    public static List<Class> findImplementations(Class superType, Predicate<ClassInfo> filter, String... packages) {
+        Collection<ClassInfo> implementations;
+        if (implementationCache.containsKey(superType)) {
+            implementations = implementationCache.get(superType);
+        } else {
+            try {
+                ClassFinder classFinder = new ClassFinder();
+                packages = packages == null ? null : Arrays.stream(packages).filter(Utils::isNotEmpty).toArray(String[]::new);
+                if (packages == null || packages.length == 0) {
+                    classFinder.addExplicitClassPath();
+                } else {
+                    classFinder.add(superType.getClassLoader(), packages);
+                }
+                implementations = classFinder
+                        .findClasses(ClassFilter.and(
+                                new SubclassClassFilter(superType),
+                                new ClassModifiersClassFilter(Modifier.PUBLIC)));
+                implementationCache.putIfAbsent(superType, implementations);
+            } catch (ClassReadingException e) {
+                log.error("Failed to auto discover the subtypes of " + superType.getName()
+                        + ". Error encountered while scanning the classpath", e);
+                return Collections.emptyList();
+            }
+        }
+        return implementations.stream()
+                .filter(filter)
+                .flatMap(classInfo -> loadClass(classInfo.getClassName()))
+                .collect(Collectors.toList());
     }
 
     public static boolean isAbstract(AnnotatedType type) {
@@ -321,7 +379,7 @@ public class ClassUtils {
 
     public static boolean isAbstract(Class<?> type) {
         return (type.isInterface() || Modifier.isAbstract(type.getModifiers())) &&
-                !type.isPrimitive() && !type.isArray();
+                !type.isPrimitive() && !type.isArray() && !type.isEnum();
     }
 
     public static boolean isAssignable(Type superType, Type subType) {
@@ -331,8 +389,13 @@ public class ClassUtils {
                 || (superType instanceof GenericArrayType &&
                 ((GenericArrayType) superType).getGenericComponentType() instanceof TypeVariable))
                 && ClassUtils.getRawType(superType).isAssignableFrom(ClassUtils.getRawType(subType)))
-                || (box(subType) == superType)
+                || (GenericTypeReflector.box(subType) == superType)
                 || GenericTypeReflector.isSuperType(superType, subType);
+    }
+
+    public static boolean isSubPackage(Package pkg, String prefix) {
+        String packageName = pkg != null ? pkg.getName() : "";
+        return packageName.startsWith(prefix);
     }
 
     public static String toString(AnnotatedType type) {
@@ -627,11 +690,12 @@ public class ClassUtils {
         return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
     }
 
-    private static Class<?> loadClass(String className) {
+    private static Stream<Class<?>> loadClass(String className) {
         try {
-            return forName(className);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            return Stream.of(forName(className));
+        } catch (Exception e) {
+            log.warn("Auto discovered type " + className + " failed to load and will be ignored", e);
+            return Stream.empty();
         }
     }
 

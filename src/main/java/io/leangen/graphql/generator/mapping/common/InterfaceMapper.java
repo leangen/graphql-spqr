@@ -9,8 +9,6 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.generator.types.MappedGraphQLInterfaceType;
-import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
@@ -44,19 +42,7 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
         typeBuilder.typeResolver(buildContext.typeResolver);
         GraphQLInterfaceType type = new MappedGraphQLInterfaceType(typeBuilder.build(), javaType);
 
-        if (javaType.isAnnotationPresent(GraphQLInterface.class)) {
-            GraphQLInterface meta = javaType.getAnnotation(GraphQLInterface.class);
-            if (meta.implementationAutoDiscovery()) {
-                String[] scanPackages = meta.scanPackages();
-                if (scanPackages.length == 0 && Utils.arrayNotEmpty(buildContext.basePackages)) {
-                    scanPackages = buildContext.basePackages;
-                }
-                ClassUtils.findImplementations(javaType, scanPackages).forEach(impl ->
-                        getImplementingType(impl, operationMapper, buildContext)
-                                .ifPresent(implType -> buildContext.typeRepository.registerDiscoveredCovariantType(type.getName(), impl, implType)));
-
-            }
-        }
+        registerImplementations(javaType, type, operationMapper, buildContext);
         return type;
     }
 
@@ -70,9 +56,20 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
         return interfaceStrategy.supports(type);
     }
 
+    @SuppressWarnings("WeakerAccess")
+    protected void registerImplementations(AnnotatedType javaType, GraphQLInterfaceType type, OperationMapper operationMapper, BuildContext buildContext) {
+        if (javaType.isAnnotationPresent(GraphQLInterface.class)) {
+            GraphQLInterface meta = javaType.getAnnotation(GraphQLInterface.class);
+            if (meta.implementationAutoDiscovery()) {
+                buildContext.implDiscoveryStrategy.findImplementations(javaType, meta.scanPackages(), buildContext).forEach(impl ->
+                        getImplementingType(impl, operationMapper, buildContext)
+                                .ifPresent(implType -> buildContext.typeRepository.registerDiscoveredCovariantType(type.getName(), impl, implType)));
+            }
+        }
+    }
+
     private Optional<GraphQLObjectType> getImplementingType(AnnotatedType implType, OperationMapper operationMapper, BuildContext buildContext) {
         return Optional.of(implType)
-                .filter(impl -> !ClassUtils.isMissingTypeParameters(impl.getType()))
                 .filter(impl -> !interfaceStrategy.supports(impl))
                 .map(impl -> operationMapper.toGraphQLType(impl, buildContext))
                 .filter(impl -> impl instanceof GraphQLObjectType)

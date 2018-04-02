@@ -46,6 +46,8 @@
 
 package io.leangen.graphql.util.classpath;
 
+import java.util.Arrays;
+
 /**
  * Instances of classes that implement this interface are used, with a
  * {@link ClassFinder} object, to filter class names. This interface is
@@ -71,4 +73,17 @@ public interface ClassFilter {
      * in the list; <tt>false</tt> otherwise
      */
     boolean accept(ClassInfo classInfo, ClassFinder classFinder);
+
+    /**
+     * Produces a {@code ClassFilter} that accepts an entry if all the delegate filters accept it.
+     *
+     * @param delegateFilters The delegate filters to propagate the call to
+     * @return The filter combining the {@code delegateFilters} using a logical <i>and</i>
+     */
+    static ClassFilter and(ClassFilter... delegateFilters) {
+        return (classInfo, classFinder) -> Arrays.stream(delegateFilters)
+                .map(filter -> filter.accept(classInfo, classFinder))
+                .reduce((f1, f2) -> f1 && f2)
+                .orElse(true);
+    }
 }
