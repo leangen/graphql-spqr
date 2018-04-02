@@ -6,7 +6,7 @@ import org.hamcrest.Description;
 
 public class Matchers {
     
-    public static ComplexityMatcher complexityScore(int expectedComplexity) {
+    public static ComplexityMatcher hasComplexityScore(int expectedComplexity) {
         return new ComplexityMatcher(expectedComplexity);
     }
 
