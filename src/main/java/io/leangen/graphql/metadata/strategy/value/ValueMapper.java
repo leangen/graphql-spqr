@@ -11,7 +11,7 @@ public interface ValueMapper {
         return fromInput(graphQlInput, graphQlInput.getClass(), type);
     }
     
-    <T> T fromInput(Object graphQlInput, Type sourceType, AnnotatedType outputType);
+    <T> T fromInput(Object graphQLInput, Type sourceType, AnnotatedType outputType);
 
     <T> T fromString(String json, AnnotatedType type);
     

@@ -45,8 +45,8 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
     }
 
     @Override
-    public <T> T fromInput(Object graphQlInput, Type sourceType, AnnotatedType outputType) {
-        return objectMapper.convertValue(graphQlInput, objectMapper.getTypeFactory().constructType(outputType.getType()));
+    public <T> T fromInput(Object graphQLInput, Type sourceType, AnnotatedType outputType) {
+        return objectMapper.convertValue(graphQLInput, objectMapper.getTypeFactory().constructType(outputType.getType()));
     }
 
     @Override

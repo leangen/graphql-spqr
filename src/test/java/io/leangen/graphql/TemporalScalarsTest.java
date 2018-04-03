@@ -25,7 +25,7 @@ import java.util.Date;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ScalarsTest {
+public class TemporalScalarsTest {
 
     @Test
     public void testDate() {
@@ -78,16 +78,11 @@ public class ScalarsTest {
 
     private void testTemporal(Class type, String expected, String stringLiteral, long literal) {
         GraphQLScalarType scalar = Scalars.toGraphQLScalarType(type);
-        testNullTemporalSerialization(scalar.getCoercing());
         testStringTemporal(type, scalar.getCoercing(), stringLiteral, stringLiteral);
         testEpochMilliTemporal(type, scalar.getCoercing(), expected, literal);
         testTemporalMapping(type, scalar);
     }
 
-    private void testNullTemporalSerialization(Coercing coercing) {
-        assertEquals(null, coercing.serialize(null));
-    }
-    
     private void testStringTemporal(Class type, Coercing coercing, String expected, String stringLiteral) {
         Object parsed = coercing.parseLiteral(new StringValue(stringLiteral));
         assertTrue(type.isInstance(parsed));

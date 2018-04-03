@@ -22,7 +22,7 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
 
     private final ScalarDeserializationStrategy scalarStrategy;
 
-    private static final AnnotatedType MAP = GenericTypeReflector.annotate(LinkedHashMap.class);
+    private static final AnnotatedType MAP = GenericTypeReflector.annotate(ScalarMap.class);
 
     public ObjectScalarAdapter(ScalarDeserializationStrategy scalarStrategy) {
         this.scalarStrategy = Objects.requireNonNull(scalarStrategy);
@@ -50,4 +50,6 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
                 || GenericTypeReflector.isSuperType(Map.class, type.getType())
                 || scalarStrategy.isDirectlyDeserializable(type);
     }
+
+    public static class ScalarMap extends LinkedHashMap {}
 }

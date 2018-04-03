@@ -8,6 +8,7 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
+import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
@@ -71,6 +72,12 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
                 mapEntry(
                         operationMapper.toGraphQLInputType(getElementType(javaType, 0), buildContext),
                         operationMapper.toGraphQLInputType(getElementType(javaType, 1), buildContext), buildContext));
+    }
+
+    @Override
+    public boolean supports(AnnotatedType type) {
+        return super.supports(type) && !type.isAnnotationPresent(GraphQLScalar.class)
+                && !type.getType().equals(ObjectScalarAdapter.ScalarMap.class);
     }
 
     private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType, BuildContext buildContext) {
