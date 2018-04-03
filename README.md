@@ -24,6 +24,12 @@ GraphQL SPQR aims to make it dead simple to add a GraphQL API to _any_ Java proj
 Due to a 2 year old [bug](https://youtrack.jetbrains.com/oauth?state=%2Fissue%2FKT-13228), Kotlin properties produce incorrect `AnnotatedType`s on which most of SPQR is based. The most obvious implication is that `@GraphQLNonNull` (and other `TYPE_USE` annotations) won't work when used on Kotlin properties.
 There's nothing that can be done about this from our side so, for the time being, **Kotlin support is a non-goal of this project** but we will try to be compatible where possible.
 
+## Known issues with OpenJDK
+
+There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8146854) in OpenJDK's annotation parser that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious `AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull` occuring
+when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`. Oracle JDK does not have this bug.
+Do note it is only relevant which Java **compiles** the sources, not which Java _runs_ the code. Also note that IntelliJ IDEA comes bundled with OpenJDK, so building the project in IDEA may lead to this error. You should configure your IDE to use the system Java if it is different.
+
 ## Code-first approach
 
 When developing GraphQL-enabled applications it is common to define the schema first and hook up the business logic later. This is known as the schema-first style. While it has its advantages, in strongly and statically typed languages, like Java, it leads to a lot of duplication.
