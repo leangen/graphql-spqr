@@ -1050,7 +1050,6 @@ public class GraphQLSchemaGenerator {
         }
     }
 
-    //TODO Remove MemoizedValueMapperFactory
     private static class MemoizedValueMapperFactory<T extends ValueMapper> implements ValueMapperFactory<T> {
 
         private final T defaultValueMapper;

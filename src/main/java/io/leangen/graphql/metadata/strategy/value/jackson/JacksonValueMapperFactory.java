@@ -63,23 +63,31 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         public ObjectMapper configure(ObjectMapper objectMapper, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
             ObjectMapper mapper = objectMapper
                     .findAndRegisterModules()
-                    .registerModule(getAnnotationIntrospectorModule(collectSubtypes(concreteSubTypes, metaDataGen)));
+                    .registerModule(getAnnotationIntrospectorModule(unambiguousSubtypes(concreteSubTypes), ambiguousSubtypes(concreteSubTypes, metaDataGen)));
             if (environment != null && !environment.getInputConverters().isEmpty()) {
                 mapper.registerModule(getDeserializersModule(environment));
             }
             return mapper;
         }
 
-        private Map<Type, List<NamedType>> collectSubtypes(Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen) {
+        private Map<Class, Class> unambiguousSubtypes(Map<Class, List<Class>> concreteSubTypes) {
+            return concreteSubTypes.entrySet().stream()
+                    .filter(entry -> entry.getValue().size() == 1)
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
+        }
+
+        private Map<Type, List<NamedType>> ambiguousSubtypes(Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen) {
             Map<Type, List<NamedType>> types = new HashMap<>();
-            concreteSubTypes.forEach((abstractType, concreteTypes) -> {
-                List<NamedType> subTypes = concreteTypes.stream()
-                        .map(sub -> new NamedType(sub, metaDataGen.generateTypeName(GenericTypeReflector.annotate(sub))))
-                        .collect(Collectors.toList());
-                if (!subTypes.isEmpty()) {
-                    types.put(abstractType, subTypes);
-                }
-            });
+            concreteSubTypes.entrySet().stream()
+                    .filter(entry -> entry.getValue().size() > 1)
+                    .forEach(entry -> {
+                        List<NamedType> subTypes = entry.getValue().stream()
+                                .map(sub -> new NamedType(sub, metaDataGen.generateTypeName(GenericTypeReflector.annotate(sub))))
+                                .collect(Collectors.toList());
+                        if (!subTypes.isEmpty()) {
+                            types.put(entry.getKey(), subTypes);
+                        }
+                    });
             return types;
         }
 
@@ -102,14 +110,16 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
             };
         }
 
-        private Module getAnnotationIntrospectorModule(Map<Type, List<NamedType>> typeMap) {
-            return new SimpleModule("graphql-spqr-annotation-introspector") {
+        private Module getAnnotationIntrospectorModule(Map<Class, Class> unambiguousTypes, Map<Type, List<NamedType>> ambiguousTypes) {
+            SimpleModule module = new SimpleModule("graphql-spqr-annotation-introspector") {
                 @Override
                 public void setupModule(SetupContext context) {
                     super.setupModule(context);
-                    context.insertAnnotationIntrospector(new AnnotationIntrospector(typeMap));
+                    context.insertAnnotationIntrospector(new AnnotationIntrospector(ambiguousTypes));
                 }
             };
+            unambiguousTypes.forEach(module::addAbstractTypeMapping);
+            return module;
         }
     }
 

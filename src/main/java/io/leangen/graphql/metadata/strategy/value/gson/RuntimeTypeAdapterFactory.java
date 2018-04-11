@@ -194,6 +194,11 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
                 }
                 JsonElement labelJsonElement = jsonElement.getAsJsonObject().remove(typeFieldName);
                 if (labelJsonElement == null) {
+                    if (labelToDelegate.size() == 1) {
+                        @SuppressWarnings("unchecked")
+                        TypeAdapter<R> delegate = (TypeAdapter<R>) labelToDelegate.values().iterator().next();
+                        return delegate.fromJsonTree(jsonElement);
+                    }
                     log.warn("Cannot properly deserialize " + baseType
                             + " because it does not define a field named " + typeFieldName + "; falling back to defaults");
                     return defaultDelegate.fromJsonTree(jsonElement);

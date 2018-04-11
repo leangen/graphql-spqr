@@ -9,15 +9,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedType;
-
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
+
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedType;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ConvertingDeserializer extends JsonDeserializer implements ContextualDeserializer {
 
@@ -43,13 +44,22 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
     @Override
     public JsonDeserializer<?> createContextual(DeserializationContext deserializationContext, BeanProperty beanProperty) {
         JavaType javaType = deserializationContext.getContextualType() != null ? deserializationContext.getContextualType() : extractType(beanProperty.getMember());
-        Annotation[] annotations = beanProperty != null ? beanProperty.getMember().getAnnotated().getAnnotations() : new Annotation[0];
+        Annotation[] annotations = annotations(beanProperty);
         AnnotatedType detectedType = ClassUtils.addAnnotations(TypeUtils.toJavaType(javaType), annotations);
         if (inputConverter.supports(detectedType)) {
             return new ConvertingDeserializer(detectedType, inputConverter, environment, (ObjectMapper) deserializationContext.getParser().getCodec());
         } else {
             return new DefaultDeserializer(javaType);
         }
+    }
+
+    private Annotation[] annotations(BeanProperty beanProperty) {
+        if (beanProperty == null) {
+            return new Annotation[0];
+        }
+        List<Annotation> annotations = new ArrayList<>();
+        beanProperty.getMember().getAllAnnotations().annotations().forEach(annotations::add);
+        return annotations.toArray(new Annotation[annotations.size()]);
     }
 
     @Override

@@ -122,11 +122,11 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
             List<AnnotatedType> impls = buildContext.abstractInputHandler.findConcreteSubTypes(raw, buildContext).stream()
                     .map(GenericTypeReflector::annotate)
                     .collect(Collectors.toList());
-            if (!impls.isEmpty()) {
+            if (impls.size() > 1) {
                 buildContext.typeCache.register(typeName);
                 GraphQLEnumType.Builder builder = GraphQLEnumType.newEnum()
                         .name(typeName)
-                        .description("Input type disambiguator");
+                        .description("Input type discriminator");
                 impls.stream()
                         .map(buildContext.typeInfoGenerator::generateTypeName)
                         .forEach(builder::value);
