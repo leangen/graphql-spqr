@@ -10,6 +10,7 @@ import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
+import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
@@ -57,11 +58,12 @@ public class IdAdapter implements TypeMapper, ArgumentInjector, OutputConverter<
     }
 
     @Override
-    public Object getArgumentValue(Object input, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        if (input == null) {
+    public Object getArgumentValue(ArgumentInjectorParams params) {
+        if (params.getInput() == null) {
             return null;
         }
-        return convertInput(input.toString(), type, resolutionEnvironment.globalEnvironment, resolutionEnvironment.valueMapper);
+        ResolutionEnvironment env = params.getResolutionEnvironment();
+        return convertInput(params.getInput().toString(), params.getType(), env.globalEnvironment, env.valueMapper);
     }
 
     @Override

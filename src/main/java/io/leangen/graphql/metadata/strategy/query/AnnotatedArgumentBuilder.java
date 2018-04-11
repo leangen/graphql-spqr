@@ -45,6 +45,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
                     getArgumentName(parameter, parameterType, params.getInclusionStrategy()),
                     getArgumentDescription(parameter, parameterType),
                     defaultValue(parameter, parameterType),
+                    parameter,
                     parameter.isAnnotationPresent(GraphQLContext.class),
                     params.getInclusionStrategy().includeArgument(parameter, parameterType)
             ));

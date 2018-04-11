@@ -1,15 +1,17 @@
 package io.leangen.graphql.execution;
 
-import java.lang.reflect.AnnotatedType;
-import java.util.List;
-
 import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Parameter;
+import java.util.List;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -49,7 +51,13 @@ public class ResolutionEnvironment {
         return outputConverter == null ? (S) output : outputConverter.convertOutput(output, type, this);
     }
 
-    public Object getInputValue(Object input, AnnotatedType type) {
-        return this.globalEnvironment.injectors.getInjector(type).getArgumentValue(input, type, this);
+    public Object getInputValue(Object input, AnnotatedType type, Parameter parameter) {
+        ArgumentInjectorParams params = ArgumentInjectorParams.builder()
+                .withInput(input)
+                .withType(type)
+                .withParameter(parameter)
+                .withResolutionEnvironment(this)
+                .build();
+        return this.globalEnvironment.injectors.getInjector(type).getArgumentValue(params);
     }
 }
