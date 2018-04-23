@@ -27,7 +27,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
     private String[] basePackages;
     private boolean javaDeprecation;
     private Function<Method, String> descriptionMapper = method -> "";
-    private Function<Method, String> deprecationReasonMapper = method -> javaDeprecation && method.isAnnotationPresent(Deprecated.class) ? "" : null;
+    private Function<Method, String> deprecationReasonMapper = method -> javaDeprecation && method.isAnnotationPresent(Deprecated.class) ? "Deprecated" : null;
 
     public PublicResolverBuilder() {
         this(new String[0]);
