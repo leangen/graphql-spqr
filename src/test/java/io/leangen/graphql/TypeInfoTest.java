@@ -71,7 +71,7 @@ public class TypeInfoTest {
 
             assertEquals(respectJavaDeprecation, field.isDeprecated());
             if (respectJavaDeprecation) {
-                assertEquals("", field.getDeprecationReason());
+                assertEquals("Deprecated", field.getDeprecationReason());
             }
         }
 
