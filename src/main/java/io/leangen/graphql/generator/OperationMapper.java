@@ -49,6 +49,7 @@ import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
 import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
+import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
 
 /**
  * <p>Drives the work of mapping Java structures into their GraphQL representations.</p>
@@ -249,18 +250,18 @@ public class OperationMapper {
         GraphQLInputObjectType inputObjectType = newInputObject()
                 .name(mutation.getName() + "Input")
                 .field(newInputObjectField()
-                        .name("clientMutationId")
+                        .name(CLIENT_MUTATION_ID)
                         .type(new GraphQLNonNull(GraphQLString)))
                 .fields(inputFields)
                 .build();
         GraphQLObjectType outputType = newObject()
                 .name(mutation.getName() + "Payload")
                 .field(newFieldDefinition()
-                        .name("clientMutationId")
+                        .name(CLIENT_MUTATION_ID)
                         .type(new GraphQLNonNull(GraphQLString))
                         .dataFetcher(env -> env.getContext() instanceof ContextWrapper
-                                ? ((ContextWrapper) env.getContext()).getExtension("clientMutationId")
-                                : new PropertyDataFetcher("clientMutationId")))
+                                ? ((ContextWrapper) env.getContext()).getClientMutationId()
+                                : new PropertyDataFetcher(CLIENT_MUTATION_ID)))
                 .fields(outputFields)
                 .build();
 
@@ -276,7 +277,7 @@ public class OperationMapper {
                     env.getArguments().putAll(input);
                     if (env.getContext() instanceof ContextWrapper) {
                         ContextWrapper context = env.getContext();
-                        context.putExtension("clientMutationId", env.getArgument("clientMutationId"));
+                        context.setClientMutationId(env.getArgument(CLIENT_MUTATION_ID));
 //                        if (!(mutation.getType() instanceof GraphQLObjectType)) {
 //                            Object result = mutation.getDataFetcher().get(env);
 //                            context.putExtension("result", result);

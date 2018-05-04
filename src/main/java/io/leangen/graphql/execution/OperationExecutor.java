@@ -12,6 +12,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Map;
 
+import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
+
 /**
  * Created by bojan.tomic on 1/29/17.
  */
@@ -31,8 +33,8 @@ public class OperationExecutor {
         Resolver resolver;
         if (env.getContext() instanceof ContextWrapper) {
             ContextWrapper context = env.getContext();
-            if (env.getArguments().get("clientMutationId") != null) {
-                context.putExtension("clientMutationId", env.getArguments().get("clientMutationId"));
+            if (env.getArguments().get(CLIENT_MUTATION_ID) != null) {
+                context.setClientMutationId((String) env.getArguments().get(CLIENT_MUTATION_ID));
             }
         }
 
