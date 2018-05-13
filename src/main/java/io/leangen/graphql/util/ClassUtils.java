@@ -182,13 +182,9 @@ public class ClassUtils {
         return erased;
     }
 
-    @SuppressWarnings("SimplifiableIfStatement")
+    // The reason this exists is to allow for potential additional checks that GeAnTyRef doesn't perform,
+    // like whether the given ParameterizedType has unresolved wildcards and/or variables
     public static boolean isMissingTypeParameters(Type type) {
-        if (type instanceof Class
-                && (((Class) type).getEnclosingClass() == null || Modifier.isStatic(((Class) type).getModifiers()))
-                && ((Class) type).getTypeParameters().length == 0) {
-            return false;
-        }
         return GenericTypeReflector.isMissingTypeParameters(type);
     }
 

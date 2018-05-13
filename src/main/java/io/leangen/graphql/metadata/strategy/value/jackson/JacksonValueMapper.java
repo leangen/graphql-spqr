@@ -138,7 +138,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
             if (!refined.getRawClass().equals(raw)) {
                 if (GenericTypeReflector.isSuperType(realType.getType(), refined.getRawClass())) {
                     AnnotatedType candidate = GenericTypeReflector.getExactSubType(realType, refined.getRawClass());
-                    if (!GenericTypeReflector.isMissingTypeParameters(candidate.getType())) {
+                    if (!ClassUtils.isMissingTypeParameters(candidate.getType())) {
                         return candidate;
                     }
                 }
