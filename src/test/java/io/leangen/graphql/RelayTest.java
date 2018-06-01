@@ -11,6 +11,7 @@ import graphql.relay.ConnectionCursor;
 import graphql.relay.DefaultEdge;
 import graphql.relay.Edge;
 import graphql.relay.PageInfo;
+import graphql.relay.Relay;
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
@@ -219,6 +220,23 @@ public class RelayTest {
     @Test
     public void testDirectNodeQuery() {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withOperationsFromSingletons(new BookService())
+                .generate();
+
+        assertNotNull(schema.getQueryType().getFieldDefinition("node"));
+
+        String id = "x123";
+        String globalId = new Relay().toGlobalId(Book.class.getSimpleName(),"\"" + id + "\"");
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = exe.execute("{node(id: \"" + globalId + "\") {id ... on Book {title}}}");
+        assertTrue(result.getErrors().isEmpty());
+        assertValueAtPathEquals(globalId, result, "node.id");
+        assertValueAtPathEquals("Node Book", result, "node.title");
+    }
+
+    @Test
+    public void testDirectNodeQueryComplexId() {
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
                 .withOperationsFromSingletons(new BookService(), new DescriptorService())
                 .generate();
 
@@ -227,9 +245,7 @@ public class RelayTest {
         assertTrue(GraphQLUtils.isRelayId((schema.getQueryType().getFieldDefinition("descriptor").getArgument("id"))));
 
         GraphQL exe = GraphQL.newGraphQL(schema).build();
-        ExecutionResult result = exe.execute("{node(id: \"Qm9vazprZXds\") {id}}");
-        assertTrue(result.getErrors().isEmpty());
-        result = exe.execute("{node(id: \"Qm9vazp7InRpdGxlIjoiVGhlIGtleSBib29rIiwiaWQiOiI3NzcifQ==\") {id ... on Descriptor {text}}}");
+        ExecutionResult result = exe.execute("{node(id: \"Qm9vazp7InRpdGxlIjoiVGhlIGtleSBib29rIiwiaWQiOiI3NzcifQ==\") {id ... on Descriptor {text}}}");
         assertTrue(result.getErrors().isEmpty());
     }
 
@@ -294,6 +310,24 @@ public class RelayTest {
         ExecutionResult result = exe.execute("{node(id: \"Q2F0Ojg=\") {id ... on Cat {name}}}");
         assertTrue(result.getErrors().isEmpty());
         assertValueAtPathEquals("Correct", result, "node.name");
+    }
+
+    @Test
+    public void testRelayId() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new BookService())
+                .generate();
+        GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
+        String id = "x123";
+        String expectedId = new Relay().toGlobalId(Book.class.getSimpleName(),"\"" + id + "\"");
+        ExecutionResult result = exe.execute("{books(first:10, after:\"\") {edges {node {title id}}}}");
+        assertTrue(result.getErrors().isEmpty());
+        assertValueAtPathEquals("Tesseract", result, "books.edges.0.node.title");
+        assertValueAtPathEquals(expectedId, result, "books.edges.0.node.id");
+        result = exe.execute("{book(id:\"" + expectedId + "\") {title id}}");
+        assertTrue(result.getErrors().isEmpty());
+        assertValueAtPathEquals("Node Book", result, "book.title");
+        assertValueAtPathEquals(expectedId, result, "book.id");
     }
 
     private void testPagedQuery(String query) {
