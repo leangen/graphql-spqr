@@ -7,7 +7,6 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
-import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -22,8 +21,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests whether various input/output converters are doing their job
@@ -44,7 +43,7 @@ public class ConversionTest {
         GraphQL api = getApi();
 
         ExecutionResult result = api.execute("{echo(in:{name: \"xyz\", stream: [[\"test1\", \"test2\"]]}) {name, stream}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("xyz", result, "echo.name");
         assertValueAtPathEquals("test1", result, "echo.stream.0.0");
         assertValueAtPathEquals("test2", result, "echo.stream.0.1");
@@ -55,7 +54,7 @@ public class ConversionTest {
         GraphQL api = getApi();
 
         ExecutionResult result = api.execute("{echo(in:{name: \"xyz\", mapList: [[{key: \"test1\", value:1}, {key: \"test2\", value:2}]]}) {name, mapList {key, value}}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("xyz", result, "echo.name");
         assertValueAtPathEquals("test1", result, "echo.mapList.0.0.key");
         assertValueAtPathEquals(1, result, "echo.mapList.0.0.value");
@@ -68,7 +67,7 @@ public class ConversionTest {
         GraphQL api = getApi();
 
         ExecutionResult result = api.execute("{echo(in:{binaries: [\"Y2F0cyBhcmUgY3VkZGx5\", \"YnVubmllcyBhcmUgY3VkZGx5IHRvbw==\"]}) {binaries}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("Y2F0cyBhcmUgY3VkZGx5", result, "echo.binaries.0");
         assertValueAtPathEquals("YnVubmllcyBhcmUgY3VkZGx5IHRvbw==", result, "echo.binaries.1");
     }
@@ -81,7 +80,6 @@ public class ConversionTest {
     @Test
     public void testIdConversion() {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
-                .withDefaultArgumentInjectors()
                 .withValueMapperFactory(valueMapperFactory)
                 .withOperationsFromSingleton(new IdService())
                 .generate();
@@ -89,19 +87,17 @@ public class ConversionTest {
         GraphQL exe = GraphQL.newGraphQL(schema).build();
 
         ExecutionResult result = exe.execute("{echo(id: \"{\\\"key\\\": {\\\"some\\\": \\\"value\\\"}}\") {key}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
 
         result = exe.execute("{other(id: \"{\\\"value\\\": \\\"something\\\"}\")}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
     }
 
     private GraphQL getApi() {
         return GraphQL.newGraphQL(
                 new TestSchemaGenerator()
                         .withValueMapperFactory(valueMapperFactory)
-                        .withTypeAdapters(
-                                new MapToListTypeAdapter<>(),
-                                new StreamToCollectionTypeAdapter())
+                        .withTypeAdapters(new MapToListTypeAdapter<>())
                         .withOperationsFromSingleton(new ComplexService())
                         .generate())
                 .build();

@@ -1,12 +1,5 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
-
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
@@ -14,10 +7,16 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import org.junit.Test;
 
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class OptionalsTest {
 
@@ -48,19 +47,19 @@ public class OptionalsTest {
     public void testValues() {
         ExecutionResult result;
         result = exe.execute("{int(opt: 77)}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(77, result, "int");
         result = exe.execute("{long(opt: 77)}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(77L, result, "long");
         result = exe.execute("{double(opt: 77.77)}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(77.77, result, "double");
         result = exe.execute("{string(opt: \"xyz\")}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("xyz", result, "string");
         result = exe.execute("{nested(opt: \"xyz\")}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("xyz", result, "nested");
     }
 
@@ -68,19 +67,19 @@ public class OptionalsTest {
     public void testNullValues() {
         ExecutionResult result;
         result = exe.execute("{int}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(null, result, "int");
         result = exe.execute("{long}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(null, result, "long");
         result = exe.execute("{double}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(null, result, "double");
         result = exe.execute("{string}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(null, result, "string");
         result = exe.execute("{nested}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(null, result, "nested");
     }
 

@@ -1,10 +1,6 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import io.leangen.graphql.annotations.GraphQLArgument;
@@ -12,9 +8,13 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLRootContext;
 import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.domain.Street;
+import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests whether various argument injectors are doing their job
@@ -31,7 +31,7 @@ public class ArgumentInjectionTest {
     public void testMapRootContextInjection() {
         Map<String, String> context = new HashMap<>();
         context.put("target", TARGET_VALUE);
-        ExecutionResult result = getApi(SIMPLE).execute(ECHO_QUERY, context);
+        ExecutionResult result = execute(getApi(SIMPLE), ECHO_QUERY, context);
         assertValueAtPathEquals(TARGET_VALUE, result, ECHO);
     }
 
@@ -39,7 +39,7 @@ public class ArgumentInjectionTest {
     @SuppressWarnings("unchecked")
     public void testObjectRootContextInjection() {
         RootContext context = new RootContext(TARGET_VALUE);
-        ExecutionResult result = getApi(SIMPLE).execute(ECHO_QUERY, context);
+        ExecutionResult result = execute(getApi(SIMPLE), ECHO_QUERY, context);
         assertValueAtPathEquals(TARGET_VALUE, result, ECHO);
     }
 
@@ -47,7 +47,7 @@ public class ArgumentInjectionTest {
     @SuppressWarnings("unchecked")
     public void testTrickyRootContextInjection() {
         RootContext context = new TrickyRootContext(TARGET_VALUE + " random garbage");
-        ExecutionResult result = getApi(SIMPLE).execute(ECHO_QUERY, context);
+        ExecutionResult result = execute(getApi(SIMPLE), ECHO_QUERY, context);
         assertValueAtPathEquals(TARGET_VALUE, result, ECHO);
     }
 
@@ -55,7 +55,7 @@ public class ArgumentInjectionTest {
     @SuppressWarnings("unchecked")
     public void testNullArgument() {
         ExecutionResult result = getApi(new SimpleService2()).execute(ECHO_QUERY);
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(null, result, ECHO);
     }
 
@@ -65,6 +65,13 @@ public class ArgumentInjectionTest {
                         .withOperationsFromSingleton(service)
                         .generate())
                 .build();
+    }
+
+    private ExecutionResult execute(GraphQL graphQL, String query, Object context) {
+        return graphQL.execute(ExecutionInput.newExecutionInput()
+                .query(query)
+                .context(context)
+                .build());
     }
 
     public static class SimpleService {

@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 
 public class ObjectScalarTest {
 
@@ -31,6 +31,6 @@ public class ObjectScalarTest {
 
         GraphQL exe = GraphQL.newGraphQL(schema).queryExecutionStrategy(new BatchedExecutionStrategy()).build();
         ExecutionResult result = exe.execute("{processPatches(args: {op: replace, path: \"/active\", value: 1}){op}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
     }
 }

@@ -1,13 +1,5 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
@@ -20,7 +12,15 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLRootContext;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.SimpleUser;
+import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -34,13 +34,14 @@ public class BatchingTest {
                 .generate();
 
         AtomicBoolean runBatched = new AtomicBoolean(false);
+        @SuppressWarnings("deprecation")
         GraphQL batchExe = GraphQLRuntime.newGraphQL(schema).queryExecutionStrategy(new BatchedExecutionStrategy()).build();
         ExecutionResult result;
         result = batchExe.execute(ExecutionInput.newExecutionInput()
                 .query("{candidates {educations {startYear}}}")
                 .context(runBatched).build());
         assertTrue("Query didn't run in batched mode", runBatched.get());
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertEquals(3, ((Map<String, List>) result.getData()).get("candidates").size());
 
         //TODO put this back when/if the ability to expose nested queries as top-level is reintroduced
@@ -51,7 +52,7 @@ public class BatchingTest {
                     "{fullName: \"Two\"}," +
                     "{fullName: \"Three\"}" +
                 "]) {startYear}}", runBatched);
-        assertTrue(result.getErrors().isEmpty());*/
+        assertNoErrors(result);*/
     }
 
     public static class CandidatesService {

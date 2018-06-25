@@ -2,38 +2,43 @@ package io.leangen.graphql;
 
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.generator.mapping.common.ByteArrayToBase64Adapter;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.NonNullMapper;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
+import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
 import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SchemaGeneratorConfigurationTest {
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     private static List<TypeMapper> defaultMappers = getDefaultMappers();
 
     @Test
     public void testExplicitMappersOnly() {
-        ByteArrayToBase64Adapter byteMapper = new ByteArrayToBase64Adapter();
+        OptionalAdapter optionalAdapter = new OptionalAdapter();
         ScalarMapper scalarMapper =  new ScalarMapper();
         GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
-                .withTypeMappers(byteMapper, scalarMapper);
+                .withTypeMappers((config, mappers) -> Arrays.asList(optionalAdapter, scalarMapper));
         generator.generate();
 
         List<TypeMapper> typeMappers = getTypeMappers(generator);
         assertEquals(2, typeMappers.size());
-        assertEquals(byteMapper, typeMappers.get(0));
+        assertEquals(optionalAdapter, typeMappers.get(0));
         assertEquals(scalarMapper, typeMappers.get(1));
     }
 
@@ -76,21 +81,21 @@ public class SchemaGeneratorConfigurationTest {
     public void testExplicitPlusDefaultMappers() {
         GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
-                .withTypeMappers(new MapToListTypeAdapter())
-                .withDefaultMappers();
+                .withTypeMappers(new MapToListTypeAdapter());
         generator.generate();
 
         List<TypeMapper> typeMappers = getTypeMappers(generator);
         assertEquals(defaultMappers.size() + 1, typeMappers.size());
-        assertTrue(typeMappers.get(0) instanceof MapToListTypeAdapter);
+        assertTrue(typeMappers.get(2) instanceof MapToListTypeAdapter);
     }
 
     @Test
     public void testInsertedMappers() {
-        TypeMapper m1 = new MapToListTypeAdapter<>();
-        TypeMapper m2 = new MapToListTypeAdapter<>();
-        TypeMapper m11 = new MapToListTypeAdapter<>();
-        TypeMapper m21 = new MapToListTypeAdapter<>();
+        //using anonymous subclasses to work around the duplicate detection (instead of creating actual custom mappers)
+        TypeMapper m1 = new MapToListTypeAdapter();
+        TypeMapper m2 = new MapToListTypeAdapter(){};
+        TypeMapper m11 = new MapToListTypeAdapter(){};
+        TypeMapper m21 = new MapToListTypeAdapter(){};
         GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
                 .withTypeMappers((config, defaults) -> defaults
@@ -114,7 +119,7 @@ public class SchemaGeneratorConfigurationTest {
     public void testExplicitPlusModifiedDefaultMappers() {
         GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
-                .withTypeMappers(new MapToListTypeAdapter())
+                .withTypeMappers((conf, mappers) -> mappers.insert(0, new MapToListTypeAdapter()))
                 .withTypeMappers((conf, mappers) -> mappers.drop(NonNullMapper.class));
         generator.generate();
 
@@ -124,49 +129,68 @@ public class SchemaGeneratorConfigurationTest {
         assertTrue(typeMappers.stream().noneMatch(mapper -> mapper instanceof NonNullMapper));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testNoMappers() {
-        GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
-                .withOperationsFromSingleton(new Dummy())
-                .withTypeMappers((conf, mappers) -> Collections.emptyList());
-        generator.generate();
-    }
-
     @Test
-    public void testDuplicateDefaults() {
-        GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
-                .withOperationsFromSingleton(new Dummy())
-                .withDefaultMappers()
-                .withDefaultMappers()
-                .withTypeMappers((config, defaults) -> defaults)
-                .withTypeMappers((config, defaults) -> defaults);
-        generator.generate();
-
-        List<TypeMapper> typeMappers = getTypeMappers(generator);
-        assertEquals(defaultMappers.size(), typeMappers.size());
-    }
-
-    @Test
-    public void testExplicitDuplicates() {
-        ByteArrayToBase64Adapter byteMapper = new ByteArrayToBase64Adapter();
+    public void testDiscardedAdditions() {
+        OptionalAdapter optionalAdapter = new OptionalAdapter();
         ScalarMapper scalarMapper =  new ScalarMapper();
         GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
-                .withTypeMappers(byteMapper, scalarMapper)
-                .withTypeMappers(byteMapper, scalarMapper)
-                .withTypeMappers(((config, defaults) -> Arrays.asList(byteMapper, scalarMapper)));
+                .withTypeMappers(optionalAdapter, scalarMapper)
+                .withTypeMappers(((config, defaults) -> Arrays.asList(optionalAdapter, scalarMapper)));
         generator.generate();
 
         List<TypeMapper> typeMappers = getTypeMappers(generator);
         assertEquals(2, typeMappers.size());
-        assertEquals(byteMapper, typeMappers.get(0));
+        assertEquals(optionalAdapter, typeMappers.get(0));
         assertEquals(scalarMapper, typeMappers.get(1));
+    }
+
+    @Test
+    public void testNoMappers() {
+        GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(new Dummy())
+                .withTypeMappers((conf, mappers) -> Collections.emptyList());
+
+        thrown.expect(ConfigurationException.class);
+        thrown.expectMessage("No type mappers");
+
+        generator.generate();
+    }
+
+    @Test
+    @SuppressWarnings("CollectionAddedToSelf")
+    public void testDuplicateDefaults() {
+        GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(new Dummy())
+                .withTypeMappers((config, defaults) -> defaults.append(defaults))
+                .withTypeMappers((config, defaults) -> defaults.append(defaults))
+                .withTypeMappers((config, defaults) -> defaults)
+                .withTypeMappers((config, defaults) -> defaults);
+
+        thrown.expect(ConfigurationException.class);
+        thrown.expectMessage("Multiple");
+
+        generator.generate();
+    }
+
+    @Test
+    public void testExplicitDuplicates() {
+        OptionalAdapter optionalAdapter = new OptionalAdapter();
+        ScalarMapper scalarMapper =  new ScalarMapper();
+        GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(new Dummy())
+                .withTypeMappers(optionalAdapter, scalarMapper)
+                .withTypeMappers(optionalAdapter, scalarMapper);
+
+        thrown.expect(ConfigurationException.class);
+        thrown.expectMessage("Multiple");
+
+        generator.generate();
     }
 
     private static List<TypeMapper> getDefaultMappers() {
         GraphQLSchemaGenerator generator = new GraphQLSchemaGenerator()
-                .withOperationsFromSingleton(new Dummy())
-                .withDefaultMappers();
+                .withOperationsFromSingleton(new Dummy());
         generator.generate();
 
         return getTypeMappers(generator);

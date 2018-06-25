@@ -49,6 +49,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.StringContains.containsString;
@@ -123,7 +124,7 @@ public class RelayTest {
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
 
         ExecutionResult result = exe.execute(relayMapInputMutation);
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
     }
 
     @Test
@@ -157,7 +158,7 @@ public class RelayTest {
                 "       cursor, node {" +
                 "           title" +
                 "}}}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(100L, result, "extended.totalCount");
         assertValueAtPathEquals("Tesseract", result, "extended.edges.0.node.title");
     }
@@ -191,7 +192,7 @@ public class RelayTest {
                 "       color, cursor, node {" +
                 "           title" +
                 "}}}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals(100L, result, "extended.totalCount");
         assertValueAtPathEquals("Tesseract", result, "extended.edges.0.node.title");
     }
@@ -228,9 +229,9 @@ public class RelayTest {
 
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = exe.execute("{node(id: \"Qm9vazprZXds\") {id}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         result = exe.execute("{node(id: \"Qm9vazp7InRpdGxlIjoiVGhlIGtleSBib29rIiwiaWQiOiI3NzcifQ==\") {id ... on Descriptor {text}}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
     }
 
     @Test
@@ -244,9 +245,9 @@ public class RelayTest {
 
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = exe.execute("{node(id: \"Q2F0OjY2Ng==\") {id}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         result = exe.execute("{node(id: \"Um9ib3Q6NjY2\") {id ... on Robot {name}}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
     }
 
     @Test
@@ -260,7 +261,7 @@ public class RelayTest {
 
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = exe.execute("{node(id: \"Um9ib3Q6NjY2\") {id ... on Robot {name}}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
     }
 
     @Test
@@ -274,10 +275,10 @@ public class RelayTest {
 
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = exe.execute("{node(id: \"Q2F0Ojg=\") {id ... on Cat {name}}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("Correct", result, "node.name");
         result = exe.execute("{node(id: \"RG9nOjk=\") {id ... on Dog {sound}}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("Correct", result, "node.sound");
     }
 
@@ -292,7 +293,7 @@ public class RelayTest {
 
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = exe.execute("{node(id: \"Q2F0Ojg=\") {id ... on Cat {name}}}");
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("Correct", result, "node.name");
     }
 
@@ -303,7 +304,7 @@ public class RelayTest {
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
 
         ExecutionResult result = exe.execute(simplePagedQueryTemplate.replace("#query", query));
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
     }
 
     public static class Book {

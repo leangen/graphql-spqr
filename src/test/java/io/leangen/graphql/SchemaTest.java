@@ -18,7 +18,7 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 
 @RunWith(Parameterized.class)
 public class SchemaTest {
@@ -105,15 +105,15 @@ public class SchemaTest {
         ExecutionResult result;
 
         result = execute(exe, simpleFragmentQuery, context);
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         result = execute(exe, complexGenericInputQuery, context);
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         result = execute(exe, simpleQuery, context);
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         result = execute(exe, simpleQueryWithNullInput, context);
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         result = execute(exe, mapInputMutation, context);
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
     }
 
     private ExecutionResult execute(GraphQL graphQL, String operation, Object context) {

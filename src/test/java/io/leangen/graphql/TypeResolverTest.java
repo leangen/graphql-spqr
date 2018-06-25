@@ -18,8 +18,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -38,12 +38,12 @@ public class TypeResolverTest {
                 "... on SessionRepo_Street {street: item {name}} " +
                 "... on SessionRepo_Education {school: item {schoolName}}}}";
         ExecutionResult result = exe.execute(String.format(queryTemplate, 2));
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("Baker street", result, "repo.0.0.street.name");
 //        exe.execute("{repo(id: 3) {key {identifier  ... on SessionRepo_Street {street: item {name}} ... on SessionRepo_Education {school: item {schoolName}}}}}}", new HashMap<>());
 //        result = exe.execute("{repo(id: 3) {identifier  ... on SessionRepo_Street {street: item {name}} }}");
         result = exe.execute(String.format(queryTemplate, 3));
-        assertTrue(result.getErrors().isEmpty());
+        assertNoErrors(result);
         assertValueAtPathEquals("Alma Mater", result, "repo.0.0.school.schoolName");
     }
     
