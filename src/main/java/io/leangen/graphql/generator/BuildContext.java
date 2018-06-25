@@ -72,7 +72,8 @@ public class BuildContext {
                         TypeInfoGenerator typeInfoGenerator, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldDiscoveryStrategy inputFieldStrategy, InclusionStrategy inclusionStrategy,
-                        RelayMappingConfig relayMappingConfig, Set<GraphQLType> knownTypes, ImplementationDiscoveryStrategy implementationStrategy) {
+                        RelayMappingConfig relayMappingConfig, Set<GraphQLType> knownTypes, List<Set<AnnotatedType>> typeAliasGroups,
+                        ImplementationDiscoveryStrategy implementationStrategy) {
         this.operationRepository = operationRepository;
         this.typeRepository = environment.typeRepository;
         this.typeCache = new TypeCache(knownTypes);
@@ -95,7 +96,7 @@ public class BuildContext {
         this.abstractInputHandler = abstractInputHandler;
         this.globalEnvironment = environment;
         this.relayMappingConfig = relayMappingConfig;
-        this.validator = new Validator(environment, typeMappers, knownTypes);
+        this.validator = new Validator(environment, typeMappers, knownTypes, typeAliasGroups);
     }
 
     ValueMapper createValueMapper(Stream<AnnotatedType> inputTypes) {

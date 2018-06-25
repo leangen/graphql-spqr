@@ -4,7 +4,6 @@ import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.generator.mapping.common.IdAdapter;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 
@@ -45,28 +44,22 @@ public interface SimpleModule extends Module {
     @Override
     default void setUp(SetupContext context) {
         if (!getResolverBuilders().isEmpty()) {
-            context.getSchemaGenerator().withResolverBuilders(
-                    (config, defaults) -> defaults.insert(0, getResolverBuilders().toArray(new ResolverBuilder[0])));
+            context.getSchemaGenerator().withResolverBuilders(getResolverBuilders().toArray(new ResolverBuilder[0]));
         }
         if (!getNestedResolverBuilders().isEmpty()) {
-            context.getSchemaGenerator().withNestedResolverBuilders(
-                    (config, defaults) -> defaults.insert(0, getNestedResolverBuilders().toArray(new ResolverBuilder[0])));
+            context.getSchemaGenerator().withNestedResolverBuilders(getNestedResolverBuilders().toArray(new ResolverBuilder[0]));
         }
         if (!getTypeMappers().isEmpty()) {
-            context.getSchemaGenerator().withTypeMappers(
-                    (config, defaults) -> defaults.insertAfter(IdAdapter.class, getTypeMappers().toArray(new TypeMapper[0])));
+            context.getSchemaGenerator().withTypeMappers(getTypeMappers().toArray(new TypeMapper[0]));
         }
         if (!getOutputConverters().isEmpty()) {
-            context.getSchemaGenerator().withOutputConverters(
-                    (config, defaults) -> defaults.insertAfter(IdAdapter.class, getOutputConverters().toArray(new OutputConverter[0])));
+            context.getSchemaGenerator().withOutputConverters(getOutputConverters().toArray(new OutputConverter[0]));
         }
         if (!getInputConverters().isEmpty()) {
-            context.getSchemaGenerator().withInputConverters(
-                    (config, defaults) -> defaults.insert(0, getInputConverters().toArray(new InputConverter[0])));
+            context.getSchemaGenerator().withInputConverters(getInputConverters().toArray(new InputConverter[0]));
         }
         if (!getArgumentInjectors().isEmpty()) {
-            context.getSchemaGenerator().withArgumentInjectors(
-                    (config, defaults) -> defaults.insert(0, getArgumentInjectors().toArray(new ArgumentInjector[0])));
+            context.getSchemaGenerator().withArgumentInjectors(getArgumentInjectors().toArray(new ArgumentInjector[0]));
         }
         if (getTypeInfoGenerator().isPresent()) {
             context.getSchemaGenerator().withTypeInfoGenerator(getTypeInfoGenerator().get());

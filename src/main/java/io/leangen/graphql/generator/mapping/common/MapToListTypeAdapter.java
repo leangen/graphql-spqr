@@ -76,8 +76,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return super.supports(type) && !type.isAnnotationPresent(GraphQLScalar.class)
-                && !type.getType().equals(ObjectScalarAdapter.ScalarMap.class);
+        return super.supports(type) && !type.isAnnotationPresent(GraphQLScalar.class);
     }
 
     private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType, BuildContext buildContext) {

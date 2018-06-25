@@ -1,9 +1,15 @@
 package io.leangen.graphql.util;
 
+import io.leangen.graphql.extension.Module;
+import io.leangen.graphql.extension.common.gson.GsonModule;
+import io.leangen.graphql.extension.common.jackson.JacksonModule;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Defaults {
 
@@ -23,12 +29,20 @@ public class Defaults {
 
     private static JsonLib jsonLibrary() {
         for (JsonLib jsonLib : JsonLib.values()) {
-            try {
-                ClassUtils.forName(jsonLib.requiredClass);
+            if (isAvailable(jsonLib)) {
                 return jsonLib;
-            } catch (ClassNotFoundException ge) {/*no-op*/}
+            }
         }
         throw noJsonLib;
+    }
+
+    private static boolean isAvailable(JsonLib jsonLib) {
+        try {
+            ClassUtils.forName(jsonLib.requiredClass);
+            return true;
+        } catch (ClassNotFoundException ge) {
+            return false;
+        }
     }
 
     public static ValueMapperFactory valueMapperFactory(TypeInfoGenerator typeInfoGenerator) {
@@ -41,5 +55,16 @@ public class Defaults {
                     .build();
             default: throw noJsonLib;
         }
+    }
+
+    public static List<Module> modules() {
+        List<Module> defaultModules = new ArrayList<>(2);
+        if (isAvailable(JsonLib.JACKSON)) {
+            defaultModules.add(new JacksonModule());
+        }
+        if (isAvailable(JsonLib.GSON)) {
+            defaultModules.add(new GsonModule());
+        }
+        return defaultModules;
     }
 }

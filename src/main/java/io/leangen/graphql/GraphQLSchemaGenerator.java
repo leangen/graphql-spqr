@@ -4,11 +4,13 @@ import graphql.relay.Relay;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import io.leangen.geantyref.AnnotatedTypeSet;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.extension.ExtensionProvider;
 import io.leangen.graphql.extension.GraphQLSchemaProcessor;
+import io.leangen.graphql.extension.Module;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.OperationRepository;
@@ -25,7 +27,6 @@ import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.mapping.common.ArrayAdapter;
-import io.leangen.graphql.generator.mapping.common.ByteArrayToBase64Adapter;
 import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
 import io.leangen.graphql.generator.mapping.common.ContextInjector;
 import io.leangen.graphql.generator.mapping.common.EnumMapToObjectTypeAdapter;
@@ -87,12 +88,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
@@ -154,15 +153,17 @@ public class GraphQLSchemaGenerator {
     private List<TypeMapper> typeMappers;
     private boolean respectJavaDeprecation = true;
     private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
-    private final Set<ExtensionProvider<TypeMapper>> typeMapperProviders = new LinkedHashSet<>();
-    private final Set<ExtensionProvider<InputConverter>> inputConverterProviders = new LinkedHashSet<>();
-    private final Set<ExtensionProvider<OutputConverter>> outputConverterProviders = new LinkedHashSet<>();
-    private final Set<ExtensionProvider<ArgumentInjector>> argumentInjectorProviders = new LinkedHashSet<>();
-    private final Set<ExtensionProvider<ResolverBuilder>> resolverBuilderProviders = new LinkedHashSet<>();
-    private final Set<ExtensionProvider<ResolverBuilder>> nestedResolverBuilderProviders = new LinkedHashSet<>();
+    private final List<ExtensionProvider<TypeMapper>> typeMapperProviders = new ArrayList<>();
+    private final List<ExtensionProvider<InputConverter>> inputConverterProviders = new ArrayList<>();
+    private final List<ExtensionProvider<OutputConverter>> outputConverterProviders = new ArrayList<>();
+    private final List<ExtensionProvider<ArgumentInjector>> argumentInjectorProviders = new ArrayList<>();
+    private final List<ExtensionProvider<ResolverBuilder>> resolverBuilderProviders = new ArrayList<>();
+    private final List<ExtensionProvider<ResolverBuilder>> nestedResolverBuilderProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Module>> moduleProviders = new ArrayList<>();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Set<GraphQLType> additionalTypes = new HashSet<>();
+    private final List<Set<AnnotatedType>> aliasGroups = new ArrayList<>();
 
     private final String queryRoot;
     private final String mutationRoot;
@@ -405,8 +406,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withResolverBuilders(ResolverBuilder... resolverBuilders) {
-        this.resolverBuilderProviders.add(fixedConfig(resolverBuilders));
-        return this;
+        return withResolverBuilders((config, defaults) -> defaults.insert(0, resolverBuilders));
     }
 
     public GraphQLSchemaGenerator withResolverBuilders(ExtensionProvider<ResolverBuilder> provider) {
@@ -422,8 +422,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withNestedResolverBuilders(ResolverBuilder... resolverBuilders) {
-        this.nestedResolverBuilderProviders.add(fixedConfig(resolverBuilders));
-        return this;
+        return withNestedResolverBuilders((config, defaults) -> defaults.insert(0, resolverBuilders));
     }
 
     public GraphQLSchemaGenerator withNestedResolverBuilders(ExtensionProvider<ResolverBuilder> provider) {
@@ -502,7 +501,11 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withTypeMappers(TypeMapper... typeMappers) {
-        this.typeMapperProviders.add(fixedConfig(typeMappers));
+        return withTypeMappers((conf, current) -> current.insertAfterOrAppend(IdAdapter.class, typeMappers));
+    }
+
+    public GraphQLSchemaGenerator withTypeMappersPrepended(TypeMapper... typeMappers) {
+        this.typeMapperProviders.add(0, (conf, current) -> current.insertAfterOrAppend(IdAdapter.class, typeMappers));
         return this;
     }
 
@@ -535,7 +538,11 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withInputConverters(InputConverter<?,?>... inputConverters) {
-        this.inputConverterProviders.add(fixedConfig(inputConverters));
+        return withInputConverters((config, current) -> current.insert(0, inputConverters));
+    }
+
+    public GraphQLSchemaGenerator withInputConvertersPrepended(InputConverter<?,?>... inputConverters) {
+        this.inputConverterProviders.add(0, (config, current) -> current.insert(0, inputConverters));
         return this;
     }
 
@@ -558,7 +565,11 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOutputConverters(OutputConverter<?,?>... outputConverters) {
-        this.outputConverterProviders.add(fixedConfig(outputConverters));
+        return withOutputConverters((config, current) -> current.insertAfterOrAppend(IdAdapter.class, outputConverters));
+    }
+
+    public GraphQLSchemaGenerator withOutputConvertersPrepended(OutputConverter<?,?>... outputConverters) {
+        this.outputConverterProviders.add(0, (config, current) -> current.insertAfterOrAppend(IdAdapter.class, outputConverters));
         return this;
     }
 
@@ -587,14 +598,13 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withTypeAdapters(AbstractTypeAdapter<?,?>... typeAdapters) {
-        withInputConverters((conf, defaults) -> defaults.insert(0, typeAdapters));
-        withOutputConverters((conf, defaults) -> defaults.insert(0, typeAdapters));
+        withInputConverters(typeAdapters);
+        withOutputConverters(typeAdapters);
         return withTypeMappers((conf, defaults) -> defaults.insertAfter(ScalarMapper.class, typeAdapters));
     }
 
     public GraphQLSchemaGenerator withArgumentInjectors(ArgumentInjector... argumentInjectors) {
-        this.argumentInjectorProviders.add(fixedConfig(argumentInjectors));
-        return this;
+        return withArgumentInjectors((config, current) -> current.insert(0, argumentInjectors));
     }
 
     public GraphQLSchemaGenerator withArgumentInjectors(ExtensionProvider<ArgumentInjector> provider) {
@@ -602,10 +612,32 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withModules(Module... modules) {
+        return withModules((config, current) -> current.append(modules));
+    }
+
+    public GraphQLSchemaGenerator withModules(ExtensionProvider<Module> provider) {
+        this.moduleProviders.add(provider);
+        return this;
+    }
+
     public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes) {
         additionalTypes.stream()
                 .filter(type -> !isInternalType(type))
                 .forEach(this.additionalTypes::add);
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withTypeAliasGroup(Type... aliases) {
+        return withTypeAliasGroup(Arrays.stream(aliases)
+                .map(GenericTypeReflector::annotate)
+                .toArray(AnnotatedType[]::new));
+    }
+
+    public GraphQLSchemaGenerator withTypeAliasGroup(AnnotatedType... aliases) {
+        Set<AnnotatedType> aliasGroup = new AnnotatedTypeSet<>();
+        Collections.addAll(aliasGroup, aliases);
+        this.aliasGroups.add(aliasGroup);
         return this;
     }
 
@@ -663,101 +695,6 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
-     * Registers all built-in {@link TypeMapper}s, {@link InputConverter}s and {@link OutputConverter}s
-     * <p>Equivalent to calling {@code withDefaultResolverBuilders().withDefaultMappers().withDefaultConverters()}</p>
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     *
-     * @deprecated No longer needed, as {@code withXYZ(ExtensionProvider)} methods provide a better alternative
-     */
-    @Deprecated
-    public GraphQLSchemaGenerator withDefaults() {
-        return withDefaultResolverBuilders()
-                .withDefaultNestedResolverBuilders()
-                .withDefaultMappers()
-                .withDefaultConverters()
-                .withDefaultArgumentInjectors();
-    }
-
-    /**
-     * Registers all built-in {@link TypeMapper}s
-     * <p>See {@link #withTypeMappers(TypeMapper...)}</p>
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     *
-     * @deprecated No longer needed, as {@link #withTypeMappers(ExtensionProvider)} provides a better alternative
-     */
-    @Deprecated
-    public GraphQLSchemaGenerator withDefaultMappers() {
-        return withTypeMappers(defaultConfig());
-    }
-
-    /**
-     * @deprecated No longer needed, as {@link #withInputConverters(ExtensionProvider)} provides a better alternative
-     */
-    @Deprecated
-    public GraphQLSchemaGenerator withDefaultInputConverters() {
-        return withInputConverters(defaultConfig());
-    }
-
-    /**
-     * @deprecated No longer needed, as {@link #withOutputConverters(ExtensionProvider)} provides a better alternative
-     */
-    @Deprecated
-    public GraphQLSchemaGenerator withDefaultOutputConverters() {
-        return withOutputConverters(defaultConfig());
-    }
-
-    /**
-     * Registers all built-in {@link InputConverter}s and {@link OutputConverter}s.
-     * The equivalent of calling both {@link #withDefaultInputConverters()} and {@link #withDefaultOutputConverters()}.
-     * <p>See {@link #withInputConverters(InputConverter[])} and {@link #withOutputConverters(OutputConverter[])} )}</p>
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     *
-     * @deprecated No longer needed, as {@link #withInputConverters(ExtensionProvider)} and
-     * {@link #withOutputConverters(ExtensionProvider)} provide a better alternative
-     */
-    @Deprecated
-    public GraphQLSchemaGenerator withDefaultConverters() {
-        return withDefaultInputConverters().withDefaultOutputConverters();
-    }
-
-    /**
-     * @deprecated No longer needed, as {@link #withArgumentInjectors(ExtensionProvider)} provides a better alternative
-     */
-    @Deprecated
-    public GraphQLSchemaGenerator withDefaultArgumentInjectors() {
-        return withArgumentInjectors(defaultConfig());
-    }
-
-    /**
-     * Registers default resolver builders. Currently this only includes {@link AnnotatedResolverBuilder}.
-     * <p>See {@link #withResolverBuilders(ResolverBuilder...)}</p>
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     *
-     * @deprecated No longer needed, as {@link #withResolverBuilders(ExtensionProvider)} provides a better alternative
-     */
-    @Deprecated
-    public GraphQLSchemaGenerator withDefaultResolverBuilders() {
-        return withResolverBuilders(defaultConfig());
-    }
-
-    /**
-     * Registers default resolver builders. Currently this only includes {@link AnnotatedResolverBuilder}.
-     * <p>See {@link #withResolverBuilders(ResolverBuilder...)}</p>
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     *
-     * @deprecated No longer needed, as {@link #withNestedResolverBuilders(ExtensionProvider)} provides a better alternative
-     */
-    @Deprecated
-    public GraphQLSchemaGenerator withDefaultNestedResolverBuilders() {
-        return withNestedResolverBuilders(defaultConfig());
-    }
-
-    /**
      * Sets the default values for all settings not configured explicitly,
      * ensuring the builder is in a valid state
      */
@@ -781,87 +718,67 @@ public class GraphQLSchemaGenerator {
             }
         }
 
-        if (resolverBuilderProviders.isEmpty()) {
-            resolverBuilderProviders.add(defaultConfig());
+        List<Module> modules = Defaults.modules();
+        for (ExtensionProvider<Module> provider : moduleProviders) {
+            modules = provider.getExtensions(configuration, new ExtensionList<>(modules));
         }
-        List<ResolverBuilder> defaultResolverBuilders = Collections.singletonList(new AnnotatedResolverBuilder());
-        Set<ResolverBuilder> collectedResolverBuilders = new LinkedHashSet<>();
-        resolverBuilderProviders.forEach(config -> collectedResolverBuilders.addAll(config.getExtensions(configuration, new ExtensionList<>(defaultResolverBuilders))));
-        if (collectedResolverBuilders.isEmpty()) {
-            throw new IllegalStateException("Configuration error: No resolver builders registered");
-        }
-        operationSourceRepository.registerGlobalResolverBuilders(collectedResolverBuilders);
+        checkForDuplicates("modules", modules);
+        modules.forEach(module -> module.setUp(() -> this));
 
-        if (nestedResolverBuilderProviders.isEmpty()) {
-            nestedResolverBuilderProviders.add(defaultConfig());
+        List<ResolverBuilder> resolverBuilders = Collections.singletonList(new AnnotatedResolverBuilder());
+        for (ExtensionProvider<ResolverBuilder> provider : resolverBuilderProviders) {
+            resolverBuilders = provider.getExtensions(configuration, new ExtensionList<>(resolverBuilders));
         }
-        List<ResolverBuilder> defaultNestedResolverBuilders = Arrays.asList(
+        checkForEmptyOrDuplicates("resolver builders", resolverBuilders);
+        operationSourceRepository.registerGlobalResolverBuilders(resolverBuilders);
+
+        List<ResolverBuilder> nestedResolverBuilders = Arrays.asList(
                 new AnnotatedResolverBuilder(),
                 new BeanResolverBuilder(basePackages).withJavaDeprecationRespected(respectJavaDeprecation));
-        Set<ResolverBuilder> collectedNestedResolverBuilders = new LinkedHashSet<>();
-        nestedResolverBuilderProviders.forEach(config -> collectedNestedResolverBuilders.addAll(config.getExtensions(configuration, new ExtensionList<>(defaultNestedResolverBuilders))));
-        if (collectedNestedResolverBuilders.isEmpty()) {
-            throw new IllegalStateException("Configuration error: No nested resolver builders registered");
+        for (ExtensionProvider<ResolverBuilder> provider : nestedResolverBuilderProviders) {
+            nestedResolverBuilders = provider.getExtensions(configuration, new ExtensionList<>(nestedResolverBuilders));
         }
-        operationSourceRepository.registerGlobalNestedResolverBuilders(collectedNestedResolverBuilders);
+        checkForEmptyOrDuplicates("nested resolver builders", nestedResolverBuilders);
+        operationSourceRepository.registerGlobalNestedResolverBuilders(nestedResolverBuilders);
 
-        if (typeMapperProviders.isEmpty()) {
-            typeMapperProviders.add(defaultConfig());
-        }
         ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
         EnumMapper enumMapper = new EnumMapper(respectJavaDeprecation);
-        List<TypeMapper> defaultMappers = Arrays.asList(
+        typeMappers = Arrays.asList(
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                 new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                new ByteArrayToBase64Adapter(), enumMapper, new ArrayAdapter(), new UnionTypeMapper(),
-                new UnionInlineMapper(), new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(),
-                new VoidToBooleanTypeAdapter(), new ListMapper(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
-                new ObjectScalarAdapter(scalarStrategy), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
-        typeMappers = typeMapperProviders.stream()
-                .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultMappers)).stream())
-                .distinct()
-                .collect(Collectors.toList());
-        if (typeMappers.isEmpty()) {
-            throw new IllegalStateException("Configuration error: No type mappers registered");
+                enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
+                new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
+                new ListMapper(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
+                new ObjectScalarAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
+        for (ExtensionProvider<TypeMapper> provider : typeMapperProviders) {
+            typeMappers = provider.getExtensions(configuration, new ExtensionList<>(typeMappers));
         }
+        checkForEmptyOrDuplicates("type mappers", typeMappers);
 
-        if (outputConverterProviders.isEmpty()) {
-            outputConverterProviders.add(defaultConfig());
+        List<OutputConverter> outputConverters = Arrays.asList(
+                new IdAdapter(), new VoidToBooleanTypeAdapter(), new ArrayAdapter(), new CollectionOutputConverter(),
+                new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(), new OptionalAdapter(),
+                new StreamToCollectionTypeAdapter());
+        for (ExtensionProvider<OutputConverter> provider : outputConverterProviders) {
+            outputConverters = provider.getExtensions(configuration, new ExtensionList<>(outputConverters));
         }
-        List<OutputConverter> defaultOutputConverters = Arrays.asList(
-                new IdAdapter(), new VoidToBooleanTypeAdapter(), new ByteArrayToBase64Adapter(),
-                new ArrayAdapter(), new CollectionOutputConverter(), new OptionalIntAdapter(),
-                new OptionalLongAdapter(), new OptionalDoubleAdapter(), new OptionalAdapter(),
-                new StreamToCollectionTypeAdapter(), new ObjectScalarAdapter(scalarStrategy));
-        List<OutputConverter> outputConverters = outputConverterProviders.stream()
-                .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultOutputConverters)).stream())
-                .distinct()
-                .collect(Collectors.toList());
+        checkForDuplicates("output converters", outputConverters);
 
-        if (inputConverterProviders.isEmpty()) {
-            inputConverterProviders.add(defaultConfig());
-        }
-        List<InputConverter> defaultInputConverters = Arrays.asList(
+        List<InputConverter> inputConverters = Arrays.asList(
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new ByteArrayToBase64Adapter(), new EnumMapToObjectTypeAdapter(enumMapper));
-        List<InputConverter> inputConverters = inputConverterProviders.stream()
-                .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultInputConverters)).stream())
-                .distinct()
-                .collect(Collectors.toList());
-
-        if (argumentInjectorProviders.isEmpty()) {
-            argumentInjectorProviders.add(defaultConfig());
+                new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new EnumMapToObjectTypeAdapter(enumMapper));
+        for (ExtensionProvider<InputConverter> provider : inputConverterProviders) {
+            inputConverters = provider.getExtensions(configuration, new ExtensionList<>(inputConverters));
         }
-        List<ArgumentInjector> defaultArgumentInjectors = Arrays.asList(
+        checkForDuplicates("input converters", inputConverters);
+
+        List<ArgumentInjector> argumentInjectors = Arrays.asList(
                 new IdAdapter(), new RootContextInjector(), new ContextInjector(),
                 new EnvironmentInjector(), new InputValueDeserializer());
-        List<ArgumentInjector> argumentInjectors = argumentInjectorProviders.stream()
-                .flatMap(provider -> provider.getExtensions(configuration, new ExtensionList<>(defaultArgumentInjectors)).stream())
-                .distinct()
-                .collect(Collectors.toList());
-        if (argumentInjectors.isEmpty()) {
-            throw new IllegalStateException("Configuration error: No argument injector registered");
+        for (ExtensionProvider<ArgumentInjector> provider : argumentInjectorProviders) {
+            argumentInjectors = provider.getExtensions(configuration, new ExtensionList<>(argumentInjectors));
         }
+        checkForDuplicates("argument injectors", argumentInjectors);
 
         environment = new GlobalEnvironment(new Relay(), new TypeRepository(additionalTypes), new ConverterRepository(inputConverters, outputConverters), new ArgumentInjectorRepository(argumentInjectors));
         valueMapperFactory = new MemoizedValueMapperFactory<>(environment, internalValueMapperFactory);
@@ -888,7 +805,7 @@ public class GraphQLSchemaGenerator {
         BuildContext buildContext = new BuildContext(
                 basePackages, environment, new OperationRepository(operationSourceRepository, operationBuilder, inclusionStrategy, typeTransformer, basePackages),
                 new TypeMapperRepository(typeMappers), valueMapperFactory, typeInfoGenerator, interfaceStrategy, scalarStrategy, typeTransformer,
-                abstractInputHandler, inputFieldStrategy, inclusionStrategy, relayMappingConfig, additionalTypes, implDiscoveryStrategy);
+                abstractInputHandler, inputFieldStrategy, inclusionStrategy, relayMappingConfig, additionalTypes, aliasGroups, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema()
@@ -960,12 +877,22 @@ public class GraphQLSchemaGenerator {
         checkType(type.getType());
     }
 
-    private <T> ExtensionProvider<T> defaultConfig() {
-        return (config, defaults) -> defaults;
+    private void checkForEmptyOrDuplicates(String extensionType, List<?> extensions) {
+        if (extensions.isEmpty()) {
+            throw new ConfigurationException("No " + extensionType + "SimpleFieldValidation registered");
+        }
+        checkForDuplicates(extensionType, extensions);
     }
 
-    private <T> ExtensionProvider<T> fixedConfig(T[] additions) {
-        return (config, defaults) -> Arrays.asList(additions);
+    private void checkForDuplicates(String extensionType, List<?> extensions) {
+        Set<Class<?>> classes = new HashSet<>();
+        extensions.stream()
+                .map(Object::getClass)
+                .forEach(clazz -> {
+                    if (!classes.add(clazz)) {
+                        throw new ConfigurationException("Multiple " + extensionType + " of type " + clazz.getName() + " registered");
+                    }
+                });
     }
 
     public static class Configuration {
@@ -1009,12 +936,28 @@ public class GraphQLSchemaGenerator {
 
         @SafeVarargs
         public final ExtensionList<E> insertAfter(Class<? extends E> extensionType, E... extensions) {
-            return insert(firstIndexOfType(extensionType) + 1, extensions);
+            return insert(firstIndexOfTypeStrict(extensionType) + 1, extensions);
         }
 
         @SafeVarargs
         public final ExtensionList<E> insertBefore(Class<? extends E> extensionType, E... extensions) {
-            return insert(firstIndexOfType(extensionType), extensions);
+            return insert(firstIndexOfTypeStrict(extensionType), extensions);
+        }
+
+        @SafeVarargs
+        public final ExtensionList<E> insertAfterOrAppend(Class<? extends E> extensionType, E... extensions) {
+            int firstIndexOfType = firstIndexOfType(extensionType);
+            if (firstIndexOfType >= 0) {
+                return insert(firstIndexOfType + 1, extensions);
+            } else {
+                return append(extensions);
+            }
+        }
+
+        @SafeVarargs
+        public final ExtensionList<E> insertBeforeOrPrepend(Class<? extends E> extensionType, E... extensions) {
+            int firstIndexOfType = firstIndexOfType(extensionType);
+            return insert(firstIndexOfType >= 0 ? firstIndexOfType : 0, extensions);
         }
 
         public ExtensionList<E> drop(int index) {
@@ -1023,7 +966,7 @@ public class GraphQLSchemaGenerator {
         }
 
         public ExtensionList<E> drop(Class<? extends E> extensionType) {
-            return drop(firstIndexOfType(extensionType));
+            return drop(firstIndexOfTypeStrict(extensionType));
         }
 
         public ExtensionList<E> dropAll(Predicate<? super E> filter) {
@@ -1037,7 +980,24 @@ public class GraphQLSchemaGenerator {
         }
 
         public ExtensionList<E> replace(Class<? extends E> extensionType, E replacement) {
-            return replace(firstIndexOfType(extensionType), replacement);
+            return replace(firstIndexOfTypeStrict(extensionType), replacement);
+        }
+
+        public ExtensionList<E> replaceOrAppend(Class<? extends E> extensionType, E replacement) {
+            int firstIndexOfType = firstIndexOfType(extensionType);
+            if (firstIndexOfType >= 0) {
+                return replace(firstIndexOfType, replacement);
+            } else {
+                return append(replacement);
+            }
+        }
+
+        private int firstIndexOfTypeStrict(Class<? extends E> extensionType) {
+            int firstIndexOfType = firstIndexOfType(extensionType);
+            if (firstIndexOfType < 0) {
+                throw new ConfigurationException("Extension of type " + extensionType.getName() + " not found");
+            }
+            return firstIndexOfType;
         }
 
         private int firstIndexOfType(Class<? extends E> extensionType) {
@@ -1046,7 +1006,7 @@ public class GraphQLSchemaGenerator {
                     return i;
                 }
             }
-            throw new IllegalArgumentException("Extension of type " + extensionType.getName() + " not found");
+            return -1;
         }
     }
 

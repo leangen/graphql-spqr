@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
@@ -13,15 +14,14 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.databind.type.MapLikeType;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.ReferenceType;
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.generator.mapping.InputConverter;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.generator.mapping.InputConverter;
 
 class ConvertingDeserializers extends Deserializers.Base {
 
@@ -43,6 +43,11 @@ class ConvertingDeserializers extends Deserializers.Base {
     @Override
     public JsonDeserializer<?> findEnumDeserializer(Class<?> type, DeserializationConfig config, BeanDescription beanDesc) {
         return forType(GenericTypeReflector.annotate(type));
+    }
+
+    @Override
+    public JsonDeserializer<?> findTreeNodeDeserializer(Class<? extends JsonNode> nodeType, DeserializationConfig config, BeanDescription beanDesc) {
+        return forType(GenericTypeReflector.annotate(nodeType));
     }
 
     @Override

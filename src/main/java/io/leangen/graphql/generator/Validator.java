@@ -1,11 +1,5 @@
 package io.leangen.graphql.generator;
 
-import java.lang.reflect.AnnotatedType;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLModifiedType;
 import graphql.schema.GraphQLOutputType;
@@ -17,16 +11,25 @@ import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Urls;
 
+import java.lang.reflect.AnnotatedType;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 class Validator {
 
     private final GlobalEnvironment environment;
     private final TypeMapperRepository mappers;
+    private final List<Set<AnnotatedType>> aliasGroups;
     private final Map<String, AnnotatedType> mappedTypes;
     private final Map<String, AnnotatedType> mappedInputTypes;
 
-    Validator(GlobalEnvironment environment, TypeMapperRepository mappers, Set<GraphQLType> knownTypes) {
+    Validator(GlobalEnvironment environment, TypeMapperRepository mappers, Set<GraphQLType> knownTypes, List<Set<AnnotatedType>> aliasGroups) {
         this.environment = environment;
         this.mappers = mappers;
+        this.aliasGroups = aliasGroups;
         this.mappedTypes = knownTypes.stream()
                 .filter(type -> type instanceof GraphQLOutputType && type instanceof MappedGraphQLType)
                 .collect(Collectors.toMap(GraphQLType::getName, type -> ClassUtils.normalize(((MappedGraphQLType) type).getJavaType())));
@@ -56,7 +59,7 @@ class Validator {
         }
         known.putIfAbsent(graphQLType.getName(), resolvedType);
         AnnotatedType knownType = known.get(graphQLType.getName());
-        if (resolvedType.equals(knownType)) {
+        if (isMappingAllowed(resolvedType, knownType)) {
             return ValidationResult.valid();
         }
         return ValidationResult.invalid(String.format("Potential type name collision detected: %s bound to multiple types: %s and %s." +
@@ -73,6 +76,11 @@ class Validator {
             resolvedType = javaType.get();
         }
         return ClassUtils.normalize(resolvedType);
+    }
+
+    private boolean isMappingAllowed(AnnotatedType resolvedType, AnnotatedType knownType) {
+        return resolvedType.equals(knownType)
+                || aliasGroups.stream().anyMatch(aliases -> aliases.contains(resolvedType) && aliases.contains(knownType));
     }
 
     static class ValidationResult {

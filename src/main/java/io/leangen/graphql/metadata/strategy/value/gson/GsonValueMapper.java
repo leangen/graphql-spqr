@@ -2,12 +2,14 @@ package io.leangen.graphql.metadata.strategy.value.gson;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonSyntaxException;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
+import io.leangen.graphql.metadata.strategy.value.InputParsingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -31,17 +33,25 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T fromInput(Object graphQLInput, Type sourceType, AnnotatedType outputType) {
+    public <T> T fromInput(Object graphQLInput, Type sourceType, AnnotatedType outputType) throws InputParsingException {
         if (graphQLInput.getClass() == outputType.getType()) {
             return (T) graphQLInput;
         }
-        JsonElement jsonElement = gson.toJsonTree(graphQLInput, sourceType);
-        return gson.fromJson(jsonElement, outputType.getType());
+        try {
+            JsonElement jsonElement = gson.toJsonTree(graphQLInput, sourceType);
+            return gson.fromJson(jsonElement, outputType.getType());
+        } catch (JsonSyntaxException e) {
+            throw new InputParsingException(graphQLInput, outputType.getType(), e);
+        }
     }
 
     @Override
     public <T> T fromString(String json, AnnotatedType outputType) {
-        return gson.fromJson(json, outputType.getType());
+        try {
+            return gson.fromJson(json, outputType.getType());
+        } catch (JsonSyntaxException e) {
+            throw new InputParsingException(json, outputType.getType(), e);
+        }
     }
 
     @Override

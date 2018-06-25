@@ -15,6 +15,7 @@ import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
+import io.leangen.graphql.metadata.strategy.value.InputParsingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import org.slf4j.Logger;
@@ -46,7 +47,11 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
 
     @Override
     public <T> T fromInput(Object graphQLInput, Type sourceType, AnnotatedType outputType) {
-        return objectMapper.convertValue(graphQLInput, objectMapper.getTypeFactory().constructType(outputType.getType()));
+        try {
+            return objectMapper.convertValue(graphQLInput, objectMapper.getTypeFactory().constructType(outputType.getType()));
+        } catch (IllegalArgumentException e) {
+            throw new InputParsingException(graphQLInput, outputType.getType(), e);
+        }
     }
 
     @Override
@@ -54,7 +59,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
         try {
             return objectMapper.readValue(json, objectMapper.getTypeFactory().constructType(type.getType()));
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new InputParsingException(json, type.getType(), e);
         }
     }
 

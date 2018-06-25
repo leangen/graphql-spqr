@@ -5,6 +5,7 @@ import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Scalars;
 
 import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedType;
@@ -36,6 +37,6 @@ public class ArrayAdapter extends AbstractTypeSubstitutingMapper implements Outp
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return type instanceof AnnotatedArrayType;
+        return !Scalars.isScalar(type.getType()) && type instanceof AnnotatedArrayType;
     }
 }
