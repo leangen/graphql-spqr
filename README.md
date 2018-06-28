@@ -144,6 +144,10 @@ ExecutionResult result = graphQL.execute(
     }}");
 ```
 
+## Spring Boot
+
+We're working on a SPQR-powered [Spring Boot starter](https://github.com/leangen/graphql-spqr-spring-boot-starter). The project is still very young, but already functional.
+
 ## Full Tutorial
 
 _Work in progress_
