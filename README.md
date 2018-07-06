@@ -10,6 +10,18 @@
 [![Hex.pm](https://img.shields.io/hexpm/l/plug.svg?maxAge=2592000)](https://raw.githubusercontent.com/leangen/graphql-spqr/master/LICENSE)
 [![Semver](http://img.shields.io/SemVer/2.0.0.png)](http://semver.org/spec/v2.0.0.html)
 
+   * [Intro](#intro)
+   * [Known issues](#known-issues)
+      * [Kotlin](#kotlin)
+      * [OpenJDK](#openjdk)
+   * [Code-first approach](#code-first-approach)
+   * [Installation](#installation)
+   * [Hello world](#hello-world)
+   * [Spring Boot Starter](#spring-boot-starter)
+   * [Full example](#full-example)
+   * [Full tutorial](#full-tutorial)
+   * [Asking questions](#asking-questions)
+
 ## Intro
 
 GraphQL SPQR aims to make it dead simple to add a GraphQL API to _any_ Java project. It works by dynamically generating a GraphQL schema from Java code.
@@ -98,8 +110,15 @@ class UserService {
     public User getById(@GraphQLArgument(name = "id") Integer id) {
       ...
     }
+    
+    // Attach a new field called twitterProfile to the User GraphQL type
+    @GraphQLQuery
+    public TwitterProfile twitterProfile(@GraphQLContext User user) {
+      ...
+    }
 }
 ```
+If you want to skip adding `@GraphQLArgument`, compile with the `-parameters` option or the names will be lost.
 
 Domain class:
 
@@ -115,7 +134,7 @@ public class User {
         return name;
     }
 
-    @GraphQLQuery(name = "id", description = "A person's id")
+    @GraphQLQuery
     public Integer getId() {
         return id;
     }
@@ -140,19 +159,31 @@ GraphQL graphQL = new GraphQL(schema);
 //this operation selects a user by ID and requests name and regDate fields only
 ExecutionResult result = graphQL.execute(   
     "{ user (id: 123) {
-        name,
-        regDate
+         name,
+         regDate,
+         twitterProfile {
+           handle
+           numberOfTweets
+         }
     }}");
 ```
 
-## Spring Boot
+## Spring Boot Starter
 
 We're working on a SPQR-powered [Spring Boot starter](https://github.com/leangen/graphql-spqr-spring-boot-starter). The project is still very young, but already functional.
-
-## Full Tutorial
-
-_Work in progress_
 
 ## Full example
 
 See more complete examples using Spring Boot at https://github.com/leangen/graphql-spqr-samples
+
+## Full tutorial
+
+_Coming soon_
+
+## Asking questions
+
+If you want to ask a question, you have a few options:
+
+* [Issues](https://github.com/leangen/graphql-spqr/issues) Open an issue to report bugs, request features or ask questions
+* [StackOverflow](https://stackoverflow.com/questions/tagged/graphql-spqr) Use graphql-spqr tag
+* [Gitter](https://gitter.im/leangen/graphql-spqr) For simple questions/discussions you don't care to keep for posterity
