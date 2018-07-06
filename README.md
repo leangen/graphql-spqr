@@ -182,8 +182,6 @@ _Coming soon_
 
 ## Asking questions
 
-If you want to ask a question, you have a few options:
-
 * [Issues](https://github.com/leangen/graphql-spqr/issues) Open an issue to report bugs, request features or ask questions
 * [StackOverflow](https://stackoverflow.com/questions/tagged/graphql-spqr) Use graphql-spqr tag
-* [Gitter](https://gitter.im/leangen/graphql-spqr) For simple questions/discussions you don't care to keep for posterity
+* [Gitter](https://gitter.im/leangen/graphql-spqr) For questions/discussions you don't care to keep for posterity
