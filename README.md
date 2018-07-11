@@ -151,6 +151,7 @@ Exposing the service with graphql-spqr:
 ```java
 UserService userService = new UserService(); //instantiate the service (or inject by Spring or another framework)
 GraphQLSchemaGenerator schema = new GraphQLSchemaGenerator()
+    .withBasePackages("io.leangen") //not mandatory but strongly recommended to set your "root" packages
     .withOperationsFromSingleton(userService) //register the service
     .generate(); //done ;)
 GraphQL graphQL = new GraphQL(schema);
