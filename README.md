@@ -110,12 +110,6 @@ class UserService {
     public User getById(@GraphQLArgument(name = "id") Integer id) {
       ...
     }
-    
-    // Attach a new field called twitterProfile to the User GraphQL type
-    @GraphQLQuery
-    public TwitterProfile twitterProfile(@GraphQLContext User user) {
-      ...
-    }
 }
 ```
 If you want to skip adding `@GraphQLArgument`, compile with the `-parameters` option or the names will be lost.
@@ -146,6 +140,21 @@ public class User {
 }
 ```
 
+To attach additional fields to the `User` GraphQL type, without modifyning the `User` class, you simply add a query that has `User` as the _context_. The simplest way is using the `@GraphQLContext` annotation:
+
+```java
+class UserService {
+
+    ... //regular queries, as above
+
+    // Attach a new field called twitterProfile to the User GraphQL type
+    @GraphQLQuery
+    public TwitterProfile twitterProfile(@GraphQLContext User user) {
+      ...
+    }
+}
+```
+
 Exposing the service with graphql-spqr:
 
 ```java
@@ -157,7 +166,7 @@ GraphQLSchemaGenerator schema = new GraphQLSchemaGenerator()
 GraphQL graphQL = new GraphQL(schema);
 
 //keep the reference to GraphQL instance and execute queries against it.
-//this operation selects a user by ID and requests name and regDate fields only
+//this operation selects a user by ID and requests name, regDate and twitterProfile fields only
 ExecutionResult result = graphQL.execute(   
     "{ user (id: 123) {
          name,
