@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 /**
  * A collection of utility methods
  */
+@SuppressWarnings("WeakerAccess")
 public class Utils {
 
     public static final String NULL = "\n\t\t\n\t\t\n\ue000\ue001\ue002\ue000\n\t\t\t\t\n";
@@ -66,5 +67,9 @@ public class Utils {
 
     public static String[] emptyArray() {
         return EMPTY_STRING_ARRAY;
+    }
+
+    public static String[] emptyIfNull(String[] array) {
+        return array == null ? emptyArray() : array;
     }
 }

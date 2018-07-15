@@ -80,6 +80,7 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Defaults;
 import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
+import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
@@ -149,7 +150,7 @@ public class GraphQLSchemaGenerator {
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
     private TypeTransformer typeTransformer = new DefaultTypeTransformer(false, false);
     private GlobalEnvironment environment;
-    private String[] basePackages;
+    private String[] basePackages = Utils.emptyArray();
     private List<TypeMapper> typeMappers;
     private boolean respectJavaDeprecation = true;
     private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
@@ -441,7 +442,7 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withBasePackages(String... basePackages) {
-        this.basePackages = basePackages;
+        this.basePackages = Utils.emptyIfNull(basePackages);
         return this;
     }
 

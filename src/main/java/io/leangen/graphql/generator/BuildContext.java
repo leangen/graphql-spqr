@@ -16,6 +16,7 @@ import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.util.ClassFinder;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
 
@@ -49,6 +50,7 @@ public class BuildContext {
     public final ImplementationDiscoveryStrategy implDiscoveryStrategy;
     public final TypeInfoGenerator typeInfoGenerator;
     public final RelayMappingConfig relayMappingConfig;
+    public final ClassFinder classFinder;
 
     final Validator validator;
 
@@ -96,6 +98,7 @@ public class BuildContext {
         this.abstractInputHandler = abstractInputHandler;
         this.globalEnvironment = environment;
         this.relayMappingConfig = relayMappingConfig;
+        this.classFinder = new ClassFinder();
         this.validator = new Validator(environment, typeMappers, knownTypes, typeAliasGroups);
     }
 

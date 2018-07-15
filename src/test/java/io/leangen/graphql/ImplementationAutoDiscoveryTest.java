@@ -16,28 +16,28 @@ public class ImplementationAutoDiscoveryTest {
 
     @Test
     public void hiddenTypesTest() {
-        GraphQLSchema schema = schemaFor(new FlatService());
+        GraphQLSchema schema = schemaFor(new ManualService());
         assertNull(schema.getType("One"));
         assertNull(schema.getType("Two"));
     }
     
     @Test
     public void explicitTypesTest() {
-        GraphQLSchema schema = schemaFor(new FlatExplicitService());
+        GraphQLSchema schema = schemaFor(new ManualExplicitService());
         assertNotNull(schema.getType("One"));
         assertNotNull(schema.getType("Two"));
     }
-    
+
     @Test
     public void discoveredTypesTest() {
-        GraphQLSchema schema = schemaFor(new DeepService());
+        GraphQLSchema schema = schemaFor(new AutoService());
         assertNotNull(schema.getType("One"));
         assertNotNull(schema.getType("Two"));
     }
     
     @Test
     public void discoveredExplicitTypesTest() {
-        GraphQLSchema schema = schemaFor(new DeepExplicitService());
+        GraphQLSchema schema = schemaFor(new AutoExplicitService());
         assertNotNull(schema.getType("One"));
         assertNotNull(schema.getType("Two"));
     }
@@ -48,32 +48,32 @@ public class ImplementationAutoDiscoveryTest {
                 .generate();
     }
     
-    @GraphQLInterface(name = "Flat")
-    interface Flat {}
+    @GraphQLInterface(name = "Manual")
+    interface Manual {}
     
-    @GraphQLInterface(name = "Deep", implementationAutoDiscovery = true)
-    interface Deep {}
+    @GraphQLInterface(name = "Auto", implementationAutoDiscovery = true)
+    interface Auto {}
 
-    public static class One implements Flat, Deep {
+    public static class One implements Manual, Auto {
         public String getOne() {
             return "one";
         }
     }
 
-    public static class Two implements Flat, Deep {
+    public static class Two implements Manual, Auto {
         public String getTwo() {
             return "two";
         }
     }
 
-    public static class FlatService {
+    public static class ManualService {
         @GraphQLQuery(name = "find")
-        public Flat findFlat(@GraphQLArgument(name = "one") boolean one) {
+        public Manual findFlat(@GraphQLArgument(name = "one") boolean one) {
             return one ? new One() : new Two();
         }
     }
 
-    public static class FlatExplicitService extends FlatService {
+    public static class ManualExplicitService extends ManualService {
         @GraphQLQuery(name = "one")
         public One findOne() {
             return new One();
@@ -84,15 +84,15 @@ public class ImplementationAutoDiscoveryTest {
             return new Two();
         }
     }
-    
-    public static class DeepService {
+
+    public static class AutoService {
         @GraphQLQuery(name = "find")
-        public Deep findDeep(@GraphQLArgument(name = "one") boolean one) {
+        public Auto findDeep(@GraphQLArgument(name = "one") boolean one) {
             return one ? new One() : new Two();
         }
     }
 
-    public static class DeepExplicitService extends DeepService {
+    public static class AutoExplicitService extends AutoService {
         @GraphQLQuery(name = "one")
         public One findOne() {
             return new One();

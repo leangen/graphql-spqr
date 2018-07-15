@@ -4,12 +4,6 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
-import io.leangen.graphql.util.classpath.ClassFilter;
-import io.leangen.graphql.util.classpath.ClassFinder;
-import io.leangen.graphql.util.classpath.ClassInfo;
-import io.leangen.graphql.util.classpath.ClassModifiersClassFilter;
-import io.leangen.graphql.util.classpath.ClassReadingException;
-import io.leangen.graphql.util.classpath.SubclassClassFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,20 +29,15 @@ import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,9 +46,9 @@ import static io.leangen.geantyref.GenericTypeReflector.capture;
 import static io.leangen.geantyref.GenericTypeReflector.merge;
 import static java.util.Arrays.stream;
 
+@SuppressWarnings("WeakerAccess")
 public class ClassUtils {
 
-    private static final Map<Class, Collection<ClassInfo>> implementationCache = new ConcurrentHashMap<>();
     private static final Class<?> javassistProxyClass;
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
     private static final Set<Class> ROOT_TYPES = Collections.unmodifiableSet(
@@ -317,56 +306,33 @@ public class ClassUtils {
     }
 
     /**
-     * Scans classpath for implementations/subtypes of the given {@link AnnotatedType}. Only the matching classes are loaded.
+     * Searches for the implementations/subtypes of the given {@link AnnotatedType}. Only the matching classes are loaded.
      *
-     * @param superType The type whose implementations/subtypes are to be looked for
-     * @return A collection of {@link AnnotatedType}s found on the classpath that are implementations/subtypes of {@code superType}
-     * @throws RuntimeException If a class file could not be parsed or a class could not be loaded
+     * @param superType The type the implementations/subtypes of which are to be searched for
+     * @param packages The packages to limit the search to
+     *
+     * @return A collection of {@link AnnotatedType}s discovered that implementation/extend {@code superType}
+     *
+     * @deprecated Use {@link ClassFinder} directly as that enables caching of the search results
      */
+    @Deprecated
     public static List<AnnotatedType> findImplementations(AnnotatedType superType, String... packages) {
-        return findImplementations(superType, info -> true, packages);
+        return new ClassFinder().findImplementations(superType, info -> true, packages);
     }
 
-    public static List<AnnotatedType> findImplementations(AnnotatedType superType, Predicate<ClassInfo> filter, String... packages) {
-        Class<?> rawType = getRawType(superType.getType());
-        return findImplementations(rawType, filter, packages).stream()
-                .map(raw -> GenericTypeReflector.getExactSubType(superType, raw))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
+    /**
+     * Searches for the implementations/subtypes of the given class. Only the matching classes are loaded.
+     *
+     * @param superType The type the implementations/subtypes of which are to be searched for
+     * @param packages The packages to limit the search to
+     *
+     * @return A collection of classes discovered that implementation/extend {@code superType}
+     *
+     * @deprecated Use {@link ClassFinder} directly as that enables caching of the search results
+     */
+    @Deprecated
     public static List<Class> findImplementations(Class superType, String... packages) {
-        return findImplementations(superType, info -> true, packages);
-    }
-
-    public static List<Class> findImplementations(Class superType, Predicate<ClassInfo> filter, String... packages) {
-        Collection<ClassInfo> implementations;
-        if (implementationCache.containsKey(superType)) {
-            implementations = implementationCache.get(superType);
-        } else {
-            try {
-                ClassFinder classFinder = new ClassFinder();
-                packages = packages == null ? null : Arrays.stream(packages).filter(Utils::isNotEmpty).toArray(String[]::new);
-                if (packages == null || packages.length == 0) {
-                    classFinder.addExplicitClassPath();
-                } else {
-                    classFinder.add(superType.getClassLoader(), packages);
-                }
-                implementations = classFinder
-                        .findClasses(ClassFilter.and(
-                                new SubclassClassFilter(superType),
-                                new ClassModifiersClassFilter(Modifier.PUBLIC)));
-                implementationCache.putIfAbsent(superType, implementations);
-            } catch (ClassReadingException e) {
-                log.error("Failed to auto discover the subtypes of " + superType.getName()
-                        + ". Error encountered while scanning the classpath", e);
-                return Collections.emptyList();
-            }
-        }
-        return implementations.stream()
-                .filter(filter)
-                .flatMap(classInfo -> loadClass(classInfo.getClassName()))
-                .collect(Collectors.toList());
+        return new ClassFinder().findImplementations(superType, info -> true, packages);
     }
 
     public static boolean isAbstract(AnnotatedType type) {
@@ -395,7 +361,7 @@ public class ClassUtils {
     }
 
     public static String toString(AnnotatedType type) {
-        return type.getType().getTypeName() + "(" + Arrays.toString(type.getAnnotations()) + ")";
+        return GenericTypeReflector.toCanonical(type).toString();
     }
 
     public static boolean hasAnnotation(AnnotatedElement element, Class<? extends Annotation> annotation) {
@@ -684,15 +650,6 @@ public class ClassUtils {
 
     public static Class<?> forName(String className) throws ClassNotFoundException {
         return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
-    }
-
-    private static Stream<Class<?>> loadClass(String className) {
-        try {
-            return Stream.of(forName(className));
-        } catch (Exception e) {
-            log.warn("Auto discovered type " + className + " failed to load and will be ignored", e);
-            return Stream.empty();
-        }
     }
 
     /**

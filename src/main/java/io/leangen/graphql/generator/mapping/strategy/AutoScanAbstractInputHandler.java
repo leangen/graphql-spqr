@@ -1,11 +1,10 @@
 package io.leangen.graphql.generator.mapping.strategy;
 
-import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.github.lukehutch.fastclasspathscanner.scanner.ClassInfo;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Scalars;
-import io.leangen.graphql.util.classpath.ClassInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,8 +13,8 @@ import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.AnnotatedTypeVariable;
 import java.lang.reflect.AnnotatedWildcardType;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,19 +25,22 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static io.leangen.graphql.util.ClassFinder.ALL;
+import static io.leangen.graphql.util.ClassFinder.CONCRETE;
+import static io.leangen.graphql.util.ClassFinder.NON_IGNORED;
+import static io.leangen.graphql.util.ClassFinder.PUBLIC;
+
 public class AutoScanAbstractInputHandler implements AbstractInputHandler {
 
     private final Map<Type, Set<Type>> abstractComponents = new HashMap<>();
-
-    @SuppressWarnings("WeakerAccess")
-    protected final static Predicate<ClassInfo> NON_ABSTRACT = info ->
-            (info.getModifier() & (Modifier.ABSTRACT | Modifier.INTERFACE)) == 0;
-
-    @SuppressWarnings("WeakerAccess")
-    protected final static Predicate<ClassInfo> NON_IGNORED = info ->
-            info.getAnnotations().stream().noneMatch(ann -> ann.getClassName().equals(GraphQLIgnore.class.getName()));
+    private final List<Predicate<ClassInfo>> filters;
 
     private static final Logger log = LoggerFactory.getLogger(AutoScanAbstractInputHandler.class);
+
+    public AutoScanAbstractInputHandler() {
+        this.filters = new ArrayList<>();
+        this.filters.add(PUBLIC);
+    }
 
     @Override
     public Set<Type> findConstituentAbstractTypes(AnnotatedType javaType, BuildContext buildContext) {
@@ -65,11 +67,23 @@ public class AutoScanAbstractInputHandler implements AbstractInputHandler {
 
     @Override
     public List<Class> findConcreteSubTypes(Class abstractType, BuildContext buildContext) {
-        List<Class> subTypes = ClassUtils.findImplementations(abstractType, NON_ABSTRACT.and(NON_IGNORED), buildContext.basePackages);
+        Predicate<ClassInfo> filter = CONCRETE.and(NON_IGNORED).and(filters.stream().reduce(Predicate::and).orElse(ALL));
+        List<Class> subTypes = buildContext.classFinder.findImplementations(abstractType, filter, buildContext.basePackages);
         if (subTypes.isEmpty()) {
             log.warn("No concrete subtypes of " + abstractType.getName() + " found");
         }
         return subTypes;
+    }
+
+    public AutoScanAbstractInputHandler withNonPublicClasses() {
+        this.filters.remove(PUBLIC);
+        return this;
+    }
+
+    @SafeVarargs
+    public final AutoScanAbstractInputHandler withFilters(Predicate<ClassInfo>... filters) {
+        Collections.addAll(this.filters, filters);
+        return this;
     }
 
     private Set<Type> findAbstract(AnnotatedType javaType, BuildContext buildContext) {
