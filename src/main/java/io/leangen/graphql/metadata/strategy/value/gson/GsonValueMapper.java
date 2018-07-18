@@ -9,6 +9,7 @@ import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
+import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputParsingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
@@ -26,6 +27,7 @@ import java.util.Set;
 public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy {
 
     private final Gson gson;
+    private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
 
     public GsonValueMapper(Gson gson) {
         this.gson = gson;
@@ -97,7 +99,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
                 }
                 field.setAccessible(true);
                 String fieldName = gson.fieldNamingStrategy().translateName(field);
-                if (!inputFields.add(new InputField(fieldName, null, fieldType, null))) {
+                if (!inputFields.add(new InputField(fieldName, getDescription(field), fieldType, null, defaultValue(field, fieldType)))) {
                     throw new IllegalArgumentException(raw + " declares multiple input fields named " + fieldName);
                 }
             }
@@ -105,5 +107,13 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
             type = GenericTypeReflector.getExactSuperType(type, raw);
         }
         return inputFields;
+    }
+
+    protected String getDescription(Field field) {
+        return inputInfoGen.getDescription(ClassUtils.getPropertyMembers(field)).orElse(null);
+    }
+
+    protected Object defaultValue(Field field, AnnotatedType fieldType) {
+        return inputInfoGen.defaultValue(ClassUtils.getPropertyMembers(field), fieldType).orElse(null);
     }
 }

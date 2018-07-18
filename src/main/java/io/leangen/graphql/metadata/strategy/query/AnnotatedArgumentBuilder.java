@@ -4,12 +4,11 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.metadata.OperationArgument;
-import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.ReservedStrings;
 import io.leangen.graphql.util.Urls;
-import io.leangen.graphql.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,24 +74,16 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         return meta != null ? meta.description() : null;
     }
 
-    protected OperationArgumentDefaultValue defaultValue(Parameter parameter, AnnotatedType parameterType) {
+    protected Object defaultValue(Parameter parameter, AnnotatedType parameterType) {
 
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
-        if (meta == null) return OperationArgumentDefaultValue.EMPTY;
+        if (meta == null) return null;
         try {
-            return meta.defaultValueProvider().newInstance().getDefaultValue(parameter, parameterType, defaultValue(meta.defaultValue()));
+            return meta.defaultValueProvider().newInstance()
+                    .getDefaultValue(parameter, parameterType, ReservedStrings.decode(meta.defaultValue()));
         } catch (InstantiationException | IllegalAccessException e) {
             throw new IllegalArgumentException(
                     meta.defaultValueProvider().getName() + " must expose a public default constructor", e);
         }
-    }
-
-    private OperationArgumentDefaultValue defaultValue(String value) {
-        if (GraphQLArgument.NONE.equals(value)) {
-            return OperationArgumentDefaultValue.EMPTY;
-        } else if (Utils.NULL.equals(value)) {
-            return OperationArgumentDefaultValue.NULL;
-        }
-        return new OperationArgumentDefaultValue(value);
     }
 }

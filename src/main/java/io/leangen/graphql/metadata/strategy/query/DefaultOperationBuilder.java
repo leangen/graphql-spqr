@@ -5,7 +5,6 @@ import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.generator.union.Union;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
-import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
@@ -102,7 +101,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
                         argName,
                         argumentsByName.get(argName).stream().map(OperationArgument::getDescription).filter(Objects::nonNull).findFirst().orElse(""),
 //						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRequired),
-                        argumentsByName.get(argName).stream().map(OperationArgument::getDefaultValue).filter(def -> def != OperationArgumentDefaultValue.EMPTY).findFirst().orElse(OperationArgumentDefaultValue.EMPTY),
+                        argumentsByName.get(argName).stream().map(OperationArgument::getDefaultValue).filter(Objects::nonNull).findFirst().orElse(null),
                         null,
                         argumentsByName.get(argName).stream().anyMatch(OperationArgument::isContext),
                         argumentsByName.get(argName).stream().anyMatch(OperationArgument::isMappable)

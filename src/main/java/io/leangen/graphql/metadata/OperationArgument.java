@@ -9,20 +9,16 @@ public class OperationArgument {
     private final AnnotatedType javaType;
     private final String name;
     private final String description;
-    private final OperationArgumentDefaultValue defaultValue;
+    private final Object defaultValue;
     private final Parameter parameter;
     private final boolean context;
     private final boolean mappable;
 
-    public OperationArgument(AnnotatedType javaType, String name, String description, OperationArgumentDefaultValue defaultValue,
+    public OperationArgument(AnnotatedType javaType, String name, String description, Object defaultValue,
                              Parameter parameter, boolean context, boolean mappable) {
         
-        Objects.requireNonNull(javaType);
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(defaultValue);
-        
-        this.javaType = javaType;
-        this.name = name;
+        this.javaType = Objects.requireNonNull(javaType);
+        this.name = Objects.requireNonNull(name);
         this.description = description;
         this.defaultValue = defaultValue;
         this.parameter = parameter;
@@ -42,7 +38,7 @@ public class OperationArgument {
         return description;
     }
 
-    public OperationArgumentDefaultValue getDefaultValue() {
+    public Object getDefaultValue() {
         return this.defaultValue;
     }
 

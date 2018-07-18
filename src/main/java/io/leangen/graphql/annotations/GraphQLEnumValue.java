@@ -1,6 +1,6 @@
 package io.leangen.graphql.annotations;
 
-import io.leangen.graphql.util.Utils;
+import io.leangen.graphql.util.ReservedStrings;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -15,5 +15,5 @@ public @interface GraphQLEnumValue {
 
     String description() default "";
 
-    String deprecationReason() default Utils.NULL;
+    String deprecationReason() default ReservedStrings.NULL;
 }

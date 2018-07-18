@@ -27,7 +27,6 @@ import io.leangen.graphql.generator.types.MappedGraphQLObjectType;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
-import io.leangen.graphql.metadata.OperationArgumentDefaultValue;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.GraphQLUtils;
@@ -192,7 +191,8 @@ public class OperationMapper {
         GraphQLInputObjectField.Builder builder = newInputObjectField()
                 .name(inputField.getName())
                 .description(inputField.getDescription())
-                .type(toGraphQLInputType(inputField.getJavaType(), buildContext));
+                .type(toGraphQLInputType(inputField.getJavaType(), buildContext))
+                .defaultValue(inputField.getDefaultValue());
         return builder.build();
     }
 
@@ -213,16 +213,12 @@ public class OperationMapper {
     }
 
     private GraphQLArgument toGraphQLArgument(OperationArgument operationArgument, BuildContext buildContext) {
-        GraphQLArgument.Builder argument = newArgument()
+        return newArgument()
                 .name(operationArgument.getName())
                 .description(operationArgument.getDescription())
-                .type(toGraphQLInputType(operationArgument.getJavaType(), buildContext));
-
-        OperationArgumentDefaultValue defaultValue = operationArgument.getDefaultValue();
-        if (defaultValue.isPresent()) {
-            argument.defaultValue(defaultValue.get());
-        }
-        return argument.build();
+                .type(toGraphQLInputType(operationArgument.getJavaType(), buildContext))
+                .defaultValue(operationArgument.getDefaultValue())
+                .build();
     }
 
     private GraphQLFieldDefinition toRelayMutation(GraphQLFieldDefinition mutation, RelayMappingConfig relayMappingConfig) {

@@ -13,8 +13,7 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
-import io.leangen.graphql.annotations.GraphQLInputField;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
@@ -32,15 +31,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
-
-import static io.leangen.graphql.util.Utils.or;
 
 public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
 
-    private static TypeResolverBuilder<?> typeResolverBuilder;
     private Map<Type, List<NamedType>> typeMap;
+    private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
+    private static TypeResolverBuilder<?> typeResolverBuilder;
 
     private static final Logger log = LoggerFactory.getLogger(AnnotationIntrospector.class);
 
@@ -57,29 +53,14 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
 
     @Override
     public PropertyName findNameForDeserialization(Annotated annotated) {
-        List<AnnotatedElement> namedCandidates = getNamedCandidates(annotated);
-        return Stream.concat(
-                namedCandidates.stream()
-                        .map(member -> Optional.ofNullable(member.getAnnotation(GraphQLInputField.class))
-                                .map(GraphQLInputField::name)),
-                namedCandidates.stream()
-                        .map(member -> Optional.ofNullable(member.getAnnotation(GraphQLQuery.class))
-                                .map(GraphQLQuery::name)))
-                .map(opt -> opt.filter(Utils::isNotEmpty))
-                .reduce(Utils::or)
-                .flatMap(optName -> optName.map(PropertyName::new))
+        return inputInfoGen.getName(getAnnotatedCandidates(annotated))
+                .map(PropertyName::new)
                 .orElse(super.findNameForDeserialization(annotated));
     }
 
     @Override
     public String findPropertyDescription(Annotated annotated) {
-        return or(
-                Optional.ofNullable(annotated.getAnnotation(GraphQLInputField.class))
-                        .map(GraphQLInputField::description)
-                        .filter(Utils::isNotEmpty),
-                Optional.ofNullable(annotated.getAnnotation(GraphQLQuery.class))
-                        .map(GraphQLQuery::description)
-                        .filter(Utils::isNotEmpty))
+        return inputInfoGen.getDescription(getAnnotatedCandidates(annotated))
                 .orElse(super.findPropertyDescription(annotated));
     }
 
@@ -119,7 +100,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
         return jacksonNames;
     }
 
-    private List<AnnotatedElement> getNamedCandidates(Annotated annotated) {
+    private List<AnnotatedElement> getAnnotatedCandidates(Annotated annotated) {
         List<AnnotatedElement> propertyElements = new ArrayList<>(3);
         if (annotated instanceof AnnotatedField) {
             AnnotatedField field = ((AnnotatedField) annotated);

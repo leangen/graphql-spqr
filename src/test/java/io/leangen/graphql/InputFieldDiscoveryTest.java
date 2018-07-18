@@ -17,6 +17,9 @@ import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapper;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import org.junit.Test;
 
+import java.lang.reflect.AnnotatedType;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -28,110 +31,136 @@ public class InputFieldDiscoveryTest {
     private GsonValueMapper gson = new GsonValueMapperFactory().getValueMapper();
 
     private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy("io.leangen");
-    private  static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
+    private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
+    private static final AnnotatedType IGNORED_TYPE = GenericTypeReflector.annotate(Object.class);
 
-    private static final String[] expectedDefaultFieldNames = {"field1", "field2", "field3"};
-    private static final String[] expectedExplicitFieldNames = {"aaa", "bbb", "ccc"};
+    private static final InputField[] expectedDefaultFields = new InputField[] {
+            new InputField("field1", null, IGNORED_TYPE, null, null),
+            new InputField("field2", null, IGNORED_TYPE, null, null),
+            new InputField("field3", null, IGNORED_TYPE, null, null)
+    };
+    private static final InputField[] expectedFilteredDefaultFields = new InputField[] {expectedDefaultFields[0], expectedDefaultFields[2]};
+    private static final InputField[] expectedExplicitFields = new InputField[] {
+            new InputField("aaa", "AAA", IGNORED_TYPE, null, "AAAA"),
+            new InputField("bbb", "BBB", IGNORED_TYPE, null, 2222),
+            new InputField("ccc", "CCC", IGNORED_TYPE, null, 3333)
+    };
+    private static final InputField[] expectedQueryFields = new InputField[] {
+            new InputField("aaa", null, IGNORED_TYPE, null, null),
+            new InputField("bbb", null, IGNORED_TYPE, null, null),
+            new InputField("ccc", null, IGNORED_TYPE, null, null)
+    };
     
     @Test
     public void basicFieldsTest() {
-        assertFieldNamesEqual(FieldsOnly.class, expectedDefaultFieldNames);
+        assertFieldNamesEqual(FieldsOnly.class, expectedDefaultFields);
     }
 
     @Test
     public void basicGettersTest() {
-        assertFieldNamesEqual(GettersOnly.class, expectedDefaultFieldNames);
+        assertFieldNamesEqual(GettersOnly.class, expectedDefaultFields);
     }
 
     @Test
     public void basicSettersTest() {
-        assertFieldNamesEqual(SettersOnly.class, expectedDefaultFieldNames);
+        assertFieldNamesEqual(SettersOnly.class, expectedDefaultFields);
     }
 
     @Test
     public void explicitFieldsTest() {
-        assertFieldNamesEqual(ExplicitFields.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(ExplicitFields.class, expectedExplicitFields);
     }
 
     @Test
     public void explicitGettersTest() {
-        assertFieldNamesEqual(ExplicitGetters.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(ExplicitGetters.class, expectedExplicitFields);
     }
 
     @Test
     public void explicitSettersTest() {
-        assertFieldNamesEqual(ExplicitSetters.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(ExplicitSetters.class, expectedExplicitFields);
     }
     
     @Test
     public void queryFieldsTest() {
-        assertFieldNamesEqual(QueryFields.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(QueryFields.class, expectedQueryFields);
     }
 
     @Test
     public void queryGettersTest() {
-        assertFieldNamesEqual(QueryGetters.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(QueryGetters.class, expectedQueryFields);
     }
 
     @Test
     public void querySettersTest() {
-        assertFieldNamesEqual(QuerySetters.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(QuerySetters.class, expectedQueryFields);
     }
 
     @Test
     public void mixedFieldsTest() {
-        assertFieldNamesEqual(MixedFieldsWin.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(MixedFieldsWin.class, expectedExplicitFields);
     }
     
     @Test
     public void mixedGettersTest() {
-        assertFieldNamesEqual(MixedGettersWin.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(MixedGettersWin.class, expectedExplicitFields);
     }
 
     @Test
     public void mixedSettersTest() {
-        assertFieldNamesEqual(MixedSettersWin.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(MixedSettersWin.class, expectedExplicitFields);
     }
 
     @Test
     public void conflictingGettersTest() {
-        assertFieldNamesEqual(ConflictingGettersWin.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(ConflictingGettersWin.class, expectedExplicitFields);
     }
 
     @Test
     public void conflictingSettersTest() {
-        assertFieldNamesEqual(ConflictingSettersWin.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(ConflictingSettersWin.class, expectedExplicitFields);
     }
 
     @Test
     public void allConflictingSettersTest() {
-        assertFieldNamesEqual(AllConflictingSettersWin.class, expectedExplicitFieldNames);
+        assertFieldNamesEqual(AllConflictingSettersWin.class, expectedExplicitFields);
     }
 
     @Test
     public void hiddenSettersTest() {
-        assertFieldNamesEqual(HiddenSetters.class, "field1", "field3");
+        assertFieldNamesEqual(HiddenSetters.class, expectedFilteredDefaultFields);
     }
 
     @Test
     public void hiddenCtorParamsTest() {
-        assertFieldNamesEqual(jackson, HiddenCtorParams.class, "field1", "field3");
+        assertFieldNamesEqual(jackson, HiddenCtorParams.class, expectedFilteredDefaultFields);
     }
 
-    private void assertFieldNamesEqual(Class typeToScan, String... fieldNames) {
-        Set<InputField> jFields = assertFieldNamesEqual(jackson, typeToScan, fieldNames);
-        Set<InputField> gFields = assertFieldNamesEqual(gson, typeToScan, fieldNames);
+    private void assertFieldNamesEqual(Class typeToScan, InputField... expectedFields) {
+        Set<InputField> jFields = assertFieldNamesEqual(jackson, typeToScan, expectedFields);
+        Set<InputField> gFields = assertFieldNamesEqual(gson, typeToScan, expectedFields);
 
-        assertEquals(jFields, gFields);
+        assertAllFieldsEqual(jFields, gFields);
     }
 
-    private Set<InputField> assertFieldNamesEqual(InputFieldDiscoveryStrategy mapper, Class typeToScan, String... fieldNames) {
+    private Set<InputField> assertFieldNamesEqual(InputFieldDiscoveryStrategy mapper, Class typeToScan, InputField[] templates) {
         Set<InputField> fields = mapper.getInputFields(GenericTypeReflector.annotate(typeToScan), INCLUSION_STRATEGY, TYPE_TRANSFORMER);
-        assertEquals(fieldNames.length, fields.size());
-        for (String fieldName : fieldNames) {
-            assertTrue(fields.stream().anyMatch(input -> input.getName().equals(fieldName)));
+        assertEquals(templates.length, fields.size());
+        for (InputField template : templates) {
+            Optional<InputField> field = fields.stream().filter(input -> input.getName().equals(template.getName())).findFirst();
+            assertTrue("Field '" + template.getName() + "' doesn't match between different strategies", field.isPresent());
+            assertEquals(template.getDescription(), field.get().getDescription());
+            assertEquals(template.getDefaultValue(), field.get().getDefaultValue());
         }
         return fields;
+    }
+
+    private void assertAllFieldsEqual(Set<InputField> fields1, Set<InputField> fields2) {
+        assertEquals(fields1.size(), fields2.size());
+        fields1.forEach(f1 -> assertTrue(fields2.stream().anyMatch(f2 -> f1.getName().equals(f2.getName())
+                        && Objects.equals(f1.getDescription(), f2.getDescription())
+                        && GenericTypeReflector.equals(f1.getJavaType(), f2.getJavaType())
+                        && Objects.equals(f1.getDefaultValue(), f2.getDefaultValue()))));
     }
 
     private class FieldsOnly {
@@ -177,11 +206,11 @@ public class InputFieldDiscoveryTest {
     }
 
     private class ExplicitFields {
-        @GraphQLInputField(name = "aaa")
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         public String field1;
-        @GraphQLInputField(name = "bbb")
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
         public int field2;
-        @GraphQLInputField(name = "ccc")
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
         public Object field3;
     }
 
@@ -190,17 +219,17 @@ public class InputFieldDiscoveryTest {
         private int field2;
         private Object field3;
 
-        @GraphQLInputField(name = "aaa")
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLInputField(name = "bbb")
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLInputField(name = "ccc")
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
         public Object getField3() {
             return field3;
         }
@@ -211,17 +240,17 @@ public class InputFieldDiscoveryTest {
         private int field2;
         private Object field3;
 
-        @GraphQLInputField(name = "aaa")
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         public void setField1(String field1) {
             this.field1 = field1;
         }
 
-        @GraphQLInputField(name = "bbb")
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
         public void setField2(int field2) {
             this.field2 = field2;
         }
 
-        @GraphQLInputField(name = "ccc")
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
         public void setField3(Object field3) {
             this.field3 = field3;
         }
@@ -279,11 +308,11 @@ public class InputFieldDiscoveryTest {
     }
 
     private class MixedFieldsWin {
-        @GraphQLInputField(name = "aaa")
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         private String field1;
-        @GraphQLInputField(name = "bbb")
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
         private int field2;
-        @GraphQLInputField(name = "ccc")
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
         private Object field3;
 
         @GraphQLQuery(name = "xxx")
@@ -310,17 +339,17 @@ public class InputFieldDiscoveryTest {
         @GraphQLQuery(name = "zzz")
         private Object field3;
 
-        @GraphQLInputField(name = "aaa")
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLInputField(name = "bbb")
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLInputField(name = "ccc")
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
         public Object getField3() {
             return field3;
         }
@@ -334,104 +363,104 @@ public class InputFieldDiscoveryTest {
         @GraphQLQuery(name = "zzz")
         private Object field3;
 
-        @GraphQLInputField(name = "aaa")
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         public void setField1(String field1) {
             this.field1 = field1;
         }
 
-        @GraphQLInputField(name = "bbb")
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
         public void setField2(int field2) {
             this.field2 = field2;
         }
 
-        @GraphQLInputField(name = "ccc")
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
         public void setField3(Object field3) {
             this.field3 = field3;
         }
     }
 
     private class ConflictingGettersWin {
-        @GraphQLInputField(name = "xxx")
+        @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
         private String field1;
-        @GraphQLInputField(name = "yyy")
+        @GraphQLInputField(name = "yyy", description = "YYY", defaultValue = "-1")
         private int field2;
-        @GraphQLInputField(name = "zzz")
+        @GraphQLInputField(name = "zzz", description = "ZZZ", defaultValue = "-1")
         private Object field3;
 
-        @GraphQLInputField(name = "aaa")
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLInputField(name = "bbb")
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLInputField(name = "ccc")
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
         public Object getField3() {
             return field3;
         }
     }
     
     private class ConflictingSettersWin {
-        @GraphQLInputField(name = "xxx")
+        @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
         private String field1;
-        @GraphQLInputField(name = "yyy")
+        @GraphQLInputField(name = "yyy", description = "YYY", defaultValue = "-1")
         private int field2;
-        @GraphQLInputField(name = "zzz")
+        @GraphQLInputField(name = "zzz", description = "ZZZ", defaultValue = "-1")
         private Object field3;
 
-        @GraphQLInputField(name = "aaa")
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         public void setField1(String field1) {
             this.field1 = field1;
         }
 
-        @GraphQLInputField(name = "bbb")
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
         public void setField2(int field2) {
             this.field2 = field2;
         }
 
-        @GraphQLInputField(name = "ccc")
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
         public void setField3(Object field3) {
             this.field3 = field3;
         }
     }
 
     private class AllConflictingSettersWin {
-        @GraphQLInputField(name = "xxx")
+        @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
         private String field1;
-        @GraphQLInputField(name = "yyy")
+        @GraphQLInputField(name = "yyy", description = "YYY", defaultValue = "-1")
         private int field2;
-        @GraphQLInputField(name = "zzz")
+        @GraphQLInputField(name = "zzz", description = "ZZZ", defaultValue = "-1")
         private Object field3;
 
-        @GraphQLInputField(name = "111")
+        @GraphQLInputField(name = "111", description = "1111", defaultValue = "XXXX")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLInputField(name = "222")
+        @GraphQLInputField(name = "222", description = "2222", defaultValue = "-1")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLInputField(name = "333")
+        @GraphQLInputField(name = "333", description = "3333", defaultValue = "-1")
         public Object getField3() {
             return field3;
         }
 
-        @GraphQLInputField(name = "aaa")
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         public void setField1(String field1) {
             this.field1 = field1;
         }
 
-        @GraphQLInputField(name = "bbb")
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
         public void setField2(int field2) {
             this.field2 = field2;
         }
 
-        @GraphQLInputField(name = "ccc")
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
         public void setField3(Object field3) {
             this.field3 = field3;
         }
@@ -466,6 +495,7 @@ public class InputFieldDiscoveryTest {
             return field3;
         }
 
+        @GraphQLInputField
         public void setField3(Object field3) {
             this.field3 = field3;
         }

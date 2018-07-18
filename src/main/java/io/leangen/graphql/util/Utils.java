@@ -12,8 +12,6 @@ import java.util.stream.Stream;
 @SuppressWarnings("WeakerAccess")
 public class Utils {
 
-    public static final String NULL = "\n\t\t\n\t\t\n\ue000\ue001\ue002\ue000\n\t\t\t\t\n";
-
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -32,10 +30,6 @@ public class Utils {
 
     public static boolean isNotEmpty(String string) {
         return string != null && !string.isEmpty();
-    }
-
-    public static String decodeNullable(String string) {
-        return NULL.equals(string) ? null : string;
     }
 
     public static String capitalize(final String str) {
@@ -71,5 +65,12 @@ public class Utils {
 
     public static String[] emptyIfNull(String[] array) {
         return array == null ? emptyArray() : array;
+    }
+
+    public static String requireNonEmpty(String value) {
+        if (isEmpty(value)) {
+            throw new IllegalArgumentException("Empty string is not a valid value");
+        }
+        return value;
     }
 }

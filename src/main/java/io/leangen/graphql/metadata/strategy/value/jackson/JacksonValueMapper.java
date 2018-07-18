@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.Annotated;
+import com.fasterxml.jackson.databind.introspect.AnnotatedField;
+import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.AnnotatedParameter;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -15,6 +17,7 @@ import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
+import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputParsingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
@@ -23,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -30,6 +34,8 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,6 +44,7 @@ import java.util.stream.Stream;
 public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy {
 
     private final ObjectMapper objectMapper;
+    private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
 
     private static final Logger log = LoggerFactory.getLogger(JacksonValueMapper.class);
 
@@ -83,55 +90,31 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
     }
 
     private Stream<InputField> toInputField(AnnotatedType type, BeanPropertyDefinition prop, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer) {
+        PropertyDescriptorFactory descFactory = new PropertyDescriptorFactory(type, typeTransformer);
         AnnotatedParameter ctorParam = prop.getConstructorParameter();
         if (ctorParam != null) {
-            Constructor<?> constructor = (Constructor<?>) ctorParam.getOwner().getMember();
-            AnnotatedType fieldType = transform(ClassUtils.getParameterTypes(constructor, type)[ctorParam.getIndex()],
-                    typeTransformer, constructor.getParameters()[ctorParam.getIndex()]);
-            return inclusionStrategy.includeInputField(
-                    constructor.getDeclaringClass(), constructor.getParameters()[ctorParam.getIndex()], fieldType)
-                    ? toInputField(prop, fieldType, ctorParam) : Stream.empty();
+            return toInputField(descFactory.fromConstructorParameter(ctorParam), prop, inclusionStrategy, objectMapper, typeTransformer);
         }
         if (prop.getSetter() != null) {
-            Method setter = prop.getSetter().getAnnotated();
-            AnnotatedType fieldType = transform(ClassUtils.getParameterTypes(setter, type)[0], typeTransformer, setter, type);
-            return inclusionStrategy.includeInputField(setter.getDeclaringClass(), setter, fieldType)
-                    ? toInputField(prop, fieldType, prop.getSetter()) : Stream.empty();
+            return toInputField(descFactory.fromSetter(prop.getSetter()), prop, inclusionStrategy, objectMapper, typeTransformer);
         }
         if (prop.getGetter() != null) {
-            Method getter = prop.getGetter().getAnnotated();
-            AnnotatedType fieldType = transform(ClassUtils.getReturnType(getter, type), typeTransformer, getter, type);
-            return inclusionStrategy.includeInputField(getter.getDeclaringClass(), getter, fieldType)
-                    ? toInputField(prop, fieldType, prop.getGetter()) : Stream.empty();
+            return toInputField(descFactory.fromGetter(prop.getGetter()), prop, inclusionStrategy, objectMapper, typeTransformer);
         }
         if (prop.getField() != null) {
-            Field field = prop.getField().getAnnotated();
-            AnnotatedType fieldType = transform(ClassUtils.getFieldType(field, type), typeTransformer, field, type);
-            return inclusionStrategy.includeInputField(field.getDeclaringClass(), field, fieldType)
-                    ? toInputField(prop, fieldType, prop.getField()) : Stream.empty();
+            return toInputField(descFactory.fromField(prop.getField()), prop, inclusionStrategy, objectMapper, typeTransformer);
         }
         throw new TypeMappingException("Unknown input field mapping style encountered");
     }
 
-    private Stream<InputField> toInputField(BeanPropertyDefinition prop, AnnotatedType fieldType, Annotated accessor) {
-        AnnotatedType deserializableType = resolveDeserializableType(accessor, fieldType, accessor.getType(), objectMapper);
-        return Stream.of(new InputField(prop.getName(), prop.getMetadata().getDescription(), fieldType, deserializableType));
-    }
-
-    private AnnotatedType transform(AnnotatedType type, TypeTransformer typeTransformer, Member member, AnnotatedType declaringType) {
-        try {
-            return typeTransformer.transform(type);
-        } catch (TypeMappingException e) {
-            throw new TypeMappingException(member, declaringType, e);
+    private Stream<InputField> toInputField(PropertyDescriptor desc, BeanPropertyDefinition prop, InclusionStrategy inclusionStrategy, ObjectMapper objectMapper, TypeTransformer transformer) {
+        if (!inclusionStrategy.includeInputField(desc.declaringClass, desc.element, desc.type)) {
+            return Stream.empty();
         }
-    }
 
-    private AnnotatedType transform(AnnotatedType type, TypeTransformer typeTransformer, Parameter parameter) {
-        try {
-            return typeTransformer.transform(type);
-        } catch (TypeMappingException e) {
-            throw new TypeMappingException(parameter.getDeclaringExecutable(), parameter, e);
-        }
+        AnnotatedType deserializableType = resolveDeserializableType(desc.accessor, desc.type, desc.accessor.getType(), objectMapper);
+        Object defaultValue = defaultValue(desc.declaringType, prop, desc.type, transformer);
+        return Stream.of(new InputField(prop.getName(), prop.getMetadata().getDescription(), desc.type, deserializableType, defaultValue));
     }
 
     private AnnotatedType resolveDeserializableType(Annotated accessor, AnnotatedType realType, JavaType baseType, ObjectMapper objectMapper) {
@@ -156,5 +139,93 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
                     + " due to an exception", e);
         }
         return realType;
+    }
+
+    protected Object defaultValue(AnnotatedType type, BeanPropertyDefinition prop, AnnotatedType fieldType, TypeTransformer typeTransformer) {
+        List<AnnotatedElement> annotatedCandidates = new ArrayList<>(4);
+        PropertyDescriptorFactory descFactory = new PropertyDescriptorFactory(type, typeTransformer);
+        AnnotatedParameter ctorParam = prop.getConstructorParameter();
+        if (ctorParam != null) {
+            annotatedCandidates.add(descFactory.fromConstructorParameter(ctorParam).element);
+        }
+        if (prop.getSetter() != null) {
+            annotatedCandidates.add(descFactory.fromSetter(prop.getSetter()).element);
+        }
+        if (prop.getGetter() != null) {
+            annotatedCandidates.add(descFactory.fromGetter(prop.getGetter()).element);
+        }
+        if (prop.getField() != null) {
+            annotatedCandidates.add(descFactory.fromField(prop.getField()).element);
+        }
+        return inputInfoGen.defaultValue(annotatedCandidates, fieldType).orElse(null);
+    }
+
+    private static class PropertyDescriptorFactory {
+
+        private final AnnotatedType type;
+        private final TypeTransformer transformer;
+
+        PropertyDescriptorFactory(AnnotatedType type, TypeTransformer typeTransformer) {
+            this.type = type;
+            this.transformer = typeTransformer;
+        }
+
+        PropertyDescriptor fromConstructorParameter(AnnotatedParameter ctorParam) {
+            Constructor<?> constructor = (Constructor<?>) ctorParam.getOwner().getMember();
+            Parameter parameter = constructor.getParameters()[ctorParam.getIndex()];
+            AnnotatedType fieldType = transform(ClassUtils.getParameterTypes(constructor, type)[ctorParam.getIndex()], parameter);
+            return new PropertyDescriptor(type, constructor.getDeclaringClass(), parameter, fieldType, ctorParam);
+        }
+
+        PropertyDescriptor fromSetter(AnnotatedMethod setterMethod) {
+            Method setter = setterMethod.getAnnotated();
+            AnnotatedType fieldType = transform(ClassUtils.getParameterTypes(setter, type)[0], setter, type);
+            return new PropertyDescriptor(type, setter.getDeclaringClass(), setter, fieldType, setterMethod);
+        }
+
+        PropertyDescriptor fromGetter(AnnotatedMethod getterMethod) {
+            Method getter = getterMethod.getAnnotated();
+            AnnotatedType fieldType = transform(ClassUtils.getReturnType(getter, type), getter, type);
+            return new PropertyDescriptor(type, getter.getDeclaringClass(), getter, fieldType, getterMethod);
+        }
+
+        PropertyDescriptor fromField(AnnotatedField fld) {
+            Field field = fld.getAnnotated();
+            AnnotatedType fieldType = transform(ClassUtils.getFieldType(field, type), field, type);
+            return new PropertyDescriptor(type, field.getDeclaringClass(), field, fieldType, fld);
+        }
+
+        AnnotatedType transform(AnnotatedType type, Member member, AnnotatedType declaringType) {
+            try {
+                return transformer.transform(type);
+            } catch (TypeMappingException e) {
+                throw new TypeMappingException(member, declaringType, e);
+            }
+        }
+
+        AnnotatedType transform(AnnotatedType type, Parameter parameter) {
+            try {
+                return transformer.transform(type);
+            } catch (TypeMappingException e) {
+                throw new TypeMappingException(parameter.getDeclaringExecutable(), parameter, e);
+            }
+        }
+    }
+
+    private static class PropertyDescriptor {
+
+        final AnnotatedType declaringType;
+        final AnnotatedElement element;
+        final AnnotatedType type;
+        final Class<?> declaringClass;
+        final Annotated accessor;
+
+        PropertyDescriptor(AnnotatedType declaringType, Class<?> declaringClass, AnnotatedElement element, AnnotatedType type, Annotated accessor) {
+            this.declaringType = declaringType;
+            this.element = element;
+            this.type = type;
+            this.declaringClass = declaringClass;
+            this.accessor = accessor;
+        }
     }
 }

@@ -6,7 +6,7 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.Utils;
+import io.leangen.graphql.util.ReservedStrings;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
     protected String getValueDeprecationReason(Enum<?> value) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
         if (annotation != null) {
-            return Utils.decodeNullable(annotation.deprecationReason());
+            return ReservedStrings.decode(annotation.deprecationReason());
         }
         Deprecated deprecated = ClassUtils.getEnumConstantField(value).getAnnotation(Deprecated.class);
         return respectJavaDeprecation && deprecated != null ? "" : null;

@@ -28,6 +28,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -230,6 +231,14 @@ public class ClassUtils {
 
     public static String getFieldNameFromSetter(Method setter) {
         return Introspector.decapitalize(setter.getName().replaceAll("^set", ""));
+    }
+
+    public static List<AnnotatedElement> getPropertyMembers(Field field) {
+        List<AnnotatedElement> propertyElements = new ArrayList<>(3);
+        ClassUtils.findSetter(field.getDeclaringClass(), field.getName(), field.getType()).ifPresent(propertyElements::add);
+        ClassUtils.findGetter(field.getDeclaringClass(), field.getName()).ifPresent(propertyElements::add);
+        propertyElements.add(field);
+        return propertyElements;
     }
 
     public static Optional<Method> findGetter(Class<?> type, String fieldName) {

@@ -11,7 +11,7 @@ import io.leangen.graphql.metadata.execution.MethodInvoker;
 import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.Utils;
+import io.leangen.graphql.util.ReservedStrings;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
@@ -45,7 +45,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(field -> new Resolver(
                         operationNameGenerator.generateQueryName(field, beanType, params.getQuerySourceBean()),
                         field.getAnnotation(GraphQLQuery.class).description(),
-                        Utils.decodeNullable(field.getAnnotation(GraphQLQuery.class).deprecationReason()),
+                        ReservedStrings.decode(field.getAnnotation(GraphQLQuery.class).deprecationReason()),
                         false,
                         new FieldAccessor(field, beanType),
                         getFieldType(field, params),
@@ -77,7 +77,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(method -> new Resolver(
                         nameGenerator.name(method, beanType, querySourceBean),
                         description(method.getAnnotation(annotation)),
-                        Utils.decodeNullable(deprecationReason(method.getAnnotation(annotation))),
+                        ReservedStrings.decode(deprecationReason(method.getAnnotation(annotation))),
                         batchable && method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, params),

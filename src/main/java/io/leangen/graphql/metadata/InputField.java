@@ -1,6 +1,6 @@
 package io.leangen.graphql.metadata;
 
-import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Objects;
@@ -11,12 +11,14 @@ public class InputField {
     private final String description;
     private final AnnotatedType javaType;
     private final AnnotatedType deserializableType;
+    private final Object defaultValue;
 
-    public InputField(String name, String description, AnnotatedType javaType, AnnotatedType deserializableType) {
-        this.name = name;
+    public InputField(String name, String description, AnnotatedType javaType, AnnotatedType deserializableType, Object defaultValue) {
+        this.name = Utils.requireNonEmpty(name);
         this.description = description;
-        this.javaType = javaType;
+        this.javaType = Objects.requireNonNull(javaType);
         this.deserializableType = deserializableType != null ? deserializableType : javaType;
+        this.defaultValue = defaultValue;
     }
 
     public String getName() {
@@ -35,21 +37,7 @@ public class InputField {
         return deserializableType;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(name, description) ^ GenericTypeReflector.hashCode(javaType);
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == this) {
-            return true;
-        }
-        if (!(other instanceof InputField)) {
-            return false;
-        }
-        InputField that = (InputField) other;
-        return Objects.equals(this.name, that.name) && Objects.equals(this.description, that.description)
-                && GenericTypeReflector.equals(this.javaType, that.javaType);
+    public Object getDefaultValue() {
+        return defaultValue;
     }
 }
