@@ -833,11 +833,12 @@ public class GraphQLSchemaGenerator {
                     .fields(subscriptions)
                     .build());
         }
-        applyProcessors(builder, buildContext);
 
         additionalTypes.addAll(buildContext.typeRepository.getDiscoveredTypes());
+        builder.additionalTypes(additionalTypes);
 
-        return builder.build(additionalTypes);
+        applyProcessors(builder, buildContext);
+        return builder.build();
     }
 
     private void applyProcessors(GraphQLSchema.Builder builder, BuildContext buildContext) {
