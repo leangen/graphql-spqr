@@ -2,6 +2,7 @@ package io.leangen.graphql.metadata.strategy.query;
 
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.GraphQLComplexity;
+import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.execution.MethodInvoker;
 import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
@@ -25,9 +26,9 @@ import java.util.stream.Collectors;
 public class PublicResolverBuilder extends FilteredResolverBuilder {
 
     private String[] basePackages;
-    private boolean javaDeprecation;
-    private Function<Method, String> descriptionMapper = method -> "";
-    private Function<Method, String> deprecationReasonMapper = method -> javaDeprecation && method.isAnnotationPresent(Deprecated.class) ? "Deprecated" : null;
+    private JavaDeprecationMappingConfig javaDeprecationConfig;
+    private Function<Method, String> descriptionMapper;
+    private Function<Method, String> deprecationReasonMapper;
 
     public PublicResolverBuilder() {
         this(new String[0]);
@@ -36,8 +37,11 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
     public PublicResolverBuilder(String... basePackages) {
         this.operationNameGenerator = new MethodOperationNameGenerator();
         this.argumentBuilder = new AnnotatedArgumentBuilder();
+        this.descriptionMapper = method -> "";
+        this.deprecationReasonMapper = method ->
+                javaDeprecationConfig.enabled && method.isAnnotationPresent(Deprecated.class) ? javaDeprecationConfig.deprecationReason : null;
         withBasePackages(basePackages);
-        withJavaDeprecationRespected(true);
+        withJavaDeprecation(new JavaDeprecationMappingConfig(true, "Deprecated"));
         withDefaultFilters();
     }
 
@@ -46,8 +50,22 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         return this;
     }
 
+    /**
+     * Sets whether the {@code Deprecated} annotations should map to GraphQL deprecation
+     *
+     * @param javaDeprecation Whether the {@code Deprecated} maps to GraphQL deprecation
+     * @return This builder instance to allow chained calls
+     *
+     * @deprecated Use {@link #withJavaDeprecation(JavaDeprecationMappingConfig)} instead
+     */
+    @Deprecated
     public PublicResolverBuilder withJavaDeprecationRespected(boolean javaDeprecation) {
-        this.javaDeprecation = javaDeprecation;
+        this.javaDeprecationConfig = new JavaDeprecationMappingConfig(javaDeprecation, "Deprecated");
+        return this;
+    }
+
+    public PublicResolverBuilder withJavaDeprecation(JavaDeprecationMappingConfig javaDeprecationConfig) {
+        this.javaDeprecationConfig = javaDeprecationConfig;
         return this;
     }
 

@@ -3,6 +3,7 @@ package io.leangen.graphql.generator.mapping.common;
 import graphql.schema.GraphQLEnumType;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
 import io.leangen.graphql.generator.BuildContext;
+import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
@@ -21,10 +22,10 @@ import static graphql.schema.GraphQLEnumType.newEnum;
  */
 public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> {
 
-    private final boolean respectJavaDeprecation;
+    private final JavaDeprecationMappingConfig javaDeprecationConfig;
 
-    public EnumMapper(boolean respectJavaDeprecation) {
-        this.respectJavaDeprecation = respectJavaDeprecation;
+    public EnumMapper(JavaDeprecationMappingConfig javaDeprecationConfig) {
+        this.javaDeprecationConfig = javaDeprecationConfig;
     }
 
     @Override
@@ -68,7 +69,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
             return ReservedStrings.decode(annotation.deprecationReason());
         }
         Deprecated deprecated = ClassUtils.getEnumConstantField(value).getAnnotation(Deprecated.class);
-        return respectJavaDeprecation && deprecated != null ? "" : null;
+        return javaDeprecationConfig.enabled && deprecated != null ? javaDeprecationConfig.deprecationReason : null;
     }
 
     @Override

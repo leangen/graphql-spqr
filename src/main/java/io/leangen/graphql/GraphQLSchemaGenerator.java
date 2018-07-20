@@ -12,6 +12,7 @@ import io.leangen.graphql.extension.ExtensionProvider;
 import io.leangen.graphql.extension.GraphQLSchemaProcessor;
 import io.leangen.graphql.extension.Module;
 import io.leangen.graphql.generator.BuildContext;
+import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.OperationRepository;
 import io.leangen.graphql.generator.OperationSource;
@@ -152,7 +153,7 @@ public class GraphQLSchemaGenerator {
     private GlobalEnvironment environment;
     private String[] basePackages = Utils.emptyArray();
     private List<TypeMapper> typeMappers;
-    private boolean respectJavaDeprecation = true;
+    private JavaDeprecationMappingConfig javaDeprecationConfig = new JavaDeprecationMappingConfig(true, "Deprecated");
     private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
     private final List<ExtensionProvider<TypeMapper>> typeMapperProviders = new ArrayList<>();
     private final List<ExtensionProvider<InputConverter>> inputConverterProviders = new ArrayList<>();
@@ -447,7 +448,12 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withJavaDeprecationRespected(boolean respectJavaDeprecation) {
-        this.respectJavaDeprecation = respectJavaDeprecation;
+        this.javaDeprecationConfig = new JavaDeprecationMappingConfig(respectJavaDeprecation, javaDeprecationConfig.deprecationReason);
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withJavaDeprecationReason(String deprecationReason) {
+        this.javaDeprecationConfig = new JavaDeprecationMappingConfig(javaDeprecationConfig.enabled, deprecationReason);
         return this;
     }
 
@@ -735,7 +741,7 @@ public class GraphQLSchemaGenerator {
 
         List<ResolverBuilder> nestedResolverBuilders = Arrays.asList(
                 new AnnotatedResolverBuilder(),
-                new BeanResolverBuilder(basePackages).withJavaDeprecationRespected(respectJavaDeprecation));
+                new BeanResolverBuilder(basePackages).withJavaDeprecation(javaDeprecationConfig));
         for (ExtensionProvider<ResolverBuilder> provider : nestedResolverBuilderProviders) {
             nestedResolverBuilders = provider.getExtensions(configuration, new ExtensionList<>(nestedResolverBuilders));
         }
@@ -743,7 +749,7 @@ public class GraphQLSchemaGenerator {
         operationSourceRepository.registerGlobalNestedResolverBuilders(nestedResolverBuilders);
 
         ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
-        EnumMapper enumMapper = new EnumMapper(respectJavaDeprecation);
+        EnumMapper enumMapper = new EnumMapper(javaDeprecationConfig);
         typeMappers = Arrays.asList(
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                 new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
