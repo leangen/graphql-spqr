@@ -62,7 +62,11 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T fromString(String json, AnnotatedType type) {
+        if (json == null || String.class.equals(type.getType())) {
+            return (T) json;
+        }
         try {
             return objectMapper.readValue(json, objectMapper.getTypeFactory().constructType(type.getType()));
         } catch (IOException e) {
@@ -72,6 +76,9 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
 
     @Override
     public String toString(Object output) {
+        if (output == null || output instanceof String) {
+            return (String) output;
+        }
         try {
             return objectMapper.writeValueAsString(output);
         } catch (JsonProcessingException e) {

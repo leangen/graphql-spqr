@@ -11,6 +11,7 @@ import graphql.relay.ConnectionCursor;
 import graphql.relay.DefaultEdge;
 import graphql.relay.Edge;
 import graphql.relay.PageInfo;
+import graphql.relay.Relay;
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
@@ -215,6 +216,22 @@ public class RelayTest {
         new TestSchemaGenerator()
                 .withOperationsFromSingleton(new InvalidPagingService())
                 .generate();
+    }
+
+    @Test
+    public void testRelayId() {
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withOperationsFromSingletons(new BookService())
+                .generate();
+
+        assertNotNull(schema.getQueryType().getFieldDefinition("node"));
+
+        String globalId = new Relay().toGlobalId(Book.class.getSimpleName(), "x123");
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = exe.execute("{node(id: \"" + globalId + "\") {id ... on Book {title}}}");
+        assertTrue(result.getErrors().isEmpty());
+        assertValueAtPathEquals(globalId, result, "node.id");
+        assertValueAtPathEquals("Node Book", result, "node.title");
     }
 
     @Test

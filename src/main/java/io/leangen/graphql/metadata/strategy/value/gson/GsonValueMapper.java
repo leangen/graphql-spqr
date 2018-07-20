@@ -48,16 +48,23 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
     }
 
     @Override
-    public <T> T fromString(String json, AnnotatedType outputType) {
+    @SuppressWarnings("unchecked")
+    public <T> T fromString(String json, AnnotatedType type) {
+        if (json == null || String.class.equals(type.getType())) {
+            return (T) json;
+        }
         try {
-            return gson.fromJson(json, outputType.getType());
+            return gson.fromJson(json, type.getType());
         } catch (JsonSyntaxException e) {
-            throw new InputParsingException(json, outputType.getType(), e);
+            throw new InputParsingException(json, type.getType(), e);
         }
     }
 
     @Override
     public String toString(Object output) {
+        if (output == null || output instanceof String) {
+            return (String) output;
+        }
         return gson.toJson(output);
     }
 

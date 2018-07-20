@@ -1,9 +1,6 @@
 package io.leangen.graphql;
 
-import org.junit.Test;
-
-import java.time.LocalDate;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLFieldDefinition;
@@ -12,6 +9,9 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import org.junit.Test;
+
+import java.time.LocalDate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -95,6 +95,7 @@ public class NestedQueryTest {
     public static class Author {
         private String name;
 
+        @JsonCreator
         public Author(String name) {
             this.name = name;
         }

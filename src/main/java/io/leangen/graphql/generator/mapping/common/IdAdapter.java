@@ -51,9 +51,6 @@ public class IdAdapter implements TypeMapper, ArgumentInjector, OutputConverter<
                 id = environment.relay.fromGlobalId(id).getId();
             } catch (Exception e) {/*no-op*/}
         }
-        if (type.getType().equals(String.class)) {
-            id = "\"" + id + "\"";
-        }
         return valueMapper.fromString(id, type);
     }
 
