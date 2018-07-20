@@ -39,17 +39,21 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
                 throw new TypeMappingException(resolverMethod, parameter, e);
             }
             parameterType = ClassUtils.addAnnotations(parameterType, parameter.getAnnotations());
-            operationArguments.add(new OperationArgument(
-                    parameterType,
-                    getArgumentName(parameter, parameterType, params.getInclusionStrategy()),
-                    getArgumentDescription(parameter, parameterType),
-                    defaultValue(parameter, parameterType),
-                    parameter,
-                    parameter.isAnnotationPresent(GraphQLContext.class),
-                    params.getInclusionStrategy().includeArgument(parameter, parameterType)
-            ));
+            operationArguments.add(buildResolverArgument(parameter, parameterType, params.getInclusionStrategy()));
         }
         return operationArguments;
+    }
+
+    protected OperationArgument buildResolverArgument(Parameter parameter, AnnotatedType parameterType, InclusionStrategy inclusionStrategy) {
+        return new OperationArgument(
+                parameterType,
+                getArgumentName(parameter, parameterType, inclusionStrategy),
+                getArgumentDescription(parameter, parameterType),
+                defaultValue(parameter, parameterType),
+                parameter,
+                parameter.isAnnotationPresent(GraphQLContext.class),
+                inclusionStrategy.includeArgument(parameter, parameterType)
+        );
     }
 
     protected String getArgumentName(Parameter parameter, AnnotatedType parameterType, InclusionStrategy inclusionStrategy) {
