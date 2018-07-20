@@ -1,6 +1,7 @@
 package io.leangen.graphql.metadata.strategy.value.gson;
 
 import com.google.gson.FieldNamingStrategy;
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.TypeAdapterFactory;
@@ -24,16 +25,18 @@ import java.util.Objects;
  */
 public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMapper>, ScalarDeserializationStrategy {
 
+    private final Gson prototype;
     private final FieldNamingStrategy fieldNamingStrategy;
     private final TypeInfoGenerator typeInfoGenerator;
     private final Configurer configurer;
 
     @SuppressWarnings("WeakerAccess")
     public GsonValueMapperFactory() {
-        this(new DefaultTypeInfoGenerator(), new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
+        this(null, new DefaultTypeInfoGenerator(), new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
     }
 
-    private GsonValueMapperFactory(TypeInfoGenerator typeInfoGenerator, FieldNamingStrategy fieldNamingStrategy, Configurer configurer) {
+    private GsonValueMapperFactory(Gson prototype, TypeInfoGenerator typeInfoGenerator, FieldNamingStrategy fieldNamingStrategy, Configurer configurer) {
+        this.prototype = prototype;
         this.fieldNamingStrategy = Objects.requireNonNull(fieldNamingStrategy);
         this.typeInfoGenerator = Objects.requireNonNull(typeInfoGenerator);
         this.configurer = Objects.requireNonNull(configurer);
@@ -49,7 +52,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
     }
 
     private GsonBuilder initBuilder(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
-        GsonBuilder gsonBuilder = new GsonBuilder()
+        GsonBuilder gsonBuilder = (prototype != null ? prototype.newBuilder() : new GsonBuilder())
                 .setFieldNamingStrategy(fieldNamingStrategy)
                 .registerTypeAdapterFactory(new GsonJava8TypeAdapterFactory());
         return configurer.configure(gsonBuilder, concreteSubTypes, this.typeInfoGenerator, environment);
@@ -102,6 +105,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
 
     public static class Builder {
 
+        private Gson prototype;
         private FieldNamingStrategy fieldNamingStrategy = new GsonFieldNamingStrategy();
         private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
         private Configurer configurer = new AbstractClassAdapterConfigurer();
@@ -116,13 +120,18 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
             return this;
         }
 
+        public Builder withPrototype(Gson prototype) {
+            this.prototype = prototype;
+            return this;
+        }
+
         public Builder withConfigurer(Configurer configurer) {
             this.configurer = configurer;
             return this;
         }
 
         public GsonValueMapperFactory build() {
-            return new GsonValueMapperFactory(typeInfoGenerator, fieldNamingStrategy, configurer);
+            return new GsonValueMapperFactory(prototype, typeInfoGenerator, fieldNamingStrategy, configurer);
         }
     }
 }
