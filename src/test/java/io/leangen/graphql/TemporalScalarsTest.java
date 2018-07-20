@@ -13,6 +13,8 @@ import io.leangen.graphql.util.Scalars;
 import org.junit.Test;
 
 import java.math.BigInteger;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +37,30 @@ public class TemporalScalarsTest {
     @Test
     public void testSqlDate() {
         testTemporal(java.sql.Date.class, "2017-06-24", 1498346554120L);
+    }
+
+    @Test
+    public void testSqlTime() {
+        testTemporal(Time.class, "23:15:44", 1498346144505L);
+    }
+
+    @Test
+    public void testSqlTimestamp() {
+        testTemporal(Timestamp.class, "2017-06-24T23:15:44.500", 1498346144500L);
+    }
+
+    @Test
+    public void testSqlTypesAsDates() {
+        Coercing dateCoercing = Scalars.toGraphQLScalarType(Date.class).getCoercing();
+        Coercing sqlDateCoercing = Scalars.toGraphQLScalarType(java.sql.Date.class).getCoercing();
+        Coercing sqlTimeCoercing = Scalars.toGraphQLScalarType(Time.class).getCoercing();
+        Coercing sqlTimestampCoercing = Scalars.toGraphQLScalarType(Timestamp.class).getCoercing();
+        java.sql.Date sqlDate = java.sql.Date.valueOf(LocalDate.parse("2017-06-24"));
+        Time sqlTime = Time.valueOf(LocalTime.parse("23:15:44"));
+        Timestamp sqlTimestamp = Timestamp.valueOf(LocalDateTime.parse("2017-06-24T23:15:44.500"));
+        assertEquals(dateCoercing.serialize(sqlDate), sqlDateCoercing.serialize(sqlDate));
+        assertEquals(dateCoercing.serialize(sqlTime), sqlTimeCoercing.serialize(sqlTime));
+        assertEquals(dateCoercing.serialize(sqlTimestamp), sqlTimestampCoercing.serialize(sqlTimestamp));
     }
 
     @Test

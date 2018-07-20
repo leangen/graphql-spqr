@@ -23,6 +23,8 @@ import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -212,27 +214,12 @@ public class Scalars {
 
         @Override
         public Object parseValue(Object input) {
-            if (input instanceof String) {
-                try {
-                    return ClassUtils.forName((String) input);
-                } catch (ClassNotFoundException e) {
-                    throw new CoercingParseValueException(e);
-                }
-            }
-            if (input instanceof Class) {
-                return input;
-            }
-            throw valueParsingException(input, String.class, Class.class);
+            throw new CoercingParseValueException("Class can not be used as input");
         }
 
         @Override
         public Object parseLiteral(Object input) {
-            StringValue string = literalOrException(input, StringValue.class);
-            try {
-                return ClassUtils.forName(string.getValue());
-            } catch (ClassNotFoundException e) {
-                throw new CoercingParseLiteralException(e);
-            }
+            throw new CoercingParseLiteralException("Class can not be used as input");
         }
     });
 
@@ -267,10 +254,16 @@ public class Scalars {
     });
 
     public static final GraphQLScalarType GraphQLDate = temporalScalar(Date.class,"Date", "an instant in time",
-            s -> new Date(Instant.parse(s).toEpochMilli()), i -> new Date(i.toEpochMilli()), d -> d.toInstant().toString());
+            s -> new Date(Instant.parse(s).toEpochMilli()), i -> new Date(i.toEpochMilli()), Scalars::dateToString);
 
     public static final GraphQLScalarType GraphQLSqlDate = temporalScalar(java.sql.Date.class,"SqlDate", "a SQL compliant local date",
             s -> java.sql.Date.valueOf(LocalDate.parse(s)), i -> java.sql.Date.valueOf(i.atZone(ZoneOffset.UTC).toLocalDate()), d -> d.toLocalDate().toString());
+
+    public static final GraphQLScalarType GraphQLSqlTime = temporalScalar(Time.class,"SqlTime", "a SQL compliant local time",
+            s -> Time.valueOf(LocalTime.parse(s)), i -> Time.valueOf(i.atZone(ZoneOffset.UTC).toLocalTime()), t -> t.toLocalTime().toString());
+
+    public static final GraphQLScalarType GraphQLSqlTimestamp = temporalScalar(Timestamp.class,"SqlTimestamp", "a SQL compliant local date-time",
+            s -> Timestamp.valueOf(LocalDateTime.parse(s)), i -> Timestamp.valueOf(i.atZone(ZoneOffset.UTC).toLocalDateTime()), t -> t.toLocalDateTime().toString());
 
     public static final GraphQLScalarType GraphQLCalendar = temporalScalar(Calendar.class,"Calendar", "a date-time with a time-zone",
             s -> GregorianCalendar.from(ZonedDateTime.parse(s)), i -> GregorianCalendar.from(i.atZone(ZoneOffset.UTC)), c -> c.toInstant().toString());
@@ -298,6 +291,16 @@ public class Scalars {
 
     public static final GraphQLScalarType GraphQLPeriodScalar = temporalScalar(Period.class, "Period", "a period of time",
             Period::parse, instant -> { throw new GraphQLException("Period can not be deserialized from a numeric value"); });
+
+    private static String dateToString(Date date) {
+        if (Date.class.equals(date.getClass())) {
+            return date.toInstant().toString();
+        } else if (isScalar(date.getClass())) {
+            return Scalars.toGraphQLScalarType(date.getClass()).getCoercing().serialize(date).toString();
+        } else {
+            throw serializationException(date, Date.class, java.sql.Date.class, Time.class, Timestamp.class);
+        }
+    }
 
     private static Coercing MAP_SCALAR_COERCION = new Coercing() {
         @Override
@@ -445,7 +448,7 @@ public class Scalars {
         return String.format("Expected %stype %s but was '%s'", input instanceof Value ? "AST " : "",
                 types, input == null ? "null" : input.getClass().getSimpleName());
     }
-    
+
     private static final Map<Type, GraphQLScalarType> SCALAR_MAPPING = getScalarMapping();
 
     public static boolean isScalar(Type javaType) {
@@ -485,6 +488,8 @@ public class Scalars {
         scalarMapping.put(Class.class, GraphQLClass);
         scalarMapping.put(Date.class, GraphQLDate);
         scalarMapping.put(java.sql.Date.class, GraphQLSqlDate);
+        scalarMapping.put(Time.class, GraphQLSqlTime);
+        scalarMapping.put(Timestamp.class, GraphQLSqlTimestamp);
         scalarMapping.put(Calendar.class, GraphQLCalendar);
         scalarMapping.put(Instant.class, GraphQLInstant);
         scalarMapping.put(LocalDate.class, GraphQLLocalDate);
