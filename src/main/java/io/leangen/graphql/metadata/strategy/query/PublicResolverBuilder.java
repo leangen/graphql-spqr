@@ -51,7 +51,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
     }
 
     /**
-     * Sets whether the {@code Deprecated} annotations should map to GraphQL deprecation
+     * Sets whether the {@code Deprecated} annotation should map to GraphQL deprecation
      *
      * @param javaDeprecation Whether the {@code Deprecated} maps to GraphQL deprecation
      * @return This builder instance to allow chained calls
@@ -64,6 +64,12 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         return this;
     }
 
+    /**
+     * Sets whether and how the {@code Deprecated} annotation should map to GraphQL deprecation
+     *
+     * @param javaDeprecationConfig Configures if and how {@code Deprecated} maps to GraphQL deprecation
+     * @return This builder instance to allow chained calls
+     */
     public PublicResolverBuilder withJavaDeprecation(JavaDeprecationMappingConfig javaDeprecationConfig) {
         this.javaDeprecationConfig = javaDeprecationConfig;
         return this;

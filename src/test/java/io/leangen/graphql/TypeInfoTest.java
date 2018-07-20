@@ -116,7 +116,7 @@ public class TypeInfoTest {
 
         assertEquals(respectJavaDeprecation, bunnyType.getValue("AVERAGE").isDeprecated());
         if (respectJavaDeprecation) {
-            assertEquals("", bunnyType.getValue("AVERAGE").getDeprecationReason());
+            assertEquals("Deprecated", bunnyType.getValue("AVERAGE").getDeprecationReason());
         }
 
         assertFalse(bunnyType.getValue("Omg").isDeprecated());
