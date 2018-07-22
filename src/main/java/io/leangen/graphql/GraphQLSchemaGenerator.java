@@ -408,7 +408,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withResolverBuilders(ResolverBuilder... resolverBuilders) {
-        return withResolverBuilders((config, defaults) -> defaults.insert(0, resolverBuilders));
+        return withResolverBuilders((config, defaults) -> Arrays.asList(resolverBuilders));
     }
 
     public GraphQLSchemaGenerator withResolverBuilders(ExtensionProvider<ResolverBuilder> provider) {
@@ -424,7 +424,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withNestedResolverBuilders(ResolverBuilder... resolverBuilders) {
-        return withNestedResolverBuilders((config, defaults) -> defaults.insert(0, resolverBuilders));
+        return withNestedResolverBuilders((config, defaults) -> Arrays.asList(resolverBuilders));
     }
 
     public GraphQLSchemaGenerator withNestedResolverBuilders(ExtensionProvider<ResolverBuilder> provider) {
