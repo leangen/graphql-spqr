@@ -12,9 +12,9 @@ import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.generator.types.MappedGraphQLObjectType;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedType;
@@ -49,7 +49,8 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
             }
         });
 
-        GraphQLObjectType type = new MappedGraphQLObjectType(typeBuilder.build(), javaType);
+        typeBuilder.withDirective(Directives.mappedType(javaType));
+        GraphQLObjectType type = typeBuilder.build();
         interfaces.forEach(inter -> buildContext.typeRepository.registerCovariantType(inter.getName(), javaType, type));
         return type;
     }
@@ -66,6 +67,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         if (ClassUtils.isAbstract(javaType)) {
             createInputDisambiguatorField(javaType, buildContext).ifPresent(typeBuilder::field);
         }
+        typeBuilder.withDirective(Directives.mappedType(javaType));
         return typeBuilder.build();
     }
 

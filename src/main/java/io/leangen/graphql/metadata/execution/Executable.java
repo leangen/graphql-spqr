@@ -3,11 +3,12 @@ package io.leangen.graphql.metadata.execution;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
 import java.lang.reflect.Parameter;
 
-public abstract class Executable {
+public abstract class Executable<T extends Member & AnnotatedElement> {
 
-    AnnotatedElement delegate;
+    T delegate;
 
     abstract public Object execute(Object target, Object[] args) throws InvocationTargetException, IllegalAccessException;
 
@@ -24,6 +25,10 @@ public abstract class Executable {
     abstract public AnnotatedType[] getAnnotatedParameterTypes();
 
     abstract public Parameter[] getParameters();
+
+    public T getDelegate() {
+        return delegate;
+    }
 
     @Override
     public int hashCode() {

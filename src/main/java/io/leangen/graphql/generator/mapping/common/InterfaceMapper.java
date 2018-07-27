@@ -8,7 +8,7 @@ import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
-import io.leangen.graphql.generator.types.MappedGraphQLInterfaceType;
+import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
@@ -41,7 +41,8 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
         fields.forEach(typeBuilder::field);
 
         typeBuilder.typeResolver(buildContext.typeResolver);
-        GraphQLInterfaceType type = new MappedGraphQLInterfaceType(typeBuilder.build(), javaType);
+        typeBuilder.withDirective(Directives.mappedType(javaType));
+        GraphQLInterfaceType type = typeBuilder.build();
 
         registerImplementations(javaType, type, operationMapper, buildContext);
         return type;

@@ -22,13 +22,12 @@ import io.leangen.graphql.execution.ContextWrapper;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.generator.types.MappedGraphQLFieldDefinition;
-import io.leangen.graphql.generator.types.MappedGraphQLObjectType;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.GraphQLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,7 +133,7 @@ public class OperationMapper {
      */
     public GraphQLFieldDefinition toGraphQLField(Operation operation, BuildContext buildContext) {
         GraphQLOutputType type = toGraphQLType(operation.getJavaType(), buildContext);
-        GraphQLFieldDefinition.Builder queryBuilder = newFieldDefinition()
+        GraphQLFieldDefinition.Builder fieldBuilder = newFieldDefinition()
                 .name(operation.getName())
                 .description(operation.getDescription())
                 .deprecate(operation.getDeprecationReason())
@@ -144,7 +143,7 @@ public class OperationMapper {
                 .filter(OperationArgument::isMappable)
                 .map(argument -> toGraphQLArgument(argument, buildContext))
                 .collect(Collectors.toList());
-        queryBuilder.argument(arguments);
+        fieldBuilder.argument(arguments);
         if (GraphQLUtils.isRelayConnectionType(type)) {
             if (buildContext.relay.getConnectionFieldArguments().stream()
                     .anyMatch(connArg -> arguments.stream()
@@ -157,9 +156,10 @@ public class OperationMapper {
                 .filter(OperationArgument::isMappable)
                 .map(OperationArgument::getJavaType);
         ValueMapper valueMapper = buildContext.createValueMapper(inputTypes);
-        queryBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
+        fieldBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
+        fieldBuilder.withDirective(Directives.mappedOperation(operation));
 
-        return new MappedGraphQLFieldDefinition(queryBuilder.build(), operation);
+        return fieldBuilder.build();
     }
 
     /**
@@ -356,10 +356,10 @@ public class OperationMapper {
                     typeRepository.getOutputTypes(unwrappedQueryType.getName()).stream()
                             .map(MappedType::getAsObjectType)
                             .filter(implementation -> implementation.getInterfaces().contains(node))
-                            .filter(implementation -> implementation instanceof MappedGraphQLObjectType)
+                            .filter(implementation -> Directives.isMappedType(implementation))
                             // only register the possible types that can actually be returned from the primary resolver
                             // for interface-unions it is all the possible types but, for inline unions, only one (right?) possible type can match
-                            .filter(implementation -> GenericTypeReflector.isSuperType(query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME).getReturnType().getType(), ((MappedGraphQLObjectType) implementation).getJavaType().getType()))
+                            .filter(implementation -> GenericTypeReflector.isSuperType(query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME).getReturnType().getType(), Directives.getMappedType(implementation).getType()))
                             .forEach(nodeType -> nodeQueriesByType.putIfAbsent(nodeType.getName(), query.getName())); //never override more precise resolvers
                 }
             }

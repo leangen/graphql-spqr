@@ -41,15 +41,15 @@ public class Resolver {
             validateBatching(executable.toString(), returnType, contextArguments);
         }
         
-        this.executable = executable;
         this.operationName = operationName;
-        this.operationDeprecationReason = operationDeprecationReason;
-        this.batched = batched;
         this.operationDescription = operationDescription;
+        this.operationDeprecationReason = operationDeprecationReason;
         this.arguments = arguments;
         this.returnType = returnType;
         this.contextArguments = contextArguments;
         this.complexityExpression = complexityExpression;
+        this.executable = executable;
+        this.batched = batched;
     }
 
     private void validateBatching(String executableSignature, AnnotatedType returnType, Set<OperationArgument> contextArguments) {
@@ -141,6 +141,10 @@ public class Resolver {
 
     public String getComplexityExpression() {
         return complexityExpression;
+    }
+
+    public Executable getExecutable() {
+        return executable;
     }
 
     private String fingerprint(OperationArgument ignoredResolverSource) {

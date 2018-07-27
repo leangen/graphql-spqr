@@ -6,9 +6,9 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.mapping.TypeMapperRepository;
-import io.leangen.graphql.generator.types.MappedGraphQLType;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.Urls;
 
 import java.lang.reflect.AnnotatedType;
@@ -31,11 +31,11 @@ class Validator {
         this.mappers = mappers;
         this.aliasGroups = aliasGroups;
         this.mappedTypes = knownTypes.stream()
-                .filter(type -> type instanceof GraphQLOutputType && type instanceof MappedGraphQLType)
-                .collect(Collectors.toMap(GraphQLType::getName, type -> ClassUtils.normalize(((MappedGraphQLType) type).getJavaType())));
+                .filter(type -> type instanceof GraphQLOutputType && Directives.isMappedType(type))
+                .collect(Collectors.toMap(GraphQLType::getName, type -> ClassUtils.normalize(Directives.getMappedType(type))));
         this.mappedInputTypes = knownTypes.stream()
-                .filter(type -> type instanceof GraphQLInputType && type instanceof MappedGraphQLType)
-                .collect(Collectors.toMap(GraphQLType::getName, type -> ClassUtils.normalize(((MappedGraphQLType) type).getJavaType())));
+                .filter(type -> type instanceof GraphQLInputType && Directives.isMappedType(type))
+                .collect(Collectors.toMap(GraphQLType::getName, type -> ClassUtils.normalize(Directives.getMappedType(type))));
     }
 
     ValidationResult checkUniqueness(GraphQLOutputType graphQLType, AnnotatedType javaType) {
@@ -70,8 +70,8 @@ class Validator {
 
     private AnnotatedType resolveType(GraphQLType graphQLType, Supplier<AnnotatedType> javaType) {
         AnnotatedType resolvedType;
-        if (graphQLType instanceof MappedGraphQLType) {
-            resolvedType = ((MappedGraphQLType) graphQLType).getJavaType();
+        if (Directives.isMappedType(graphQLType)) {
+            resolvedType = Directives.getMappedType(graphQLType);
         } else {
             resolvedType = javaType.get();
         }

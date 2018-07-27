@@ -5,8 +5,8 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
-import io.leangen.graphql.generator.types.MappedGraphQLObjectType;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Directives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,19 +33,19 @@ public class TypeRepository {
     public TypeRepository(Set<GraphQLType> knownTypes) {
         //extract known interface implementations
         knownTypes.stream()
-                .filter(type -> type instanceof MappedGraphQLObjectType)
-                .map(type -> (MappedGraphQLObjectType) type)
+                .filter(type -> type instanceof GraphQLObjectType && Directives.isMappedType(type))
+                .map(type -> (GraphQLObjectType) type)
                 .forEach(obj -> obj.getInterfaces().forEach(
-                        inter -> registerCovariantType(inter.getName(), obj.getJavaType(), obj)));
+                        inter -> registerCovariantType(inter.getName(), Directives.getMappedType(obj), obj)));
 
         //extract known union members
         knownTypes.stream()
                 .filter(type -> type instanceof GraphQLUnionType)
                 .map(type -> (GraphQLUnionType) type)
                 .forEach(union -> union.getTypes().stream()
-                        .filter(type -> type instanceof MappedGraphQLObjectType)
-                        .map(type -> (MappedGraphQLObjectType) type)
-                        .forEach(obj -> registerCovariantType(union.getName(), obj.getJavaType(), obj)));
+                        .filter(type -> type instanceof GraphQLObjectType && Directives.isMappedType(type))
+                        .map(type -> (GraphQLObjectType) type)
+                        .forEach(obj -> registerCovariantType(union.getName(), Directives.getMappedType(obj), obj)));
     }
 
     public void registerDiscoveredCovariantType(String compositeTypeName, AnnotatedType javaSubType, GraphQLObjectType subType) {

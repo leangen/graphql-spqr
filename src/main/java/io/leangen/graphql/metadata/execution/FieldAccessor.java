@@ -9,7 +9,7 @@ import java.lang.reflect.Parameter;
 /**
  * Created by bojan.tomic on 7/20/16.
  */
-public class FieldAccessor extends Executable {
+public class FieldAccessor extends Executable<Field> {
 
     private AnnotatedType enclosingType;
 
@@ -20,12 +20,12 @@ public class FieldAccessor extends Executable {
 
     @Override
     public Object execute(Object target, Object[] args) throws IllegalAccessException {
-        return ((Field) delegate).get(target);
+        return delegate.get(target);
     }
 
     @Override
     public AnnotatedType getReturnType() {
-        return ClassUtils.getFieldType(((Field) delegate), enclosingType);
+        return ClassUtils.getFieldType(delegate, enclosingType);
     }
 
     /**

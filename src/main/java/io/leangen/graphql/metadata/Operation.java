@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Operation {
@@ -52,8 +54,16 @@ public class Operation {
         return resolversByFingerprint;
     }
 
+    public Resolver getApplicableResolver(Set<String> argumentNames) {
+        if (resolversByFingerprint.size() == 1) {
+            return getResolvers().iterator().next();
+        } else {
+            return resolversByFingerprint.get(getFingerprint(argumentNames));
+        }
+    }
+
     public Resolver getResolver(String... argumentNames) {
-        return resolversByFingerprint.get(getFingerprint(argumentNames));
+        return resolversByFingerprint.get(getFingerprint(new HashSet<>(Arrays.asList(argumentNames))));
     }
 
     public boolean isEmbeddableForType(Type type) {
@@ -64,9 +74,9 @@ public class Operation {
         return this.contextType == null;
     }
     
-    private String getFingerprint(String... argumentNames) {
+    private String getFingerprint(Set<String> argumentNames) {
         StringBuilder fingerPrint = new StringBuilder();
-        Arrays.stream(argumentNames).sorted().forEach(fingerPrint::append);
+        argumentNames.stream().sorted().forEach(fingerPrint::append);
         return fingerPrint.toString();
     }
 

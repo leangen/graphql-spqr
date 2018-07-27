@@ -10,7 +10,7 @@ import java.lang.reflect.Parameter;
 /**
  * Created by bojan.tomic on 7/20/16.
  */
-public class MethodInvoker extends Executable {
+public class MethodInvoker extends Executable<Method> {
 
     private AnnotatedType enclosingType;
     private AnnotatedType returnType;
@@ -23,7 +23,7 @@ public class MethodInvoker extends Executable {
 
     @Override
     public Object execute(Object target, Object[] args) throws InvocationTargetException, IllegalAccessException {
-        return ((Method) delegate).invoke(target, args);
+        return delegate.invoke(target, args);
     }
 
     @Override
@@ -33,7 +33,7 @@ public class MethodInvoker extends Executable {
 
 
     private AnnotatedType resolveReturnType(AnnotatedType enclosingType) {
-        return ClassUtils.getReturnType(((Method) delegate), enclosingType);
+        return ClassUtils.getReturnType(delegate, enclosingType);
     }
 
     /**
@@ -42,16 +42,16 @@ public class MethodInvoker extends Executable {
      */
     @Override
     public int getParameterCount() {
-        return ((Method) delegate).getParameterCount();
+        return delegate.getParameterCount();
     }
 
     @Override
     public AnnotatedType[] getAnnotatedParameterTypes() {
-        return ClassUtils.getParameterTypes((Method) delegate, enclosingType);
+        return ClassUtils.getParameterTypes(delegate, enclosingType);
     }
 
     @Override
     public Parameter[] getParameters() {
-        return ((Method) delegate).getParameters();
+        return delegate.getParameters();
     }
 }

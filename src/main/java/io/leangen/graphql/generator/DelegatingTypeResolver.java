@@ -6,10 +6,10 @@ import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLTypeResolver;
-import io.leangen.graphql.generator.types.MappedGraphQLType;
 import io.leangen.graphql.metadata.exceptions.UnresolvableTypeException;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
@@ -48,7 +48,7 @@ public class DelegatingTypeResolver implements TypeResolver {
             return mappedTypes.get(0).getAsObjectType();
         }
 
-        AnnotatedType returnType = ((MappedGraphQLType) env.getFieldType()).getJavaType();
+        AnnotatedType returnType = Directives.getMappedType(env.getFieldType());
         //Try to find an explicit resolver
         Optional<GraphQLObjectType> resolvedType = Utils.or(
                 Optional.ofNullable(returnType != null ? returnType.getAnnotation(GraphQLTypeResolver.class) : null),

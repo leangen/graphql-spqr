@@ -8,8 +8,8 @@ import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.generator.types.MappedGraphQLUnionType;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.util.Directives;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
@@ -47,7 +47,8 @@ public abstract class UnionMapper implements TypeMapper {
                     }
                 });
 
-        GraphQLUnionType union = new MappedGraphQLUnionType(builder.build(), javaType);
+        builder.withDirective(Directives.mappedType(javaType));
+        GraphQLUnionType union = builder.build();
         for (int i = 0; i < possibleJavaTypes.size(); i++) {
             buildContext.typeRepository.registerCovariantType(union.getName(), possibleJavaTypes.get(i), union.getTypes().get(i));
         }

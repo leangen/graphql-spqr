@@ -18,6 +18,6 @@ public class SingletonMethodInvoker extends MethodInvoker {
 
     @Override
     public Object execute(Object target, Object[] arguments) throws InvocationTargetException, IllegalAccessException {
-        return ((Method) delegate).invoke(this.target, arguments);
+        return delegate.invoke(this.target, arguments);
     }
 }

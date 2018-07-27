@@ -9,7 +9,6 @@ import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.Map;
 
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
@@ -38,15 +37,10 @@ public class OperationExecutor {
             }
         }
 
-        if (this.operation.getResolvers().size() == 1) {
-            resolver = this.operation.getResolvers().iterator().next();
-        } else {
-            String[] argumentNames = env.getArguments().keySet().toArray(new String[env.getArguments().size()]);
-            resolver = this.operation.getResolver(argumentNames);
-            if (resolver == null) {
-                throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
-                        + Arrays.toString(argumentNames) + " not implemented");
-            }
+        resolver = this.operation.getApplicableResolver(env.getArguments().keySet());
+        if (resolver == null) {
+            throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
+                    + env.getArguments().keySet() + " not implemented");
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(env, this.valueMapper, this.globalEnvironment);
         try {
