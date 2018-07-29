@@ -64,8 +64,4 @@ public abstract class FilteredResolverBuilder implements ResolverBuilder {
             throw new TypeMappingException(method, params.getBeanType(), e);
         }
     }
-
-    interface NameGenerator {
-        String name(Method method, AnnotatedType beanType, Object querySourceBean);
-    }
 }

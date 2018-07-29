@@ -14,8 +14,10 @@ import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryParams;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputParsingException;
@@ -28,7 +30,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -87,40 +89,40 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
     }
 
     @Override
-    public Set<InputField> getInputFields(AnnotatedType type, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer) {
-        JavaType javaType = objectMapper.getTypeFactory().constructType(type.getType());
+    public Set<InputField> getInputFields(InputFieldDiscoveryParams params) {
+        JavaType javaType = objectMapper.getTypeFactory().constructType(params.getType().getType());
         BeanDescription desc = objectMapper.getDeserializationConfig().introspect(javaType);
         return desc.findProperties().stream()
                 .filter(BeanPropertyDefinition::couldDeserialize)
-                .flatMap(prop -> toInputField(type, prop, inclusionStrategy, typeTransformer))
+                .flatMap(prop -> toInputField(params.getType(), prop, params.getInclusionStrategy(), params.getTypeTransformer(), params.getMessageBundle()))
                 .collect(Collectors.toSet());
     }
 
-    private Stream<InputField> toInputField(AnnotatedType type, BeanPropertyDefinition prop, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer) {
+    private Stream<InputField> toInputField(AnnotatedType type, BeanPropertyDefinition prop, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, MessageBundle messageBundle) {
         PropertyDescriptorFactory descFactory = new PropertyDescriptorFactory(type, typeTransformer);
         AnnotatedParameter ctorParam = prop.getConstructorParameter();
         if (ctorParam != null) {
-            return toInputField(descFactory.fromConstructorParameter(ctorParam), prop, inclusionStrategy, objectMapper, typeTransformer);
+            return toInputField(descFactory.fromConstructorParameter(ctorParam), prop, inclusionStrategy, objectMapper, typeTransformer, messageBundle);
         }
         if (prop.getSetter() != null) {
-            return toInputField(descFactory.fromSetter(prop.getSetter()), prop, inclusionStrategy, objectMapper, typeTransformer);
+            return toInputField(descFactory.fromSetter(prop.getSetter()), prop, inclusionStrategy, objectMapper, typeTransformer, messageBundle);
         }
         if (prop.getGetter() != null) {
-            return toInputField(descFactory.fromGetter(prop.getGetter()), prop, inclusionStrategy, objectMapper, typeTransformer);
+            return toInputField(descFactory.fromGetter(prop.getGetter()), prop, inclusionStrategy, objectMapper, typeTransformer, messageBundle);
         }
         if (prop.getField() != null) {
-            return toInputField(descFactory.fromField(prop.getField()), prop, inclusionStrategy, objectMapper, typeTransformer);
+            return toInputField(descFactory.fromField(prop.getField()), prop, inclusionStrategy, objectMapper, typeTransformer, messageBundle);
         }
         throw new TypeMappingException("Unknown input field mapping style encountered");
     }
 
-    private Stream<InputField> toInputField(PropertyDescriptor desc, BeanPropertyDefinition prop, InclusionStrategy inclusionStrategy, ObjectMapper objectMapper, TypeTransformer transformer) {
+    private Stream<InputField> toInputField(PropertyDescriptor desc, BeanPropertyDefinition prop, InclusionStrategy inclusionStrategy, ObjectMapper objectMapper, TypeTransformer transformer, MessageBundle messageBundle) {
         if (!inclusionStrategy.includeInputField(desc.declaringClass, desc.element, desc.type)) {
             return Stream.empty();
         }
 
         AnnotatedType deserializableType = resolveDeserializableType(desc.accessor, desc.type, desc.accessor.getType(), objectMapper);
-        Object defaultValue = defaultValue(desc.declaringType, prop, desc.type, transformer);
+        Object defaultValue = defaultValue(desc.declaringType, prop, desc.type, transformer, messageBundle);
         return Stream.of(new InputField(prop.getName(), prop.getMetadata().getDescription(), desc.type, deserializableType, defaultValue));
     }
 
@@ -148,7 +150,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
         return realType;
     }
 
-    protected Object defaultValue(AnnotatedType type, BeanPropertyDefinition prop, AnnotatedType fieldType, TypeTransformer typeTransformer) {
+    protected Object defaultValue(AnnotatedType type, BeanPropertyDefinition prop, AnnotatedType fieldType, TypeTransformer typeTransformer, MessageBundle messageBundle) {
         List<AnnotatedElement> annotatedCandidates = new ArrayList<>(4);
         PropertyDescriptorFactory descFactory = new PropertyDescriptorFactory(type, typeTransformer);
         AnnotatedParameter ctorParam = prop.getConstructorParameter();
@@ -164,7 +166,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
         if (prop.getField() != null) {
             annotatedCandidates.add(descFactory.fromField(prop.getField()).element);
         }
-        return inputInfoGen.defaultValue(annotatedCandidates, fieldType).orElse(null);
+        return inputInfoGen.defaultValue(annotatedCandidates, fieldType, messageBundle).orElse(null);
     }
 
     private static class PropertyDescriptorFactory {
@@ -178,7 +180,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldDiscoveryStrat
         }
 
         PropertyDescriptor fromConstructorParameter(AnnotatedParameter ctorParam) {
-            Constructor<?> constructor = (Constructor<?>) ctorParam.getOwner().getMember();
+            Executable constructor = (Executable) ctorParam.getOwner().getMember();
             Parameter parameter = constructor.getParameters()[ctorParam.getIndex()];
             AnnotatedType fieldType = transform(ClassUtils.getParameterTypes(constructor, type)[ctorParam.getIndex()], parameter);
             return new PropertyDescriptor(type, constructor.getDeclaringClass(), parameter, fieldType, ctorParam);

@@ -7,6 +7,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.TypeAdapterFactory;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.messages.EmptyMessageBundle;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
@@ -32,12 +34,12 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
 
     @SuppressWarnings("WeakerAccess")
     public GsonValueMapperFactory() {
-        this(null, new DefaultTypeInfoGenerator(), new GsonFieldNamingStrategy(), new AbstractClassAdapterConfigurer());
+        this(null, new DefaultTypeInfoGenerator(), null, new AbstractClassAdapterConfigurer());
     }
 
     private GsonValueMapperFactory(Gson prototype, TypeInfoGenerator typeInfoGenerator, FieldNamingStrategy fieldNamingStrategy, Configurer configurer) {
         this.prototype = prototype;
-        this.fieldNamingStrategy = Objects.requireNonNull(fieldNamingStrategy);
+        this.fieldNamingStrategy = fieldNamingStrategy;
         this.typeInfoGenerator = Objects.requireNonNull(typeInfoGenerator);
         this.configurer = Objects.requireNonNull(configurer);
     }
@@ -52,10 +54,11 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
     }
 
     private GsonBuilder initBuilder(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
+        MessageBundle messageBundle = environment != null ? environment.messageBundle : EmptyMessageBundle.instance;
         GsonBuilder gsonBuilder = (prototype != null ? prototype.newBuilder() : new GsonBuilder())
-                .setFieldNamingStrategy(fieldNamingStrategy)
+                .setFieldNamingStrategy(fieldNamingStrategy != null ? fieldNamingStrategy : new GsonFieldNamingStrategy(messageBundle))
                 .registerTypeAdapterFactory(new GsonJava8TypeAdapterFactory());
-        return configurer.configure(gsonBuilder, concreteSubTypes, this.typeInfoGenerator, environment);
+        return configurer.configure(gsonBuilder, concreteSubTypes, this.typeInfoGenerator, environment, messageBundle);
     }
 
     @Override
@@ -66,9 +69,9 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
     public static class AbstractClassAdapterConfigurer implements Configurer {
 
         @Override
-        public GsonBuilder configure(GsonBuilder gsonBuilder, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator infoGenerator, GlobalEnvironment environment) {
+        public GsonBuilder configure(GsonBuilder gsonBuilder, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator infoGenerator, GlobalEnvironment environment, MessageBundle messageBundle) {
             concreteSubTypes.entrySet().stream()
-                    .map(entry -> adapterFor(entry.getKey(), entry.getValue(), infoGenerator))
+                    .map(entry -> adapterFor(entry.getKey(), entry.getValue(), infoGenerator, environment.messageBundle))
                     .filter(Objects::nonNull)
                     .forEach(gsonBuilder::registerTypeAdapterFactory);
 
@@ -80,14 +83,14 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
         }
 
         @SuppressWarnings("unchecked")
-        private TypeAdapterFactory adapterFor(Class superClass, List<Class> implementations, TypeInfoGenerator infoGen) {
+        private TypeAdapterFactory adapterFor(Class superClass, List<Class> implementations, TypeInfoGenerator infoGen, MessageBundle messageBundle) {
             RuntimeTypeAdapterFactory adapterFactory = RuntimeTypeAdapterFactory.of(superClass, ValueMapper.TYPE_METADATA_FIELD_NAME);
             if (implementations.isEmpty()) {
                 return null;
             }
             implementations.stream()
                     .filter(impl -> !ClassUtils.isAbstract(impl))
-                    .forEach(impl -> adapterFactory.registerSubtype(impl, infoGen.generateTypeName(GenericTypeReflector.annotate(impl))));
+                    .forEach(impl -> adapterFactory.registerSubtype(impl, infoGen.generateTypeName(GenericTypeReflector.annotate(impl), messageBundle)));
 
             return adapterFactory;
         }
@@ -95,7 +98,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
 
     @FunctionalInterface
     public interface Configurer {
-        GsonBuilder configure(GsonBuilder gsonBuilder, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator infoGenerator, GlobalEnvironment environment);
+        GsonBuilder configure(GsonBuilder gsonBuilder, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator infoGenerator, GlobalEnvironment environment, MessageBundle messageBundle);
     }
 
     @Override
@@ -106,7 +109,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMappe
     public static class Builder {
 
         private Gson prototype;
-        private FieldNamingStrategy fieldNamingStrategy = new GsonFieldNamingStrategy();
+        private FieldNamingStrategy fieldNamingStrategy;
         private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
         private Configurer configurer = new AbstractClassAdapterConfigurer();
 

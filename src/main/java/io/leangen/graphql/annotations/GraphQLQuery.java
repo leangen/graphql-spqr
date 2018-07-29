@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * Created by bojan.tomic on 3/2/16.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})
+@Target({ElementType.METHOD, ElementType.FIELD})
 public @interface GraphQLQuery {
 
     String name() default "";

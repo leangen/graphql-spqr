@@ -21,7 +21,7 @@ public class UnionInlineMapper extends UnionMapper {
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLUnion annotation = javaType.getAnnotation(GraphQLUnion.class);
         List<AnnotatedType> possibleJavaTypes = Arrays.asList(((AnnotatedParameterizedType) javaType).getAnnotatedActualTypeArguments());
-        return toGraphQLUnion(annotation.name(), annotation.description(), javaType, possibleJavaTypes, operationMapper, buildContext);
+        return toGraphQLUnion(buildContext.interpolate(annotation.name()), buildContext.interpolate(annotation.description()), javaType, possibleJavaTypes, operationMapper, buildContext);
     }
 
     @Override

@@ -1,7 +1,5 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
@@ -9,11 +7,9 @@ import java.lang.reflect.Method;
  */
 public interface OperationNameGenerator {
 
-    String generateQueryName(Method queryMethod, AnnotatedType declaringType, Object instance);
+    String generateQueryName(OperationNameGeneratorParams<?> params);
 
-    String generateQueryName(Field queryField, AnnotatedType declaringType, Object instance);
+    String generateMutationName(OperationNameGeneratorParams<Method> params);
 
-    String generateMutationName(Method mutationMethod, AnnotatedType declaringType, Object instance);
-
-    String generateSubscriptionName(Method subscriptionMethod, AnnotatedType declaringType, Object instance);
+    String generateSubscriptionName(OperationNameGeneratorParams<Method> params);
 }

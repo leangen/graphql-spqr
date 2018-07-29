@@ -7,6 +7,7 @@ import graphql.schema.TypeResolver;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLTypeResolver;
 import io.leangen.graphql.metadata.exceptions.UnresolvableTypeException;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Directives;
@@ -21,22 +22,24 @@ public class DelegatingTypeResolver implements TypeResolver {
     private final TypeRepository typeRepository;
     private final TypeInfoGenerator typeInfoGenerator;
     private final String abstractTypeName;
+    private final MessageBundle messageBundle;
 
-    DelegatingTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
-        this(null, typeRepository, typeInfoGenerator);
+    DelegatingTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle) {
+        this(null, typeRepository, typeInfoGenerator, messageBundle);
     }
 
-    DelegatingTypeResolver(String abstractTypeName, TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
+    DelegatingTypeResolver(String abstractTypeName, TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle) {
         this.typeRepository = typeRepository;
         this.typeInfoGenerator = typeInfoGenerator;
         this.abstractTypeName = abstractTypeName;
+        this.messageBundle = messageBundle;
     }
 
     @Override
     public GraphQLObjectType getType(TypeResolutionEnvironment env) {
         Object result = env.getObject();
         Class<?> resultType = result.getClass();
-        String resultTypeName = typeInfoGenerator.generateTypeName(GenericTypeReflector.annotate(resultType));
+        String resultTypeName = typeInfoGenerator.generateTypeName(GenericTypeReflector.annotate(resultType), messageBundle);
         String abstractTypeName = this.abstractTypeName != null ? this.abstractTypeName : env.getFieldType().getName();
 
         //Check if the type is already unambiguous
@@ -62,7 +65,7 @@ public class DelegatingTypeResolver implements TypeResolver {
         if (returnType != null && resultTypeName.equals(env.getFieldType().getName())) {
             AnnotatedType resolvedJavaType = GenericTypeReflector.getExactSubType(returnType, resultType);
             if (resolvedJavaType != null && !ClassUtils.isMissingTypeParameters(resolvedJavaType.getType())) {
-                GraphQLType resolved = env.getSchema().getType(typeInfoGenerator.generateTypeName(resolvedJavaType));
+                GraphQLType resolved = env.getSchema().getType(typeInfoGenerator.generateTypeName(resolvedJavaType, messageBundle));
                 if (resolved == null) {
                     throw new UnresolvableTypeException(env.getFieldType().getName(), result);
                 }

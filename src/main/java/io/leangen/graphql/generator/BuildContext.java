@@ -9,6 +9,7 @@ import io.leangen.graphql.generator.mapping.TypeMapperRepository;
 import io.leangen.graphql.generator.mapping.strategy.AbstractInputHandler;
 import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
@@ -41,6 +42,7 @@ public class BuildContext {
     public final TypeResolver typeResolver;
     public final InterfaceMappingStrategy interfaceStrategy;
     public final String[] basePackages;
+    public final MessageBundle messageBundle;
     public final ValueMapperFactory valueMapperFactory;
     public final InputFieldDiscoveryStrategy inputFieldStrategy;
     public final InclusionStrategy inclusionStrategy;
@@ -62,6 +64,7 @@ public class BuildContext {
      * @param typeMappers Repository of all registered {@link io.leangen.graphql.generator.mapping.TypeMapper}s
      * @param valueMapperFactory The factory used to produce {@link ValueMapper} instances
      * @param typeInfoGenerator Generates type name/description
+     * @param messageBundle The global translation message bundle
      * @param interfaceStrategy The strategy deciding what Java type gets mapped to a GraphQL interface
      * @param scalarStrategy The strategy deciding how abstract Java types are discovered
      * @param abstractInputHandler The strategy deciding what Java type gets mapped to a GraphQL interface
@@ -70,8 +73,8 @@ public class BuildContext {
      * @param knownTypes The cache of known type names
      */
     public BuildContext(String[] basePackages, GlobalEnvironment environment, OperationRepository operationRepository,
-                        TypeMapperRepository typeMappers, ValueMapperFactory valueMapperFactory,
-                        TypeInfoGenerator typeInfoGenerator, InterfaceMappingStrategy interfaceStrategy,
+                        TypeMapperRepository typeMappers, ValueMapperFactory valueMapperFactory, TypeInfoGenerator typeInfoGenerator,
+                        MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldDiscoveryStrategy inputFieldStrategy, InclusionStrategy inclusionStrategy,
                         RelayMappingConfig relayMappingConfig, Set<GraphQLType> knownTypes, List<Set<AnnotatedType>> typeAliasGroups,
@@ -81,12 +84,13 @@ public class BuildContext {
         this.typeCache = new TypeCache(knownTypes);
         this.typeMappers = typeMappers;
         this.typeInfoGenerator = typeInfoGenerator;
+        this.messageBundle = messageBundle;
         this.relay = environment.relay;
         this.node = knownTypes.stream()
                 .filter(GraphQLUtils::isRelayNodeInterface)
                 .findFirst().map(type -> (GraphQLInterfaceType) type)
-                .orElse(relay.nodeInterface(new RelayNodeTypeResolver(this.typeRepository, typeInfoGenerator)));
-        this.typeResolver = new DelegatingTypeResolver(this.typeRepository, typeInfoGenerator);
+                .orElse(relay.nodeInterface(new RelayNodeTypeResolver(this.typeRepository, typeInfoGenerator, messageBundle)));
+        this.typeResolver = new DelegatingTypeResolver(this.typeRepository, typeInfoGenerator, messageBundle);
         this.interfaceStrategy = interfaceStrategy;
         this.basePackages = basePackages;
         this.valueMapperFactory = valueMapperFactory;
@@ -100,6 +104,10 @@ public class BuildContext {
         this.relayMappingConfig = relayMappingConfig;
         this.classFinder = new ClassFinder();
         this.validator = new Validator(environment, typeMappers, knownTypes, typeAliasGroups);
+    }
+
+    public String interpolate(String template) {
+        return messageBundle.interpolate(template);
     }
 
     ValueMapper createValueMapper(Stream<AnnotatedType> inputTypes) {

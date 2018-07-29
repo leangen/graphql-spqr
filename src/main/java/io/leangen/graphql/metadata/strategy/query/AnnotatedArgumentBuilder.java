@@ -5,6 +5,7 @@ import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
@@ -39,30 +40,31 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
                 throw new TypeMappingException(resolverMethod, parameter, e);
             }
             parameterType = ClassUtils.addAnnotations(parameterType, parameter.getAnnotations());
-            operationArguments.add(buildResolverArgument(parameter, parameterType, params.getInclusionStrategy()));
+            operationArguments.add(buildResolverArgument(parameter, parameterType, params.getInclusionStrategy(), params.getMessageBundle()));
         }
         return operationArguments;
     }
 
-    protected OperationArgument buildResolverArgument(Parameter parameter, AnnotatedType parameterType, InclusionStrategy inclusionStrategy) {
+    protected OperationArgument buildResolverArgument(Parameter parameter, AnnotatedType parameterType,
+                                                      InclusionStrategy inclusionStrategy, MessageBundle messageBundle) {
         return new OperationArgument(
                 parameterType,
-                getArgumentName(parameter, parameterType, inclusionStrategy),
-                getArgumentDescription(parameter, parameterType),
-                defaultValue(parameter, parameterType),
+                getArgumentName(parameter, parameterType, inclusionStrategy, messageBundle),
+                getArgumentDescription(parameter, parameterType, messageBundle),
+                defaultValue(parameter, parameterType, messageBundle),
                 parameter,
                 parameter.isAnnotationPresent(GraphQLContext.class),
                 inclusionStrategy.includeArgument(parameter, parameterType)
         );
     }
 
-    protected String getArgumentName(Parameter parameter, AnnotatedType parameterType, InclusionStrategy inclusionStrategy) {
+    protected String getArgumentName(Parameter parameter, AnnotatedType parameterType, InclusionStrategy inclusionStrategy, MessageBundle messageBundle) {
         if (Optional.ofNullable(parameterType.getAnnotation(GraphQLId.class)).filter(GraphQLId::relayId).isPresent()) {
             return GraphQLId.RELAY_ID_FIELD_NAME;
         }
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
         if (meta != null && !meta.name().isEmpty()) {
-            return meta.name();
+            return messageBundle.interpolate(meta.name());
         } else {
             if (!parameter.isNamePresent() && inclusionStrategy.includeArgument(parameter, parameterType)) {
                 log.warn("No explicit argument name given and the parameter name lost in compilation: "
@@ -73,18 +75,18 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         }
     }
 
-    protected String getArgumentDescription(Parameter parameter, AnnotatedType parameterType) {
+    protected String getArgumentDescription(Parameter parameter, AnnotatedType parameterType, MessageBundle messageBundle) {
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
-        return meta != null ? meta.description() : null;
+        return meta != null ? messageBundle.interpolate(meta.description()) : null;
     }
 
-    protected Object defaultValue(Parameter parameter, AnnotatedType parameterType) {
+    protected Object defaultValue(Parameter parameter, AnnotatedType parameterType, MessageBundle messageBundle) {
 
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
         if (meta == null) return null;
         try {
             return meta.defaultValueProvider().newInstance()
-                    .getDefaultValue(parameter, parameterType, ReservedStrings.decode(meta.defaultValue()));
+                    .getDefaultValue(parameter, parameterType, ReservedStrings.decode(messageBundle.interpolate(meta.defaultValue())));
         } catch (InstantiationException | IllegalAccessException e) {
             throw new IllegalArgumentException(
                     meta.defaultValueProvider().getName() + " must expose a public default constructor", e);

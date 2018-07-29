@@ -3,6 +3,7 @@ package io.leangen.graphql.metadata.strategy.type;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.annotations.types.GraphQLType;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
@@ -17,21 +18,21 @@ import java.util.Optional;
 public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
 
     @Override
-    public String generateTypeName(AnnotatedType type) {
+    public String generateTypeName(AnnotatedType type, MessageBundle messageBundle) {
         if (type instanceof AnnotatedParameterizedType) {
-            String baseName = generateSimpleName(type);
+            String baseName = generateSimpleName(type, messageBundle);
             StringBuilder genericName = new StringBuilder(baseName);
             Arrays.stream(((AnnotatedParameterizedType) type).getAnnotatedActualTypeArguments())
-                    .map(this::generateSimpleName)
+                    .map(t -> generateSimpleName(t, messageBundle))
                     .forEach(argName -> genericName.append("_").append(argName));
             return genericName.toString();
         }
-        return generateSimpleName(type);
+        return generateSimpleName(type, messageBundle);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public String generateTypeDescription(AnnotatedType type) {
+    public String generateTypeDescription(AnnotatedType type, MessageBundle messageBundle) {
         Optional<String>[] descriptions = new Optional[]{
                 Optional.ofNullable(type.getAnnotation(GraphQLUnion.class))
                         .map(GraphQLUnion::description),
@@ -40,11 +41,11 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
                 Optional.ofNullable(type.getAnnotation(GraphQLType.class))
                         .map(GraphQLType::description)
         };
-        return getFirstNonEmptyOrDefault(descriptions, "");
+        return messageBundle.interpolate(getFirstNonEmptyOrDefault(descriptions, ""));
     }
 
     @Override
-    public String[] getFieldOrder(AnnotatedType type) {
+    public String[] getFieldOrder(AnnotatedType type, MessageBundle messageBundle) {
         return Utils.or(
                 Optional.ofNullable(type.getAnnotation(GraphQLInterface.class))
                         .map(GraphQLInterface::fieldOrder),
@@ -54,7 +55,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
     }
 
     @SuppressWarnings("unchecked")
-    private String generateSimpleName(AnnotatedType type) {
+    private String generateSimpleName(AnnotatedType type, MessageBundle messageBundle) {
         Optional<String>[] names = new Optional[]{
                 Optional.ofNullable(type.getAnnotation(GraphQLUnion.class))
                         .map(GraphQLUnion::name),
@@ -63,7 +64,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
                 Optional.ofNullable(type.getAnnotation(GraphQLType.class))
                         .map(GraphQLType::name)
         };
-        return getFirstNonEmptyOrDefault(names, ClassUtils.getRawType(type.getType()).getSimpleName());
+        return messageBundle.interpolate(getFirstNonEmptyOrDefault(names, ClassUtils.getRawType(type.getType()).getSimpleName()));
     }
 
     @SuppressWarnings({"OptionalGetWithoutIsPresent", "ConstantConditions"})

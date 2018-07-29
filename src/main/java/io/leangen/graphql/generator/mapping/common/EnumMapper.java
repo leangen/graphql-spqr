@@ -5,6 +5,7 @@ import io.leangen.graphql.annotations.GraphQLEnumValue;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
@@ -32,8 +33,8 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
     public GraphQLEnumType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(typeName)
-                .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
-        addOptions(enumBuilder, javaType, buildContext.typeInfoGenerator);
+                .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType, buildContext.messageBundle));
+        addOptions(enumBuilder, javaType, buildContext.typeInfoGenerator, buildContext.messageBundle);
         return enumBuilder.build();
     }
 
@@ -41,32 +42,32 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
     public GraphQLEnumType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(typeName)
-                .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType));
-        addOptions(enumBuilder, javaType, buildContext.typeInfoGenerator);
+                .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType, buildContext.messageBundle));
+        addOptions(enumBuilder, javaType, buildContext.typeInfoGenerator, buildContext.messageBundle);
         return enumBuilder.build();
     }
 
-    private void addOptions(GraphQLEnumType.Builder enumBuilder, AnnotatedType javaType, TypeInfoGenerator infoGenerator) {
-        sortEnumValues((Enum[]) ClassUtils.getRawType(javaType.getType()).getEnumConstants(), infoGenerator.getFieldOrder(javaType)).stream()
+    private void addOptions(GraphQLEnumType.Builder enumBuilder, AnnotatedType javaType, TypeInfoGenerator infoGenerator, MessageBundle messageBundle) {
+        sortEnumValues((Enum[]) ClassUtils.getRawType(javaType.getType()).getEnumConstants(), infoGenerator.getFieldOrder(javaType, messageBundle), messageBundle).stream()
                 .map(enumConst -> (Enum<?>) enumConst)
                 .forEach(enumConst -> enumBuilder.value(
-                        getValueName(enumConst), enumConst, getValueDescription(enumConst), getValueDeprecationReason(enumConst)));
+                        getValueName(enumConst, messageBundle), enumConst, getValueDescription(enumConst, messageBundle), getValueDeprecationReason(enumConst, messageBundle)));
     }
 
-    protected String getValueName(Enum<?> value) {
+    protected String getValueName(Enum<?> value, MessageBundle messageBundle) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
-        return annotation != null && !annotation.name().isEmpty() ? annotation.name() : value.name();
+        return annotation != null && !annotation.name().isEmpty() ? messageBundle.interpolate(annotation.name()) : value.name();
     }
 
-    protected String getValueDescription(Enum<?> value) {
+    protected String getValueDescription(Enum<?> value, MessageBundle messageBundle) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
-        return annotation != null ? annotation.description() : null;
+        return annotation != null ? messageBundle.interpolate(annotation.description()) : null;
     }
 
-    protected String getValueDeprecationReason(Enum<?> value) {
+    protected String getValueDeprecationReason(Enum<?> value, MessageBundle messageBundle) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
         if (annotation != null) {
-            return ReservedStrings.decode(annotation.deprecationReason());
+            return ReservedStrings.decode(messageBundle.interpolate(annotation.deprecationReason()));
         }
         Deprecated deprecated = ClassUtils.getEnumConstantField(value).getAnnotation(Deprecated.class);
         return javaDeprecationConfig.enabled && deprecated != null ? javaDeprecationConfig.deprecationReason : null;
@@ -79,18 +80,18 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
 
     @Override
     protected String getTypeName(AnnotatedType type, BuildContext buildContext) {
-        return buildContext.typeInfoGenerator.generateTypeName(type);
+        return buildContext.typeInfoGenerator.generateTypeName(type, buildContext.messageBundle);
     }
 
     @Override
     protected String getInputTypeName(AnnotatedType type, BuildContext buildContext) {
-        return buildContext.typeInfoGenerator.generateInputTypeName(type);
+        return buildContext.typeInfoGenerator.generateInputTypeName(type, buildContext.messageBundle);
     }
 
-    private List<Enum> sortEnumValues(Enum[] values, String[] order) {
+    private List<Enum> sortEnumValues(Enum[] values, String[] order, MessageBundle messageBundle) {
         Map<String, Enum> fieldMap = new TreeMap<>();
         for (Enum value : values) {
-            fieldMap.put(getValueName(value), value);
+            fieldMap.put(getValueName(value, messageBundle), value);
         }
         List<Enum> result = new ArrayList<>();
         for (String name : order) {

@@ -6,10 +6,13 @@ import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.metadata.InputField;
+import io.leangen.graphql.metadata.messages.EmptyMessageBundle;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryParams;
 import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapper;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
@@ -33,6 +36,7 @@ public class InputFieldDiscoveryTest {
     private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy("io.leangen");
     private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
     private static final AnnotatedType IGNORED_TYPE = GenericTypeReflector.annotate(Object.class);
+    private static final MessageBundle MESSAGE_BUNDLE = EmptyMessageBundle.instance;
 
     private static final InputField[] expectedDefaultFields = new InputField[] {
             new InputField("field1", null, IGNORED_TYPE, null, null),
@@ -144,7 +148,8 @@ public class InputFieldDiscoveryTest {
     }
 
     private Set<InputField> assertFieldNamesEqual(InputFieldDiscoveryStrategy mapper, Class typeToScan, InputField[] templates) {
-        Set<InputField> fields = mapper.getInputFields(GenericTypeReflector.annotate(typeToScan), INCLUSION_STRATEGY, TYPE_TRANSFORMER);
+        Set<InputField> fields = mapper.getInputFields(
+                new InputFieldDiscoveryParams(GenericTypeReflector.annotate(typeToScan), INCLUSION_STRATEGY, TYPE_TRANSFORMER, MESSAGE_BUNDLE));
         assertEquals(templates.length, fields.size());
         for (InputField template : templates) {
             Optional<InputField> field = fields.stream().filter(input -> input.getName().equals(template.getName())).findFirst();

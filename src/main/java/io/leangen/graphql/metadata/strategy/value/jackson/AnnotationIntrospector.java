@@ -8,11 +8,13 @@ import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
+import com.fasterxml.jackson.databind.introspect.AnnotatedParameter;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
@@ -24,6 +26,7 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -34,6 +37,7 @@ import java.util.Map;
 
 public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
 
+    private final MessageBundle messageBundle;
     private Map<Type, List<NamedType>> typeMap;
     private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
     private static TypeResolverBuilder<?> typeResolverBuilder;
@@ -47,20 +51,21 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
                 .typeProperty(ValueMapper.TYPE_METADATA_FIELD_NAME);
     }
 
-    AnnotationIntrospector(Map<Type, List<NamedType>> typeMap) {
+    AnnotationIntrospector(Map<Type, List<NamedType>> typeMap, MessageBundle messageBundle) {
         this.typeMap = typeMap == null ? Collections.emptyMap() : Collections.unmodifiableMap(typeMap);
+        this.messageBundle = messageBundle;
     }
 
     @Override
     public PropertyName findNameForDeserialization(Annotated annotated) {
-        return inputInfoGen.getName(getAnnotatedCandidates(annotated))
+        return inputInfoGen.getName(getAnnotatedCandidates(annotated), messageBundle)
                 .map(PropertyName::new)
                 .orElse(super.findNameForDeserialization(annotated));
     }
 
     @Override
     public String findPropertyDescription(Annotated annotated) {
-        return inputInfoGen.getDescription(getAnnotatedCandidates(annotated))
+        return inputInfoGen.getDescription(getAnnotatedCandidates(annotated), messageBundle)
                 .orElse(super.findPropertyDescription(annotated));
     }
 
@@ -94,7 +99,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
         for (int i = 0; i < enumValues.length; i++) {
             GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(enumValues[i]).getAnnotation(GraphQLEnumValue.class);
             if (annotation != null && Utils.isNotEmpty(annotation.name())) {
-                jacksonNames[i] = annotation.name();
+                jacksonNames[i] = messageBundle.interpolate(annotation.name());
             }
         }
         return jacksonNames;
@@ -102,7 +107,11 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
 
     private List<AnnotatedElement> getAnnotatedCandidates(Annotated annotated) {
         List<AnnotatedElement> propertyElements = new ArrayList<>(3);
-        if (annotated instanceof AnnotatedField) {
+        if (annotated instanceof AnnotatedParameter) {
+            AnnotatedParameter parameter = (AnnotatedParameter) annotated;
+            Executable owner = (Executable) parameter.getOwner().getAnnotated();
+            propertyElements.add(owner.getParameters()[parameter.getIndex()]);
+        } else if (annotated instanceof AnnotatedField) {
             AnnotatedField field = ((AnnotatedField) annotated);
             try {
                 Arrays.stream(Introspector.getBeanInfo(field.getDeclaringClass()).getPropertyDescriptors())

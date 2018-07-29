@@ -1,5 +1,7 @@
 package io.leangen.graphql.metadata.strategy.type;
 
+import io.leangen.graphql.metadata.messages.MessageBundle;
+
 import java.lang.reflect.AnnotatedType;
 
 /**
@@ -10,25 +12,25 @@ public interface TypeInfoGenerator {
     String INPUT_SUFFIX = "Input";
     String SCALAR_SUFFIX = "Scalar";
     
-    String generateTypeName(AnnotatedType type);
+    String generateTypeName(AnnotatedType type, MessageBundle messageBundle);
 
-    String generateTypeDescription(AnnotatedType type);
+    String generateTypeDescription(AnnotatedType type, MessageBundle messageBundle);
 
-    String[] getFieldOrder(AnnotatedType type);
+    String[] getFieldOrder(AnnotatedType type, MessageBundle messageBundle);
 
-    default String generateInputTypeName(AnnotatedType type) {
-        return generateTypeName(type) + INPUT_SUFFIX;
+    default String generateInputTypeName(AnnotatedType type, MessageBundle messageBundle) {
+        return generateTypeName(type, messageBundle) + INPUT_SUFFIX;
     }
 
-    default String generateInputTypeDescription(AnnotatedType type) {
-        return generateTypeDescription(type);
+    default String generateInputTypeDescription(AnnotatedType type, MessageBundle messageBundle) {
+        return generateTypeDescription(type, messageBundle);
     }
 
-    default String generateScalarTypeName(AnnotatedType type) {
-        return generateTypeName(type) + SCALAR_SUFFIX;
+    default String generateScalarTypeName(AnnotatedType type, MessageBundle messageBundle) {
+        return generateTypeName(type, messageBundle) + SCALAR_SUFFIX;
     }
     
-    default String generateScalarTypeDescription(AnnotatedType type) {
-        return generateTypeDescription(type);
+    default String generateScalarTypeDescription(AnnotatedType type, MessageBundle messageBundle) {
+        return generateTypeDescription(type, messageBundle);
     }
 }

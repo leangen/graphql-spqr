@@ -12,6 +12,7 @@ import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryParams;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Directives;
@@ -35,7 +36,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     public GraphQLObjectType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLObjectType.Builder typeBuilder = newObject()
                 .name(typeName)
-                .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
+                .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType, buildContext.messageBundle));
 
         List<GraphQLFieldDefinition> fields = getFields(javaType, buildContext, operationMapper);
         fields.forEach(typeBuilder::field);
@@ -59,9 +60,10 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     public GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLInputObjectType.Builder typeBuilder = newInputObject()
                 .name(typeName)
-                .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType));
+                .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType, buildContext.messageBundle));
 
-        buildContext.inputFieldStrategy.getInputFields(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer).forEach(
+        buildContext.inputFieldStrategy.getInputFields(
+                new InputFieldDiscoveryParams(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer, buildContext.messageBundle)).forEach(
                 field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));
 
         if (ClassUtils.isAbstract(javaType)) {
@@ -81,7 +83,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         List<GraphQLFieldDefinition> fields = buildContext.operationRepository.getChildQueries(javaType).stream()
                 .map(childQuery -> operationMapper.toGraphQLField(childQuery, buildContext))
                 .collect(Collectors.toList());
-        return sortFields(fields, buildContext.typeInfoGenerator.getFieldOrder(javaType));
+        return sortFields(fields, buildContext.typeInfoGenerator.getFieldOrder(javaType, buildContext.messageBundle));
     }
 
     @SuppressWarnings("WeakerAccess")
@@ -116,7 +118,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     @SuppressWarnings("WeakerAccess")
     protected Optional<GraphQLInputObjectField> createInputDisambiguatorField(AnnotatedType javaType, BuildContext buildContext) {
         Class<?> raw = ClassUtils.getRawType(javaType.getType());
-        String typeName = buildContext.typeInfoGenerator.generateTypeName(GenericTypeReflector.annotate(raw)) + "TypeDisambiguator";
+        String typeName = buildContext.typeInfoGenerator.generateTypeName(GenericTypeReflector.annotate(raw), buildContext.messageBundle) + "TypeDisambiguator";
         GraphQLInputType fieldType = null;
         if (buildContext.typeCache.contains(typeName)) {
             fieldType = new GraphQLTypeReference(typeName);
@@ -130,7 +132,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                         .name(typeName)
                         .description("Input type discriminator");
                 impls.stream()
-                        .map(buildContext.typeInfoGenerator::generateTypeName)
+                        .map(t -> buildContext.typeInfoGenerator.generateTypeName(t, buildContext.messageBundle))
                         .forEach(builder::value);
                 fieldType = builder.build();
             }

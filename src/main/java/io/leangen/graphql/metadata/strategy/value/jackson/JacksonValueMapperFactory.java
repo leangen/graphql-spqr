@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.messages.EmptyMessageBundle;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
@@ -61,9 +63,13 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
         @Override
         public ObjectMapper configure(ObjectMapper objectMapper, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
+            MessageBundle messageBundle = environment != null ? environment.messageBundle : EmptyMessageBundle.instance;
             ObjectMapper mapper = objectMapper
                     .findAndRegisterModules()
-                    .registerModule(getAnnotationIntrospectorModule(unambiguousSubtypes(concreteSubTypes), ambiguousSubtypes(concreteSubTypes, metaDataGen)));
+                    .registerModule(getAnnotationIntrospectorModule(
+                            unambiguousSubtypes(concreteSubTypes),
+                            ambiguousSubtypes(concreteSubTypes, metaDataGen, messageBundle),
+                            messageBundle));
             if (environment != null && !environment.getInputConverters().isEmpty()) {
                 mapper.registerModule(getDeserializersModule(environment));
             }
@@ -76,13 +82,13 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
         }
 
-        private Map<Type, List<NamedType>> ambiguousSubtypes(Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen) {
+        private Map<Type, List<NamedType>> ambiguousSubtypes(Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, MessageBundle messageBundle) {
             Map<Type, List<NamedType>> types = new HashMap<>();
             concreteSubTypes.entrySet().stream()
                     .filter(entry -> entry.getValue().size() > 1)
                     .forEach(entry -> {
                         List<NamedType> subTypes = entry.getValue().stream()
-                                .map(sub -> new NamedType(sub, metaDataGen.generateTypeName(GenericTypeReflector.annotate(sub))))
+                                .map(sub -> new NamedType(sub, metaDataGen.generateTypeName(GenericTypeReflector.annotate(sub), messageBundle)))
                                 .collect(Collectors.toList());
                         if (!subTypes.isEmpty()) {
                             types.put(entry.getKey(), subTypes);
@@ -110,12 +116,12 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
             };
         }
 
-        private Module getAnnotationIntrospectorModule(Map<Class, Class> unambiguousTypes, Map<Type, List<NamedType>> ambiguousTypes) {
+        private Module getAnnotationIntrospectorModule(Map<Class, Class> unambiguousTypes, Map<Type, List<NamedType>> ambiguousTypes, MessageBundle messageBundle) {
             SimpleModule module = new SimpleModule("graphql-spqr-annotation-introspector") {
                 @Override
                 public void setupModule(SetupContext context) {
                     super.setupModule(context);
-                    context.insertAnnotationIntrospector(new AnnotationIntrospector(ambiguousTypes));
+                    context.insertAnnotationIntrospector(new AnnotationIntrospector(ambiguousTypes, messageBundle));
                 }
             };
             unambiguousTypes.forEach(module::addAbstractTypeMapping);

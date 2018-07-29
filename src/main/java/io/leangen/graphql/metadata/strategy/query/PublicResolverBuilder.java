@@ -35,7 +35,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
     }
 
     public PublicResolverBuilder(String... basePackages) {
-        this.operationNameGenerator = new MethodOperationNameGenerator();
+        this.operationNameGenerator = new DefaultOperationNameGenerator();
         this.argumentBuilder = new AnnotatedArgumentBuilder();
         this.descriptionMapper = method -> "";
         this.deprecationReasonMapper = method ->
@@ -55,10 +55,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
      *
      * @param javaDeprecation Whether the {@code Deprecated} maps to GraphQL deprecation
      * @return This builder instance to allow chained calls
-     *
-     * @deprecated Use {@link #withJavaDeprecation(JavaDeprecationMappingConfig)} instead
      */
-    @Deprecated
     public PublicResolverBuilder withJavaDeprecationRespected(boolean javaDeprecation) {
         this.javaDeprecationConfig = new JavaDeprecationMappingConfig(javaDeprecation, "Deprecated");
         return this;
@@ -100,7 +97,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         return buildResolvers(params, this::isSubscription, operationNameGenerator::generateSubscriptionName, false);
     }
 
-    private Collection<Resolver> buildResolvers(ResolverBuilderParams params, Predicate<Method> filter, NameGenerator nameGenerator, boolean batchable) {
+    private Collection<Resolver> buildResolvers(ResolverBuilderParams params, Predicate<Method> filter, Function<OperationNameGeneratorParams<Method>, String> nameGenerator, boolean batchable) {
         AnnotatedType beanType = params.getBeanType();
         Object querySourceBean = params.getQuerySourceBean();
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
@@ -111,14 +108,14 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(method -> params.getInclusionStrategy().includeOperation(method, getReturnType(method, params)))
                 .filter(getFilters().stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
-                        nameGenerator.name(method, beanType, querySourceBean),
+                        nameGenerator.apply(new OperationNameGeneratorParams<>(method, beanType, querySourceBean, params.getMessageBundle())),
                         descriptionMapper.apply(method),
                         deprecationReasonMapper.apply(method),
                         batchable && method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, params),
                         argumentBuilder.buildResolverArguments(
-                                new ArgumentBuilderParams(method, beanType, params.getInclusionStrategy(), params.getTypeTransformer())),
+                                new ArgumentBuilderParams(method, beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getMessageBundle())),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ))
                 .collect(Collectors.toList());

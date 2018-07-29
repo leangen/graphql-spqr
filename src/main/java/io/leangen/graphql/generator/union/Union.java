@@ -1,5 +1,11 @@
 package io.leangen.graphql.generator.union;
 
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.geantyref.TypeFactory;
+import io.leangen.graphql.annotations.GraphQLUnion;
+import io.leangen.graphql.metadata.messages.MessageBundle;
+import io.leangen.graphql.util.ClassUtils;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedParameterizedType;
@@ -9,11 +15,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.annotations.GraphQLUnion;
-import io.leangen.graphql.util.ClassUtils;
 
 import static java.util.Arrays.stream;
 
@@ -33,7 +34,7 @@ public abstract class Union {
         this.description = description;
     }
 
-    public static AnnotatedType unionize(AnnotatedType[] types) {
+    public static AnnotatedType unionize(AnnotatedType[] types, MessageBundle messageBundle) {
         Objects.requireNonNull(types);
         if (types.length < 2) {
             if (types.length == 1 && GenericTypeReflector.isSuperType(Union.class, types[0].getType())) {
@@ -43,8 +44,7 @@ public abstract class Union {
         }
         AnnotatedType t1 = types[0];
         if (stream(types).anyMatch(t -> t.isAnnotationPresent(GraphQLUnion.class))) {
-            if (stream(types).allMatch(t -> t.isAnnotationPresent(GraphQLUnion.class) &&
-                    t.getAnnotation(GraphQLUnion.class).name().equals(t1.getAnnotation(GraphQLUnion.class).name()))) {
+            if (stream(types).allMatch(t -> t.isAnnotationPresent(GraphQLUnion.class) && nameEquals(t, t1, messageBundle))) {
                 return of(types);
             } else {
                 throw new IllegalArgumentException("All union members must be explicitly annotated: " + Arrays.toString(types));
@@ -60,7 +60,7 @@ public abstract class Union {
                 final int j = i;
                 params[i] = unionize(stream(pTypes)
                         .map(p -> p.getAnnotatedActualTypeArguments()[j])
-                        .toArray(AnnotatedType[]::new));
+                        .toArray(AnnotatedType[]::new), messageBundle);
             }
             Class<?> rawType = ((Class<?>) ((ParameterizedType) p1.getType()).getRawType());
             return TypeFactory.parameterizedAnnotatedClass(rawType, ClassUtils.getAllAnnotations(stream(types)), params);
@@ -69,7 +69,7 @@ public abstract class Union {
             AnnotatedType[] components = stream(types)
                     .map(type -> ((AnnotatedArrayType) type).getAnnotatedGenericComponentType())
                     .toArray(AnnotatedType[]::new);
-            return TypeFactory.arrayOf(unionize(components), ClassUtils.getAllAnnotations(stream(types)));
+            return TypeFactory.arrayOf(unionize(components, messageBundle), ClassUtils.getAllAnnotations(stream(types)));
         }
         if (stream(types).allMatch(t -> types[0].getType().equals(t.getType()))) {
             return types[0];
@@ -120,5 +120,10 @@ public abstract class Union {
 
     public List<AnnotatedType> getJavaTypes() {
         return javaTypes;
+    }
+
+    private static boolean nameEquals(AnnotatedType t1, AnnotatedType t2, MessageBundle messageBundle) {
+        return messageBundle.interpolate(t1.getAnnotation(GraphQLUnion.class).name())
+                .equals(messageBundle.interpolate(t2.getAnnotation(GraphQLUnion.class).name()));
     }
 }

@@ -2,6 +2,8 @@ package io.leangen.graphql;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.Resolver;
+import io.leangen.graphql.metadata.messages.EmptyMessageBundle;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
@@ -22,12 +24,13 @@ public class BeanResolverBuilderTest {
     private static final String[] BASE_PACKAGES = {"io.leangen"};
     private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy(BASE_PACKAGES);
     private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
+    private static final MessageBundle MESSAGE_BUNDLE = EmptyMessageBundle.instance;
 
     @Test
     public void basePackageTest() {
         PublicResolverBuilder resolverBuilder = new PublicResolverBuilder(BASE_PACKAGES);
         List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
-                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES)));
+                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, MESSAGE_BUNDLE)));
         assertEquals(2, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getNickname")));
@@ -37,7 +40,7 @@ public class BeanResolverBuilderTest {
     public void badBasePackageTest() {
         PublicResolverBuilder resolverBuilder = new PublicResolverBuilder("bad.package");
         List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
-                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES)));
+                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, MESSAGE_BUNDLE)));
         assertEquals(1, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
     }

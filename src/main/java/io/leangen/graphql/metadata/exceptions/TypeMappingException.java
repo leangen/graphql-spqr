@@ -12,7 +12,7 @@ import java.lang.reflect.Type;
  * Thrown from the mapping process when the type of the object to be mapped can not be determined.
  * Commonly occurs when type information was lost due to type erasure or dynamic proxying.
  */
-public class TypeMappingException extends RuntimeException {
+public class TypeMappingException extends MappingException {
 
     public TypeMappingException() {
         super("The provided object is of an unknown type. Provide the type explicitly when registering the bean.");

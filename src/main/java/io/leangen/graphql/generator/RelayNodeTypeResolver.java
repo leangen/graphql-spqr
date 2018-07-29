@@ -1,5 +1,6 @@
 package io.leangen.graphql.generator;
 
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.GraphQLUtils;
 
@@ -8,7 +9,7 @@ import io.leangen.graphql.util.GraphQLUtils;
  */
 class RelayNodeTypeResolver extends DelegatingTypeResolver {
 
-    RelayNodeTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator) {
-        super(GraphQLUtils.NODE, typeRepository, typeInfoGenerator);
+    RelayNodeTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle) {
+        super(GraphQLUtils.NODE, typeRepository, typeInfoGenerator, messageBundle);
     }
 }

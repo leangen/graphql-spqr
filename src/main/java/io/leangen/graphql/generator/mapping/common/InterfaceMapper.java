@@ -35,7 +35,7 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
     public GraphQLInterfaceType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLInterfaceType.Builder typeBuilder = newInterface()
                 .name(typeName)
-                .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType));
+                .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType, buildContext.messageBundle));
 
         List<GraphQLFieldDefinition> fields = objectTypeMapper.getFields(javaType, buildContext, operationMapper);
         fields.forEach(typeBuilder::field);

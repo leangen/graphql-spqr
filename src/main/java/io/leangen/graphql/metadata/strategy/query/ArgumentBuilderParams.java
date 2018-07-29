@@ -1,5 +1,6 @@
 package io.leangen.graphql.metadata.strategy.query;
 
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 
@@ -12,12 +13,14 @@ public class ArgumentBuilderParams {
     private final AnnotatedType declaringType;
     private final InclusionStrategy inclusionStrategy;
     private final TypeTransformer typeTransformer;
+    private final MessageBundle messageBundle;
 
-    public ArgumentBuilderParams(Method resolverMethod, AnnotatedType declaringType, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer) {
+    ArgumentBuilderParams(Method resolverMethod, AnnotatedType declaringType, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, MessageBundle messageBundle) {
         this.resolverMethod = resolverMethod;
         this.declaringType = declaringType;
         this.inclusionStrategy = inclusionStrategy;
         this.typeTransformer = typeTransformer;
+        this.messageBundle = messageBundle;
     }
 
     public Method getResolverMethod() {
@@ -34,5 +37,9 @@ public class ArgumentBuilderParams {
 
     public TypeTransformer getTypeTransformer() {
         return typeTransformer;
+    }
+
+    public MessageBundle getMessageBundle() {
+        return messageBundle;
     }
 }

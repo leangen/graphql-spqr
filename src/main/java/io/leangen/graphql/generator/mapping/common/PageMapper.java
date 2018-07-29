@@ -25,7 +25,7 @@ public class PageMapper extends ObjectTypeMapper {
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         AnnotatedType edgeType = GenericTypeReflector.getTypeParameter(javaType, Connection.class.getTypeParameters()[0]);
         AnnotatedType nodeType = GenericTypeReflector.getTypeParameter(edgeType, Edge.class.getTypeParameters()[0]);
-        String connectionName = buildContext.typeInfoGenerator.generateTypeName(nodeType) + "Connection";
+        String connectionName = buildContext.typeInfoGenerator.generateTypeName(nodeType, buildContext.messageBundle) + "Connection";
         if (buildContext.typeCache.contains(connectionName)) {
             return new GraphQLTypeReference(connectionName);
         }

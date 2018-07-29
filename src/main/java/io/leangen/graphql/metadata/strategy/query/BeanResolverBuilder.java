@@ -11,7 +11,7 @@ public class BeanResolverBuilder extends PublicResolverBuilder {
 
     public BeanResolverBuilder(String... basePackages) {
         super(basePackages);
-        this.operationNameGenerator = new BeanOperationNameGenerator();
+        this.operationNameGenerator = new PropertyOperationNameGenerator();
     }
 
     @Override

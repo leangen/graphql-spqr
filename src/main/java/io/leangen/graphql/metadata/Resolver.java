@@ -1,7 +1,9 @@
 package io.leangen.graphql.metadata;
 
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.execution.Executable;
+import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
@@ -41,7 +43,7 @@ public class Resolver {
             validateBatching(executable.toString(), returnType, contextArguments);
         }
         
-        this.operationName = operationName;
+        this.operationName = validateName(operationName);
         this.operationDescription = operationDescription;
         this.operationDeprecationReason = operationDeprecationReason;
         this.arguments = arguments;
@@ -50,6 +52,13 @@ public class Resolver {
         this.complexityExpression = complexityExpression;
         this.executable = executable;
         this.batched = batched;
+    }
+
+    private String validateName(String operationName) {
+        if (Utils.isEmpty(operationName)) {
+            throw new MappingException("The operation name for executable " + executable.toString() + " could not be determined");
+        }
+        return operationName;
     }
 
     private void validateBatching(String executableSignature, AnnotatedType returnType, Set<OperationArgument> contextArguments) {

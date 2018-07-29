@@ -32,6 +32,13 @@ public class Utils {
         return string != null && !string.isEmpty();
     }
 
+    public static String coalesce(String... values) {
+        return Arrays.stream(values)
+                .filter(Utils::isNotEmpty)
+                .findFirst()
+                .orElse(null);
+    }
+
     public static String capitalize(final String str) {
         final char firstChar = str.charAt(0);
         final char newChar = Character.toUpperCase(firstChar);

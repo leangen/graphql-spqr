@@ -7,6 +7,7 @@ import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Urls;
 
@@ -54,35 +55,35 @@ public class DefaultOperationBuilder implements OperationBuilder {
     }
 
     @Override
-    public Operation buildQuery(Type contextType, List<Resolver> resolvers) {
+    public Operation buildQuery(Type contextType, List<Resolver> resolvers, MessageBundle messageBundle) {
         String name = resolveName(resolvers);
-        AnnotatedType javaType = resolveJavaType(name, resolvers);
+        AnnotatedType javaType = resolveJavaType(name, resolvers, messageBundle);
         List<OperationArgument> arguments = collectArguments(name, resolvers);
         boolean batched = isBatched(resolvers);
         return new Operation(name, javaType, contextType, arguments, resolvers, batched);
     }
 
     @Override
-    public Operation buildMutation(Type context, List<Resolver> resolvers) {
-        return buildQuery(context, resolvers);
+    public Operation buildMutation(Type context, List<Resolver> resolvers, MessageBundle messageBundle) {
+        return buildQuery(context, resolvers, messageBundle);
     }
 
     @Override
-    public Operation buildSubscription(Type context, List<Resolver> resolvers) {
-        return buildQuery(context, resolvers);
+    public Operation buildSubscription(Type context, List<Resolver> resolvers, MessageBundle messageBundle) {
+        return buildQuery(context, resolvers, messageBundle);
     }
 
     protected String resolveName(List<Resolver> resolvers) {
         return resolvers.get(0).getOperationName();
     }
 
-    protected AnnotatedType resolveJavaType(String operationName, List<Resolver> resolvers) {
+    protected AnnotatedType resolveJavaType(String operationName, List<Resolver> resolvers, MessageBundle messageBundle) {
         List<AnnotatedType> returnTypes = resolvers.stream()
                 .map(Resolver::getReturnType)
                 .collect(Collectors.toList());
 
         if (resolvers.stream().anyMatch(resolver -> ClassUtils.containsTypeAnnotation(resolver.getReturnType(), GraphQLUnion.class))) {
-            return unionize(returnTypes.toArray(new AnnotatedType[returnTypes.size()]));
+            return unionize(returnTypes.toArray(new AnnotatedType[returnTypes.size()]), messageBundle);
         }
 
         return resolveJavaType(returnTypes, "Multiple methods detected for operation \"" + operationName + "\" with different return types.");
@@ -113,8 +114,8 @@ public class DefaultOperationBuilder implements OperationBuilder {
         return resolvers.stream().anyMatch(Resolver::isBatched);
     }
 
-    protected AnnotatedType unionize(AnnotatedType[] types) {
-        return Union.unionize(types);
+    protected AnnotatedType unionize(AnnotatedType[] types, MessageBundle messageBundle) {
+        return Union.unionize(types, messageBundle);
     }
 
     private AnnotatedType resolveJavaType(List<AnnotatedType> types, String errorPrefix) {

@@ -83,7 +83,7 @@ public class GenericsTest {
         GraphQLOutputType itemType = schemaWithNonNullGenerics.getQueryType().getFieldDefinition("getItem").getType();
         assertNonNull(itemType, Scalars.GraphQLString);
 
-        GraphQLOutputType itemCollectionType = schemaWithNonNullGenerics.getQueryType().getFieldDefinition("getAllItems").getType();
+        GraphQLOutputType itemCollectionType = schemaWithNonNullGenerics.getQueryType().getFieldDefinition("allItems").getType();
         assertListOfNonNull(itemCollectionType, Scalars.GraphQLString);
 
         GraphQLFieldDefinition addOneItem = schemaWithNonNullGenerics.getMutationType().getFieldDefinition("addItem");
@@ -97,9 +97,9 @@ public class GenericsTest {
         assertListOfNonNull(addManyItems.getArgument("items").getType(), Scalars.GraphQLString);
 
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithNonNullGenerics).build();
-        ExecutionResult result = graphQL.execute("{ getAllItems }");
+        ExecutionResult result = graphQL.execute("{ allItems }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
-        assertEquals(new ArrayList<>(nonNullStringService.getAllItems()), ((Map<String, Object>) result.getData()).get("getAllItems"));
+        assertEquals(new ArrayList<>(nonNullStringService.getAllItems()), ((Map<String, Object>) result.getData()).get("allItems"));
     }
 
     @Test
@@ -118,7 +118,7 @@ public class GenericsTest {
         GraphQLOutputType itemType = schemaWithDateIds.getQueryType().getFieldDefinition("getItem").getType();
         assertTrue(isRelayId(itemType));
 
-        GraphQLOutputType itemCollectionType = schemaWithDateIds.getQueryType().getFieldDefinition("getAllItems").getType();
+        GraphQLOutputType itemCollectionType = schemaWithDateIds.getQueryType().getFieldDefinition("allItems").getType();
         assertListOfRelayIds(itemCollectionType);
 
         GraphQLFieldDefinition addOneItem = schemaWithDateIds.getMutationType().getFieldDefinition("addItem");
@@ -154,7 +154,7 @@ public class GenericsTest {
         assertNonNull(itemType, GraphQLList.class);
         assertListOf(((graphql.schema.GraphQLNonNull) itemType).getWrappedType(), Scalars.GraphQLBigDecimal);
 
-        GraphQLOutputType itemCollectionType = schemaWithGenerics.getQueryType().getFieldDefinition("getAllItems").getType();
+        GraphQLOutputType itemCollectionType = schemaWithGenerics.getQueryType().getFieldDefinition("allItems").getType();
         assertListOfNonNull(itemCollectionType, GraphQLList.class);
         assertListOf(((graphql.schema.GraphQLNonNull) ((GraphQLList) itemCollectionType).getWrappedType()).getWrappedType(), Scalars.GraphQLBigDecimal);
 
@@ -164,7 +164,7 @@ public class GenericsTest {
         assertListOf(((graphql.schema.GraphQLNonNull) itemArgType).getWrappedType(), Scalars.GraphQLBigDecimal);
 
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithGenerics).build();
-        ExecutionResult result = graphQL.execute("{ getAllItems }");
+        ExecutionResult result = graphQL.execute("{ allItems }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
         Object[] expected = wildcardNumberService.getAllItems().toArray();
         Object[] actual = wildcardNumberService.getAllItems().toArray();
@@ -202,7 +202,7 @@ public class GenericsTest {
         assertListOf(inner, Scalars.GraphQLBigDecimal);
 
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithGenerics).build();
-        ExecutionResult result = graphQL.execute("{ getAllItems }");
+        ExecutionResult result = graphQL.execute("{ allItems }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
         Object[] expected = arrayNumberService.getAllItems().toArray();
         Object[] actual = arrayNumberService.getAllItems().toArray();

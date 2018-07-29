@@ -1,4 +1,4 @@
-package io.leangen.graphql.metadata.strategy.query;
+package io.leangen.graphql.metadata.strategy.value;
 
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
@@ -6,30 +6,28 @@ import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 
 import java.lang.reflect.AnnotatedType;
 
-public class ResolverBuilderParams {
+public class InputFieldDiscoveryParams {
 
-    private final Object querySourceBean;
-    private final AnnotatedType beanType;
+    private final AnnotatedType type;
     private final InclusionStrategy inclusionStrategy;
     private final TypeTransformer typeTransformer;
-    private final String[] basePackages;
     private final MessageBundle messageBundle;
 
-    public ResolverBuilderParams(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages, MessageBundle messageBundle) {
-        this.querySourceBean = querySourceBean;
-        this.beanType = beanType;
+    /**
+     * @param type Java type (used as query input) to be analyzed for deserializable fields
+     * @param inclusionStrategy The strategy that decides which input fields are acceptable
+     * @param typeTransformer Transformer used to pre-process the types (can be used to complete the missing generics etc)
+     * @param messageBundle The global translation message bundle
+     */
+    public InputFieldDiscoveryParams(AnnotatedType type, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, MessageBundle messageBundle) {
+        this.type = type;
         this.inclusionStrategy = inclusionStrategy;
         this.typeTransformer = typeTransformer;
-        this.basePackages = basePackages;
         this.messageBundle = messageBundle;
     }
 
-    public Object getQuerySourceBean() {
-        return querySourceBean;
-    }
-
-    public AnnotatedType getBeanType() {
-        return beanType;
+    public AnnotatedType getType() {
+        return type;
     }
 
     public InclusionStrategy getInclusionStrategy() {
@@ -38,10 +36,6 @@ public class ResolverBuilderParams {
 
     public TypeTransformer getTypeTransformer() {
         return typeTransformer;
-    }
-
-    public String[] getBasePackages() {
-        return basePackages;
     }
 
     public MessageBundle getMessageBundle() {

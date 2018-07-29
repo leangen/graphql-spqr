@@ -62,6 +62,8 @@ import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStra
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.generator.mapping.strategy.NoOpAbstractInputHandler;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.messages.DelegatingMessageBundle;
+import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
@@ -93,6 +95,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static graphql.schema.GraphQLObjectType.newObject;
@@ -152,6 +155,7 @@ public class GraphQLSchemaGenerator {
     private TypeTransformer typeTransformer = new DefaultTypeTransformer(false, false);
     private GlobalEnvironment environment;
     private String[] basePackages = Utils.emptyArray();
+    private DelegatingMessageBundle messageBundle = new DelegatingMessageBundle();
     private List<TypeMapper> typeMappers;
     private JavaDeprecationMappingConfig javaDeprecationConfig = new JavaDeprecationMappingConfig(true, "Deprecated");
     private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
@@ -444,6 +448,11 @@ public class GraphQLSchemaGenerator {
 
     public GraphQLSchemaGenerator withBasePackages(String... basePackages) {
         this.basePackages = Utils.emptyIfNull(basePackages);
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withStringInterpolation(MessageBundle... messageBundles) {
+        this.messageBundle.withBundles(messageBundles);
         return this;
     }
 
@@ -787,7 +796,7 @@ public class GraphQLSchemaGenerator {
         }
         checkForDuplicates("argument injectors", argumentInjectors);
 
-        environment = new GlobalEnvironment(new Relay(), new TypeRepository(additionalTypes), new ConverterRepository(inputConverters, outputConverters), new ArgumentInjectorRepository(argumentInjectors));
+        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRepository(additionalTypes), new ConverterRepository(inputConverters, outputConverters), new ArgumentInjectorRepository(argumentInjectors));
         valueMapperFactory = new MemoizedValueMapperFactory<>(environment, internalValueMapperFactory);
         if (inputFieldStrategy == null) {
             ValueMapper def = valueMapperFactory.getValueMapper();
@@ -810,8 +819,8 @@ public class GraphQLSchemaGenerator {
         init();
 
         BuildContext buildContext = new BuildContext(
-                basePackages, environment, new OperationRepository(operationSourceRepository, operationBuilder, inclusionStrategy, typeTransformer, basePackages),
-                new TypeMapperRepository(typeMappers), valueMapperFactory, typeInfoGenerator, interfaceStrategy, scalarStrategy, typeTransformer,
+                basePackages, environment, new OperationRepository(operationSourceRepository, operationBuilder, inclusionStrategy, typeTransformer, basePackages, messageBundle),
+                new TypeMapperRepository(typeMappers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
                 abstractInputHandler, inputFieldStrategy, inclusionStrategy, relayMappingConfig, additionalTypes, aliasGroups, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
@@ -998,6 +1007,11 @@ public class GraphQLSchemaGenerator {
             } else {
                 return append(replacement);
             }
+        }
+
+        public ExtensionList<E> modify(Class<? extends E> extensionType, Consumer<E> modifier) {
+            modifier.accept(get(firstIndexOfTypeStrict(extensionType)));
+            return this;
         }
 
         private int firstIndexOfTypeStrict(Class<? extends E> extensionType) {

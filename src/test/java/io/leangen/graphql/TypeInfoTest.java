@@ -16,6 +16,7 @@ import org.reactivestreams.Publisher;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class TypeInfoTest {
@@ -80,12 +81,12 @@ public class TypeInfoTest {
         assertFalse(schema.getSubscriptionType().getFieldDefinition("freshSubscription").isDeprecated());
 
         for (GraphQLFieldDefinition field : new GraphQLFieldDefinition[] {
-                schema.getQueryType().getFieldDefinition("trickyQuery"),
-                schema.getMutationType().getFieldDefinition("trickyMutation"),
-                schema.getSubscriptionType().getFieldDefinition("trickySubscription")}) {
+                schema.getQueryType().getFieldDefinition("sneakyQuery"),
+                schema.getMutationType().getFieldDefinition("sneakyMutation"),
+                schema.getSubscriptionType().getFieldDefinition("sneakySubscription")}) {
 
             assertEquals(respectJavaDeprecation, field.isDeprecated());
-            assertEquals(null, field.getDescription());
+            assertNull(field.getDescription());
         }
     }
 
