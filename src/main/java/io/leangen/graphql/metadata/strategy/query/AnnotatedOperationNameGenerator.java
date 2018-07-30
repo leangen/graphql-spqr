@@ -30,7 +30,7 @@ public class AnnotatedOperationNameGenerator implements OperationNameGenerator {
         }
         Class<?> declaringClass = ClassUtils.getRawType(declaringType.getType());
         if (declaringClass.isAnnotationPresent(GraphQLQuery.class)) {
-            return declaringClass.getDeclaringClass().getAnnotation(GraphQLQuery.class).name();
+            return declaringClass.getAnnotation(GraphQLQuery.class).name();
         }
         throw new IllegalArgumentException("Neither the method/field " + resolver.toString() +
                 " nor the declaring class are annotated with " + GraphQLQuery.class.getSimpleName());
