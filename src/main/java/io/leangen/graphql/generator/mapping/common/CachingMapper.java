@@ -1,5 +1,6 @@
 package io.leangen.graphql.generator.mapping.common;
 
+import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLScalarType;
@@ -53,6 +54,9 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
     private String getTypeName(AnnotatedType javaType, AnnotatedType graphQLType, TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle) {
         if (GenericTypeReflector.isSuperType(GraphQLScalarType.class, graphQLType.getType())) {
             return typeInfoGenerator.generateScalarTypeName(javaType, messageBundle);
+        }
+        if (GenericTypeReflector.isSuperType(GraphQLEnumType.class, graphQLType.getType())) {
+            return typeInfoGenerator.generateTypeName(javaType, messageBundle);
         }
         if (GenericTypeReflector.isSuperType(GraphQLInputType.class, graphQLType.getType())) {
             return typeInfoGenerator.generateInputTypeName(javaType, messageBundle);

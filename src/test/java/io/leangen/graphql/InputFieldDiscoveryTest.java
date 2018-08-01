@@ -5,15 +5,14 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.InputField;
-import io.leangen.graphql.metadata.messages.EmptyMessageBundle;
-import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
-import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryParams;
-import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapper;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapper;
@@ -21,6 +20,7 @@ import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFact
 import org.junit.Test;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -30,13 +30,13 @@ import static org.junit.Assert.assertTrue;
 
 public class InputFieldDiscoveryTest {
 
-    private JacksonValueMapper jackson = new JacksonValueMapperFactory().getValueMapper();
-    private GsonValueMapper gson = new GsonValueMapperFactory().getValueMapper();
+    private JacksonValueMapper jackson = (JacksonValueMapper) new JacksonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
+    private GsonValueMapper gson = (GsonValueMapper) new GsonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
 
     private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy("io.leangen");
     private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
     private static final AnnotatedType IGNORED_TYPE = GenericTypeReflector.annotate(Object.class);
-    private static final MessageBundle MESSAGE_BUNDLE = EmptyMessageBundle.instance;
+    private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
 
     private static final InputField[] expectedDefaultFields = new InputField[] {
             new InputField("field1", null, IGNORED_TYPE, null, null),
@@ -147,9 +147,9 @@ public class InputFieldDiscoveryTest {
         assertAllFieldsEqual(jFields, gFields);
     }
 
-    private Set<InputField> assertFieldNamesEqual(InputFieldDiscoveryStrategy mapper, Class typeToScan, InputField[] templates) {
+    private Set<InputField> assertFieldNamesEqual(InputFieldBuilder mapper, Class typeToScan, InputField[] templates) {
         Set<InputField> fields = mapper.getInputFields(
-                new InputFieldDiscoveryParams(GenericTypeReflector.annotate(typeToScan), INCLUSION_STRATEGY, TYPE_TRANSFORMER, MESSAGE_BUNDLE));
+                new InputFieldBuilderParams(GenericTypeReflector.annotate(typeToScan), INCLUSION_STRATEGY, TYPE_TRANSFORMER, ENVIRONMENT));
         assertEquals(templates.length, fields.size());
         for (InputField template : templates) {
             Optional<InputField> field = fields.stream().filter(input -> input.getName().equals(template.getName())).findFirst();

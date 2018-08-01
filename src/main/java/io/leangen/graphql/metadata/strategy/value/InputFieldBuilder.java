@@ -4,7 +4,7 @@ import io.leangen.graphql.metadata.InputField;
 
 import java.util.Set;
 
-public interface InputFieldDiscoveryStrategy {
+public interface InputFieldBuilder {
     
-    Set<InputField> getInputFields(InputFieldDiscoveryParams params);
+    Set<InputField> getInputFields(InputFieldBuilderParams params);
 }

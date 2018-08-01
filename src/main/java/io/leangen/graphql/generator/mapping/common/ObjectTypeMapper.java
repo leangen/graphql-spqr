@@ -12,7 +12,7 @@ import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryParams;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Directives;
@@ -63,7 +63,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType, buildContext.messageBundle));
 
         buildContext.inputFieldStrategy.getInputFields(
-                new InputFieldDiscoveryParams(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer, buildContext.messageBundle)).forEach(
+                new InputFieldBuilderParams(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer, buildContext.globalEnvironment)).forEach(
                 field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));
 
         if (ClassUtils.isAbstract(javaType)) {

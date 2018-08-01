@@ -1,7 +1,7 @@
 package io.leangen.graphql.annotations;
 
-import io.leangen.graphql.generator.mapping.strategy.DefaultValueProvider;
-import io.leangen.graphql.generator.mapping.strategy.JsonDefaultValueProvider;
+import io.leangen.graphql.metadata.strategy.value.DefaultValueProvider;
+import io.leangen.graphql.metadata.strategy.value.JsonDefaultValueProvider;
 import io.leangen.graphql.util.ReservedStrings;
 
 import java.lang.annotation.ElementType;

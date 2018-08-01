@@ -2,18 +2,13 @@ package io.leangen.graphql.metadata.strategy.value;
 
 import io.leangen.graphql.execution.GlobalEnvironment;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public interface ValueMapperFactory<T extends ValueMapper> {
+public interface ValueMapperFactory {
     
-    default T getValueMapper() {
-        return getValueMapper(Collections.emptyMap(), null);
-    }
-    
-    T getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment);
+    ValueMapper getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment);
 }

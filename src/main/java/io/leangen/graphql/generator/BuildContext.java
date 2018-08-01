@@ -13,7 +13,7 @@ import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
-import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
@@ -44,7 +44,7 @@ public class BuildContext {
     public final String[] basePackages;
     public final MessageBundle messageBundle;
     public final ValueMapperFactory valueMapperFactory;
-    public final InputFieldDiscoveryStrategy inputFieldStrategy;
+    public final InputFieldBuilder inputFieldStrategy;
     public final InclusionStrategy inclusionStrategy;
     public final ScalarDeserializationStrategy scalarStrategy;
     public final TypeTransformer typeTransformer;
@@ -76,7 +76,7 @@ public class BuildContext {
                         TypeMapperRepository typeMappers, ValueMapperFactory valueMapperFactory, TypeInfoGenerator typeInfoGenerator,
                         MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
-                        InputFieldDiscoveryStrategy inputFieldStrategy, InclusionStrategy inclusionStrategy,
+                        InputFieldBuilder inputFieldStrategy, InclusionStrategy inclusionStrategy,
                         RelayMappingConfig relayMappingConfig, Set<GraphQLType> knownTypes, List<Set<AnnotatedType>> typeAliasGroups,
                         ImplementationDiscoveryStrategy implementationStrategy) {
         this.operationRepository = operationRepository;

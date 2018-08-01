@@ -2,6 +2,7 @@ package io.leangen.graphql.metadata.strategy.query;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLUnion;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.union.Union;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
@@ -55,22 +56,22 @@ public class DefaultOperationBuilder implements OperationBuilder {
     }
 
     @Override
-    public Operation buildQuery(Type contextType, List<Resolver> resolvers, MessageBundle messageBundle) {
+    public Operation buildQuery(Type contextType, List<Resolver> resolvers, GlobalEnvironment environment) {
         String name = resolveName(resolvers);
-        AnnotatedType javaType = resolveJavaType(name, resolvers, messageBundle);
+        AnnotatedType javaType = resolveJavaType(name, resolvers, environment.messageBundle);
         List<OperationArgument> arguments = collectArguments(name, resolvers);
         boolean batched = isBatched(resolvers);
         return new Operation(name, javaType, contextType, arguments, resolvers, batched);
     }
 
     @Override
-    public Operation buildMutation(Type context, List<Resolver> resolvers, MessageBundle messageBundle) {
-        return buildQuery(context, resolvers, messageBundle);
+    public Operation buildMutation(Type context, List<Resolver> resolvers, GlobalEnvironment environment) {
+        return buildQuery(context, resolvers, environment);
     }
 
     @Override
-    public Operation buildSubscription(Type context, List<Resolver> resolvers, MessageBundle messageBundle) {
-        return buildQuery(context, resolvers, messageBundle);
+    public Operation buildSubscription(Type context, List<Resolver> resolvers, GlobalEnvironment environment) {
+        return buildQuery(context, resolvers, environment);
     }
 
     protected String resolveName(List<Resolver> resolvers) {

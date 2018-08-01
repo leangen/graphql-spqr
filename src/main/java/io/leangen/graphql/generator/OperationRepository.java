@@ -1,8 +1,8 @@
 package io.leangen.graphql.generator;
 
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.Resolver;
-import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.query.OperationBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
@@ -33,18 +33,18 @@ public class OperationRepository {
     private final InclusionStrategy inclusionStrategy;
     private final TypeTransformer typeTransformer;
     private final String[] basePackages;
-    private final MessageBundle messageBundle;
+    private final GlobalEnvironment environment;
 
     public OperationRepository(OperationSourceRepository operationSourceRepository, OperationBuilder operationBuilder,
                                InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages,
-                               MessageBundle messageBundle) {
+                               GlobalEnvironment environment) {
 
         this.operationSourceRepository = operationSourceRepository;
         this.operationBuilder = operationBuilder;
         this.inclusionStrategy = inclusionStrategy;
         this.typeTransformer = typeTransformer;
         this.basePackages = basePackages;
-        this.messageBundle = messageBundle;
+        this.environment = environment;
         List<Resolver> resolvers = buildQueryResolvers(operationSourceRepository.getOperationSources());
         List<Resolver> mutationResolvers = buildMutationResolvers(operationSourceRepository.getOperationSources());
         List<Resolver> subscriptionResolvers = buildSubscriptionResolvers(operationSourceRepository.getOperationSources());
@@ -59,7 +59,7 @@ public class OperationRepository {
                 .flatMap(r -> collectContextTypes(r).stream()
                         .map(contextType -> resolversPerContext(contextType, r))
                         .filter(contextual -> !contextual.getValue().isEmpty())
-                        .map(contextual -> operationBuilder.buildQuery(contextual.getKey(), contextual.getValue(), messageBundle)))
+                        .map(contextual -> operationBuilder.buildQuery(contextual.getKey(), contextual.getValue(), environment)))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
@@ -69,7 +69,7 @@ public class OperationRepository {
                 .flatMap(r -> collectContextTypes(r).stream()
                         .map(contextType -> resolversPerContext(contextType, r))
                         .filter(contextual -> !contextual.getValue().isEmpty())
-                        .map(contextual -> operationBuilder.buildMutation(contextual.getKey(), contextual.getValue(), messageBundle)))
+                        .map(contextual -> operationBuilder.buildMutation(contextual.getKey(), contextual.getValue(), environment)))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
@@ -79,7 +79,7 @@ public class OperationRepository {
                 .flatMap(r -> collectContextTypes(r).stream()
                         .map(contextType -> resolversPerContext(contextType, r))
                         .filter(contextual -> !contextual.getValue().isEmpty())
-                        .map(contextual -> operationBuilder.buildSubscription(contextual.getKey(), contextual.getValue(), messageBundle)))
+                        .map(contextual -> operationBuilder.buildSubscription(contextual.getKey(), contextual.getValue(), environment)))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
@@ -150,19 +150,19 @@ public class OperationRepository {
     private List<Resolver> buildQueryResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
                 builder.buildQueryResolvers(new ResolverBuilderParams(
-                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, messageBundle))));
+                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
     }
 
     private List<Resolver> buildMutationResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
                 builder.buildMutationResolvers(new ResolverBuilderParams(
-                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, messageBundle))));
+                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
     }
 
     private List<Resolver> buildSubscriptionResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
                 builder.buildSubscriptionResolvers(new ResolverBuilderParams(
-                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, messageBundle))));
+                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
     }
 
     private List<Resolver> buildResolvers(Collection<OperationSource> operationSources, BiFunction<OperationSource, ResolverBuilder, Collection<Resolver>> building) {

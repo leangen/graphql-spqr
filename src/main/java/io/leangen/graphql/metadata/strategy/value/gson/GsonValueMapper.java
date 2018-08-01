@@ -4,11 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
-import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryParams;
-import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputParsingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
@@ -24,7 +25,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy {
+public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
 
     private final Gson gson;
     private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
@@ -77,7 +78,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
      * @return All deserializable fields that could be discovered from this {@link AnnotatedType}
      */
     @Override
-    public Set<InputField> getInputFields(InputFieldDiscoveryParams params) {
+    public Set<InputField> getInputFields(InputFieldBuilderParams params) {
         Set<InputField> inputFields = new HashSet<>();
         AnnotatedType type = params.getType();
         Class<?> raw = ClassUtils.getRawType(type.getType());
@@ -105,7 +106,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
                 }
                 field.setAccessible(true);
                 String fieldName = gson.fieldNamingStrategy().translateName(field);
-                if (!inputFields.add(new InputField(fieldName, getDescription(field, params.getMessageBundle()), fieldType, null, defaultValue(field, fieldType, params.getMessageBundle())))) {
+                if (!inputFields.add(new InputField(fieldName, getDescription(field, params.getEnvironment().messageBundle), fieldType, null, defaultValue(field, fieldType, params.getEnvironment())))) {
                     throw new IllegalArgumentException(raw + " declares multiple input fields named " + fieldName);
                 }
             }
@@ -119,7 +120,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldDiscoveryStrategy
         return inputInfoGen.getDescription(ClassUtils.getPropertyMembers(field), messageBundle).orElse(null);
     }
 
-    protected Object defaultValue(Field field, AnnotatedType fieldType, MessageBundle messageBundle) {
-        return inputInfoGen.defaultValue(ClassUtils.getPropertyMembers(field), fieldType, messageBundle).orElse(null);
+    protected Object defaultValue(Field field, AnnotatedType fieldType, GlobalEnvironment environment) {
+        return inputInfoGen.defaultValue(ClassUtils.getPropertyMembers(field), fieldType, environment).orElse(null);
     }
 }

@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.metadata.messages.EmptyMessageBundle;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
@@ -17,6 +16,9 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,32 +28,34 @@ import java.util.stream.Collectors;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValueMapper>, ScalarDeserializationStrategy {
+public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDeserializationStrategy {
 
     private final ObjectMapper prototype;
-    private final Configurer configurer;
+    private final List<Configurer> configurers;
     private final TypeInfoGenerator typeInfoGenerator;
+
+    private static final Configurer IMPLICIT_MODULES = new ImplicitModuleConfigurer();
 
     @SuppressWarnings("WeakerAccess")
     public JacksonValueMapperFactory() {
-        this(null, new DefaultTypeInfoGenerator(), new AbstractClassAdapterConfigurer());
+        this(null, new DefaultTypeInfoGenerator(), defaultConfigurers());
     }
 
-    private JacksonValueMapperFactory(ObjectMapper prototype, TypeInfoGenerator typeInfoGenerator, Configurer configurer) {
+    private JacksonValueMapperFactory(ObjectMapper prototype, TypeInfoGenerator typeInfoGenerator, List<Configurer> configurers) {
         this.prototype = prototype;
-        this.configurer = Objects.requireNonNull(configurer);
+        this.configurers = Objects.requireNonNull(configurers);
         this.typeInfoGenerator = Objects.requireNonNull(typeInfoGenerator);
     }
 
     @Override
     public JacksonValueMapper getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
-        ObjectMapper mapper = prototype != null ? prototype.copy() : new ObjectMapper();
-        ObjectMapper objectMapper = this.configurer.configure(mapper, concreteSubTypes, this.typeInfoGenerator, environment);
-        return new JacksonValueMapper(objectMapper);
+        return new JacksonValueMapper(initBuilder(concreteSubTypes, environment));
     }
 
-    public static Builder builder() {
-        return new Builder();
+    private ObjectMapper initBuilder(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
+        ObjectMapper objectMapper = prototype != null ? prototype.copy() : new ObjectMapper();
+        return this.configurers.stream().reduce(objectMapper, (mapper, configurer) ->
+                configurer.configure(new ConfigurerParams(mapper, concreteSubTypes, this.typeInfoGenerator, environment)), (b1, b2) -> b2);
     }
 
     @Override
@@ -59,19 +63,29 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         return GenericTypeReflector.isSuperType(TreeNode.class, type.getType());
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class ImplicitModuleConfigurer implements Configurer {
+
+        @Override
+        public ObjectMapper configure(ConfigurerParams params) {
+            return params.objectMapper.findAndRegisterModules();
+        }
+    }
+
     public static class AbstractClassAdapterConfigurer implements Configurer {
 
         @Override
-        public ObjectMapper configure(ObjectMapper objectMapper, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
-            MessageBundle messageBundle = environment != null ? environment.messageBundle : EmptyMessageBundle.instance;
-            ObjectMapper mapper = objectMapper
-                    .findAndRegisterModules()
+        public ObjectMapper configure(ConfigurerParams params) {
+            ObjectMapper mapper = params.objectMapper
                     .registerModule(getAnnotationIntrospectorModule(
-                            unambiguousSubtypes(concreteSubTypes),
-                            ambiguousSubtypes(concreteSubTypes, metaDataGen, messageBundle),
-                            messageBundle));
-            if (environment != null && !environment.getInputConverters().isEmpty()) {
-                mapper.registerModule(getDeserializersModule(environment));
+                            unambiguousSubtypes(params.concreteSubTypes),
+                            ambiguousSubtypes(params.concreteSubTypes, params.metaDataGen, params.environment.messageBundle),
+                            params.environment.messageBundle));
+            if (!params.environment.getInputConverters().isEmpty()) {
+                mapper.registerModule(getDeserializersModule(params.environment));
             }
             return mapper;
         }
@@ -131,22 +145,54 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
     @FunctionalInterface
     public interface Configurer {
-        ObjectMapper configure(ObjectMapper objectMapper, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment);
+        ObjectMapper configure(ConfigurerParams params);
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public static class ConfigurerParams {
+
+        final ObjectMapper objectMapper;
+        final Map<Class, List<Class>> concreteSubTypes;
+        final TypeInfoGenerator metaDataGen;
+        final GlobalEnvironment environment;
+
+        ConfigurerParams(ObjectMapper objectMapper, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
+            this.objectMapper = objectMapper;
+            this.concreteSubTypes = concreteSubTypes;
+            this.metaDataGen = metaDataGen;
+            this.environment = environment;
+        }
+
+        public ObjectMapper getObjectMapper() {
+            return objectMapper;
+        }
+
+        public Map<Class, List<Class>> getConcreteSubTypes() {
+            return concreteSubTypes;
+        }
+
+        public TypeInfoGenerator getMetaDataGen() {
+            return metaDataGen;
+        }
+
+        public GlobalEnvironment getEnvironment() {
+            return environment;
+        }
     }
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + " with " + typeInfoGenerator.getClass().getSimpleName();
+        return this.getClass().getSimpleName();
     }
 
     public static class Builder {
 
-        private Configurer configurer = new AbstractClassAdapterConfigurer();
+        private List<Configurer> configurers = defaultConfigurers();
         private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
         private ObjectMapper prototype;
 
-        public Builder withConfigurer(Configurer configurer) {
-            this.configurer = configurer;
+        public Builder withConfigurers(Configurer... configurer) {
+            Collections.addAll(this.configurers, configurer);
             return this;
         }
 
@@ -160,8 +206,17 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
             return this;
         }
 
-        public JacksonValueMapperFactory build() {
-            return new JacksonValueMapperFactory(prototype, typeInfoGenerator, configurer);
+        public Builder withExplicitModulesOnly() {
+            this.configurers.remove(IMPLICIT_MODULES);
+            return this;
         }
+
+        public JacksonValueMapperFactory build() {
+            return new JacksonValueMapperFactory(prototype, typeInfoGenerator, configurers);
+        }
+    }
+
+    private static ArrayList<Configurer> defaultConfigurers() {
+        return new ArrayList<>(Arrays.asList(IMPLICIT_MODULES, new AbstractClassAdapterConfigurer()));
     }
 }

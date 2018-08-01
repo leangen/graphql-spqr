@@ -14,6 +14,7 @@ import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
@@ -28,6 +29,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +65,8 @@ public class GenericsTest {
     }.getAnnotatedType();
     private static final AnnotatedType arrayOfListsOfNumbers = new TypeToken<GenericItemRepo<@GraphQLNonNull List<Number> @GraphQLNonNull []>>() {
     }.getAnnotatedType();
+
+    private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
 
     @Parameterized.Parameter
     public ValueMapperFactory valueMapperFactory;
@@ -128,7 +132,7 @@ public class GenericsTest {
         assertListOfRelayIds(addManyItems.getArgument("items").getType());
         
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithDateIds).build();
-        String jsonDate = valueMapperFactory.getValueMapper().toString(firstEvent);
+        String jsonDate = valueMapperFactory.getValueMapper(Collections.emptyMap(), ENVIRONMENT).toString(firstEvent);
         String relayId = new Relay().toGlobalId("Query", jsonDate);
         ExecutionResult result = graphQL.execute("{ contains(id: \"" + relayId+ "\") }");
         assertTrue(ERRORS, result.getErrors().isEmpty());

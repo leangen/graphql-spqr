@@ -10,8 +10,7 @@ import java.lang.reflect.AnnotatedType;
 /**
  * A {@code TypeMapper} is used to map annotated Java types to a GraphQL input or output types, modeled by
  * {@link GraphQLOutputType} and {@link GraphQLInputType} respectively.
- * Types of method parameters are mapped to GraphQL input types, while the return types are mapped to GraphQL
- * output types.
+ * Method parameter types are mapped to GraphQL input types, while the return types are mapped to GraphQL output types.
  */
 public interface TypeMapper {
 

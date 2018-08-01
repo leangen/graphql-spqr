@@ -7,9 +7,8 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.domain.Person;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.Resolver;
-import io.leangen.graphql.metadata.messages.DelegatingMessageBundle;
-import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
@@ -36,13 +35,13 @@ public class ResolverBuilderTest {
     private static final String[] BASE_PACKAGES = {"io.leangen"};
     private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy(BASE_PACKAGES);
     private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
-    private static final MessageBundle MESSAGE_BUNDLE = new DelegatingMessageBundle();
+    private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
 
     @Test
     public void bridgeMethodTest() {
         Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGES) .buildQueryResolvers(new ResolverBuilderParams(
                 new BaseServiceImpl<Number, String>(), new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType(),
-                INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, MESSAGE_BUNDLE));
+                INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT));
         assertEquals(1, resolvers.size());
         assertEquals(resolvers.iterator().next().getReturnType().getType(), Number.class);
     }
@@ -96,7 +95,7 @@ public class ResolverBuilderTest {
         Collection<Collection<Resolver>> resolvers = new ArrayList<>(builders.length);
         for (ResolverBuilder builder : builders) {
             resolvers.add(builder.buildQueryResolvers(new ResolverBuilderParams(
-                    bean, GenericTypeReflector.annotate(bean.getClass()), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, MESSAGE_BUNDLE)));
+                    bean, GenericTypeReflector.annotate(bean.getClass()), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         }
         return resolvers;
     }

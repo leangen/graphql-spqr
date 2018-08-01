@@ -3,7 +3,7 @@ package io.leangen.graphql.generator.mapping.strategy;
 import io.github.lukehutch.fastclasspathscanner.scanner.ClassInfo;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
-import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryParams;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Scalars;
 import org.slf4j.Logger;
@@ -100,7 +100,7 @@ public class AutoScanAbstractInputHandler implements AbstractInputHandler {
             abstractTypes.add(javaType.getType());
         }
         buildContext.inputFieldStrategy.getInputFields(
-                new InputFieldDiscoveryParams(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer, buildContext.messageBundle))
+                new InputFieldBuilderParams(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer, buildContext.globalEnvironment))
                 .forEach(childQuery -> abstractTypes.addAll(findConstituentAbstractTypes(childQuery.getDeserializableType(), buildContext)));
         abstractComponents.put(javaType.getType(), abstractTypes);
         return abstractTypes;

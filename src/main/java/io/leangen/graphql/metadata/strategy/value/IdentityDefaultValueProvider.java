@@ -1,4 +1,4 @@
-package io.leangen.graphql.generator.mapping.strategy;
+package io.leangen.graphql.metadata.strategy.value;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;

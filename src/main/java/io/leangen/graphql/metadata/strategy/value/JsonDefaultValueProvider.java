@@ -1,13 +1,14 @@
-package io.leangen.graphql.generator.mapping.strategy;
+package io.leangen.graphql.metadata.strategy.value;
 
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
-import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.Defaults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
+import java.util.Collections;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -18,9 +19,9 @@ public class JsonDefaultValueProvider implements DefaultValueProvider {
 
     private static final Logger log = LoggerFactory.getLogger(JsonDefaultValueProvider.class);
 
-    public JsonDefaultValueProvider() {
+    public JsonDefaultValueProvider(GlobalEnvironment environment) {
         this.valueMapper =  Defaults.valueMapperFactory(new DefaultTypeInfoGenerator())
-                .getValueMapper();
+                .getValueMapper(Collections.emptyMap(), environment);
     }
 
     @Override

@@ -108,14 +108,14 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                 .filter(method -> params.getInclusionStrategy().includeOperation(method, getReturnType(method, params)))
                 .filter(getFilters().stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> new Resolver(
-                        nameGenerator.apply(new OperationNameGeneratorParams<>(method, beanType, querySourceBean, params.getMessageBundle())),
+                        nameGenerator.apply(new OperationNameGeneratorParams<>(method, beanType, querySourceBean, params.getEnvironment().messageBundle)),
                         descriptionMapper.apply(method),
                         deprecationReasonMapper.apply(method),
                         batchable && method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, params),
                         argumentBuilder.buildResolverArguments(
-                                new ArgumentBuilderParams(method, beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getMessageBundle())),
+                                new ArgumentBuilderParams(method, beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment())),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 ))
                 .collect(Collectors.toList());

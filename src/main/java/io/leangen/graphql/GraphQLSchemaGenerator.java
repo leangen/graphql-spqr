@@ -75,7 +75,7 @@ import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
-import io.leangen.graphql.metadata.strategy.value.InputFieldDiscoveryStrategy;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
@@ -147,8 +147,8 @@ public class GraphQLSchemaGenerator {
     private ScalarDeserializationStrategy scalarStrategy;
     private AbstractInputHandler abstractInputHandler = new NoOpAbstractInputHandler();
     private OperationBuilder operationBuilder = new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.NONE);
-    private ValueMapperFactory<?> valueMapperFactory;
-    private InputFieldDiscoveryStrategy inputFieldStrategy;
+    private ValueMapperFactory valueMapperFactory;
+    private InputFieldBuilder inputFieldStrategy;
     private InclusionStrategy inclusionStrategy;
     private ImplementationDiscoveryStrategy implDiscoveryStrategy = new DefaultImplementationDiscoveryStrategy();
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
@@ -436,6 +436,11 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withInputFieldBuilder(InputFieldBuilder inputFieldStrategy) {
+        this.inputFieldStrategy = inputFieldStrategy;
+        return this;
+    }
+
     public GraphQLSchemaGenerator withAbstractInputTypeResolution() {
         this.abstractInputHandler = new AutoScanAbstractInputHandler();
         return this;
@@ -471,13 +476,8 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withValueMapperFactory(ValueMapperFactory<?> valueMapperFactory) {
+    public GraphQLSchemaGenerator withValueMapperFactory(ValueMapperFactory valueMapperFactory) {
         this.valueMapperFactory = valueMapperFactory;
-        return this;
-    }
-
-    public GraphQLSchemaGenerator withInputFieldDiscoveryStrategy(InputFieldDiscoveryStrategy inputFieldStrategy) {
-        this.inputFieldStrategy = inputFieldStrategy;
         return this;
     }
 
@@ -723,7 +723,7 @@ public class GraphQLSchemaGenerator {
         if (inclusionStrategy == null) {
             inclusionStrategy = new DefaultInclusionStrategy(basePackages);
         }
-        ValueMapperFactory<?> internalValueMapperFactory = valueMapperFactory != null
+        ValueMapperFactory internalValueMapperFactory = valueMapperFactory != null
                 ? valueMapperFactory
                 : Defaults.valueMapperFactory(typeInfoGenerator);
         if (scalarStrategy == null) {
@@ -797,13 +797,13 @@ public class GraphQLSchemaGenerator {
         checkForDuplicates("argument injectors", argumentInjectors);
 
         environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRepository(additionalTypes), new ConverterRepository(inputConverters, outputConverters), new ArgumentInjectorRepository(argumentInjectors));
-        valueMapperFactory = new MemoizedValueMapperFactory<>(environment, internalValueMapperFactory);
+        valueMapperFactory = new MemoizedValueMapperFactory(environment, internalValueMapperFactory);
         if (inputFieldStrategy == null) {
-            ValueMapper def = valueMapperFactory.getValueMapper();
-            if (def instanceof InputFieldDiscoveryStrategy) {
-                inputFieldStrategy = (InputFieldDiscoveryStrategy) def;
+            ValueMapper def = valueMapperFactory.getValueMapper(Collections.emptyMap(), environment);
+            if (def instanceof InputFieldBuilder) {
+                inputFieldStrategy = (InputFieldBuilder) def;
             } else {
-                inputFieldStrategy = (InputFieldDiscoveryStrategy) Defaults.valueMapperFactory(typeInfoGenerator).getValueMapper();
+                inputFieldStrategy = (InputFieldBuilder) Defaults.valueMapperFactory(typeInfoGenerator).getValueMapper(Collections.emptyMap(), environment);
             }
         }
     }
@@ -819,7 +819,7 @@ public class GraphQLSchemaGenerator {
         init();
 
         BuildContext buildContext = new BuildContext(
-                basePackages, environment, new OperationRepository(operationSourceRepository, operationBuilder, inclusionStrategy, typeTransformer, basePackages, messageBundle),
+                basePackages, environment, new OperationRepository(operationSourceRepository, operationBuilder, inclusionStrategy, typeTransformer, basePackages, environment),
                 new TypeMapperRepository(typeMappers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
                 abstractInputHandler, inputFieldStrategy, inclusionStrategy, relayMappingConfig, additionalTypes, aliasGroups, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
@@ -1032,18 +1032,18 @@ public class GraphQLSchemaGenerator {
         }
     }
 
-    private static class MemoizedValueMapperFactory<T extends ValueMapper> implements ValueMapperFactory<T> {
+    private static class MemoizedValueMapperFactory implements ValueMapperFactory {
 
-        private final T defaultValueMapper;
-        private final ValueMapperFactory<T> delegate;
+        private final ValueMapper defaultValueMapper;
+        private final ValueMapperFactory delegate;
 
-        public MemoizedValueMapperFactory(GlobalEnvironment environment, ValueMapperFactory<T> delegate) {
+        public MemoizedValueMapperFactory(GlobalEnvironment environment, ValueMapperFactory delegate) {
             this.defaultValueMapper = delegate.getValueMapper(Collections.emptyMap(), environment);
             this.delegate = delegate;
         }
 
         @Override
-        public T getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
+        public ValueMapper getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
             if (concreteSubTypes.isEmpty() || concreteSubTypes.values().stream().allMatch(List::isEmpty)) {
                 return this.defaultValueMapper;
             }

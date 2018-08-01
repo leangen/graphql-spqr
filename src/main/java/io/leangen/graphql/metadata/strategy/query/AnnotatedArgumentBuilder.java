@@ -3,6 +3,7 @@ package io.leangen.graphql.metadata.strategy.query;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
@@ -40,18 +41,18 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
                 throw new TypeMappingException(resolverMethod, parameter, e);
             }
             parameterType = ClassUtils.addAnnotations(parameterType, parameter.getAnnotations());
-            operationArguments.add(buildResolverArgument(parameter, parameterType, params.getInclusionStrategy(), params.getMessageBundle()));
+            operationArguments.add(buildResolverArgument(parameter, parameterType, params.getInclusionStrategy(), params.getEnvironment()));
         }
         return operationArguments;
     }
 
     protected OperationArgument buildResolverArgument(Parameter parameter, AnnotatedType parameterType,
-                                                      InclusionStrategy inclusionStrategy, MessageBundle messageBundle) {
+                                                      InclusionStrategy inclusionStrategy, GlobalEnvironment environment) {
         return new OperationArgument(
                 parameterType,
-                getArgumentName(parameter, parameterType, inclusionStrategy, messageBundle),
-                getArgumentDescription(parameter, parameterType, messageBundle),
-                defaultValue(parameter, parameterType, messageBundle),
+                getArgumentName(parameter, parameterType, inclusionStrategy, environment.messageBundle),
+                getArgumentDescription(parameter, parameterType, environment.messageBundle),
+                defaultValue(parameter, parameterType, environment),
                 parameter,
                 parameter.isAnnotationPresent(GraphQLContext.class),
                 inclusionStrategy.includeArgument(parameter, parameterType)
@@ -80,14 +81,16 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         return meta != null ? messageBundle.interpolate(meta.description()) : null;
     }
 
-    protected Object defaultValue(Parameter parameter, AnnotatedType parameterType, MessageBundle messageBundle) {
+    protected Object defaultValue(Parameter parameter, AnnotatedType parameterType, GlobalEnvironment environment) {
 
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
         if (meta == null) return null;
         try {
-            return meta.defaultValueProvider().newInstance()
-                    .getDefaultValue(parameter, parameterType, ReservedStrings.decode(messageBundle.interpolate(meta.defaultValue())));
-        } catch (InstantiationException | IllegalAccessException e) {
+            return meta.defaultValueProvider()
+                    .getConstructor(GlobalEnvironment.class)
+                    .newInstance(environment)
+                    .getDefaultValue(parameter, parameterType, ReservedStrings.decode(environment.messageBundle.interpolate(meta.defaultValue())));
+        } catch (ReflectiveOperationException e) {
             throw new IllegalArgumentException(
                     meta.defaultValueProvider().getName() + " must expose a public default constructor", e);
         }

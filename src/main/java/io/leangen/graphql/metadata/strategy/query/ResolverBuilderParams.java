@@ -1,11 +1,12 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.metadata.messages.MessageBundle;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 
 import java.lang.reflect.AnnotatedType;
 
+@SuppressWarnings("WeakerAccess")
 public class ResolverBuilderParams {
 
     private final Object querySourceBean;
@@ -13,15 +14,15 @@ public class ResolverBuilderParams {
     private final InclusionStrategy inclusionStrategy;
     private final TypeTransformer typeTransformer;
     private final String[] basePackages;
-    private final MessageBundle messageBundle;
+    private final GlobalEnvironment environment;
 
-    public ResolverBuilderParams(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages, MessageBundle messageBundle) {
+    public ResolverBuilderParams(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages, GlobalEnvironment environment) {
         this.querySourceBean = querySourceBean;
         this.beanType = beanType;
         this.inclusionStrategy = inclusionStrategy;
         this.typeTransformer = typeTransformer;
         this.basePackages = basePackages;
-        this.messageBundle = messageBundle;
+        this.environment = environment;
     }
 
     public Object getQuerySourceBean() {
@@ -44,7 +45,7 @@ public class ResolverBuilderParams {
         return basePackages;
     }
 
-    public MessageBundle getMessageBundle() {
-        return messageBundle;
+    public GlobalEnvironment getEnvironment() {
+        return environment;
     }
 }

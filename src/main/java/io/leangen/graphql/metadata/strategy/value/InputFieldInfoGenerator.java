@@ -2,6 +2,7 @@ package io.leangen.graphql.metadata.strategy.value;
 
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.util.ReservedStrings;
 import io.leangen.graphql.util.Utils;
@@ -37,16 +38,18 @@ public class InputFieldInfoGenerator {
         return Utils.or(explicit, implicit).filter(Utils::isNotEmpty).map(messageBundle::interpolate);
     }
 
-    public Optional<Object> defaultValue(List<AnnotatedElement> candidates, AnnotatedType type, MessageBundle messageBundle) {
+    public Optional<Object> defaultValue(List<AnnotatedElement> candidates, AnnotatedType type, GlobalEnvironment environment) {
         return candidates.stream()
                 .filter(element -> element.isAnnotationPresent(GraphQLInputField.class))
                 .findFirst()
                 .map(element -> {
                     GraphQLInputField ann = element.getAnnotation(GraphQLInputField.class);
                     try {
-                        return ann.defaultValueProvider().newInstance()
-                                .getDefaultValue(element, type, messageBundle.interpolate(ReservedStrings.decode(ann.defaultValue())));
-                    } catch (InstantiationException | IllegalAccessException e) {
+                        return ann.defaultValueProvider()
+                                .getConstructor(GlobalEnvironment.class)
+                                .newInstance(environment)
+                                .getDefaultValue(element, type, environment.messageBundle.interpolate(ReservedStrings.decode(ann.defaultValue())));
+                    } catch (ReflectiveOperationException e) {
                         throw new IllegalArgumentException(
                                 ann.defaultValueProvider().getName() + " must expose a public default constructor", e);
                     }

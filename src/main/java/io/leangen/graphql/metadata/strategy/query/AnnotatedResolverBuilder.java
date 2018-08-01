@@ -38,8 +38,9 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
 
     @Override
     public Collection<Resolver> buildQueryResolvers(ResolverBuilderParams params) {
+        MessageBundle messageBundle = params.getEnvironment().messageBundle;
         Stream<Resolver> methodInvokers =
-                buildResolvers(params, GraphQLQuery.class, operationNameGenerator::generateQueryName, params.getMessageBundle(), true).stream();
+                buildResolvers(params, GraphQLQuery.class, operationNameGenerator::generateQueryName, true).stream();
 
         AnnotatedType beanType = params.getBeanType();
         Stream<Resolver> fieldAccessors = ClassUtils.getAnnotatedFields(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
@@ -47,9 +48,9 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .filter(field -> params.getInclusionStrategy().includeOperation(field, getFieldType(field, params)))
                 .map(field -> new Resolver(
                         operationNameGenerator.generateQueryName(
-                                new OperationNameGeneratorParams<>(field, beanType, params.getQuerySourceBean(), params.getMessageBundle())),
-                        params.getMessageBundle().interpolate(field.getAnnotation(GraphQLQuery.class).description()),
-                        params.getMessageBundle().interpolate(ReservedStrings.decode(field.getAnnotation(GraphQLQuery.class).deprecationReason())),
+                                new OperationNameGeneratorParams<>(field, beanType, params.getQuerySourceBean(), messageBundle)),
+                        messageBundle.interpolate(field.getAnnotation(GraphQLQuery.class).description()),
+                        messageBundle.interpolate(ReservedStrings.decode(field.getAnnotation(GraphQLQuery.class).deprecationReason())),
                         false,
                         new FieldAccessor(field, beanType),
                         getFieldType(field, params),
@@ -61,32 +62,32 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
 
     @Override
     public Collection<Resolver> buildMutationResolvers(ResolverBuilderParams params) {
-        return buildResolvers(params, GraphQLMutation.class, operationNameGenerator::generateMutationName, params.getMessageBundle(), false);
+        return buildResolvers(params, GraphQLMutation.class, operationNameGenerator::generateMutationName, false);
     }
 
     @Override
     public Collection<Resolver> buildSubscriptionResolvers(ResolverBuilderParams params) {
-        return buildResolvers(params, GraphQLSubscription.class, operationNameGenerator::generateSubscriptionName, params.getMessageBundle(), false);
+        return buildResolvers(params, GraphQLSubscription.class, operationNameGenerator::generateSubscriptionName, false);
     }
 
     private Collection<Resolver> buildResolvers(ResolverBuilderParams params, Class<? extends Annotation> annotation,
-                                                Function<OperationNameGeneratorParams<Method>, String> nameGenerator,
-                                                MessageBundle messageBundle, boolean batchable) {
+                                                Function<OperationNameGeneratorParams<Method>, String> nameGenerator, boolean batchable) {
 
         AnnotatedType beanType = params.getBeanType();
         Object querySourceBean = params.getQuerySourceBean();
         InclusionStrategy inclusionStrategy = params.getInclusionStrategy();
+        MessageBundle messageBundle = params.getEnvironment().messageBundle;
         return ClassUtils.getAnnotatedMethods(ClassUtils.getRawType(beanType.getType()), annotation).stream()
                 .filter(getFilters().stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .filter(method -> inclusionStrategy.includeOperation(method, getReturnType(method, params)))
                 .map(method -> new Resolver(
-                        nameGenerator.apply(new OperationNameGeneratorParams<>(method, beanType, querySourceBean, params.getMessageBundle())),
+                        nameGenerator.apply(new OperationNameGeneratorParams<>(method, beanType, querySourceBean, messageBundle)),
                         description(method.getAnnotation(annotation), messageBundle),
-                        ReservedStrings.decode(deprecationReason(method.getAnnotation(annotation), params.getMessageBundle())),
+                        ReservedStrings.decode(deprecationReason(method.getAnnotation(annotation), messageBundle)),
                         batchable && method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, params),
-                        argumentBuilder.buildResolverArguments(new ArgumentBuilderParams(method, beanType, inclusionStrategy, params.getTypeTransformer(), params.getMessageBundle())),
+                        argumentBuilder.buildResolverArguments(new ArgumentBuilderParams(method, beanType, inclusionStrategy, params.getTypeTransformer(), params.getEnvironment())),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
                 )).collect(Collectors.toSet());
     }

@@ -54,16 +54,19 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
                         getValueName(enumConst, messageBundle), enumConst, getValueDescription(enumConst, messageBundle), getValueDeprecationReason(enumConst, messageBundle)));
     }
 
+    @SuppressWarnings("WeakerAccess")
     protected String getValueName(Enum<?> value, MessageBundle messageBundle) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
         return annotation != null && !annotation.name().isEmpty() ? messageBundle.interpolate(annotation.name()) : value.name();
     }
 
+    @SuppressWarnings("WeakerAccess")
     protected String getValueDescription(Enum<?> value, MessageBundle messageBundle) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
         return annotation != null ? messageBundle.interpolate(annotation.description()) : null;
     }
 
+    @SuppressWarnings("WeakerAccess")
     protected String getValueDeprecationReason(Enum<?> value, MessageBundle messageBundle) {
         GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
         if (annotation != null) {
@@ -76,16 +79,6 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
     @Override
     public boolean supports(AnnotatedType type) {
         return ClassUtils.getRawType(type.getType()).isEnum();
-    }
-
-    @Override
-    protected String getTypeName(AnnotatedType type, BuildContext buildContext) {
-        return buildContext.typeInfoGenerator.generateTypeName(type, buildContext.messageBundle);
-    }
-
-    @Override
-    protected String getInputTypeName(AnnotatedType type, BuildContext buildContext) {
-        return buildContext.typeInfoGenerator.generateInputTypeName(type, buildContext.messageBundle);
     }
 
     private List<Enum> sortEnumValues(Enum[] values, String[] order, MessageBundle messageBundle) {

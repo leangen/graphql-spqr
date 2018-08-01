@@ -3,13 +3,16 @@ package io.leangen.graphql;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.generator.mapping.strategy.JsonDefaultValueProvider;
+import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.strategy.value.JsonDefaultValueProvider;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ArgumentValueTest {
+
+    private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
 
     @Test
     public void unescapedStringTest() throws NoSuchMethodException {
@@ -31,7 +34,7 @@ public class ArgumentValueTest {
     }
 
     private Object constructDefaultValue(Object defaultValue, Class type) throws NoSuchMethodException {
-        return new JsonDefaultValueProvider().getDefaultValue(
+        return new JsonDefaultValueProvider(ENVIRONMENT).getDefaultValue(
                 BookService.class.getDeclaredMethod("findBook", type).getParameters()[0],
                 GenericTypeReflector.annotate(type),
                 defaultValue);
