@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * Created by bojan.tomic on 7/12/16.
  */
-public class OperationSourceRepository {
+public class OperationSourceRegistry {
 
     private final Collection<ResolverBuilder> topLevelResolverBuilders = new LinkedHashSet<>();
     private final Collection<ResolverBuilder> nestedResolverBuilders = new LinkedHashSet<>();

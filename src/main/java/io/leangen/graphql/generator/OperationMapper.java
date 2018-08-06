@@ -83,7 +83,7 @@ public class OperationMapper {
      * @return A list of {@link GraphQLFieldDefinition}s representing all top-level queries
      */
     private List<GraphQLFieldDefinition> generateQueries(BuildContext buildContext) {
-        List<Operation> rootQueries = new ArrayList<>(buildContext.operationRepository.getRootQueries());
+        List<Operation> rootQueries = new ArrayList<>(buildContext.operationRegistry.getRootQueries());
         List<GraphQLFieldDefinition> queries = rootQueries.stream()
                 .map(query -> toGraphQLField(query, buildContext))
                 .collect(Collectors.toList());
@@ -91,7 +91,7 @@ public class OperationMapper {
         buildContext.resolveTypeReferences();
         //Add support for the Relay Node query only if an explicit one isn't already provided and Relay-enabled resolvers exist
         if (rootQueries.stream().noneMatch(query -> query.getName().equals(GraphQLUtils.NODE))) {
-            Map<String, String> nodeQueriesByType = getNodeQueriesByType(rootQueries, queries, buildContext.typeRepository, buildContext.node, buildContext);
+            Map<String, String> nodeQueriesByType = getNodeQueriesByType(rootQueries, queries, buildContext.typeRegistry, buildContext.node, buildContext);
             if (!nodeQueriesByType.isEmpty()) {
                 queries.add(buildContext.relay.nodeField(buildContext.node, createNodeResolver(nodeQueriesByType, buildContext.relay)));
             }
@@ -109,7 +109,7 @@ public class OperationMapper {
      * @return A list of {@link GraphQLFieldDefinition}s representing all mutations
      */
     private List<GraphQLFieldDefinition> generateMutations(BuildContext buildContext) {
-        Collection<Operation> mutations = buildContext.operationRepository.getMutations();
+        Collection<Operation> mutations = buildContext.operationRegistry.getMutations();
         return mutations.stream()
                 .map(mutation -> buildContext.relayMappingConfig.relayCompliantMutations
                         ? toRelayMutation(toGraphQLField(mutation, buildContext), buildContext.relayMappingConfig)
@@ -118,7 +118,7 @@ public class OperationMapper {
     }
 
     private List<GraphQLFieldDefinition> generateSubscriptions(BuildContext buildContext) {
-        return buildContext.operationRepository.getSubscriptions().stream()
+        return buildContext.operationRegistry.getSubscriptions().stream()
                 .map(subscription -> toGraphQLField(subscription, buildContext))
                 .collect(Collectors.toList());
     }
@@ -330,7 +330,7 @@ public class OperationMapper {
 
     private Map<String, String> getNodeQueriesByType(List<Operation> queries,
                                                      List<GraphQLFieldDefinition> graphQlQueries,
-                                                     TypeRepository typeRepository, GraphQLInterfaceType node, BuildContext buildContext) {
+                                                     TypeRegistry typeRegistry, GraphQLInterfaceType node, BuildContext buildContext) {
 
         Map<String, String> nodeQueriesByType = new HashMap<>();
 
@@ -348,15 +348,15 @@ public class OperationMapper {
                         && ((GraphQLObjectType) unwrappedQueryType).getInterfaces().contains(node)) {
                     nodeQueriesByType.put(unwrappedQueryType.getName(), query.getName());
                 } else if (unwrappedQueryType instanceof GraphQLInterfaceType) {
-                    typeRepository.getOutputTypes(unwrappedQueryType.getName()).stream()
+                    typeRegistry.getOutputTypes(unwrappedQueryType.getName()).stream()
                             .map(MappedType::getAsObjectType)
                             .filter(implementation -> implementation.getInterfaces().contains(node))
                             .forEach(nodeType -> nodeQueriesByType.putIfAbsent(nodeType.getName(), query.getName()));  //never override more precise resolvers
                 } else if (unwrappedQueryType instanceof GraphQLUnionType) {
-                    typeRepository.getOutputTypes(unwrappedQueryType.getName()).stream()
+                    typeRegistry.getOutputTypes(unwrappedQueryType.getName()).stream()
                             .map(MappedType::getAsObjectType)
                             .filter(implementation -> implementation.getInterfaces().contains(node))
-                            .filter(implementation -> Directives.isMappedType(implementation))
+                            .filter(Directives::isMappedType)
                             // only register the possible types that can actually be returned from the primary resolver
                             // for interface-unions it is all the possible types but, for inline unions, only one (right?) possible type can match
                             .filter(implementation -> GenericTypeReflector.isSuperType(query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME).getReturnType().getType(), Directives.getMappedType(implementation).getType()))

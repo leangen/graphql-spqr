@@ -5,7 +5,7 @@ import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.generator.mapping.TypeMapperRepository;
+import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
 import io.leangen.graphql.generator.mapping.strategy.AbstractInputHandler;
 import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
@@ -13,7 +13,6 @@ import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
-import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
@@ -33,10 +32,10 @@ import java.util.stream.Stream;
 public class BuildContext {
 
     public final GlobalEnvironment globalEnvironment;
-    public final OperationRepository operationRepository;
-    public final TypeRepository typeRepository;
+    public final OperationRegistry operationRegistry;
+    public final TypeRegistry typeRegistry;
     public final TypeCache typeCache;
-    public final TypeMapperRepository typeMappers;
+    public final TypeMapperRegistry typeMappers;
     public final Relay relay;
     public final GraphQLInterfaceType node; //Node interface, as defined by the Relay GraphQL spec
     public final TypeResolver typeResolver;
@@ -44,7 +43,7 @@ public class BuildContext {
     public final String[] basePackages;
     public final MessageBundle messageBundle;
     public final ValueMapperFactory valueMapperFactory;
-    public final InputFieldBuilder inputFieldStrategy;
+    public final InputFieldBuilderRegistry inputFieldBuilders;
     public final InclusionStrategy inclusionStrategy;
     public final ScalarDeserializationStrategy scalarStrategy;
     public final TypeTransformer typeTransformer;
@@ -60,7 +59,7 @@ public class BuildContext {
      * The shared context accessible throughout the schema generation process
      * @param basePackages The base (root) package of the entire project
      * @param environment The globally shared environment
-     * @param operationRepository Repository that can be used to fetch all known (singleton and domain) queries
+     * @param operationRegistry Repository that can be used to fetch all known (singleton and domain) queries
      * @param typeMappers Repository of all registered {@link io.leangen.graphql.generator.mapping.TypeMapper}s
      * @param valueMapperFactory The factory used to produce {@link ValueMapper} instances
      * @param typeInfoGenerator Generates type name/description
@@ -68,19 +67,19 @@ public class BuildContext {
      * @param interfaceStrategy The strategy deciding what Java type gets mapped to a GraphQL interface
      * @param scalarStrategy The strategy deciding how abstract Java types are discovered
      * @param abstractInputHandler The strategy deciding what Java type gets mapped to a GraphQL interface
-     * @param inputFieldStrategy The strategy deciding how GraphQL input fields are discovered from Java types
+     * @param inputFieldBuilders The strategy deciding how GraphQL input fields are discovered from Java types
      * @param relayMappingConfig Relay specific configuration
      * @param knownTypes The cache of known type names
      */
-    public BuildContext(String[] basePackages, GlobalEnvironment environment, OperationRepository operationRepository,
-                        TypeMapperRepository typeMappers, ValueMapperFactory valueMapperFactory, TypeInfoGenerator typeInfoGenerator,
+    public BuildContext(String[] basePackages, GlobalEnvironment environment, OperationRegistry operationRegistry,
+                        TypeMapperRegistry typeMappers, ValueMapperFactory valueMapperFactory, TypeInfoGenerator typeInfoGenerator,
                         MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
-                        InputFieldBuilder inputFieldStrategy, InclusionStrategy inclusionStrategy,
+                        InputFieldBuilderRegistry inputFieldBuilders, InclusionStrategy inclusionStrategy,
                         RelayMappingConfig relayMappingConfig, Set<GraphQLType> knownTypes, List<Set<AnnotatedType>> typeAliasGroups,
                         ImplementationDiscoveryStrategy implementationStrategy) {
-        this.operationRepository = operationRepository;
-        this.typeRepository = environment.typeRepository;
+        this.operationRegistry = operationRegistry;
+        this.typeRegistry = environment.typeRegistry;
         this.typeCache = new TypeCache(knownTypes);
         this.typeMappers = typeMappers;
         this.typeInfoGenerator = typeInfoGenerator;
@@ -89,12 +88,12 @@ public class BuildContext {
         this.node = knownTypes.stream()
                 .filter(GraphQLUtils::isRelayNodeInterface)
                 .findFirst().map(type -> (GraphQLInterfaceType) type)
-                .orElse(relay.nodeInterface(new RelayNodeTypeResolver(this.typeRepository, typeInfoGenerator, messageBundle)));
-        this.typeResolver = new DelegatingTypeResolver(this.typeRepository, typeInfoGenerator, messageBundle);
+                .orElse(relay.nodeInterface(new RelayNodeTypeResolver(this.typeRegistry, typeInfoGenerator, messageBundle)));
+        this.typeResolver = new DelegatingTypeResolver(this.typeRegistry, typeInfoGenerator, messageBundle);
         this.interfaceStrategy = interfaceStrategy;
         this.basePackages = basePackages;
         this.valueMapperFactory = valueMapperFactory;
-        this.inputFieldStrategy = inputFieldStrategy;
+        this.inputFieldBuilders = inputFieldBuilders;
         this.inclusionStrategy = inclusionStrategy;
         this.scalarStrategy = scalarStrategy;
         this.typeTransformer = typeTransformer;
@@ -121,6 +120,6 @@ public class BuildContext {
     }
 
     void resolveTypeReferences() {
-        typeCache.resolveTypeReferences(typeRepository);
+        typeCache.resolveTypeReferences(typeRegistry);
     }
 }

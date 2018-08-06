@@ -123,4 +123,9 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
     protected Object defaultValue(Field field, AnnotatedType fieldType, GlobalEnvironment environment) {
         return inputInfoGen.defaultValue(ClassUtils.getPropertyMembers(field), fieldType, environment).orElse(null);
     }
+
+    @Override
+    public boolean supports(AnnotatedType type) {
+        return true;
+    }
 }

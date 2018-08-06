@@ -12,21 +12,22 @@ import io.leangen.graphql.extension.ExtensionProvider;
 import io.leangen.graphql.extension.GraphQLSchemaProcessor;
 import io.leangen.graphql.extension.Module;
 import io.leangen.graphql.generator.BuildContext;
+import io.leangen.graphql.generator.InputFieldBuilderRegistry;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.generator.OperationMapper;
-import io.leangen.graphql.generator.OperationRepository;
+import io.leangen.graphql.generator.OperationRegistry;
 import io.leangen.graphql.generator.OperationSource;
-import io.leangen.graphql.generator.OperationSourceRepository;
+import io.leangen.graphql.generator.OperationSourceRegistry;
 import io.leangen.graphql.generator.RelayMappingConfig;
-import io.leangen.graphql.generator.TypeRepository;
+import io.leangen.graphql.generator.TypeRegistry;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
-import io.leangen.graphql.generator.mapping.ArgumentInjectorRepository;
-import io.leangen.graphql.generator.mapping.ConverterRepository;
+import io.leangen.graphql.generator.mapping.ArgumentInjectorRegistry;
+import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
-import io.leangen.graphql.generator.mapping.TypeMapperRepository;
+import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
 import io.leangen.graphql.generator.mapping.common.ArrayAdapter;
 import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
 import io.leangen.graphql.generator.mapping.common.ContextInjector;
@@ -148,7 +149,6 @@ public class GraphQLSchemaGenerator {
     private AbstractInputHandler abstractInputHandler = new NoOpAbstractInputHandler();
     private OperationBuilder operationBuilder = new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.NONE);
     private ValueMapperFactory valueMapperFactory;
-    private InputFieldBuilder inputFieldStrategy;
     private InclusionStrategy inclusionStrategy;
     private ImplementationDiscoveryStrategy implDiscoveryStrategy = new DefaultImplementationDiscoveryStrategy();
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
@@ -157,15 +157,17 @@ public class GraphQLSchemaGenerator {
     private String[] basePackages = Utils.emptyArray();
     private DelegatingMessageBundle messageBundle = new DelegatingMessageBundle();
     private List<TypeMapper> typeMappers;
+    private List<InputFieldBuilder> inputFieldBuilders;
     private JavaDeprecationMappingConfig javaDeprecationConfig = new JavaDeprecationMappingConfig(true, "Deprecated");
-    private final OperationSourceRepository operationSourceRepository = new OperationSourceRepository();
-    private final List<ExtensionProvider<TypeMapper>> typeMapperProviders = new ArrayList<>();
-    private final List<ExtensionProvider<InputConverter>> inputConverterProviders = new ArrayList<>();
-    private final List<ExtensionProvider<OutputConverter>> outputConverterProviders = new ArrayList<>();
-    private final List<ExtensionProvider<ArgumentInjector>> argumentInjectorProviders = new ArrayList<>();
-    private final List<ExtensionProvider<ResolverBuilder>> resolverBuilderProviders = new ArrayList<>();
-    private final List<ExtensionProvider<ResolverBuilder>> nestedResolverBuilderProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Module>> moduleProviders = new ArrayList<>();
+    private final OperationSourceRegistry operationSourceRegistry = new OperationSourceRegistry();
+    private final List<ExtensionProvider<Configuration, TypeMapper>> typeMapperProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Configuration, InputConverter>> inputConverterProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Configuration, OutputConverter>> outputConverterProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Configuration, ArgumentInjector>> argumentInjectorProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Configuration, InputFieldBuilder>> inputFieldBuilderProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Configuration, ResolverBuilder>> resolverBuilderProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Configuration, ResolverBuilder>> nestedResolverBuilderProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Configuration, Module>> moduleProviders = new ArrayList<>();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Set<GraphQLType> additionalTypes = new HashSet<>();
@@ -247,7 +249,7 @@ public class GraphQLSchemaGenerator {
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType) {
         checkType(beanType);
-        this.operationSourceRepository.registerOperationSource(serviceSingleton, beanType);
+        this.operationSourceRegistry.registerOperationSource(serviceSingleton, beanType);
         return this;
     }
 
@@ -301,7 +303,7 @@ public class GraphQLSchemaGenerator {
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType, ResolverBuilder... builders) {
         checkType(beanType);
-        this.operationSourceRepository.registerOperationSource(serviceSingleton, beanType, Arrays.asList(builders));
+        this.operationSourceRegistry.registerOperationSource(serviceSingleton, beanType, Arrays.asList(builders));
         return this;
     }
 
@@ -333,13 +335,13 @@ public class GraphQLSchemaGenerator {
 
     public GraphQLSchemaGenerator withOperationsFromType(AnnotatedType serviceType) {
         checkType(serviceType);
-        this.operationSourceRepository.registerOperationSource(serviceType);
+        this.operationSourceRegistry.registerOperationSource(serviceType);
         return this;
     }
 
     public GraphQLSchemaGenerator withOperationsFromType(AnnotatedType serviceType, ResolverBuilder... builders) {
         checkType(serviceType);
-        this.operationSourceRepository.registerOperationSource(serviceType, Arrays.asList(builders));
+        this.operationSourceRegistry.registerOperationSource(serviceType, Arrays.asList(builders));
         return this;
     }
 
@@ -400,7 +402,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withNestedResolverBuildersForType(AnnotatedType querySourceType, ResolverBuilder... resolverBuilders) {
-        this.operationSourceRepository.registerNestedOperationSource(querySourceType, Arrays.asList(resolverBuilders));
+        this.operationSourceRegistry.registerNestedOperationSource(querySourceType, Arrays.asList(resolverBuilders));
         return this;
     }
 
@@ -415,7 +417,7 @@ public class GraphQLSchemaGenerator {
         return withResolverBuilders((config, defaults) -> Arrays.asList(resolverBuilders));
     }
 
-    public GraphQLSchemaGenerator withResolverBuilders(ExtensionProvider<ResolverBuilder> provider) {
+    public GraphQLSchemaGenerator withResolverBuilders(ExtensionProvider<Configuration, ResolverBuilder> provider) {
         this.resolverBuilderProviders.add(provider);
         return this;
     }
@@ -431,13 +433,17 @@ public class GraphQLSchemaGenerator {
         return withNestedResolverBuilders((config, defaults) -> Arrays.asList(resolverBuilders));
     }
 
-    public GraphQLSchemaGenerator withNestedResolverBuilders(ExtensionProvider<ResolverBuilder> provider) {
+    public GraphQLSchemaGenerator withNestedResolverBuilders(ExtensionProvider<Configuration, ResolverBuilder> provider) {
         this.nestedResolverBuilderProviders.add(provider);
         return this;
     }
 
-    public GraphQLSchemaGenerator withInputFieldBuilder(InputFieldBuilder inputFieldStrategy) {
-        this.inputFieldStrategy = inputFieldStrategy;
+    public GraphQLSchemaGenerator withInputFieldBuilders(InputFieldBuilder... inputFieldBuilders) {
+        return withInputFieldBuilders((env, defaults) -> defaults.prepend(inputFieldBuilders));
+    }
+
+    public GraphQLSchemaGenerator withInputFieldBuilders(ExtensionProvider<Configuration, InputFieldBuilder> provider) {
+        this.inputFieldBuilderProviders.add(provider);
         return this;
     }
 
@@ -535,7 +541,7 @@ public class GraphQLSchemaGenerator {
      *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
-    public GraphQLSchemaGenerator withTypeMappers(ExtensionProvider<TypeMapper> provider) {
+    public GraphQLSchemaGenerator withTypeMappers(ExtensionProvider<Configuration, TypeMapper> provider) {
         this.typeMapperProviders.add(provider);
         return this;
     }
@@ -562,7 +568,7 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withInputConverters(ExtensionProvider<InputConverter> provider) {
+    public GraphQLSchemaGenerator withInputConverters(ExtensionProvider<Configuration, InputConverter> provider) {
         this.inputConverterProviders.add(provider);
         return this;
     }
@@ -589,7 +595,7 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withOutputConverters(ExtensionProvider<OutputConverter> provider) {
+    public GraphQLSchemaGenerator withOutputConverters(ExtensionProvider<Configuration, OutputConverter> provider) {
         this.outputConverterProviders.add(provider);
         return this;
     }
@@ -623,7 +629,7 @@ public class GraphQLSchemaGenerator {
         return withArgumentInjectors((config, current) -> current.insert(0, argumentInjectors));
     }
 
-    public GraphQLSchemaGenerator withArgumentInjectors(ExtensionProvider<ArgumentInjector> provider) {
+    public GraphQLSchemaGenerator withArgumentInjectors(ExtensionProvider<Configuration, ArgumentInjector> provider) {
         this.argumentInjectorProviders.add(provider);
         return this;
     }
@@ -632,7 +638,7 @@ public class GraphQLSchemaGenerator {
         return withModules((config, current) -> current.append(modules));
     }
 
-    public GraphQLSchemaGenerator withModules(ExtensionProvider<Module> provider) {
+    public GraphQLSchemaGenerator withModules(ExtensionProvider<Configuration, Module> provider) {
         this.moduleProviders.add(provider);
         return this;
     }
@@ -716,7 +722,7 @@ public class GraphQLSchemaGenerator {
      */
     private void init() {
         Configuration configuration = new Configuration(interfaceStrategy, scalarStrategy, typeTransformer, basePackages);
-        if (operationSourceRepository.isEmpty()) {
+        if (operationSourceRegistry.isEmpty()) {
             throw new IllegalStateException("At least one top-level operation source must be registered");
         }
 
@@ -735,27 +741,27 @@ public class GraphQLSchemaGenerator {
         }
 
         List<Module> modules = Defaults.modules();
-        for (ExtensionProvider<Module> provider : moduleProviders) {
+        for (ExtensionProvider<Configuration, Module> provider : moduleProviders) {
             modules = provider.getExtensions(configuration, new ExtensionList<>(modules));
         }
         checkForDuplicates("modules", modules);
         modules.forEach(module -> module.setUp(() -> this));
 
         List<ResolverBuilder> resolverBuilders = Collections.singletonList(new AnnotatedResolverBuilder());
-        for (ExtensionProvider<ResolverBuilder> provider : resolverBuilderProviders) {
+        for (ExtensionProvider<Configuration, ResolverBuilder> provider : resolverBuilderProviders) {
             resolverBuilders = provider.getExtensions(configuration, new ExtensionList<>(resolverBuilders));
         }
         checkForEmptyOrDuplicates("resolver builders", resolverBuilders);
-        operationSourceRepository.registerGlobalResolverBuilders(resolverBuilders);
+        operationSourceRegistry.registerGlobalResolverBuilders(resolverBuilders);
 
         List<ResolverBuilder> nestedResolverBuilders = Arrays.asList(
                 new AnnotatedResolverBuilder(),
                 new BeanResolverBuilder(basePackages).withJavaDeprecation(javaDeprecationConfig));
-        for (ExtensionProvider<ResolverBuilder> provider : nestedResolverBuilderProviders) {
+        for (ExtensionProvider<Configuration, ResolverBuilder> provider : nestedResolverBuilderProviders) {
             nestedResolverBuilders = provider.getExtensions(configuration, new ExtensionList<>(nestedResolverBuilders));
         }
         checkForEmptyOrDuplicates("nested resolver builders", nestedResolverBuilders);
-        operationSourceRepository.registerGlobalNestedResolverBuilders(nestedResolverBuilders);
+        operationSourceRegistry.registerGlobalNestedResolverBuilders(nestedResolverBuilders);
 
         ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
         EnumMapper enumMapper = new EnumMapper(javaDeprecationConfig);
@@ -766,7 +772,7 @@ public class GraphQLSchemaGenerator {
                 new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
                 new ListMapper(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
                 new ObjectScalarAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
-        for (ExtensionProvider<TypeMapper> provider : typeMapperProviders) {
+        for (ExtensionProvider<Configuration, TypeMapper> provider : typeMapperProviders) {
             typeMappers = provider.getExtensions(configuration, new ExtensionList<>(typeMappers));
         }
         checkForEmptyOrDuplicates("type mappers", typeMappers);
@@ -775,7 +781,7 @@ public class GraphQLSchemaGenerator {
                 new IdAdapter(), new VoidToBooleanTypeAdapter(), new ArrayAdapter(), new CollectionOutputConverter(),
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(), new OptionalAdapter(),
                 new StreamToCollectionTypeAdapter());
-        for (ExtensionProvider<OutputConverter> provider : outputConverterProviders) {
+        for (ExtensionProvider<Configuration, OutputConverter> provider : outputConverterProviders) {
             outputConverters = provider.getExtensions(configuration, new ExtensionList<>(outputConverters));
         }
         checkForDuplicates("output converters", outputConverters);
@@ -783,7 +789,7 @@ public class GraphQLSchemaGenerator {
         List<InputConverter> inputConverters = Arrays.asList(
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new EnumMapToObjectTypeAdapter(enumMapper));
-        for (ExtensionProvider<InputConverter> provider : inputConverterProviders) {
+        for (ExtensionProvider<Configuration, InputConverter> provider : inputConverterProviders) {
             inputConverters = provider.getExtensions(configuration, new ExtensionList<>(inputConverters));
         }
         checkForDuplicates("input converters", inputConverters);
@@ -791,21 +797,26 @@ public class GraphQLSchemaGenerator {
         List<ArgumentInjector> argumentInjectors = Arrays.asList(
                 new IdAdapter(), new RootContextInjector(), new ContextInjector(),
                 new EnvironmentInjector(), new InputValueDeserializer());
-        for (ExtensionProvider<ArgumentInjector> provider : argumentInjectorProviders) {
+        for (ExtensionProvider<Configuration, ArgumentInjector> provider : argumentInjectorProviders) {
             argumentInjectors = provider.getExtensions(configuration, new ExtensionList<>(argumentInjectors));
         }
         checkForDuplicates("argument injectors", argumentInjectors);
 
-        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRepository(additionalTypes), new ConverterRepository(inputConverters, outputConverters), new ArgumentInjectorRepository(argumentInjectors));
+        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes), new ConverterRegistry(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors));
         valueMapperFactory = new MemoizedValueMapperFactory(environment, internalValueMapperFactory);
-        if (inputFieldStrategy == null) {
-            ValueMapper def = valueMapperFactory.getValueMapper(Collections.emptyMap(), environment);
-            if (def instanceof InputFieldBuilder) {
-                inputFieldStrategy = (InputFieldBuilder) def;
-            } else {
-                inputFieldStrategy = (InputFieldBuilder) Defaults.valueMapperFactory(typeInfoGenerator).getValueMapper(Collections.emptyMap(), environment);
-            }
+        ValueMapper def = valueMapperFactory.getValueMapper(Collections.emptyMap(), environment);
+
+        InputFieldBuilder defaultInputFieldBuilder;
+        if (def instanceof InputFieldBuilder) {
+            defaultInputFieldBuilder = (InputFieldBuilder) def;
+        } else {
+            defaultInputFieldBuilder = (InputFieldBuilder) Defaults.valueMapperFactory(typeInfoGenerator).getValueMapper(Collections.emptyMap(), environment);
         }
+        inputFieldBuilders = Collections.singletonList(defaultInputFieldBuilder);
+        for (ExtensionProvider<Configuration, InputFieldBuilder> provider : this.inputFieldBuilderProviders) {
+            inputFieldBuilders = provider.getExtensions(configuration, new ExtensionList<>(inputFieldBuilders));
+        }
+        checkForEmptyOrDuplicates("input field builders", inputFieldBuilders);
     }
 
     /**
@@ -819,9 +830,9 @@ public class GraphQLSchemaGenerator {
         init();
 
         BuildContext buildContext = new BuildContext(
-                basePackages, environment, new OperationRepository(operationSourceRepository, operationBuilder, inclusionStrategy, typeTransformer, basePackages, environment),
-                new TypeMapperRepository(typeMappers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
-                abstractInputHandler, inputFieldStrategy, inclusionStrategy, relayMappingConfig, additionalTypes, aliasGroups, implDiscoveryStrategy);
+                basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy, typeTransformer, basePackages, environment),
+                new TypeMapperRegistry(typeMappers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
+                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), inclusionStrategy, relayMappingConfig, additionalTypes, aliasGroups, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema()
@@ -849,7 +860,7 @@ public class GraphQLSchemaGenerator {
                     .build());
         }
 
-        additionalTypes.addAll(buildContext.typeRepository.getDiscoveredTypes());
+        additionalTypes.addAll(buildContext.typeRegistry.getDiscoveredTypes());
         builder.additionalTypes(additionalTypes);
 
         applyProcessors(builder, buildContext);
@@ -941,6 +952,11 @@ public class GraphQLSchemaGenerator {
         public ExtensionList<E> append(Collection<E> extensions) {
             super.addAll(extensions);
             return this;
+        }
+
+        @SafeVarargs
+        public final ExtensionList<E> prepend(E... extensions) {
+            return insert(0, extensions);
         }
 
         @SafeVarargs

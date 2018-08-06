@@ -19,17 +19,17 @@ import java.util.Optional;
 
 public class DelegatingTypeResolver implements TypeResolver {
 
-    private final TypeRepository typeRepository;
+    private final TypeRegistry typeRegistry;
     private final TypeInfoGenerator typeInfoGenerator;
     private final String abstractTypeName;
     private final MessageBundle messageBundle;
 
-    DelegatingTypeResolver(TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle) {
-        this(null, typeRepository, typeInfoGenerator, messageBundle);
+    DelegatingTypeResolver(TypeRegistry typeRegistry, TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle) {
+        this(null, typeRegistry, typeInfoGenerator, messageBundle);
     }
 
-    DelegatingTypeResolver(String abstractTypeName, TypeRepository typeRepository, TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle) {
-        this.typeRepository = typeRepository;
+    DelegatingTypeResolver(String abstractTypeName, TypeRegistry typeRegistry, TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle) {
+        this.typeRegistry = typeRegistry;
         this.typeInfoGenerator = typeInfoGenerator;
         this.abstractTypeName = abstractTypeName;
         this.messageBundle = messageBundle;
@@ -43,7 +43,7 @@ public class DelegatingTypeResolver implements TypeResolver {
         String abstractTypeName = this.abstractTypeName != null ? this.abstractTypeName : env.getFieldType().getName();
 
         //Check if the type is already unambiguous
-        List<MappedType> mappedTypes = typeRepository.getOutputTypes(abstractTypeName, resultType);
+        List<MappedType> mappedTypes = typeRegistry.getOutputTypes(abstractTypeName, resultType);
         if (mappedTypes.isEmpty()) {
             return (GraphQLObjectType) env.getSchema().getType(resultTypeName);
         }
@@ -80,7 +80,7 @@ public class DelegatingTypeResolver implements TypeResolver {
     private GraphQLObjectType resolveType(TypeResolutionEnvironment env, GraphQLTypeResolver descriptor) {
         try {
             return descriptor.value().newInstance().resolveType(
-                    new io.leangen.graphql.execution.TypeResolutionEnvironment(env, typeRepository, typeInfoGenerator));
+                    new io.leangen.graphql.execution.TypeResolutionEnvironment(env, typeRegistry, typeInfoGenerator));
         } catch (ReflectiveOperationException e) {
             throw new UnresolvableTypeException(env.<Object>getObject(), e);
         }

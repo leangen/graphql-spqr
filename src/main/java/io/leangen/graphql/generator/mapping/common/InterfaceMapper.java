@@ -62,7 +62,7 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
         if (isImplementationAutoDiscoveryEnabled(javaType)) {
             buildContext.implDiscoveryStrategy.findImplementations(javaType, getScanPackages(javaType), buildContext).forEach(impl ->
                     getImplementingType(impl, operationMapper, buildContext)
-                            .ifPresent(implType -> buildContext.typeRepository.registerDiscoveredCovariantType(type.getName(), impl, implType)));
+                            .ifPresent(implType -> buildContext.typeRegistry.registerDiscoveredCovariantType(type.getName(), impl, implType)));
         }
     }
 

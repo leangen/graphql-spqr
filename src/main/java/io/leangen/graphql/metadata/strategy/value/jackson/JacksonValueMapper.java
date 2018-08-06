@@ -169,6 +169,11 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
         return inputInfoGen.defaultValue(annotatedCandidates, fieldType, environment).orElse(null);
     }
 
+    @Override
+    public boolean supports(AnnotatedType type) {
+        return true;
+    }
+
     private static class PropertyDescriptorFactory {
 
         private final AnnotatedType type;

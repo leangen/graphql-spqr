@@ -42,7 +42,7 @@ public class TypeCache {
         }
     }
 
-    void resolveTypeReferences(TypeRepository typeRepository) {
-        typeRepository.resolveTypeReferences(knownTypes);
+    void resolveTypeReferences(TypeRegistry typeRegistry) {
+        typeRegistry.resolveTypeReferences(knownTypes);
     }
 }

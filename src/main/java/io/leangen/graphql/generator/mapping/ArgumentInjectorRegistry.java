@@ -7,11 +7,11 @@ import java.util.List;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class ArgumentInjectorRepository {
+public class ArgumentInjectorRegistry {
     
     private final List<ArgumentInjector> argumentInjectors;
 
-    public ArgumentInjectorRepository(List<ArgumentInjector> argumentInjectors) {
+    public ArgumentInjectorRegistry(List<ArgumentInjector> argumentInjectors) {
         this.argumentInjectors = Collections.unmodifiableList(argumentInjectors);
     }
 

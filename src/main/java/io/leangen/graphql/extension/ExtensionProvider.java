@@ -5,6 +5,6 @@ import io.leangen.graphql.GraphQLSchemaGenerator;
 import java.util.List;
 
 @FunctionalInterface
-public interface ExtensionProvider<T> {
-    List<T> getExtensions(GraphQLSchemaGenerator.Configuration config, GraphQLSchemaGenerator.ExtensionList<T> defaults);
+public interface ExtensionProvider<C, D> {
+    List<D> getExtensions(C config, GraphQLSchemaGenerator.ExtensionList<D> defaults);
 }

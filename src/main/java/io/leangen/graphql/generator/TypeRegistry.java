@@ -23,14 +23,14 @@ import java.util.stream.Collectors;
 /**
  * Created by bojan.tomic on 5/7/16.
  */
-public class TypeRepository {
+public class TypeRegistry {
 
     private final Map<String, Map<String, MappedType>> covariantOutputTypes = new ConcurrentHashMap<>();
     private final Set<GraphQLObjectType> discoveredTypes = new HashSet<>();
 
-    private static final Logger log = LoggerFactory.getLogger(TypeRepository.class);
+    private static final Logger log = LoggerFactory.getLogger(TypeRegistry.class);
 
-    public TypeRepository(Set<GraphQLType> knownTypes) {
+    public TypeRegistry(Set<GraphQLType> knownTypes) {
         //extract known interface implementations
         knownTypes.stream()
                 .filter(type -> type instanceof GraphQLObjectType && Directives.isMappedType(type))
@@ -62,6 +62,7 @@ public class TypeRepository {
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public List<MappedType> getOutputTypes(String compositeTypeName, Class objectType) {
         Map<String, MappedType> mappedTypes = this.covariantOutputTypes.get(compositeTypeName);
         if (mappedTypes == null) return Collections.emptyList();
@@ -79,7 +80,7 @@ public class TypeRepository {
         return discoveredTypes;
     }
     
-    public void resolveTypeReferences(Map<String, GraphQLType> resolvedTypes) {
+    void resolveTypeReferences(Map<String, GraphQLType> resolvedTypes) {
         for (Map<String, MappedType> covariantTypes : this.covariantOutputTypes.values()) {
             Set<String> toRemove = new HashSet<>();
             for (Map.Entry<String, MappedType> entry : covariantTypes.entrySet()) {

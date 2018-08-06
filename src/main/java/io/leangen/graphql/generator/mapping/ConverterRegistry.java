@@ -1,20 +1,20 @@
 package io.leangen.graphql.generator.mapping;
 
+import io.leangen.graphql.util.ClassUtils;
+
 import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
 import java.util.List;
 
-import io.leangen.graphql.util.ClassUtils;
-
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class ConverterRepository {
+public class ConverterRegistry {
 
     private final List<InputConverter> inputConverters;
     private final List<OutputConverter> outputConverters;
 
-    public ConverterRepository(List<InputConverter> inputConverters, List<OutputConverter> outputConverters) {
+    public ConverterRegistry(List<InputConverter> inputConverters, List<OutputConverter> outputConverters) {
         this.inputConverters = Collections.unmodifiableList(inputConverters);
         this.outputConverters = Collections.unmodifiableList(outputConverters);
     }

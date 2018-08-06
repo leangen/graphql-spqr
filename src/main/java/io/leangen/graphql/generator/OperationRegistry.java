@@ -23,31 +23,31 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class OperationRepository {
+public class OperationRegistry {
 
     private final Set<Operation> queries;
     private final Set<Operation> mutations;
     private final Set<Operation> subscriptions;
-    private final OperationSourceRepository operationSourceRepository;
+    private final OperationSourceRegistry operationSourceRegistry;
     private final OperationBuilder operationBuilder;
     private final InclusionStrategy inclusionStrategy;
     private final TypeTransformer typeTransformer;
     private final String[] basePackages;
     private final GlobalEnvironment environment;
 
-    public OperationRepository(OperationSourceRepository operationSourceRepository, OperationBuilder operationBuilder,
-                               InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages,
-                               GlobalEnvironment environment) {
+    public OperationRegistry(OperationSourceRegistry operationSourceRegistry, OperationBuilder operationBuilder,
+                             InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages,
+                             GlobalEnvironment environment) {
 
-        this.operationSourceRepository = operationSourceRepository;
+        this.operationSourceRegistry = operationSourceRegistry;
         this.operationBuilder = operationBuilder;
         this.inclusionStrategy = inclusionStrategy;
         this.typeTransformer = typeTransformer;
         this.basePackages = basePackages;
         this.environment = environment;
-        List<Resolver> resolvers = buildQueryResolvers(operationSourceRepository.getOperationSources());
-        List<Resolver> mutationResolvers = buildMutationResolvers(operationSourceRepository.getOperationSources());
-        List<Resolver> subscriptionResolvers = buildSubscriptionResolvers(operationSourceRepository.getOperationSources());
+        List<Resolver> resolvers = buildQueryResolvers(operationSourceRegistry.getOperationSources());
+        List<Resolver> mutationResolvers = buildMutationResolvers(operationSourceRegistry.getOperationSources());
+        List<Resolver> subscriptionResolvers = buildSubscriptionResolvers(operationSourceRegistry.getOperationSources());
         queries = buildQueries(resolvers);
         mutations = buildMutations(mutationResolvers);
         subscriptions = buildSubscriptions(subscriptionResolvers);
@@ -119,7 +119,7 @@ public class OperationRepository {
     }
 
     private Set<Operation> getNestedQueries(AnnotatedType domainType) {
-        OperationSource domainSource = operationSourceRepository.nestedSourceForType(domainType);
+        OperationSource domainSource = operationSourceRegistry.nestedSourceForType(domainType);
         return buildNestedQueries(domainSource);
     }
 

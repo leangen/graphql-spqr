@@ -5,7 +5,7 @@ import graphql.schema.GraphQLModifiedType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.generator.mapping.TypeMapperRepository;
+import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Directives;
@@ -21,12 +21,12 @@ import java.util.stream.Collectors;
 class Validator {
 
     private final GlobalEnvironment environment;
-    private final TypeMapperRepository mappers;
+    private final TypeMapperRegistry mappers;
     private final List<Set<AnnotatedType>> aliasGroups;
     private final Map<String, AnnotatedType> mappedTypes;
     private final Map<String, AnnotatedType> mappedInputTypes;
 
-    Validator(GlobalEnvironment environment, TypeMapperRepository mappers, Set<GraphQLType> knownTypes, List<Set<AnnotatedType>> aliasGroups) {
+    Validator(GlobalEnvironment environment, TypeMapperRegistry mappers, Set<GraphQLType> knownTypes, List<Set<AnnotatedType>> aliasGroups) {
         this.environment = environment;
         this.mappers = mappers;
         this.aliasGroups = aliasGroups;

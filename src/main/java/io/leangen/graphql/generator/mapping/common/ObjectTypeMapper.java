@@ -52,7 +52,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
         typeBuilder.withDirective(Directives.mappedType(javaType));
         GraphQLObjectType type = typeBuilder.build();
-        interfaces.forEach(inter -> buildContext.typeRepository.registerCovariantType(inter.getName(), javaType, type));
+        interfaces.forEach(inter -> buildContext.typeRegistry.registerCovariantType(inter.getName(), javaType, type));
         return type;
     }
 
@@ -62,9 +62,8 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType, buildContext.messageBundle));
 
-        buildContext.inputFieldStrategy.getInputFields(
-                new InputFieldBuilderParams(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer, buildContext.globalEnvironment)).forEach(
-                field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));
+        InputFieldBuilderParams params = new InputFieldBuilderParams(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer, buildContext.globalEnvironment);
+        buildContext.inputFieldBuilders.getInputFields(params).forEach(field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));
 
         if (ClassUtils.isAbstract(javaType)) {
             createInputDisambiguatorField(javaType, buildContext).ifPresent(typeBuilder::field);
@@ -80,7 +79,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
     @SuppressWarnings("WeakerAccess")
     protected List<GraphQLFieldDefinition> getFields(AnnotatedType javaType, BuildContext buildContext, OperationMapper operationMapper) {
-        List<GraphQLFieldDefinition> fields = buildContext.operationRepository.getChildQueries(javaType).stream()
+        List<GraphQLFieldDefinition> fields = buildContext.operationRegistry.getChildQueries(javaType).stream()
                 .map(childQuery -> operationMapper.toGraphQLField(childQuery, buildContext))
                 .collect(Collectors.toList());
         return sortFields(fields, buildContext.typeInfoGenerator.getFieldOrder(javaType, buildContext.messageBundle));
