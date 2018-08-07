@@ -8,6 +8,7 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
+import io.leangen.graphql.metadata.strategy.value.DefaultValueProvider;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
 import io.leangen.graphql.util.Urls;
@@ -86,13 +87,20 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
         if (meta == null) return null;
         try {
-            return meta.defaultValueProvider()
-                    .getConstructor(GlobalEnvironment.class)
-                    .newInstance(environment)
+            return defaultValueProvider(meta.defaultValueProvider(), environment)
                     .getDefaultValue(parameter, parameterType, ReservedStrings.decode(environment.messageBundle.interpolate(meta.defaultValue())));
         } catch (ReflectiveOperationException e) {
             throw new IllegalArgumentException(
-                    meta.defaultValueProvider().getName() + " must expose a public default constructor", e);
+                    meta.defaultValueProvider().getName() + " must expose a public default constructor, or a constructor accepting " + GlobalEnvironment.class.getName(), e);
+        }
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    protected <T extends DefaultValueProvider> T defaultValueProvider(Class<T> type, GlobalEnvironment environment) throws ReflectiveOperationException {
+        try {
+            return type.getConstructor(GlobalEnvironment.class).newInstance(environment);
+        } catch (NoSuchMethodException e) {
+            return type.getConstructor().newInstance();
         }
     }
 }

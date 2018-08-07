@@ -45,14 +45,21 @@ public class InputFieldInfoGenerator {
                 .map(element -> {
                     GraphQLInputField ann = element.getAnnotation(GraphQLInputField.class);
                     try {
-                        return ann.defaultValueProvider()
-                                .getConstructor(GlobalEnvironment.class)
-                                .newInstance(environment)
+                        return defaultValueProvider(ann.defaultValueProvider(), environment)
                                 .getDefaultValue(element, type, environment.messageBundle.interpolate(ReservedStrings.decode(ann.defaultValue())));
                     } catch (ReflectiveOperationException e) {
                         throw new IllegalArgumentException(
-                                ann.defaultValueProvider().getName() + " must expose a public default constructor", e);
+                                ann.defaultValueProvider().getName() + " must expose a public default constructor, or a constructor accepting " + GlobalEnvironment.class.getName(), e);
                     }
                 });
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    protected <T extends DefaultValueProvider> T defaultValueProvider(Class<T> type, GlobalEnvironment environment) throws ReflectiveOperationException {
+        try {
+            return type.getConstructor(GlobalEnvironment.class).newInstance(environment);
+        } catch (NoSuchMethodException e) {
+            return type.getConstructor().newInstance();
+        }
     }
 }
