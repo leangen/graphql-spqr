@@ -1,9 +1,5 @@
 package io.leangen.graphql.support;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
@@ -14,6 +10,10 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.util.GraphQLUtils;
+
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -62,7 +62,7 @@ public class GraphQLTypeAssertions {
     
     public static void assertMapOf(GraphQLType mapType, Class<? extends GraphQLType> keyType, Class<? extends GraphQLType> valueType) {
         assertEquals(GraphQLList.class, mapType.getClass());
-        GraphQLType entry = ((GraphQLList) mapType).getWrappedType();
+        GraphQLType entry = GraphQLUtils.unwrap(mapType);
         assertTrue(entry instanceof GraphQLObjectType);
         GraphQLOutputType key = ((GraphQLObjectType) entry).getFieldDefinition("key").getType();
         GraphQLOutputType value = ((GraphQLObjectType) entry).getFieldDefinition("value").getType();

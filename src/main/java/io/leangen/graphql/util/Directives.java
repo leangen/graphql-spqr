@@ -5,7 +5,6 @@ import graphql.introspection.Introspection;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
-import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLDirectiveContainer;
@@ -72,7 +71,7 @@ public class Directives {
 
         @Override
         public Object serialize(Object dataFetcherResult) {
-            throw new CoercingSerializeException(ERROR);
+            return "__java type__";
         }
 
         @Override

@@ -3,6 +3,7 @@ package io.leangen.graphql.generator.mapping.common;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLModifiedType;
+import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
@@ -60,18 +61,18 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
 
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        return new GraphQLList(
+        return new GraphQLList(new GraphQLNonNull(
                 mapEntry(
                         operationMapper.toGraphQLType(getElementType(javaType, 0), buildContext),
-                        operationMapper.toGraphQLType(getElementType(javaType, 1), buildContext), buildContext));
+                        operationMapper.toGraphQLType(getElementType(javaType, 1), buildContext), buildContext)));
     }
 
     @Override
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        return new GraphQLList(
+        return new GraphQLList(new GraphQLNonNull(
                 mapEntry(
                         operationMapper.toGraphQLInputType(getElementType(javaType, 0), buildContext),
-                        operationMapper.toGraphQLInputType(getElementType(javaType, 1), buildContext), buildContext));
+                        operationMapper.toGraphQLInputType(getElementType(javaType, 1), buildContext), buildContext)));
     }
 
     @Override

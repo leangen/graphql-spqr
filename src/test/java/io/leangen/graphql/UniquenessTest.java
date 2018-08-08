@@ -4,7 +4,6 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
@@ -16,13 +15,13 @@ import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
+import io.leangen.graphql.util.GraphQLUtils;
 import org.junit.Test;
 
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -71,8 +70,8 @@ public class UniquenessTest {
                 .withTypeAdapters(new MapToListTypeAdapter<>())
                 .withOperationsFromSingleton(new MapService(), new PublicResolverBuilder(thisPackage))
                 .generate();
-        testRootQueryTypeUniqueness(schema, type -> ((GraphQLList) type).getWrappedType());
-        testRootQueryArgumentTypeUniqueness(schema, type -> ((GraphQLList) type).getWrappedType());
+        testRootQueryTypeUniqueness(schema);
+        testRootQueryArgumentTypeUniqueness(schema);
     }
 
     @Test
@@ -97,27 +96,19 @@ public class UniquenessTest {
     }
 
     private void testRootQueryTypeUniqueness(GraphQLSchema schema) {
-        testRootQueryTypeUniqueness(schema, Function.identity());
-    }
-
-    private void testRootQueryTypeUniqueness(GraphQLSchema schema, Function<GraphQLType, GraphQLType> unwrapper) {
         List<GraphQLType> fieldTypes = schema.getQueryType().getFieldDefinitions().stream()
                 .map(GraphQLFieldDefinition::getType)
-                .map(unwrapper)
+                .map(GraphQLUtils::unwrap)
                 .collect(Collectors.toList());
         assertEquals(2, fieldTypes.size());
         assertTrue(fieldTypes.stream().allMatch(type -> fieldTypes.get(0) == type));
     }
 
     private void testRootQueryArgumentTypeUniqueness(GraphQLSchema schema) {
-        testRootQueryArgumentTypeUniqueness(schema, Function.identity());
-    }
-
-    private void testRootQueryArgumentTypeUniqueness(GraphQLSchema schema, Function<GraphQLType, GraphQLType> unwrapper) {
         List<GraphQLType> inputTypes = schema.getQueryType().getFieldDefinitions().stream()
                 .flatMap(def -> def.getArguments().stream())
                 .map(GraphQLArgument::getType)
-                .map(unwrapper)
+                .map(GraphQLUtils::unwrap)
                 .collect(Collectors.toList());
         assertEquals(2, inputTypes.size());
         assertTrue(inputTypes.stream().allMatch(type -> inputTypes.get(0) == type));

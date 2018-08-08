@@ -13,6 +13,7 @@ import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
+import io.leangen.graphql.util.GraphQLUtils;
 import org.junit.Test;
 
 import java.util.List;
@@ -45,7 +46,7 @@ public class UnionTest {
         assertListOf(list, GraphQLList.class);
         GraphQLType map = ((GraphQLList) list).getWrappedType();
         assertMapOf(map, GraphQLUnionType.class, GraphQLUnionType.class);
-        GraphQLObjectType entry = ((GraphQLObjectType) ((GraphQLList) map).getWrappedType());
+        GraphQLObjectType entry = (GraphQLObjectType) GraphQLUtils.unwrap(map);
         GraphQLOutputType key = entry.getFieldDefinition("key").getType();
         GraphQLOutputType value = entry.getFieldDefinition("value").getType();
         assertEquals("Simple_One_Two", key.getName());
