@@ -45,7 +45,6 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static graphql.Scalars.GraphQLBigDecimal;
@@ -269,7 +268,7 @@ public class Scalars {
             s -> GregorianCalendar.from(ZonedDateTime.parse(s)), i -> GregorianCalendar.from(i.atZone(ZoneOffset.UTC)), c -> c.toInstant().toString());
 
     public static final GraphQLScalarType GraphQLInstant = temporalScalar(Instant.class, "Instant", "an instant in time",
-            Instant::parse, Function.identity());
+            Instant::parse, i -> i);
 
     public static final GraphQLScalarType GraphQLLocalDate = temporalScalar(LocalDate.class, "LocalDate", "a local date",
             LocalDate::parse, i -> i.atZone(ZoneOffset.UTC).toLocalDate());
@@ -382,41 +381,56 @@ public class Scalars {
         throw new CoercingParseLiteralException("Unknown scalar AST type: " + value.getClass().getName());
     }
 
-    public static <T> GraphQLScalarType temporalScalar(Class<?> type, String name, String description, Function<String, T> fromString, Function<Instant, T> fromDate) {
+    public static <T> GraphQLScalarType temporalScalar(Class<?> type, String name, String description, ThrowingFunction<String, T> fromString, ThrowingFunction<Instant, T> fromDate) {
         return temporalScalar(type, name, description, fromString, fromDate, Object::toString);
     }
 
-    public static <T> GraphQLScalarType temporalScalar(Class<?> type, String name, String description, Function<String, T> fromString, Function<Instant, T> fromDate, Function<T, String> toString) {
+    public static <T> GraphQLScalarType temporalScalar(Class<?> type, String name, String description, ThrowingFunction<String, T> fromString, ThrowingFunction<Instant, T> fromDate, ThrowingFunction<T, String> toString) {
         return new GraphQLScalarType(name, "Built-in scalar representing " + description, new Coercing() {
 
             @Override
             @SuppressWarnings("unchecked")
             public String serialize(Object dataFetcherResult) {
-                return toString.apply((T) dataFetcherResult);
+                if (type.isInstance(dataFetcherResult)) {
+                    try {
+                        return toString.apply((T) dataFetcherResult);
+                    } catch (Exception e) {
+                        throw new CoercingSerializeException("Value " + dataFetcherResult + " could not be serialized");
+                    }
+                }
+                throw serializationException(dataFetcherResult, type);
             }
 
             @Override
             public Object parseValue(Object input) {
-                if (input instanceof String) {
-                    return fromString.apply((String) input);
+                try {
+                    if (input instanceof String) {
+                        return fromString.apply((String) input);
+                    }
+                    if (input instanceof Long) {
+                        return fromDate.apply(Instant.ofEpochMilli((Long) input));
+                    }
+                    if (type.isInstance(input)) {
+                        return input;
+                    }
+                    throw valueParsingException(input, String.class, Long.class);
+                } catch (Exception e) {
+                    throw new CoercingParseValueException("Value " + input + " could not be parsed into a " + name);
                 }
-                if (input instanceof Long) {
-                    return fromDate.apply(Instant.ofEpochMilli((Long) input));
-                }
-                if (type.isInstance(input)) {
-                    return input;
-                }
-                throw valueParsingException(input, String.class, Long.class);
             }
 
             @Override
             public T parseLiteral(Object input) {
-                if (input instanceof StringValue) {
-                    return fromString.apply(((StringValue) input).getValue());
-                } else if (input instanceof IntValue) {
-                    return fromDate.apply(Instant.ofEpochMilli(((IntValue) input).getValue().longValue()));
-                } else {
-                    throw literalParsingException(input, StringValue.class, IntValue.class);
+                try {
+                    if (input instanceof StringValue) {
+                        return fromString.apply(((StringValue) input).getValue());
+                    } else if (input instanceof IntValue) {
+                        return fromDate.apply(Instant.ofEpochMilli(((IntValue) input).getValue().longValue()));
+                    } else {
+                        throw literalParsingException(input, StringValue.class, IntValue.class);
+                    }
+                } catch (Exception e) {
+                    throw new CoercingParseLiteralException("Value " + input + " could not be parsed into a " + name);
                 }
             }
         });
@@ -501,5 +515,10 @@ public class Scalars {
         scalarMapping.put(Period.class, GraphQLPeriodScalar);
         scalarMapping.put(Locale.class, GraphQLLocale);
         return Collections.unmodifiableMap(scalarMapping);
+    }
+
+    @FunctionalInterface
+    public interface ThrowingFunction<T, R> {
+        R apply(T t) throws Exception;
     }
 }
