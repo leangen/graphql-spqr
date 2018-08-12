@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -30,7 +31,7 @@ public class TypeRegistry {
 
     private static final Logger log = LoggerFactory.getLogger(TypeRegistry.class);
 
-    public TypeRegistry(Set<GraphQLType> knownTypes) {
+    public TypeRegistry(Collection<GraphQLType> knownTypes) {
         //extract known interface implementations
         knownTypes.stream()
                 .filter(type -> type instanceof GraphQLObjectType && Directives.isMappedType(type))

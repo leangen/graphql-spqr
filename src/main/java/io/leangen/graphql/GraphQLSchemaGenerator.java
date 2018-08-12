@@ -92,6 +92,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -170,7 +171,7 @@ public class GraphQLSchemaGenerator {
     private final List<ExtensionProvider<Configuration, Module>> moduleProviders = new ArrayList<>();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
-    private final Set<GraphQLType> additionalTypes = new HashSet<>();
+    private final Map<String, GraphQLType> additionalTypes = new HashMap<>();
     private final List<Set<AnnotatedType>> aliasGroups = new ArrayList<>();
 
     private final String queryRoot;
@@ -646,7 +647,11 @@ public class GraphQLSchemaGenerator {
     public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes) {
         additionalTypes.stream()
                 .filter(type -> !isInternalType(type))
-                .forEach(this.additionalTypes::add);
+                .forEach(type -> {
+                    if (this.additionalTypes.put(type.getName(), type) != null) {
+                        throw new ConfigurationException("Type name collision: multiple registered additional types are named '" + type.getName() + "'");
+                    }
+                });
         return this;
     }
 
@@ -679,7 +684,7 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
-     * Sets a flag that all mutations should be mapped in a Relay-compliant way,
+     * Sets a flag signifying that all mutations should be mapped in a Relay-compliant way,
      * using the default name and description for output wrapper fields.
      *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
@@ -802,7 +807,7 @@ public class GraphQLSchemaGenerator {
         }
         checkForDuplicates("argument injectors", argumentInjectors);
 
-        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes), new ConverterRegistry(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors));
+        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes.values()), new ConverterRegistry(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors));
         valueMapperFactory = new MemoizedValueMapperFactory(environment, internalValueMapperFactory);
         ValueMapper def = valueMapperFactory.getValueMapper(Collections.emptyMap(), environment);
 
@@ -832,7 +837,7 @@ public class GraphQLSchemaGenerator {
         BuildContext buildContext = new BuildContext(
                 basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy, typeTransformer, basePackages, environment),
                 new TypeMapperRegistry(typeMappers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
-                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), inclusionStrategy, relayMappingConfig, additionalTypes, aliasGroups, implDiscoveryStrategy);
+                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), inclusionStrategy, relayMappingConfig, additionalTypes.values(), aliasGroups, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema()
@@ -860,8 +865,9 @@ public class GraphQLSchemaGenerator {
                     .build());
         }
 
-        additionalTypes.addAll(buildContext.typeRegistry.getDiscoveredTypes());
-        builder.additionalTypes(additionalTypes);
+        Set<GraphQLType> additional = new HashSet<>(additionalTypes.values());
+        additional.addAll(buildContext.typeRegistry.getDiscoveredTypes());
+        builder.additionalTypes(additional);
 
         applyProcessors(builder, buildContext);
         return builder.build();

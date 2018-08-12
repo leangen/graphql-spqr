@@ -21,6 +21,7 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -76,7 +77,7 @@ public class BuildContext {
                         MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldBuilderRegistry inputFieldBuilders, InclusionStrategy inclusionStrategy,
-                        RelayMappingConfig relayMappingConfig, Set<GraphQLType> knownTypes, List<Set<AnnotatedType>> typeAliasGroups,
+                        RelayMappingConfig relayMappingConfig, Collection<GraphQLType> knownTypes, List<Set<AnnotatedType>> typeAliasGroups,
                         ImplementationDiscoveryStrategy implementationStrategy) {
         this.operationRegistry = operationRegistry;
         this.typeRegistry = environment.typeRegistry;

@@ -5,8 +5,8 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
 import io.leangen.graphql.util.GraphQLUtils;
 
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -15,7 +15,7 @@ public class TypeCache {
     private final Map<String, GraphQLType> knownTypes;
 
 
-    TypeCache(Set<GraphQLType> knownTypes) {
+    TypeCache(Collection<GraphQLType> knownTypes) {
         this.knownTypes = knownTypes.stream().collect(Collectors.toMap(GraphQLType::getName, Function.identity()));
     }
 

@@ -1,5 +1,8 @@
 package io.leangen.graphql;
 
+import graphql.Scalars;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLType;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
@@ -15,7 +18,9 @@ import org.junit.rules.ExpectedException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -186,6 +191,18 @@ public class SchemaGeneratorConfigurationTest {
         thrown.expectMessage("Multiple");
 
         generator.generate();
+    }
+
+    @Test(expected = ConfigurationException.class)
+    public void testConflictingKnownTypes() {
+        Set<GraphQLType> additionalTypes = new HashSet<>();
+        additionalTypes.add(GraphQLObjectType.newObject().name("String").build());
+        additionalTypes.add(Scalars.GraphQLString);
+
+        new TestSchemaGenerator()
+                .withOperationsFromSingleton(new Dummy())
+                .withAdditionalTypes(additionalTypes)
+                .generate();
     }
 
     private static List<TypeMapper> getDefaultMappers() {
