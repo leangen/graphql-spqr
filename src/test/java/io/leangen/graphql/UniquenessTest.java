@@ -180,11 +180,11 @@ public class UniquenessTest {
 
     public static class PagingService {
 
-        public Page<SimpleUser> getUsers() {
+        public Page<SimpleUser> getUsers(int first, String after) {
             return null;
         }
 
-        public Page<SimpleUser> getUsersAgain() {
+        public Page<SimpleUser> getUsersAgain(int last, String before) {
             return null;
         }
     }

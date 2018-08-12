@@ -12,5 +12,6 @@ public final class Urls {
         public static final String MISSING_ARGUMENT_NAME = "https://github.com/leangen/graphql-spqr/wiki/Errors#missing-argument-name";
         public static final String AMBIGUOUS_MEMBER_TYPE = "https://github.com/leangen/graphql-spqr/wiki/Errors#ambiguous-member-type";
         public static final String AMBIGUOUS_PARAMETER_TYPE = "https://github.com/leangen/graphql-spqr/wiki/Errors#ambiguous-method-parameter-type";
+        public static final String RELAY_CONNECTION_SPEC_VIOLATION = "https://github.com/leangen/graphql-spqr/wiki/Errors#relay-connection-spec-violation";
     }
 }

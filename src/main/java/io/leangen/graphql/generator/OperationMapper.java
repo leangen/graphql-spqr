@@ -25,10 +25,11 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
-import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.GraphQLUtils;
+import io.leangen.graphql.util.Urls;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,12 +145,8 @@ public class OperationMapper {
                 .map(argument -> toGraphQLArgument(argument, buildContext))
                 .collect(Collectors.toList());
         fieldBuilder.argument(arguments);
-        if (GraphQLUtils.isRelayConnectionType(type)) {
-            if (buildContext.relay.getConnectionFieldArguments().stream()
-                    .anyMatch(connArg -> arguments.stream()
-                            .anyMatch(arg -> arg.getName().equals(connArg.getName()) && !arg.getType().getName().equals(connArg.getType().getName())))) {
-                throw new TypeMappingException("Operation \"" + operation.getName() + "\" has arguments of types incompatible with the Relay Connection spec");
-            }
+        if (GraphQLUtils.isRelayConnectionType(type) && buildContext.relayMappingConfig.strictConnectionSpec) {
+            validateConnectionSpecCompliance(operation.getName(), arguments, buildContext.relay);
         }
 
         Stream<AnnotatedType> inputTypes = operation.getArguments().stream()
@@ -370,6 +367,27 @@ public class OperationMapper {
     private void log(Validator.ValidationResult result) {
         if (!result.isValid()) {
             log.warn(result.getMessage());
+        }
+    }
+
+    private void validateConnectionSpecCompliance(String operationName, List<GraphQLArgument> arguments, Relay relay) {
+        String errorMessageTemplate = "Operation '" + operationName + "' is incompatible with the Relay Connection spec due to %s. " +
+                "If this is intentional, disable strict compliance checking. " +
+                "For details and solutions see " + Urls.Errors.RELAY_CONNECTION_SPEC_VIOLATION;
+
+        boolean forwardPageSupported = relay.getForwardPaginationConnectionFieldArguments().stream().allMatch(
+                specArg -> arguments.stream().anyMatch(arg -> arg.getName().equals(specArg.getName())));
+        boolean backwardPageSupported = relay.getBackwardPaginationConnectionFieldArguments().stream().allMatch(
+                specArg -> arguments.stream().anyMatch(arg -> arg.getName().equals(specArg.getName())));
+
+        if (!forwardPageSupported && !backwardPageSupported) {
+            throw new MappingException(String.format(errorMessageTemplate, "required arguments missing"));
+        }
+
+        if (relay.getConnectionFieldArguments().stream().anyMatch(specArg -> arguments.stream().anyMatch(
+                arg -> arg.getName().equals(specArg.getName())
+                        && !GraphQLUtils.unwrap(arg.getType()).getName().equals(specArg.getType().getName())))) {
+            throw new MappingException(String.format(errorMessageTemplate, "argument type mismatch"));
         }
     }
 

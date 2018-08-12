@@ -710,6 +710,16 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
+     * Removes the requirement on queries returning a Connection to comply with the Relay Connection spec
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withRelayConnectionCheckRelaxed() {
+        this.relayMappingConfig.strictConnectionSpec = false;
+        return this;
+    }
+
+    /**
      * Registers custom schema processors that can perform arbitrary transformations on the schema just before it is built.
      *
      * @param processors Custom processors to call right before the GraphQL schema is built

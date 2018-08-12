@@ -1,7 +1,5 @@
 package io.leangen.graphql;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.spi.ILoggingEvent;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import graphql.ExecutionResult;
@@ -35,7 +33,7 @@ import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
-import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.services.UserService;
 import io.leangen.graphql.support.TestLog;
@@ -50,14 +48,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
+import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -204,17 +200,34 @@ public class RelayTest {
             new TestSchemaGenerator()
                     .withOperationsFromSingleton(new ConflictingBookService())
                     .generate();
-            assertEquals(1, log.getEvents().size());
-            ILoggingEvent event = log.getEvents().get(0);
-            assertThat(event.getLevel(), is(Level.WARN));
-            assertThat(event.getMessage(), containsString(Urls.Errors.NON_UNIQUE_TYPE_NAME));
+            assertWarningsLogged(log.getEvents(), Urls.Errors.NON_UNIQUE_TYPE_NAME);
         }
     }
 
-    @Test(expected = TypeMappingException.class)
-    public void testInvalidPaginationArguments() {
+    @Test(expected = MappingException.class)
+    public void testInvalidPaginationArgumentTypes() {
         new TestSchemaGenerator()
-                .withOperationsFromSingleton(new InvalidPagingService())
+                .withOperationsFromSingleton(new InvalidArgsPagingService())
+                .generate();
+    }
+
+    @Test(expected = MappingException.class)
+    public void testMissingPaginationArguments() {
+        new TestSchemaGenerator()
+                .withOperationsFromSingleton(new MissingArgsPagingService())
+                .generate();
+    }
+
+    @Test
+    public void testAllowedInvalidPaginationArguments() {
+        new TestSchemaGenerator()
+                .withRelayConnectionCheckRelaxed()
+                .withOperationsFromSingleton(new InvalidArgsPagingService())
+                .generate();
+
+        new TestSchemaGenerator()
+                .withRelayConnectionCheckRelaxed()
+                .withOperationsFromSingleton(new MissingArgsPagingService())
                 .generate();
     }
 
@@ -440,10 +453,18 @@ public class RelayTest {
         }
     }
 
-    private static class InvalidPagingService {
+    private static class InvalidArgsPagingService {
 
         @GraphQLQuery(name = "streets")
-        public Page<Street> streets(@GraphQLArgument(name = "first") String first) {
+        public Page<Street> streets(@GraphQLArgument(name = "first") String first, @GraphQLArgument(name = "after") String after) {
+            return null;
+        }
+    }
+
+    private static class MissingArgsPagingService {
+
+        @GraphQLQuery(name = "streets")
+        public Page<Street> streets(@GraphQLArgument(name = "first") int first) {
             return null;
         }
     }
