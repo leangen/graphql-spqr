@@ -165,7 +165,7 @@ public class GraphQLSchemaGenerator {
     private final List<ExtensionProvider<Configuration, InputConverter>> inputConverterProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, OutputConverter>> outputConverterProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, ArgumentInjector>> argumentInjectorProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Configuration, InputFieldBuilder>> inputFieldBuilderProviders = new ArrayList<>();
+    private final List<ExtensionProvider<ExtendedConfiguration, InputFieldBuilder>> inputFieldBuilderProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, ResolverBuilder>> resolverBuilderProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, ResolverBuilder>> nestedResolverBuilderProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, Module>> moduleProviders = new ArrayList<>();
@@ -443,7 +443,7 @@ public class GraphQLSchemaGenerator {
         return withInputFieldBuilders((env, defaults) -> defaults.prepend(inputFieldBuilders));
     }
 
-    public GraphQLSchemaGenerator withInputFieldBuilders(ExtensionProvider<Configuration, InputFieldBuilder> provider) {
+    public GraphQLSchemaGenerator withInputFieldBuilders(ExtensionProvider<ExtendedConfiguration, InputFieldBuilder> provider) {
         this.inputFieldBuilderProviders.add(provider);
         return this;
     }
@@ -818,6 +818,7 @@ public class GraphQLSchemaGenerator {
         checkForDuplicates("argument injectors", argumentInjectors);
 
         environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes.values()), new ConverterRegistry(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors));
+        ExtendedConfiguration extendedConfig = new ExtendedConfiguration(configuration, environment);
         valueMapperFactory = new MemoizedValueMapperFactory(environment, internalValueMapperFactory);
         ValueMapper def = valueMapperFactory.getValueMapper(Collections.emptyMap(), environment);
 
@@ -828,8 +829,8 @@ public class GraphQLSchemaGenerator {
             defaultInputFieldBuilder = (InputFieldBuilder) Defaults.valueMapperFactory(typeInfoGenerator).getValueMapper(Collections.emptyMap(), environment);
         }
         inputFieldBuilders = Collections.singletonList(defaultInputFieldBuilder);
-        for (ExtensionProvider<Configuration, InputFieldBuilder> provider : this.inputFieldBuilderProviders) {
-            inputFieldBuilders = provider.getExtensions(configuration, new ExtensionList<>(inputFieldBuilders));
+        for (ExtensionProvider<ExtendedConfiguration, InputFieldBuilder> provider : this.inputFieldBuilderProviders) {
+            inputFieldBuilders = provider.getExtensions(extendedConfig, new ExtensionList<>(inputFieldBuilders));
         }
         checkForEmptyOrDuplicates("input field builders", inputFieldBuilders);
     }
@@ -945,7 +946,7 @@ public class GraphQLSchemaGenerator {
         public final TypeTransformer typeTransformer;
         public final String[] basePackages;
 
-        public Configuration(InterfaceMappingStrategy interfaceMappingStrategy, ScalarDeserializationStrategy scalarDeserializationStrategy, TypeTransformer typeTransformer, String[] basePackages) {
+        Configuration(InterfaceMappingStrategy interfaceMappingStrategy, ScalarDeserializationStrategy scalarDeserializationStrategy, TypeTransformer typeTransformer, String[] basePackages) {
             this.interfaceMappingStrategy = interfaceMappingStrategy;
             this.scalarDeserializationStrategy = scalarDeserializationStrategy;
             this.typeTransformer = typeTransformer;
@@ -953,10 +954,24 @@ public class GraphQLSchemaGenerator {
         }
     }
 
+    public static class ExtendedConfiguration extends Configuration {
+
+        public final GlobalEnvironment environment;
+
+        ExtendedConfiguration(Configuration config, GlobalEnvironment environment) {
+            super(config.interfaceMappingStrategy, config.scalarDeserializationStrategy, config.typeTransformer, config.basePackages);
+            this.environment = environment;
+        }
+    }
+
     public static final class ExtensionList<E> extends ArrayList<E> {
 
         ExtensionList(Collection<? extends E> c) {
             super(c);
+        }
+
+        public E getFirstOfType(Class<? extends E> extensionType) {
+            return get(firstIndexOfTypeStrict(extensionType));
         }
 
         @SafeVarargs
