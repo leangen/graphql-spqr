@@ -6,6 +6,7 @@ import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.geantyref.AnnotatedTypeSet;
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.extension.ExtensionProvider;
@@ -23,6 +24,7 @@ import io.leangen.graphql.generator.TypeRegistry;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRegistry;
+import io.leangen.graphql.generator.mapping.BaseTypeAliasComparator;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
@@ -92,6 +94,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -158,6 +161,7 @@ public class GraphQLSchemaGenerator {
     private String[] basePackages = Utils.emptyArray();
     private DelegatingMessageBundle messageBundle = new DelegatingMessageBundle();
     private List<TypeMapper> typeMappers;
+    private Comparator<AnnotatedType> typeComparator;
     private List<InputFieldBuilder> inputFieldBuilders;
     private JavaDeprecationMappingConfig javaDeprecationConfig = new JavaDeprecationMappingConfig(true, "Deprecated");
     private final OperationSourceRegistry operationSourceRegistry = new OperationSourceRegistry();
@@ -172,7 +176,7 @@ public class GraphQLSchemaGenerator {
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Map<String, GraphQLType> additionalTypes = new HashMap<>();
-    private final List<Set<AnnotatedType>> aliasGroups = new ArrayList<>();
+    private final Set<Comparator<AnnotatedType>> typeComparators = new HashSet<>();
 
     private final String queryRoot;
     private final String mutationRoot;
@@ -656,15 +660,19 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withTypeAliasGroup(Type... aliases) {
-        return withTypeAliasGroup(Arrays.stream(aliases)
-                .map(GenericTypeReflector::annotate)
-                .toArray(AnnotatedType[]::new));
+        this.typeComparators.add(new BaseTypeAliasComparator(aliases));
+        return this;
     }
 
     public GraphQLSchemaGenerator withTypeAliasGroup(AnnotatedType... aliases) {
         Set<AnnotatedType> aliasGroup = new AnnotatedTypeSet<>();
         Collections.addAll(aliasGroup, aliases);
-        this.aliasGroups.add(aliasGroup);
+        this.typeComparators.add((t1, t2) -> aliasGroup.contains(t1) && aliasGroup.contains(t2) ? 0 : -1);
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withTypeComparator(Comparator<AnnotatedType> comparator) {
+        this.typeComparators.add(comparator);
         return this;
     }
 
@@ -833,6 +841,13 @@ public class GraphQLSchemaGenerator {
             inputFieldBuilders = provider.getExtensions(extendedConfig, new ExtensionList<>(inputFieldBuilders));
         }
         checkForEmptyOrDuplicates("input field builders", inputFieldBuilders);
+
+        Type annotatedTypeComparator = TypeFactory.parameterizedClass(Comparator.class, AnnotatedType.class);
+        //noinspection unchecked
+        typeMappers.stream()
+                .filter(mapper -> GenericTypeReflector.isSuperType(annotatedTypeComparator, mapper.getClass()))
+                .forEach(mapper -> typeComparators.add((Comparator<AnnotatedType>) mapper));
+        typeComparator = (t1, t2) -> typeComparators.stream().anyMatch(comparator -> comparator.compare(t1, t2) == 0) ? 0 : -1;
     }
 
     /**
@@ -848,7 +863,7 @@ public class GraphQLSchemaGenerator {
         BuildContext buildContext = new BuildContext(
                 basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy, typeTransformer, basePackages, environment),
                 new TypeMapperRegistry(typeMappers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
-                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), inclusionStrategy, relayMappingConfig, additionalTypes.values(), aliasGroups, implDiscoveryStrategy);
+                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), inclusionStrategy, relayMappingConfig, additionalTypes.values(), typeComparator, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema()

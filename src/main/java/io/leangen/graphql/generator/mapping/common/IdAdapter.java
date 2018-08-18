@@ -17,6 +17,7 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.Set;
 
 import static io.leangen.graphql.util.Scalars.RelayId;
 
@@ -26,12 +27,12 @@ import static io.leangen.graphql.util.Scalars.RelayId;
 public class IdAdapter implements TypeMapper, ArgumentInjector, OutputConverter<@GraphQLId Object, String>, InputConverter<@GraphQLId Object, String> {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         return javaType.getAnnotation(GraphQLId.class).relayId() ? RelayId : Scalars.GraphQLID;
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         return javaType.getAnnotation(GraphQLId.class).relayId() ? RelayId : Scalars.GraphQLID;
     }
 

@@ -15,6 +15,7 @@ import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -23,6 +24,7 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -60,7 +62,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     }
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         return new GraphQLList(new GraphQLNonNull(
                 mapEntry(
                         operationMapper.toGraphQLType(getElementType(javaType, 0), buildContext),
@@ -68,7 +70,7 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         return new GraphQLList(new GraphQLNonNull(
                 mapEntry(
                         operationMapper.toGraphQLInputType(getElementType(javaType, 0), buildContext),

@@ -30,6 +30,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -181,7 +182,7 @@ public class ClassUtils {
     public static <T extends AnnotatedType> T normalize(T type) {
         type = GenericTypeReflector.toCanonicalBoxed(type);
         Annotation[] filteredAnnotations = Arrays.stream(type.getAnnotations())
-                .filter(ann -> isTypeUseAnnotation(ann.annotationType()))
+                .filter(ann -> isValidAnnotation(ann.annotationType()))
                 .filter(ann -> !ann.annotationType().equals(GraphQLUnion.class))
                 .toArray(Annotation[]::new);
         return type.getAnnotations().length == filteredAnnotations.length ? type : GenericTypeReflector.replaceAnnotations(type, filteredAnnotations);
@@ -409,9 +410,22 @@ public class ClassUtils {
                 .toArray(Annotation[]::new);
     }
 
-    public static AnnotatedType addAnnotations(AnnotatedType type, Annotation[] annotations) {
+    public static <T extends AnnotatedType> T addAnnotations(T type, Annotation[] annotations) {
         if (type == null || annotations == null || annotations.length == 0) return type;
         return GenericTypeReflector.updateAnnotations(type, merge(type.getAnnotations(), annotations));
+    }
+
+    public static <T extends AnnotatedType> T removeAnnotations(T type, Set<Class<? extends Annotation>> toRemove) {
+        if (type.getAnnotations().length == 0 || toRemove.size() == 0) {
+            return type;
+        }
+        Collection<Annotation> keptAnnotations = new ArrayList<>(type.getAnnotations().length - 1);
+        for (Annotation annotation : type.getAnnotations()) {
+            if (!toRemove.contains(annotation.annotationType())) {
+                keptAnnotations.add(annotation);
+            }
+        }
+        return GenericTypeReflector.replaceAnnotations(type, keptAnnotations.toArray(new Annotation[0]));
     }
 
     /**
@@ -553,7 +567,7 @@ public class ClassUtils {
         if (types.size() == 1) {
             return types.get(0);
         }
-        Annotation[] mergedAnnotations = getMergedAnnotations(types.toArray(new AnnotatedType[types.size()]));
+        Annotation[] mergedAnnotations = getMergedAnnotations(types.toArray(new AnnotatedType[0]));
         if (types.stream().map(AnnotatedType::getType).allMatch(type -> type.equals(types.get(0).getType()))) {
             return GenericTypeReflector.replaceAnnotations(types.get(0), mergedAnnotations);
         }
@@ -674,8 +688,15 @@ public class ClassUtils {
                 .toArray(Annotation[]::new);
     }
 
-    private static boolean isTypeUseAnnotation(Class<? extends Annotation> type) {
-        return type.isAnnotationPresent(Target.class) && Arrays.stream(type.getAnnotation(Target.class).value()).anyMatch(target -> target.equals(ElementType.TYPE_USE));
+    private static boolean isValidAnnotation(Class<? extends Annotation> type) {
+        if (type.isAnnotationPresent(Target.class)) {
+            List<ElementType> targets = Arrays.asList(type.getAnnotation(Target.class).value());
+            return targets.contains(ElementType.TYPE_USE)
+                    || targets.contains(ElementType.TYPE)
+                    || targets.contains(ElementType.TYPE_PARAMETER)
+                    || targets.contains(ElementType.LOCAL_VARIABLE);
+        }
+        return false;
     }
 
     private static class TypeComparator implements Comparator<Class<?>> {

@@ -48,6 +48,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
@@ -143,7 +144,7 @@ public class RelayTest {
         GraphQLFieldDefinition totalCount = schema.getObjectType("BookConnection")
                 .getFieldDefinition("totalCount");
         assertNotNull(totalCount);
-        assertEquals(Scalars.GraphQLLong, totalCount.getType());
+        assertNonNull(totalCount.getType(), Scalars.GraphQLLong);
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
 
         ExecutionResult result = exe.execute("{extended(first:10, after:\"20\") {" +
@@ -170,7 +171,7 @@ public class RelayTest {
         assertEquals(3, bookConnection.getFieldDefinitions().size());
         GraphQLFieldDefinition totalCount = bookConnection.getFieldDefinition("totalCount");
         assertNotNull(totalCount);
-        assertEquals(Scalars.GraphQLLong, totalCount.getType());
+        assertNonNull(totalCount.getType(), Scalars.GraphQLLong);
 
         GraphQLObjectType bookEdge = schema.getObjectType("BookEdge");
         assertEquals(3, bookEdge.getFieldDefinitions().size());

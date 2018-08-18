@@ -32,6 +32,7 @@ import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 public class JsonNodeAdapter implements TypeMapper, InputConverter<JsonNode, Object>, OutputConverter<JsonNode, Object> {
@@ -54,12 +55,12 @@ public class JsonNodeAdapter implements TypeMapper, InputConverter<JsonNode, Obj
     }
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         return operationMapper.toGraphQLType(getSubstituteType(javaType), buildContext);
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         return operationMapper.toGraphQLInputType(getSubstituteType(javaType), buildContext);
     }
 

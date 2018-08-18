@@ -1,11 +1,15 @@
 package io.leangen.graphql.generator.mapping;
 
+import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -18,18 +22,23 @@ public class TypeMapperRegistry {
         this.typeMappers = Collections.unmodifiableList(typeMappers);
     }
 
-    public TypeMapper getTypeMapper(AnnotatedType javaType) {
-        return typeMappers.stream()
-                .filter(typeMapper -> typeMapper.supports(javaType))
-                .findFirst()
+    public TypeMapper getTypeMapper(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip) {
+        return getTypeMapper(javaType, typeMapper -> !mappersToSkip.contains(typeMapper.getClass()))
                 .orElseThrow(() -> new MappingException(String.format("No %s found for type %s",
                         TypeMapper.class.getSimpleName(), ClassUtils.toString(javaType))));
     }
 
+    private Optional<TypeMapper> getTypeMapper(AnnotatedType javaType, Predicate<TypeMapper> filter) {
+        return typeMappers.stream()
+                .filter(filter)
+                .filter(typeMapper -> typeMapper.supports(javaType))
+                .findFirst();
+    }
+
     public AnnotatedType getMappableOutputType(AnnotatedType type) {
-        TypeMapper mapper = this.getTypeMapper(type);
-        if (mapper instanceof TypeSubstituter) {
-            return getMappableOutputType(((TypeSubstituter) mapper).getSubstituteType(type));
+        Optional<TypeMapper> mapper = this.getTypeMapper(type, typeMapper -> !typeMapper.getClass().isAnnotationPresent(GraphQLIgnore.class));
+        if (mapper.isPresent() && mapper.get() instanceof TypeSubstituter) {
+            return getMappableOutputType(((TypeSubstituter) mapper.get()).getSubstituteType(type));
         }
         return ClassUtils.transformType(type, this::getMappableOutputType);
     }

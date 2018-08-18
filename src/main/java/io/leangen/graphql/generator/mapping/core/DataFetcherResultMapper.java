@@ -9,11 +9,12 @@ import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMappe
 import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.Set;
 
 public class DataFetcherResultMapper extends AbstractTypeSubstitutingMapper {
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set mappersToSkip, BuildContext buildContext) {
         throw new UnsupportedOperationException(DataFetcherResult.class.getSimpleName() + " can not be used as an input type");
     }
 

@@ -10,6 +10,7 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -17,12 +18,12 @@ import java.util.Collection;
 public class ListMapper implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         return new GraphQLList(operationMapper.toGraphQLType(getElementType(javaType), buildContext));
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         return new GraphQLList(operationMapper.toGraphQLInputType(getElementType(javaType), buildContext));
     }
 

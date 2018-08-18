@@ -10,10 +10,12 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.relay.Connection;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -22,7 +24,7 @@ import java.util.stream.Collectors;
 public class PageMapper extends ObjectTypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         AnnotatedType edgeType = GenericTypeReflector.getTypeParameter(javaType, Connection.class.getTypeParameters()[0]);
         AnnotatedType nodeType = GenericTypeReflector.getTypeParameter(edgeType, Edge.class.getTypeParameters()[0]);
         String connectionName = buildContext.typeInfoGenerator.generateTypeName(nodeType, buildContext.messageBundle) + "Connection";
@@ -42,7 +44,7 @@ public class PageMapper extends ObjectTypeMapper {
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         throw new UnsupportedOperationException("Replay page type can not be used as input type");
     }
 

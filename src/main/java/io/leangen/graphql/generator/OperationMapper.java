@@ -37,8 +37,10 @@ import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -159,18 +161,22 @@ public class OperationMapper {
         return fieldBuilder.build();
     }
 
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
+        return toGraphQLType(javaType, new HashSet<>(), buildContext);
+    }
+
     /**
      * Maps a Java type to a GraphQL output type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link TypeMapper#toGraphQLType(AnnotatedType, OperationMapper, BuildContext)}</p>
+     * <p>See {@link TypeMapper#toGraphQLType(AnnotatedType, OperationMapper, java.util.Set, BuildContext)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL output type
      * @param buildContext The shared context containing all the global information needed for mapping
      *
      * @return GraphQL output type corresponding to the given Java type
      */
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
-        GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLType(javaType, this, buildContext);
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
+        GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType, mappersToSkip).toGraphQLType(javaType, this, mappersToSkip, buildContext);
         log(buildContext.validator.checkUniqueness(type, javaType));
         buildContext.typeCache.completeType(type);
         return type;
@@ -193,18 +199,22 @@ public class OperationMapper {
         return builder.build();
     }
 
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
+        return toGraphQLInputType(javaType, new HashSet<>(), buildContext);
+    }
+
     /**
      * Maps a Java type to a GraphQL input type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link TypeMapper#toGraphQLInputType(AnnotatedType, OperationMapper, BuildContext)}</p>
+     * <p>See {@link TypeMapper#toGraphQLInputType(AnnotatedType, OperationMapper, java.util.Set, BuildContext)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL input type
      * @param buildContext The shared context containing all the global information needed for mapping
      *
      * @return GraphQL input type corresponding to the given Java type
      */
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
-        GraphQLInputType type = buildContext.typeMappers.getTypeMapper(javaType).toGraphQLInputType(javaType, this, buildContext);
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
+        GraphQLInputType type = buildContext.typeMappers.getTypeMapper(javaType, mappersToSkip).toGraphQLInputType(javaType, this, mappersToSkip, buildContext);
         log(buildContext.validator.checkUniqueness(type, javaType));
         return type;
     }

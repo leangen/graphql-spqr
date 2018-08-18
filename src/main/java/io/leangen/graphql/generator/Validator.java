@@ -13,9 +13,8 @@ import io.leangen.graphql.util.Urls;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
-import java.util.List;
+import java.util.Comparator;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -23,13 +22,13 @@ class Validator {
 
     private final GlobalEnvironment environment;
     private final TypeMapperRegistry mappers;
-    private final List<Set<AnnotatedType>> aliasGroups;
+    private final Comparator<AnnotatedType> typeComparator;
     private final Map<String, AnnotatedType> mappedTypes;
 
-    Validator(GlobalEnvironment environment, TypeMapperRegistry mappers, Collection<GraphQLType> knownTypes, List<Set<AnnotatedType>> aliasGroups) {
+    Validator(GlobalEnvironment environment, TypeMapperRegistry mappers, Collection<GraphQLType> knownTypes, Comparator<AnnotatedType> typeComparator) {
         this.environment = environment;
         this.mappers = mappers;
-        this.aliasGroups = aliasGroups;
+        this.typeComparator = typeComparator;
         this.mappedTypes = knownTypes.stream()
                 .filter(Directives::isMappedType)
                 .collect(Collectors.toMap(GraphQLType::getName, type -> ClassUtils.normalize(Directives.getMappedType(type))));
@@ -59,10 +58,10 @@ class Validator {
         if (isMappingAllowed(resolvedType, knownType)) {
             return ValidationResult.valid();
         }
-        return ValidationResult.invalid(String.format("Potential type name collision detected: %s bound to multiple types: %s and %s." +
+        return ValidationResult.invalid(String.format("Potential type name collision detected: '%s' bound to multiple types: %s and %s." +
                         " Assign unique names using the appropriate annotations or override the %s." +
                         " For details and solutions see %s." +
-                        " If this warning is a false positive, please report it on %s.", graphQLType.getName(), knownType,
+                        " If this warning is a false positive, please report it: %s.", graphQLType.getName(), knownType,
                 resolvedType, TypeInfoGenerator.class.getSimpleName(), Urls.Errors.NON_UNIQUE_TYPE_NAME, Urls.ISSUES));
     }
 
@@ -77,8 +76,7 @@ class Validator {
     }
 
     private boolean isMappingAllowed(AnnotatedType resolvedType, AnnotatedType knownType) {
-        return resolvedType.equals(knownType)
-                || aliasGroups.stream().anyMatch(aliases -> aliases.contains(resolvedType) && aliases.contains(knownType));
+        return resolvedType.equals(knownType) || typeComparator.compare(resolvedType, knownType) == 0;
     }
 
     static class ValidationResult {

@@ -13,6 +13,7 @@ import io.leangen.graphql.util.Directives;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
+import java.util.Set;
 
 import static graphql.schema.GraphQLUnionType.newUnionType;
 
@@ -56,7 +57,7 @@ public abstract class UnionMapper implements TypeMapper {
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         throw new UnsupportedOperationException("GraphQL union type can not be used as an input type");
     }
 }

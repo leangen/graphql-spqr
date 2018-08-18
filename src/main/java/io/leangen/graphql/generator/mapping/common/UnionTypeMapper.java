@@ -5,6 +5,7 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -12,6 +13,7 @@ import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 public class UnionTypeMapper extends UnionMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         GraphQLUnion annotation = javaType.getAnnotation(GraphQLUnion.class);
         List<AnnotatedType> possibleJavaTypes = getPossibleJavaTypes(javaType, buildContext);
         return toGraphQLUnion(annotation.name(), annotation.description(), javaType, possibleJavaTypes, operationMapper, buildContext);

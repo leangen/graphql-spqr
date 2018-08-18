@@ -13,6 +13,7 @@ import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.Set;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -20,7 +21,7 @@ import java.lang.reflect.AnnotatedType;
 public abstract class CachingMapper<O extends GraphQLOutputType, I extends GraphQLInputType> implements TypeMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         String typeName = getTypeName(javaType, buildContext);
         if (buildContext.typeCache.contains(typeName)) {
             return new GraphQLTypeReference(typeName);
@@ -30,7 +31,7 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         String typeName = getInputTypeName(javaType, buildContext);
         if (buildContext.typeCache.contains(typeName)) {
             return new GraphQLTypeReference(typeName);

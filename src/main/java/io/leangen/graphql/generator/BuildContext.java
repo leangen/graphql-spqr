@@ -22,9 +22,9 @@ import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -77,7 +77,7 @@ public class BuildContext {
                         MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldBuilderRegistry inputFieldBuilders, InclusionStrategy inclusionStrategy,
-                        RelayMappingConfig relayMappingConfig, Collection<GraphQLType> knownTypes, List<Set<AnnotatedType>> typeAliasGroups,
+                        RelayMappingConfig relayMappingConfig, Collection<GraphQLType> knownTypes, Comparator<AnnotatedType> typeComparator,
                         ImplementationDiscoveryStrategy implementationStrategy) {
         this.operationRegistry = operationRegistry;
         this.typeRegistry = environment.typeRegistry;
@@ -103,7 +103,7 @@ public class BuildContext {
         this.globalEnvironment = environment;
         this.relayMappingConfig = relayMappingConfig;
         this.classFinder = new ClassFinder();
-        this.validator = new Validator(environment, typeMappers, knownTypes, typeAliasGroups);
+        this.validator = new Validator(environment, typeMappers, knownTypes, typeComparator);
     }
 
     public String interpolate(String template) {
