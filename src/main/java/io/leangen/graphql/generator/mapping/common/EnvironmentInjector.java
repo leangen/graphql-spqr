@@ -10,6 +10,7 @@ import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
@@ -42,7 +43,7 @@ public class EnvironmentInjector implements ArgumentInjector {
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
-        return type.isAnnotationPresent(GraphQLEnvironment.class);
+    public boolean supports(AnnotatedType type, Parameter parameter) {
+        return parameter != null && parameter.isAnnotationPresent(GraphQLEnvironment.class);
     }
 }

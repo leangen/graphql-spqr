@@ -4,6 +4,7 @@ import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Parameter;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -16,7 +17,7 @@ public class ContextInjector extends InputValueDeserializer {
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
-        return type.isAnnotationPresent(GraphQLContext.class);
+    public boolean supports(AnnotatedType type, Parameter parameter) {
+        return parameter != null && parameter.isAnnotationPresent(GraphQLContext.class);
     }
 }

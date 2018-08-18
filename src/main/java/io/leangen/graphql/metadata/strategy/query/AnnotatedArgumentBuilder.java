@@ -41,7 +41,6 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
             } catch (TypeMappingException e) {
                 throw new TypeMappingException(resolverMethod, parameter, e);
             }
-            parameterType = ClassUtils.addAnnotations(parameterType, parameter.getAnnotations());
             operationArguments.add(buildResolverArgument(parameter, parameterType, params.getInclusionStrategy(), params.getEnvironment()));
         }
         return operationArguments;

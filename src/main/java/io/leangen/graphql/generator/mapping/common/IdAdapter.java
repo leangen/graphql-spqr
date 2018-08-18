@@ -17,6 +17,7 @@ import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Parameter;
 import java.util.Set;
 
 import static io.leangen.graphql.util.Scalars.RelayId;
@@ -67,6 +68,11 @@ public class IdAdapter implements TypeMapper, ArgumentInjector, OutputConverter<
     @Override
     public boolean supports(AnnotatedType type) {
         return type.isAnnotationPresent(GraphQLId.class);
+    }
+
+    @Override
+    public boolean supports(AnnotatedType type, Parameter parameter) {
+        return type.isAnnotationPresent(GraphQLId.class) || (parameter != null && parameter.isAnnotationPresent(GraphQLId.class));
     }
 
     @Override

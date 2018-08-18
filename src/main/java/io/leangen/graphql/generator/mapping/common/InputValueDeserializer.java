@@ -4,6 +4,7 @@ import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Parameter;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -19,7 +20,7 @@ public class InputValueDeserializer implements ArgumentInjector {
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedType type, Parameter parameter) {
         return true;
     }
 }

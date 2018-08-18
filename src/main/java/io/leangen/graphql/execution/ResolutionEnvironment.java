@@ -58,6 +58,6 @@ public class ResolutionEnvironment {
                 .withParameter(parameter)
                 .withResolutionEnvironment(this)
                 .build();
-        return this.globalEnvironment.injectors.getInjector(type).getArgumentValue(params);
+        return this.globalEnvironment.injectors.getInjector(type, parameter).getArgumentValue(params);
     }
 }

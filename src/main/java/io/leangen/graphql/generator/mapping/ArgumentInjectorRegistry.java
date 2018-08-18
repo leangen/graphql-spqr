@@ -1,6 +1,7 @@
 package io.leangen.graphql.generator.mapping;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Parameter;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,7 +16,7 @@ public class ArgumentInjectorRegistry {
         this.argumentInjectors = Collections.unmodifiableList(argumentInjectors);
     }
 
-    public ArgumentInjector getInjector(AnnotatedType inputType) {
-        return argumentInjectors.stream().filter(injector -> injector.supports(inputType)).findFirst().orElse(null);
+    public ArgumentInjector getInjector(AnnotatedType inputType, Parameter parameter) {
+        return argumentInjectors.stream().filter(injector -> injector.supports(inputType, parameter)).findFirst().orElse(null);
     }
 }
