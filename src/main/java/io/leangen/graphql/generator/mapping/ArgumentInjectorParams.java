@@ -4,6 +4,7 @@ import io.leangen.graphql.execution.ResolutionEnvironment;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
+import java.util.Objects;
 
 public class ArgumentInjectorParams {
 
@@ -14,9 +15,9 @@ public class ArgumentInjectorParams {
 
     private ArgumentInjectorParams(Object input, AnnotatedType type, Parameter parameter, ResolutionEnvironment resolutionEnvironment) {
         this.input = input;
-        this.type = type;
+        this.type = Objects.requireNonNull(type);
         this.parameter = parameter;
-        this.resolutionEnvironment = resolutionEnvironment;
+        this.resolutionEnvironment = Objects.requireNonNull(resolutionEnvironment);
     }
 
     public Object getInput() {

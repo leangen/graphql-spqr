@@ -62,7 +62,12 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType, buildContext.messageBundle));
 
-        InputFieldBuilderParams params = new InputFieldBuilderParams(javaType, buildContext.inclusionStrategy, buildContext.typeTransformer, buildContext.globalEnvironment);
+        InputFieldBuilderParams params = InputFieldBuilderParams.builder()
+                .withType(javaType)
+                .withInclusionStrategy(buildContext.inclusionStrategy)
+                .withTypeTransformer(buildContext.typeTransformer)
+                .withEnvironment(buildContext.globalEnvironment)
+                .build();
         buildContext.inputFieldBuilders.getInputFields(params).forEach(field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));
 
         if (ClassUtils.isAbstract(javaType)) {

@@ -16,7 +16,6 @@ import io.leangen.graphql.util.ReservedStrings;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
@@ -71,7 +70,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
     }
 
     private Collection<Resolver> buildResolvers(ResolverBuilderParams params, Class<? extends Annotation> annotation,
-                                                Function<OperationNameGeneratorParams<Method>, String> nameGenerator, boolean batchable) {
+                                                Function<OperationNameGeneratorParams, String> nameGenerator, boolean batchable) {
 
         AnnotatedType beanType = params.getBeanType();
         Object querySourceBean = params.getQuerySourceBean();

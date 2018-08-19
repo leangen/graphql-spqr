@@ -28,8 +28,14 @@ public class BeanResolverBuilderTest {
     @Test
     public void basePackageTest() {
         PublicResolverBuilder resolverBuilder = new PublicResolverBuilder(BASE_PACKAGES);
-        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
-                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(ResolverBuilderParams.builder()
+                .withQuerySourceBean(new UserHandleService())
+                .withBeanType(GenericTypeReflector.annotate(UserHandleService.class))
+                .withInclusionStrategy(INCLUSION_STRATEGY)
+                .withTypeTransformer(TYPE_TRANSFORMER)
+                .withBasePackages(BASE_PACKAGES)
+                .withEnvironment(ENVIRONMENT)
+                .build()));
         assertEquals(2, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getNickname")));
@@ -38,8 +44,14 @@ public class BeanResolverBuilderTest {
     @Test
     public void badBasePackageTest() {
         PublicResolverBuilder resolverBuilder = new PublicResolverBuilder("bad.package");
-        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
-                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(ResolverBuilderParams.builder()
+                .withQuerySourceBean(new UserHandleService())
+                .withBeanType(GenericTypeReflector.annotate(UserHandleService.class))
+                .withInclusionStrategy(INCLUSION_STRATEGY)
+                .withTypeTransformer(TYPE_TRANSFORMER)
+                .withBasePackages(BASE_PACKAGES)
+                .withEnvironment(ENVIRONMENT)
+                .build()));
         assertEquals(1, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
     }

@@ -13,7 +13,7 @@ class TestGlobalEnvironment extends GlobalEnvironment {
 
     TestGlobalEnvironment() {
         super(
-                EmptyMessageBundle.instance,
+                EmptyMessageBundle.INSTANCE,
                 new Relay(),
                 new TypeRegistry(Collections.emptySet()),
                 new ConverterRegistry(Collections.emptyList(), Collections.emptyList()),

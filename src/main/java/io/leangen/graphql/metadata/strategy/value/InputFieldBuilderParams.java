@@ -5,6 +5,7 @@ import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.Objects;
 
 public class InputFieldBuilderParams {
 
@@ -19,11 +20,15 @@ public class InputFieldBuilderParams {
      * @param typeTransformer Transformer used to pre-process the types (can be used to complete the missing generics etc)
      * @param environment The global environment
      */
-    public InputFieldBuilderParams(AnnotatedType type, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, GlobalEnvironment environment) {
-        this.type = type;
-        this.inclusionStrategy = inclusionStrategy;
-        this.typeTransformer = typeTransformer;
-        this.environment = environment;
+    private InputFieldBuilderParams(AnnotatedType type, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, GlobalEnvironment environment) {
+        this.type = Objects.requireNonNull(type);
+        this.inclusionStrategy = Objects.requireNonNull(inclusionStrategy);
+        this.typeTransformer = Objects.requireNonNull(typeTransformer);
+        this.environment = Objects.requireNonNull(environment);
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     public AnnotatedType getType() {
@@ -40,5 +45,36 @@ public class InputFieldBuilderParams {
 
     public GlobalEnvironment getEnvironment() {
         return environment;
+    }
+
+    public static class Builder {
+        private AnnotatedType type;
+        private InclusionStrategy inclusionStrategy;
+        private TypeTransformer typeTransformer;
+        private GlobalEnvironment environment;
+
+        public Builder withType(AnnotatedType type) {
+            this.type = type;
+            return this;
+        }
+
+        public Builder withInclusionStrategy(InclusionStrategy inclusionStrategy) {
+            this.inclusionStrategy = inclusionStrategy;
+            return this;
+        }
+
+        public Builder withTypeTransformer(TypeTransformer typeTransformer) {
+            this.typeTransformer = typeTransformer;
+            return this;
+        }
+
+        public Builder withEnvironment(GlobalEnvironment environment) {
+            this.environment = environment;
+            return this;
+        }
+
+        public InputFieldBuilderParams build() {
+            return new InputFieldBuilderParams(type, inclusionStrategy, typeTransformer, environment);
+        }
     }
 }

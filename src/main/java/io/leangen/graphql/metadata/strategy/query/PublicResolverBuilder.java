@@ -97,7 +97,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
         return buildResolvers(params, this::isSubscription, operationNameGenerator::generateSubscriptionName, false);
     }
 
-    private Collection<Resolver> buildResolvers(ResolverBuilderParams params, Predicate<Method> filter, Function<OperationNameGeneratorParams<Method>, String> nameGenerator, boolean batchable) {
+    private Collection<Resolver> buildResolvers(ResolverBuilderParams params, Predicate<Method> filter, Function<OperationNameGeneratorParams, String> nameGenerator, boolean batchable) {
         AnnotatedType beanType = params.getBeanType();
         Object querySourceBean = params.getQuerySourceBean();
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());

@@ -30,8 +30,8 @@ import static org.junit.Assert.assertTrue;
 
 public class InputFieldDiscoveryTest {
 
-    private JacksonValueMapper jackson = (JacksonValueMapper) new JacksonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
-    private GsonValueMapper gson = (GsonValueMapper) new GsonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
+    private JacksonValueMapper jackson = new JacksonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
+    private GsonValueMapper gson = new GsonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
 
     private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy("io.leangen");
     private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
@@ -149,7 +149,12 @@ public class InputFieldDiscoveryTest {
 
     private Set<InputField> assertFieldNamesEqual(InputFieldBuilder mapper, Class typeToScan, InputField[] templates) {
         Set<InputField> fields = mapper.getInputFields(
-                new InputFieldBuilderParams(GenericTypeReflector.annotate(typeToScan), INCLUSION_STRATEGY, TYPE_TRANSFORMER, ENVIRONMENT));
+                InputFieldBuilderParams.builder()
+                        .withType(GenericTypeReflector.annotate(typeToScan))
+                        .withInclusionStrategy(INCLUSION_STRATEGY)
+                        .withTypeTransformer(TYPE_TRANSFORMER)
+                        .withEnvironment(ENVIRONMENT)
+                        .build());
         assertEquals(templates.length, fields.size());
         for (InputField template : templates) {
             Optional<InputField> field = fields.stream().filter(input -> input.getName().equals(template.getName())).findFirst();
