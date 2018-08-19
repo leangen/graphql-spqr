@@ -28,37 +28,25 @@ public class BeanResolverBuilderTest {
     @Test
     public void basePackageTest() {
         PublicResolverBuilder resolverBuilder = new PublicResolverBuilder(BASE_PACKAGES);
-        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(ResolverBuilderParams.builder()
-                .withQuerySourceBean(new UserHandleService())
-                .withBeanType(GenericTypeReflector.annotate(UserHandleService.class))
-                .withInclusionStrategy(INCLUSION_STRATEGY)
-                .withTypeTransformer(TYPE_TRANSFORMER)
-                .withBasePackages(BASE_PACKAGES)
-                .withEnvironment(ENVIRONMENT)
-                .build()));
+        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
+                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         assertEquals(2, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getNickname")));
     }
-    
+
     @Test
     public void badBasePackageTest() {
         PublicResolverBuilder resolverBuilder = new PublicResolverBuilder("bad.package");
-        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(ResolverBuilderParams.builder()
-                .withQuerySourceBean(new UserHandleService())
-                .withBeanType(GenericTypeReflector.annotate(UserHandleService.class))
-                .withInclusionStrategy(INCLUSION_STRATEGY)
-                .withTypeTransformer(TYPE_TRANSFORMER)
-                .withBasePackages(BASE_PACKAGES)
-                .withEnvironment(ENVIRONMENT)
-                .build()));
+        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
+                new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         assertEquals(1, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
     }
-    
+
     @SuppressWarnings("WeakerAccess")
     public static class NicknameService {
-        
+
         public String getNickname(String name) {
             return Utils.isNotEmpty(name) && name.length() > 3 ? name.substring(0, 3) : name;
         }

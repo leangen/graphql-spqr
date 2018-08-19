@@ -149,38 +149,20 @@ public class OperationRegistry {
 
     private List<Resolver> buildQueryResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
-                builder.buildQueryResolvers(ResolverBuilderParams.builder()
-                        .withQuerySourceBean(operationSource.getServiceSingleton())
-                        .withBeanType(operationSource.getJavaType())
-                        .withInclusionStrategy(inclusionStrategy)
-                        .withTypeTransformer(typeTransformer)
-                        .withBasePackages(basePackages)
-                        .withEnvironment(environment)
-                        .build())));
+                builder.buildQueryResolvers(new ResolverBuilderParams(
+                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
     }
 
     private List<Resolver> buildMutationResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
-                builder.buildMutationResolvers(ResolverBuilderParams.builder()
-                        .withQuerySourceBean(operationSource.getServiceSingleton())
-                        .withBeanType(operationSource.getJavaType())
-                        .withInclusionStrategy(inclusionStrategy)
-                        .withTypeTransformer(typeTransformer)
-                        .withBasePackages(basePackages)
-                        .withEnvironment(environment)
-                        .build())));
+                builder.buildMutationResolvers(new ResolverBuilderParams(
+                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
     }
 
     private List<Resolver> buildSubscriptionResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
-                builder.buildSubscriptionResolvers(ResolverBuilderParams.builder()
-                        .withQuerySourceBean(operationSource.getServiceSingleton())
-                        .withBeanType(operationSource.getJavaType())
-                        .withInclusionStrategy(inclusionStrategy)
-                        .withTypeTransformer(typeTransformer)
-                        .withBasePackages(basePackages)
-                        .withEnvironment(environment)
-                        .build())));
+                builder.buildSubscriptionResolvers(new ResolverBuilderParams(
+                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
     }
 
     private List<Resolver> buildResolvers(Collection<OperationSource> operationSources, BiFunction<OperationSource, ResolverBuilder, Collection<Resolver>> building) {

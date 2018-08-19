@@ -39,14 +39,9 @@ public class ResolverBuilderTest {
 
     @Test
     public void bridgeMethodTest() {
-        Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGES) .buildQueryResolvers(ResolverBuilderParams.builder()
-                .withQuerySourceBean(new BaseServiceImpl<Number, String>())
-                .withBeanType(new TypeToken<BaseServiceImpl<Number, String>>() {}.getAnnotatedType())
-                .withInclusionStrategy(INCLUSION_STRATEGY)
-                .withTypeTransformer(TYPE_TRANSFORMER)
-                .withBasePackages(BASE_PACKAGES)
-                .withEnvironment(ENVIRONMENT)
-                .build());
+        Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGES) .buildQueryResolvers(new ResolverBuilderParams(
+                new BaseServiceImpl<Number, String>(), new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType(),
+                INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT));
         assertEquals(1, resolvers.size());
         assertEquals(resolvers.iterator().next().getReturnType().getType(), Number.class);
     }
@@ -99,14 +94,8 @@ public class ResolverBuilderTest {
     private Collection<Collection<Resolver>> resolvers(Object bean, ResolverBuilder... builders) {
         Collection<Collection<Resolver>> resolvers = new ArrayList<>(builders.length);
         for (ResolverBuilder builder : builders) {
-            resolvers.add(builder.buildQueryResolvers(ResolverBuilderParams.builder()
-                    .withQuerySourceBean(bean)
-                    .withBeanType(GenericTypeReflector.annotate(bean.getClass()))
-                    .withInclusionStrategy(INCLUSION_STRATEGY)
-                    .withTypeTransformer(TYPE_TRANSFORMER)
-                    .withBasePackages(BASE_PACKAGES)
-                    .withEnvironment(ENVIRONMENT)
-                    .build()));
+            resolvers.add(builder.buildQueryResolvers(new ResolverBuilderParams(
+                    bean, GenericTypeReflector.annotate(bean.getClass()), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         }
         return resolvers;
     }
@@ -128,7 +117,6 @@ public class ResolverBuilderTest {
     private static class One implements BaseService<Person, Long> {
 
         @Override
-        @SuppressWarnings("Convert2Lambda")
         public Person findOne(Long aLong) {
             return new Person() {
                 @Override

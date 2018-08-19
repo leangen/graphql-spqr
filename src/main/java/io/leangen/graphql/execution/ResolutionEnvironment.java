@@ -52,12 +52,7 @@ public class ResolutionEnvironment {
     }
 
     public Object getInputValue(Object input, AnnotatedType type, Parameter parameter) {
-        ArgumentInjectorParams params = ArgumentInjectorParams.builder()
-                .withInput(input)
-                .withType(type)
-                .withParameter(parameter)
-                .withResolutionEnvironment(this)
-                .build();
+        ArgumentInjectorParams params = new ArgumentInjectorParams(input, type, parameter, this);
         return this.globalEnvironment.injectors.getInjector(type, parameter).getArgumentValue(params);
     }
 }

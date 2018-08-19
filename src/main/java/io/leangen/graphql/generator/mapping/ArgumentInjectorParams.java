@@ -13,7 +13,7 @@ public class ArgumentInjectorParams {
     private final Parameter parameter;
     private final ResolutionEnvironment resolutionEnvironment;
 
-    private ArgumentInjectorParams(Object input, AnnotatedType type, Parameter parameter, ResolutionEnvironment resolutionEnvironment) {
+    public ArgumentInjectorParams(Object input, AnnotatedType type, Parameter parameter, ResolutionEnvironment resolutionEnvironment) {
         this.input = input;
         this.type = Objects.requireNonNull(type);
         this.parameter = parameter;
@@ -34,41 +34,5 @@ public class ArgumentInjectorParams {
 
     public ResolutionEnvironment getResolutionEnvironment() {
         return resolutionEnvironment;
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-
-        private Object input;
-        private AnnotatedType type;
-        private Parameter parameter;
-        private ResolutionEnvironment resolutionEnvironment;
-
-        public Builder withInput(Object input) {
-            this.input = input;
-            return this;
-        }
-
-        public Builder withType(AnnotatedType type) {
-            this.type = type;
-            return this;
-        }
-
-        public Builder withParameter(Parameter parameter) {
-            this.parameter = parameter;
-            return this;
-        }
-
-        public Builder withResolutionEnvironment(ResolutionEnvironment resolutionEnvironment) {
-            this.resolutionEnvironment = resolutionEnvironment;
-            return this;
-        }
-
-        public ArgumentInjectorParams build() {
-            return new ArgumentInjectorParams(input, type, parameter, resolutionEnvironment);
-        }
     }
 }
