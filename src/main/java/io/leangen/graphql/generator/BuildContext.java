@@ -115,7 +115,7 @@ public class BuildContext {
                 .flatMap(input -> abstractInputHandler.findConstituentAbstractTypes(input, this).stream().map(ClassUtils::getRawType))
                 .distinct()
                 .collect(Collectors.toList());
-        Map<Class, List<Class>> concreteSubTypes = abstractTypes.stream()
+        Map<Class, List<Class<?>>> concreteSubTypes = abstractTypes.stream()
                 .collect(Collectors.toMap(Function.identity(), abs -> abstractInputHandler.findConcreteSubTypes(abs, this)));
         return valueMapperFactory.getValueMapper(concreteSubTypes, globalEnvironment);
     }

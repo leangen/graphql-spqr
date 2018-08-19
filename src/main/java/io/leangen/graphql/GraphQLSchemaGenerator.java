@@ -1106,7 +1106,7 @@ public class GraphQLSchemaGenerator {
         }
 
         @Override
-        public ValueMapper getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
+        public ValueMapper getValueMapper(Map<Class, List<Class<?>>> concreteSubTypes, GlobalEnvironment environment) {
             if (concreteSubTypes.isEmpty() || concreteSubTypes.values().stream().allMatch(List::isEmpty)) {
                 return this.defaultValueMapper;
             }

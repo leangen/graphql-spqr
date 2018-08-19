@@ -1,6 +1,6 @@
 package io.leangen.graphql.generator.mapping.strategy;
 
-import io.github.lukehutch.fastclasspathscanner.scanner.ClassInfo;
+import io.github.classgraph.ClassInfo;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;

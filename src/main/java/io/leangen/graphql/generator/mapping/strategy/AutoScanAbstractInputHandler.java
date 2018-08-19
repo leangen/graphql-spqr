@@ -1,6 +1,6 @@
 package io.leangen.graphql.generator.mapping.strategy;
 
-import io.github.lukehutch.fastclasspathscanner.scanner.ClassInfo;
+import io.github.classgraph.ClassInfo;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
@@ -67,9 +67,9 @@ public class AutoScanAbstractInputHandler implements AbstractInputHandler {
     }
 
     @Override
-    public List<Class> findConcreteSubTypes(Class abstractType, BuildContext buildContext) {
+    public List<Class<?>> findConcreteSubTypes(Class abstractType, BuildContext buildContext) {
         Predicate<ClassInfo> filter = CONCRETE.and(NON_IGNORED).and(filters.stream().reduce(Predicate::and).orElse(ALL));
-        List<Class> subTypes = buildContext.classFinder.findImplementations(abstractType, filter, buildContext.basePackages);
+        List<Class<?>> subTypes = buildContext.classFinder.findImplementations(abstractType, filter, buildContext.basePackages);
         if (subTypes.isEmpty()) {
             log.warn("No concrete subtypes of " + abstractType.getName() + " found");
         }

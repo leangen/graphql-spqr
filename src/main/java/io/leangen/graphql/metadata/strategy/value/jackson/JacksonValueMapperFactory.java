@@ -48,11 +48,11 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
     }
 
     @Override
-    public JacksonValueMapper getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
+    public JacksonValueMapper getValueMapper(Map<Class, List<Class<?>>> concreteSubTypes, GlobalEnvironment environment) {
         return new JacksonValueMapper(initBuilder(concreteSubTypes, environment));
     }
 
-    private ObjectMapper initBuilder(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
+    private ObjectMapper initBuilder(Map<Class, List<Class<?>>> concreteSubTypes, GlobalEnvironment environment) {
         ObjectMapper objectMapper = prototype != null ? prototype.copy() : new ObjectMapper();
         return this.configurers.stream().reduce(objectMapper, (mapper, configurer) ->
                 configurer.configure(new ConfigurerParams(mapper, concreteSubTypes, this.typeInfoGenerator, environment)), (b1, b2) -> b2);
@@ -90,13 +90,13 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
             return mapper;
         }
 
-        private Map<Class, Class> unambiguousSubtypes(Map<Class, List<Class>> concreteSubTypes) {
+        private Map<Class, Class> unambiguousSubtypes(Map<Class, List<Class<?>>> concreteSubTypes) {
             return concreteSubTypes.entrySet().stream()
                     .filter(entry -> entry.getValue().size() == 1)
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
         }
 
-        private Map<Type, List<NamedType>> ambiguousSubtypes(Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, MessageBundle messageBundle) {
+        private Map<Type, List<NamedType>> ambiguousSubtypes(Map<Class, List<Class<?>>> concreteSubTypes, TypeInfoGenerator metaDataGen, MessageBundle messageBundle) {
             Map<Type, List<NamedType>> types = new HashMap<>();
             concreteSubTypes.entrySet().stream()
                     .filter(entry -> entry.getValue().size() > 1)
@@ -152,11 +152,11 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
     public static class ConfigurerParams {
 
         final ObjectMapper objectMapper;
-        final Map<Class, List<Class>> concreteSubTypes;
+        final Map<Class, List<Class<?>>> concreteSubTypes;
         final TypeInfoGenerator metaDataGen;
         final GlobalEnvironment environment;
 
-        ConfigurerParams(ObjectMapper objectMapper, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
+        ConfigurerParams(ObjectMapper objectMapper, Map<Class, List<Class<?>>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
             this.objectMapper = objectMapper;
             this.concreteSubTypes = concreteSubTypes;
             this.metaDataGen = metaDataGen;
@@ -167,7 +167,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
             return objectMapper;
         }
 
-        public Map<Class, List<Class>> getConcreteSubTypes() {
+        public Map<Class, List<Class<?>>> getConcreteSubTypes() {
             return concreteSubTypes;
         }
 

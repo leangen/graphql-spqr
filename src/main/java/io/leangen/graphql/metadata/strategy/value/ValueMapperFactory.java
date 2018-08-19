@@ -10,5 +10,5 @@ import java.util.Map;
  */
 public interface ValueMapperFactory {
     
-    ValueMapper getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment);
+    ValueMapper getValueMapper(Map<Class, List<Class<?>>> concreteSubTypes, GlobalEnvironment environment);
 }

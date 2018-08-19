@@ -341,7 +341,7 @@ public class ClassUtils {
      * @deprecated Use {@link ClassFinder} directly as that enables caching of the search results
      */
     @Deprecated
-    public static List<Class> findImplementations(Class superType, String... packages) {
+    public static List<Class<?>> findImplementations(Class superType, String... packages) {
         return new ClassFinder().findImplementations(superType, info -> true, packages);
     }
 

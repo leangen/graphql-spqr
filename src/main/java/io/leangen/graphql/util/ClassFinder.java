@@ -1,16 +1,15 @@
 package io.leangen.graphql.util;
 
-import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
-import io.github.lukehutch.fastclasspathscanner.scanner.ClassInfo;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ClassInfoList;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -27,20 +26,18 @@ import java.util.stream.Stream;
  */
 public class ClassFinder {
 
-    public final static Predicate<ClassInfo> CONCRETE = info ->
-            (info.getClassModifiers() & (Modifier.ABSTRACT | Modifier.INTERFACE)) == 0;
+    public final static Predicate<ClassInfo> CONCRETE = info -> !info.isAbstract() && !info.isInterface();
 
     public final static Predicate<ClassInfo> NON_IGNORED = info ->
-            info.getAnnotations().stream().noneMatch(ann -> ann.getClassName().equals(GraphQLIgnore.class.getName()));
+            info.getAnnotations().stream().noneMatch(ann -> ann.getName().equals(GraphQLIgnore.class.getName()));
 
-    public final static Predicate<ClassInfo> PUBLIC = info ->
-            Modifier.isPublic(info.getClassModifiers());
+    public final static Predicate<ClassInfo> PUBLIC = ClassInfo::isPublic;
 
     public final static Predicate<ClassInfo> ALL = info -> true;
 
     public static final Logger log = LoggerFactory.getLogger(ClassFinder.class);
 
-    private final Map<String, Collection<ClassInfo>> cache = new ConcurrentHashMap<>();
+    private final Map<String, ClassInfoList> cache = new ConcurrentHashMap<>();
 
     /**
      * Searches for the implementations/subtypes of the given {@link AnnotatedType}. Only the matching classes are loaded.
@@ -66,13 +63,13 @@ public class ClassFinder {
      *
      * @return A collection of classes discovered that implementation/extend {@code superType}
      */
-    public List<Class> findImplementations(Class superType, Predicate<ClassInfo> filter, String... packages) {
+    public List<Class<?>> findImplementations(Class superType, Predicate<ClassInfo> filter, String... packages) {
         String[] scanPackages = Utils.emptyIfNull(packages);
         String cacheKey = Arrays.stream(scanPackages).sorted().collect(Collectors.joining());
-        Collection<ClassInfo> scanResults = cache.computeIfAbsent(cacheKey, k -> new FastClasspathScanner(scanPackages).scan().getClassNameToClassInfo().values());
+        ClassInfoList scanResults = cache.computeIfAbsent(cacheKey, k -> new ClassGraph().whitelistPackages(packages).enableAllInfo().scan().getAllClasses());
         try {
             return scanResults.stream()
-                    .filter(impl -> superType.isInterface() ? impl.implementsInterface(superType.getName()) : impl.hasSuperclass(superType.getName()))
+                    .filter(impl -> superType.isInterface() ? impl.implementsInterface(superType.getName()) : impl.extendsSuperclass(superType.getName()))
                     .filter(filter == null ? info -> true : filter)
                     .flatMap(ClassFinder::loadClass)
                     .collect(Collectors.toList());
@@ -95,9 +92,9 @@ public class ClassFinder {
 
     private static Stream<Class<?>> loadClass(ClassInfo classInfo) {
         try {
-            return Stream.of(classInfo.getClassRef());
+            return Stream.of(classInfo.loadClass());
         } catch (Exception e) {
-            log.error("Auto discovered type " + classInfo.getClassName() + " failed to load and will be ignored", e);
+            log.error("Auto discovered type " + classInfo.getName() + " failed to load and will be ignored", e);
             return Stream.empty();
         }
     }

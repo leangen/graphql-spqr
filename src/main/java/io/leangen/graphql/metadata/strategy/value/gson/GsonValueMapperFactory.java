@@ -46,11 +46,11 @@ public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeseria
     }
 
     @Override
-    public GsonValueMapper getValueMapper(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
+    public GsonValueMapper getValueMapper(Map<Class, List<Class<?>>> concreteSubTypes, GlobalEnvironment environment) {
         return new GsonValueMapper(initBuilder(concreteSubTypes, environment).create());
     }
 
-    private GsonBuilder initBuilder(Map<Class, List<Class>> concreteSubTypes, GlobalEnvironment environment) {
+    private GsonBuilder initBuilder(Map<Class, List<Class<?>>> concreteSubTypes, GlobalEnvironment environment) {
         GsonBuilder gsonBuilder = (prototype != null ? prototype.newBuilder() : new GsonBuilder())
                 .setFieldNamingStrategy(fieldNamingStrategy != null ? fieldNamingStrategy : new GsonFieldNamingStrategy(environment.messageBundle))
                 .registerTypeAdapterFactory(new GsonJava8TypeAdapterFactory());
@@ -84,7 +84,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeseria
         }
 
         @SuppressWarnings("unchecked")
-        private TypeAdapterFactory adapterFor(Class superClass, List<Class> implementations, TypeInfoGenerator infoGen, MessageBundle messageBundle) {
+        private TypeAdapterFactory adapterFor(Class superClass, List<Class<?>> implementations, TypeInfoGenerator infoGen, MessageBundle messageBundle) {
             RuntimeTypeAdapterFactory adapterFactory = RuntimeTypeAdapterFactory.of(superClass, ValueMapper.TYPE_METADATA_FIELD_NAME);
             if (implementations.isEmpty()) {
                 return null;
@@ -106,11 +106,11 @@ public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeseria
     public static class ConfigurerParams {
 
         final GsonBuilder gsonBuilder;
-        final Map<Class, List<Class>> concreteSubTypes;
+        final Map<Class, List<Class<?>>> concreteSubTypes;
         final TypeInfoGenerator infoGenerator;
         final GlobalEnvironment environment;
 
-        ConfigurerParams(GsonBuilder gsonBuilder, Map<Class, List<Class>> concreteSubTypes, TypeInfoGenerator infoGenerator, GlobalEnvironment environment) {
+        ConfigurerParams(GsonBuilder gsonBuilder, Map<Class, List<Class<?>>> concreteSubTypes, TypeInfoGenerator infoGenerator, GlobalEnvironment environment) {
             this.gsonBuilder = gsonBuilder;
             this.concreteSubTypes = concreteSubTypes;
             this.infoGenerator = infoGenerator;
@@ -121,7 +121,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeseria
             return gsonBuilder;
         }
 
-        public Map<Class, List<Class>> getConcreteSubTypes() {
+        public Map<Class, List<Class<?>>> getConcreteSubTypes() {
             return concreteSubTypes;
         }
 

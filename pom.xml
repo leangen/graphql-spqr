@@ -101,9 +101,9 @@
             <version>9.2</version>
         </dependency>
         <dependency>
-            <groupId>io.github.lukehutch</groupId>
-            <artifactId>fast-classpath-scanner</artifactId>
-            <version>3.1.10</version>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>4.0.6</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
