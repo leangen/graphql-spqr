@@ -15,6 +15,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.lang.annotation.ElementType;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +50,17 @@ public class ConversionTest {
         assertValueAtPathEquals("xyz", result, "echo.name");
         assertValueAtPathEquals("test1", result, "echo.stream.0.0");
         assertValueAtPathEquals("test2", result, "echo.stream.0.1");
+    }
+
+    @Test
+    public void testIterableConversion() {
+        GraphQL api = getApi();
+
+        ExecutionResult result = api.execute("{echo(in:{name: \"xyz\", iterable: [[[\"test1\", \"test2\"]]]}) {name, iterable}}");
+        assertNoErrors(result);
+        assertValueAtPathEquals("xyz", result, "echo.name");
+        assertValueAtPathEquals("test1", result, "echo.iterable.0.0.0");
+        assertValueAtPathEquals("test2", result, "echo.iterable.0.0.1");
     }
 
     @Test
@@ -116,6 +130,7 @@ public class ConversionTest {
         private Stream<Stream<String>> stream;
         private List<Optional<LinkedHashMap<String, Integer>>> mapList;
         private List<byte[]> binaries;
+        private Stream<Iterable<List<Optional<String>>>> iterable;
 
         public String getName() {
             return name;
@@ -148,6 +163,20 @@ public class ConversionTest {
         public void setBinaries(List<byte[]> binaries) {
             this.binaries = binaries;
         }
+
+        public Stream<Iterable<List<Optional<String>>>> getIterable() {
+            List<Optional<String>> inner = new ArrayList<>();
+            iterable.forEach(iter -> {
+                for (List<Optional<String>> item : iter) {
+                    inner.addAll(item);
+                }
+            });
+            return Stream.of(new IterX<>(Collections.singletonList(inner)));
+        }
+
+        public void setIterable(Stream<Iterable<List<Optional<String>>>> iterable) {
+            this.iterable = iterable;
+        }
     }
 
     public static class IdService {
@@ -178,5 +207,20 @@ public class ConversionTest {
     @GraphQLId(relayId = true)
     public static class AnnotatedId {
         public String value;
+    }
+
+    //An Iterable that is not a Collection
+    private static class IterX<T> implements Iterable<T> {
+
+        private final List<T> source;
+
+        IterX(List<T> source) {
+            this.source = source;
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            return source.iterator();
+        }
     }
 }

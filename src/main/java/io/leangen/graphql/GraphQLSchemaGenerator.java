@@ -39,6 +39,7 @@ import io.leangen.graphql.generator.mapping.common.EnvironmentInjector;
 import io.leangen.graphql.generator.mapping.common.IdAdapter;
 import io.leangen.graphql.generator.mapping.common.InputValueDeserializer;
 import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
+import io.leangen.graphql.generator.mapping.common.IterableAdapter;
 import io.leangen.graphql.generator.mapping.common.ListMapper;
 import io.leangen.graphql.generator.mapping.common.NonNullMapper;
 import io.leangen.graphql.generator.mapping.common.ObjectScalarAdapter;
@@ -793,7 +794,7 @@ public class GraphQLSchemaGenerator {
                 new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
                 new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
-                new ListMapper(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
+                new ListMapper(), new IterableAdapter<>(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
                 new ObjectScalarAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         for (ExtensionProvider<Configuration, TypeMapper> provider : typeMapperProviders) {
             typeMappers = provider.getExtensions(configuration, new ExtensionList<>(typeMappers));
@@ -811,7 +812,7 @@ public class GraphQLSchemaGenerator {
 
         List<InputConverter> inputConverters = Arrays.asList(
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new EnumMapToObjectTypeAdapter(enumMapper));
+                new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new IterableAdapter<>(), new EnumMapToObjectTypeAdapter(enumMapper));
         for (ExtensionProvider<Configuration, InputConverter> provider : inputConverterProviders) {
             inputConverters = provider.getExtensions(configuration, new ExtensionList<>(inputConverters));
         }
