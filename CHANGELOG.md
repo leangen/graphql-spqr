@@ -18,8 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - It is now possible to explicitly treat chosen types as equal for the purposes
   of name collision detection [#124](https://github.com/leangen/graphql-spqr/issues/124) [#157](https://github.com/leangen/graphql-spqr/issues/157)
 - Ability to register multiple `InputFieldBuilder`s [#147](https://github.com/leangen/graphql-spqr/issues/147)
-- Now using ClassGraph for implementation type auto discovery, which fixes numerous
-  problems with fat JARs, class format compatibility etc [#111](https://github.com/leangen/graphql-spqr/issues/111) [#121](https://github.com/leangen/graphql-spqr/issues/121) [#126](https://github.com/leangen/graphql-spqr/issues/126) [#161](https://github.com/leangen/graphql-spqr/issues/161)
+- Now using ClassGraph for implementation type auto discovery, bringing huge improvements on stability and performance [#126](https://github.com/leangen/graphql-spqr/issues/126) [#161](https://github.com/leangen/graphql-spqr/issues/161)
 - Input object fields can now have default values [#131](https://github.com/leangen/graphql-spqr/issues/131)
 - Existing Gson instance can now be used for configuration [#132](https://github.com/leangen/graphql-spqr/issues/132)
 - Ability to customize deprecation reason without annotations [#133](https://github.com/leangen/graphql-spqr/issues/133)
@@ -67,3 +66,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed type name collision going unnoticed when an input and an output type share a name [#151](https://github.com/leangen/graphql-spqr/issues/151)
 - Fixed generic type discovery for static inner classes
 - Fixed double-quoting of IDs [#134](https://github.com/leangen/graphql-spqr/issues/134)
+- Fixed numerous problems in implementation auto discovery with fat JARs, new class format etc [#111](https://github.com/leangen/graphql-spqr/issues/111) [#121](https://github.com/leangen/graphql-spqr/issues/121) [#150](https://github.com/leangen/graphql-spqr/issues/150)
