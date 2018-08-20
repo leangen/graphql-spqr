@@ -13,12 +13,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - String interpolation support (i18n / l10n) [#162](https://github.com/leangen/graphql-spqr/issues/162)
 - Jackson & Gson types (e.g. `ObjectNode`, `JsonObject` etc) are now fully
   supported out-of-the-box. [#122](https://github.com/leangen/graphql-spqr/issues/122)
-- Ability to use `Connections` in non spec-compliant queries [#152](https://github.com/leangen/graphql-spqr/issues/152)
+- Ability to use `Connection`s (`Page`) in non spec-compliant queries [#152](https://github.com/leangen/graphql-spqr/issues/152)
 - `DefaultValueProvider` can now declare a constructor accepting `GlobalEnvironment`
 - It is now possible to explicitly treat chosen types as equal for the purposes
   of name collision detection [#124](https://github.com/leangen/graphql-spqr/issues/124) [#157](https://github.com/leangen/graphql-spqr/issues/157)
 - Ability to register multiple `InputFieldBuilder`s [#147](https://github.com/leangen/graphql-spqr/issues/147)
-- Now using ClassGraph for implementation type auto discovery, bringing huge improvements on stability and performance [#126](https://github.com/leangen/graphql-spqr/issues/126) [#161](https://github.com/leangen/graphql-spqr/issues/161)
+- Now using ClassGraph for implementation type auto discovery, bringing huge improvements in stability and performance [#126](https://github.com/leangen/graphql-spqr/issues/126) [#161](https://github.com/leangen/graphql-spqr/issues/161)
 - Input object fields can now have default values [#131](https://github.com/leangen/graphql-spqr/issues/131)
 - Existing Gson instance can now be used for configuration [#132](https://github.com/leangen/graphql-spqr/issues/132)
 - Ability to customize deprecation reason without annotations [#133](https://github.com/leangen/graphql-spqr/issues/133)
