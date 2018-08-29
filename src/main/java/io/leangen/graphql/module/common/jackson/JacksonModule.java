@@ -1,13 +1,13 @@
-package io.leangen.graphql.extension.common.jackson;
+package io.leangen.graphql.module.common.jackson;
 
 import com.fasterxml.jackson.databind.node.DecimalNode;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
-import io.leangen.graphql.extension.SimpleModule;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.module.SimpleModule;
 
 import java.util.Arrays;
 import java.util.List;

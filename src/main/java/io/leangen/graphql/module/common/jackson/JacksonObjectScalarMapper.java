@@ -1,4 +1,4 @@
-package io.leangen.graphql.extension.common.jackson;
+package io.leangen.graphql.module.common.jackson;
 
 import com.fasterxml.jackson.databind.node.POJONode;
 import graphql.schema.GraphQLScalarType;

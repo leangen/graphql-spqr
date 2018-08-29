@@ -1,4 +1,4 @@
-package io.leangen.graphql.extension.common.gson;
+package io.leangen.graphql.module.common.gson;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -29,6 +29,7 @@ import static io.leangen.graphql.util.Scalars.literalParsingException;
 import static io.leangen.graphql.util.Scalars.serializationException;
 import static io.leangen.graphql.util.Scalars.valueParsingException;
 
+@SuppressWarnings("WeakerAccess")
 public class GsonScalars {
 
     public static final GraphQLScalarType JsonAnyNode = new GraphQLScalarType("JSON", "JSON object", new Coercing() {

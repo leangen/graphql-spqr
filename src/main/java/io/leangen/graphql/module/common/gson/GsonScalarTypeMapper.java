@@ -1,4 +1,4 @@
-package io.leangen.graphql.extension.common.gson;
+package io.leangen.graphql.module.common.gson;
 
 import graphql.schema.GraphQLScalarType;
 import io.leangen.graphql.generator.BuildContext;

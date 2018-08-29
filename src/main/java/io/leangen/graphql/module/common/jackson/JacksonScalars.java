@@ -1,4 +1,4 @@
-package io.leangen.graphql.extension.common.jackson;
+package io.leangen.graphql.module.common.jackson;
 
 import com.fasterxml.jackson.databind.node.BigIntegerNode;
 import com.fasterxml.jackson.databind.node.BinaryNode;
@@ -33,6 +33,7 @@ import static io.leangen.graphql.util.Scalars.literalOrException;
 import static io.leangen.graphql.util.Scalars.serializationException;
 import static io.leangen.graphql.util.Scalars.valueParsingException;
 
+@SuppressWarnings("WeakerAccess")
 public class JacksonScalars {
 
     public static final GraphQLScalarType JsonTextNode = new GraphQLScalarType("JsonText", "Text JSON node", new Coercing() {

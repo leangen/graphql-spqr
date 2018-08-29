@@ -9,9 +9,6 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.extension.ExtensionProvider;
-import io.leangen.graphql.extension.GraphQLSchemaProcessor;
-import io.leangen.graphql.extension.Module;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.InputFieldBuilderRegistry;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
@@ -85,6 +82,7 @@ import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.module.Module;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Defaults;
 import io.leangen.graphql.util.GraphQLUtils;
@@ -103,8 +101,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
@@ -973,145 +969,6 @@ public class GraphQLSchemaGenerator {
                         throw new ConfigurationException("Multiple " + extensionType + " of type " + clazz.getName() + " registered");
                     }
                 });
-    }
-
-    public static class Configuration {
-        public final InterfaceMappingStrategy interfaceMappingStrategy;
-        public final ScalarDeserializationStrategy scalarDeserializationStrategy;
-        public final TypeTransformer typeTransformer;
-        public final String[] basePackages;
-
-        Configuration(InterfaceMappingStrategy interfaceMappingStrategy, ScalarDeserializationStrategy scalarDeserializationStrategy, TypeTransformer typeTransformer, String[] basePackages) {
-            this.interfaceMappingStrategy = interfaceMappingStrategy;
-            this.scalarDeserializationStrategy = scalarDeserializationStrategy;
-            this.typeTransformer = typeTransformer;
-            this.basePackages = basePackages;
-        }
-    }
-
-    public static class ExtendedConfiguration extends Configuration {
-
-        public final GlobalEnvironment environment;
-
-        ExtendedConfiguration(Configuration config, GlobalEnvironment environment) {
-            super(config.interfaceMappingStrategy, config.scalarDeserializationStrategy, config.typeTransformer, config.basePackages);
-            this.environment = environment;
-        }
-    }
-
-    public static final class ExtensionList<E> extends ArrayList<E> {
-
-        ExtensionList(Collection<? extends E> c) {
-            super(c);
-        }
-
-        public E getFirstOfType(Class<? extends E> extensionType) {
-            return get(firstIndexOfTypeStrict(extensionType));
-        }
-
-        @SafeVarargs
-        public final ExtensionList<E> append(E... extensions) {
-            Collections.addAll(this, extensions);
-            return this;
-        }
-
-        public ExtensionList<E> append(Collection<E> extensions) {
-            super.addAll(extensions);
-            return this;
-        }
-
-        @SafeVarargs
-        public final ExtensionList<E> prepend(E... extensions) {
-            return insert(0, extensions);
-        }
-
-        @SafeVarargs
-        public final ExtensionList<E> insert(int index, E... extensions) {
-            for (int i = 0; i < extensions.length; i++) {
-                add(index + i, extensions[i]);
-            }
-            return this;
-        }
-
-        @SafeVarargs
-        public final ExtensionList<E> insertAfter(Class<? extends E> extensionType, E... extensions) {
-            return insert(firstIndexOfTypeStrict(extensionType) + 1, extensions);
-        }
-
-        @SafeVarargs
-        public final ExtensionList<E> insertBefore(Class<? extends E> extensionType, E... extensions) {
-            return insert(firstIndexOfTypeStrict(extensionType), extensions);
-        }
-
-        @SafeVarargs
-        public final ExtensionList<E> insertAfterOrAppend(Class<? extends E> extensionType, E... extensions) {
-            int firstIndexOfType = firstIndexOfType(extensionType);
-            if (firstIndexOfType >= 0) {
-                return insert(firstIndexOfType + 1, extensions);
-            } else {
-                return append(extensions);
-            }
-        }
-
-        @SafeVarargs
-        public final ExtensionList<E> insertBeforeOrPrepend(Class<? extends E> extensionType, E... extensions) {
-            int firstIndexOfType = firstIndexOfType(extensionType);
-            return insert(firstIndexOfType >= 0 ? firstIndexOfType : 0, extensions);
-        }
-
-        public ExtensionList<E> drop(int index) {
-            super.remove(index);
-            return this;
-        }
-
-        public ExtensionList<E> drop(Class<? extends E> extensionType) {
-            return drop(firstIndexOfTypeStrict(extensionType));
-        }
-
-        public ExtensionList<E> dropAll(Predicate<? super E> filter) {
-            super.removeIf(filter);
-            return this;
-        }
-
-        public ExtensionList<E> replace(int index, E replacement) {
-            super.set(index, replacement);
-            return this;
-        }
-
-        public ExtensionList<E> replace(Class<? extends E> extensionType, E replacement) {
-            return replace(firstIndexOfTypeStrict(extensionType), replacement);
-        }
-
-        public ExtensionList<E> replaceOrAppend(Class<? extends E> extensionType, E replacement) {
-            int firstIndexOfType = firstIndexOfType(extensionType);
-            if (firstIndexOfType >= 0) {
-                return replace(firstIndexOfType, replacement);
-            } else {
-                return append(replacement);
-            }
-        }
-
-        public ExtensionList<E> modify(Class<? extends E> extensionType, Consumer<E> modifier) {
-            modifier.accept(get(firstIndexOfTypeStrict(extensionType)));
-            return this;
-        }
-
-        private int firstIndexOfTypeStrict(Class<? extends E> extensionType) {
-            int firstIndexOfType = firstIndexOfType(extensionType);
-            if (firstIndexOfType < 0) {
-                throw new ConfigurationException("Extension of type " + extensionType.getName() + " not found");
-            }
-            return firstIndexOfType;
-        }
-
-        private int firstIndexOfType(Class<? extends E> extensionType) {
-            for (int i = 0; i < size(); i++) {
-                if (extensionType.isInstance(get(i))) {
-                    return i;
-                }
-            }
-            return -1;
-        }
     }
 
     private static class MemoizedValueMapperFactory implements ValueMapperFactory {

@@ -1,8 +1,8 @@
-package io.leangen.graphql.extension.common.gson;
+package io.leangen.graphql.module.common.gson;
 
-import io.leangen.graphql.extension.SimpleModule;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.module.SimpleModule;
 
 import java.util.Arrays;
 import java.util.Collections;

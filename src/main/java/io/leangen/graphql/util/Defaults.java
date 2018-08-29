@@ -1,12 +1,12 @@
 package io.leangen.graphql.util;
 
-import io.leangen.graphql.extension.Module;
-import io.leangen.graphql.extension.common.gson.GsonModule;
-import io.leangen.graphql.extension.common.jackson.JacksonModule;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
+import io.leangen.graphql.module.Module;
+import io.leangen.graphql.module.common.gson.GsonModule;
+import io.leangen.graphql.module.common.jackson.JacksonModule;
 
 import java.util.ArrayList;
 import java.util.List;

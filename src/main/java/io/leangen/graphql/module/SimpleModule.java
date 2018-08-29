@@ -1,4 +1,4 @@
-package io.leangen.graphql.extension;
+package io.leangen.graphql.module;
 
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.InputConverter;

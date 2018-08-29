@@ -1,4 +1,4 @@
-package io.leangen.graphql.extension.common.jackson;
+package io.leangen.graphql.module.common.jackson;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -26,6 +26,7 @@ import java.util.Map;
 
 import static io.leangen.graphql.util.Scalars.literalOrException;
 
+@SuppressWarnings("WeakerAccess")
 public class JacksonObjectScalars {
 
     public static final GraphQLScalarType JsonObjectNode = new GraphQLScalarType("JsonObject", "JSON object", new Coercing() {
