@@ -14,10 +14,10 @@ public class LogAssertions {
 
     public static void assertWarningsLogged(List<ILoggingEvent> logEvents, String... messages) {
         assertEquals(messages.length, logEvents.size());
-        ILoggingEvent event = logEvents.get(0);
-        assertThat(event.getLevel(), is(Level.WARN));
-        for (String message : messages) {
-            assertThat(event.getMessage(), containsString(message));
+        for (int i = 0; i < messages.length; i++) {
+            ILoggingEvent event = logEvents.get(i);
+            assertThat(event.getLevel(), is(Level.WARN));
+            assertThat(event.getMessage(), containsString(messages[i]));
         }
     }
 }

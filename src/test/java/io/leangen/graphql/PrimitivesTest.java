@@ -4,6 +4,7 @@ import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
@@ -25,6 +26,10 @@ public class PrimitivesTest {
         field = query.getFieldDefinition("primitive");
         assertNonNull(field.getType(), Scalars.GraphQLInt);
         assertNonNull(field.getArgument("in").getType(), Scalars.GraphQLInt);
+
+        field = query.getFieldDefinition("primitiveWithDefault");
+        assertNonNull(field.getType(), Scalars.GraphQLInt);
+        assertSame(field.getArgument("in").getType(), Scalars.GraphQLInt);
 
         field = query.getFieldDefinition("nonNullPrimitive");
         assertNonNull(field.getType(), Scalars.GraphQLInt);
@@ -70,6 +75,11 @@ public class PrimitivesTest {
 
         @GraphQLQuery
         public int primitive(int in) {
+            return in;
+        }
+
+        @GraphQLQuery
+        public int primitiveWithDefault(@GraphQLArgument(name = "in", defaultValue = "3") int in) {
             return in;
         }
 

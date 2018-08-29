@@ -28,6 +28,8 @@ import io.leangen.graphql.generator.mapping.BaseTypeAliasComparator;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.generator.mapping.SchemaTransformer;
+import io.leangen.graphql.generator.mapping.SchemaTransformerRegistry;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
 import io.leangen.graphql.generator.mapping.common.ArrayAdapter;
@@ -162,11 +164,13 @@ public class GraphQLSchemaGenerator {
     private String[] basePackages = Utils.emptyArray();
     private DelegatingMessageBundle messageBundle = new DelegatingMessageBundle();
     private List<TypeMapper> typeMappers;
+    private List<SchemaTransformer> transformers;
     private Comparator<AnnotatedType> typeComparator;
     private List<InputFieldBuilder> inputFieldBuilders;
     private JavaDeprecationMappingConfig javaDeprecationConfig = new JavaDeprecationMappingConfig(true, "Deprecated");
     private final OperationSourceRegistry operationSourceRegistry = new OperationSourceRegistry();
     private final List<ExtensionProvider<Configuration, TypeMapper>> typeMapperProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Configuration, SchemaTransformer>> schemaTransformerProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, InputConverter>> inputConverterProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, OutputConverter>> outputConverterProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, ArgumentInjector>> argumentInjectorProviders = new ArrayList<>();
@@ -552,6 +556,15 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withSchemaTransformers(SchemaTransformer... transformers) {
+        return withSchemaTransformers((conf, current) -> current.append(transformers));
+    }
+
+    public GraphQLSchemaGenerator withSchemaTransformers(ExtensionProvider<Configuration, SchemaTransformer> provider) {
+        this.schemaTransformerProviders.add(provider);
+        return this;
+    }
+
     /**
      * Registers custom {@link InputConverter}s to be used for converting values provided by the GraphQL client
      * into those expected by the corresponding Java method. Only needed in some specific cases when usual deserialization
@@ -801,6 +814,12 @@ public class GraphQLSchemaGenerator {
         }
         checkForEmptyOrDuplicates("type mappers", typeMappers);
 
+        transformers = Collections.singletonList(new NonNullMapper());
+        for (ExtensionProvider<Configuration, SchemaTransformer> provider : schemaTransformerProviders) {
+            transformers = provider.getExtensions(configuration, new ExtensionList<>(transformers));
+        }
+        checkForEmptyOrDuplicates("schema transformers", transformers);
+
         List<OutputConverter> outputConverters = Arrays.asList(
                 new IdAdapter(), new VoidToBooleanTypeAdapter(), new ArrayAdapter(), new CollectionOutputConverter(),
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(), new OptionalAdapter(),
@@ -863,7 +882,7 @@ public class GraphQLSchemaGenerator {
 
         BuildContext buildContext = new BuildContext(
                 basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy, typeTransformer, basePackages, environment),
-                new TypeMapperRegistry(typeMappers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
+                new TypeMapperRegistry(typeMappers), new SchemaTransformerRegistry(transformers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
                 abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), inclusionStrategy, relayMappingConfig, additionalTypes.values(), typeComparator, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 

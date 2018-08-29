@@ -21,7 +21,7 @@ public class Operation {
     private final String name;
     private final String description;
     private final String deprecationReason;
-    private final AnnotatedType javaType;
+    private final TypedElement typedElement;
     private final Type contextType;
     private final Map<String, Resolver> resolversByFingerprint;
     private final List<OperationArgument> arguments;
@@ -37,7 +37,7 @@ public class Operation {
         this.name = name;
         this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(Utils::isNotEmpty).findFirst().orElse(null);
         this.deprecationReason = resolvers.stream().map(Resolver::getOperationDeprecationReason).filter(Objects::nonNull).findFirst().orElse(null);
-        this.javaType = javaType;
+        this.typedElement = new TypedElement(javaType, resolvers.stream().map(resolver -> resolver.getExecutable().getDelegate()).collect(Collectors.toList()));
         this.contextType = contextType;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
@@ -93,7 +93,7 @@ public class Operation {
     }
 
     public AnnotatedType getJavaType() {
-        return javaType;
+        return typedElement.getJavaType();
     }
 
     public List<OperationArgument> getArguments() {
@@ -108,25 +108,8 @@ public class Operation {
         return batched;
     }
 
-    @Override
-    @SuppressWarnings("SimplifiableIfStatement")
-    public boolean equals(Object other) {
-        if (this == other) return true;
-        if (!(other instanceof Operation)) return false;
-        Operation that = (Operation) other;
-
-        if (!name.equals(that.name)) return false;
-        if (javaType != null ? !javaType.equals(that.javaType) : that.javaType != null)
-            return false;
-        return contextType != null ? contextType.equals(that.contextType) : that.contextType == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = name.hashCode();
-        result = 31 * result + (javaType != null ? javaType.hashCode() : 0);
-        result = 31 * result + (contextType != null ? contextType.hashCode() : 0);
-        return result;
+    public TypedElement getTypedElement() {
+        return typedElement;
     }
 
     @Override
@@ -137,7 +120,7 @@ public class Operation {
     private static class UnbatchedOperation extends Operation {
         
         private UnbatchedOperation(Operation operation) {
-            super(operation.name, unbatchJavaType(operation.javaType), unbatchContextType(operation.contextType),
+            super(operation.name, unbatchJavaType(operation.typedElement.getJavaType()), unbatchContextType(operation.contextType),
                     operation.arguments, new ArrayList<>(operation.getResolvers()), true);
         }
 

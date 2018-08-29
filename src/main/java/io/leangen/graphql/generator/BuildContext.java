@@ -5,6 +5,7 @@ import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.generator.mapping.SchemaTransformerRegistry;
 import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
 import io.leangen.graphql.generator.mapping.strategy.AbstractInputHandler;
 import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStrategy;
@@ -37,6 +38,7 @@ public class BuildContext {
     public final TypeRegistry typeRegistry;
     public final TypeCache typeCache;
     public final TypeMapperRegistry typeMappers;
+    public final SchemaTransformerRegistry transformers;
     public final Relay relay;
     public final GraphQLInterfaceType node; //Node interface, as defined by the Relay GraphQL spec
     public final TypeResolver typeResolver;
@@ -62,6 +64,7 @@ public class BuildContext {
      * @param environment The globally shared environment
      * @param operationRegistry Repository that can be used to fetch all known (singleton and domain) queries
      * @param typeMappers Repository of all registered {@link io.leangen.graphql.generator.mapping.TypeMapper}s
+     * @param transformers Repository of all registered {@link io.leangen.graphql.generator.mapping.SchemaTransformer}s
      * @param valueMapperFactory The factory used to produce {@link ValueMapper} instances
      * @param typeInfoGenerator Generates type name/description
      * @param messageBundle The global translation message bundle
@@ -73,7 +76,7 @@ public class BuildContext {
      * @param knownTypes The cache of known type names
      */
     public BuildContext(String[] basePackages, GlobalEnvironment environment, OperationRegistry operationRegistry,
-                        TypeMapperRegistry typeMappers, ValueMapperFactory valueMapperFactory, TypeInfoGenerator typeInfoGenerator,
+                        TypeMapperRegistry typeMappers, SchemaTransformerRegistry transformers, ValueMapperFactory valueMapperFactory, TypeInfoGenerator typeInfoGenerator,
                         MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldBuilderRegistry inputFieldBuilders, InclusionStrategy inclusionStrategy,
@@ -81,6 +84,7 @@ public class BuildContext {
                         ImplementationDiscoveryStrategy implementationStrategy) {
         this.operationRegistry = operationRegistry;
         this.typeRegistry = environment.typeRegistry;
+        this.transformers = transformers;
         this.typeCache = new TypeCache(knownTypes);
         this.typeMappers = typeMappers;
         this.typeInfoGenerator = typeInfoGenerator;

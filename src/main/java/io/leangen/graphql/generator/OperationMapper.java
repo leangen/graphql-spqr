@@ -158,7 +158,7 @@ public class OperationMapper {
         fieldBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
         fieldBuilder.withDirective(Directives.mappedOperation(operation));
 
-        return fieldBuilder.build();
+        return buildContext.transformers.transform(fieldBuilder.build(), operation, this, buildContext);
     }
 
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
@@ -196,7 +196,7 @@ public class OperationMapper {
                 .description(inputField.getDescription())
                 .type(toGraphQLInputType(inputField.getJavaType(), buildContext))
                 .defaultValue(inputField.getDefaultValue());
-        return builder.build();
+        return buildContext.transformers.transform(builder.build(), inputField, this, buildContext);
     }
 
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
@@ -220,12 +220,13 @@ public class OperationMapper {
     }
 
     private GraphQLArgument toGraphQLArgument(OperationArgument operationArgument, BuildContext buildContext) {
-        return newArgument()
+        GraphQLArgument argument = newArgument()
                 .name(operationArgument.getName())
                 .description(operationArgument.getDescription())
                 .type(toGraphQLInputType(operationArgument.getJavaType(), buildContext))
                 .defaultValue(operationArgument.getDefaultValue())
                 .build();
+        return buildContext.transformers.transform(argument, operationArgument, this, buildContext);
     }
 
     private GraphQLFieldDefinition toRelayMutation(GraphQLFieldDefinition mutation, RelayMappingConfig relayMappingConfig) {

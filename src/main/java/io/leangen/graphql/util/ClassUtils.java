@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.beans.Introspector;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Target;
 import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
@@ -24,6 +22,7 @@ import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
@@ -181,11 +180,10 @@ public class ClassUtils {
 
     public static <T extends AnnotatedType> T normalize(T type) {
         type = GenericTypeReflector.toCanonicalBoxed(type);
-        Annotation[] filteredAnnotations = Arrays.stream(type.getAnnotations())
-                .filter(ann -> isValidAnnotation(ann.annotationType()))
-                .filter(ann -> !ann.annotationType().equals(GraphQLUnion.class))
-                .toArray(Annotation[]::new);
-        return type.getAnnotations().length == filteredAnnotations.length ? type : GenericTypeReflector.replaceAnnotations(type, filteredAnnotations);
+        if (Arrays.stream(type.getAnnotations()).anyMatch(ann -> ann.annotationType().equals(GraphQLUnion.class))) {
+            type = removeAnnotations(type, Collections.singleton(GraphQLUnion.class));
+        }
+        return type;
     }
 
     @SuppressWarnings("unchecked")
@@ -374,6 +372,16 @@ public class ClassUtils {
         return GenericTypeReflector.toCanonical(type).toString();
     }
 
+    public static String toString(AnnotatedElement element) {
+        if (element instanceof Parameter) {
+            return ((Parameter) element).getDeclaringExecutable() + "#" + ((Parameter) element).getName();
+        }
+        if (element instanceof AnnotatedType) {
+            return toString((AnnotatedType) element);
+        }
+        return element.toString();
+    }
+
     public static boolean hasAnnotation(AnnotatedElement element, Class<? extends Annotation> annotation) {
         return element.isAnnotationPresent(annotation) || Arrays.stream(element.getAnnotations())
                 .anyMatch(ann -> ann.annotationType().isAnnotationPresent(annotation));
@@ -419,7 +427,7 @@ public class ClassUtils {
         if (type.getAnnotations().length == 0 || toRemove.size() == 0) {
             return type;
         }
-        Collection<Annotation> keptAnnotations = new ArrayList<>(type.getAnnotations().length - 1);
+        Collection<Annotation> keptAnnotations = new ArrayList<>(type.getAnnotations().length);
         for (Annotation annotation : type.getAnnotations()) {
             if (!toRemove.contains(annotation.annotationType())) {
                 keptAnnotations.add(annotation);
@@ -686,17 +694,6 @@ public class ClassUtils {
                 .flatMap(type -> Arrays.stream(type.getAnnotations()))
                 .distinct()
                 .toArray(Annotation[]::new);
-    }
-
-    private static boolean isValidAnnotation(Class<? extends Annotation> type) {
-        if (type.isAnnotationPresent(Target.class)) {
-            List<ElementType> targets = Arrays.asList(type.getAnnotation(Target.class).value());
-            return targets.contains(ElementType.TYPE_USE)
-                    || targets.contains(ElementType.TYPE)
-                    || targets.contains(ElementType.TYPE_PARAMETER)
-                    || targets.contains(ElementType.LOCAL_VARIABLE);
-        }
-        return false;
     }
 
     private static class TypeComparator implements Comparator<Class<?>> {

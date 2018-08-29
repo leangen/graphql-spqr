@@ -123,7 +123,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
 
         AnnotatedType deserializableType = resolveDeserializableType(desc.accessor, desc.type, desc.accessor.getType(), objectMapper);
         Object defaultValue = defaultValue(desc.declaringType, prop, desc.type, transformer, environment);
-        return Stream.of(new InputField(prop.getName(), prop.getMetadata().getDescription(), desc.type, deserializableType, defaultValue));
+        return Stream.of(new InputField(prop.getName(), prop.getMetadata().getDescription(), desc.type, deserializableType, defaultValue, desc.element));
     }
 
     private AnnotatedType resolveDeserializableType(Annotated accessor, AnnotatedType realType, JavaType baseType, ObjectMapper objectMapper) {

@@ -106,7 +106,9 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
                 }
                 field.setAccessible(true);
                 String fieldName = gson.fieldNamingStrategy().translateName(field);
-                if (!inputFields.add(new InputField(fieldName, getDescription(field, params.getEnvironment().messageBundle), fieldType, null, defaultValue(field, fieldType, params.getEnvironment())))) {
+                InputField inputField = new InputField(fieldName, getDescription(field, params.getEnvironment().messageBundle),
+                        fieldType, null, defaultValue(field, fieldType, params.getEnvironment()), (AnnotatedElement) target);
+                if (!inputFields.add(inputField)) {
                     throw new IllegalArgumentException(raw + " declares multiple input fields named " + fieldName);
                 }
             }

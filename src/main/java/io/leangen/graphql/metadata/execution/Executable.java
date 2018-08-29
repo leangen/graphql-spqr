@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Parameter;
 
-public abstract class Executable<T extends Member & AnnotatedElement> {
+public abstract class Executable<T extends AnnotatedElement & Member> {
 
     T delegate;
 

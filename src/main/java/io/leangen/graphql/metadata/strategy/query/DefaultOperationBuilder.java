@@ -84,7 +84,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
                 .collect(Collectors.toList());
 
         if (resolvers.stream().anyMatch(resolver -> ClassUtils.containsTypeAnnotation(resolver.getReturnType(), GraphQLUnion.class))) {
-            return unionize(returnTypes.toArray(new AnnotatedType[returnTypes.size()]), messageBundle);
+            return unionize(returnTypes.toArray(new AnnotatedType[0]), messageBundle);
         }
 
         return resolveJavaType(returnTypes, "Multiple methods detected for operation \"" + operationName + "\" with different return types.");
@@ -104,7 +104,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
                         argumentsByName.get(argName).stream().map(OperationArgument::getDescription).filter(Objects::nonNull).findFirst().orElse(""),
 //						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRequired),
                         argumentsByName.get(argName).stream().map(OperationArgument::getDefaultValue).filter(Objects::nonNull).findFirst().orElse(null),
-                        null,
+                        argumentsByName.get(argName).stream().map(OperationArgument::getParameter).filter(Objects::nonNull).collect(Collectors.toList()),
                         argumentsByName.get(argName).stream().anyMatch(OperationArgument::isContext),
                         argumentsByName.get(argName).stream().anyMatch(OperationArgument::isMappable)
                 ))

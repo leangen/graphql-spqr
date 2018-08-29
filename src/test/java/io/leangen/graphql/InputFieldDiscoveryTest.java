@@ -39,20 +39,20 @@ public class InputFieldDiscoveryTest {
     private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
 
     private static final InputField[] expectedDefaultFields = new InputField[] {
-            new InputField("field1", null, IGNORED_TYPE, null, null),
-            new InputField("field2", null, IGNORED_TYPE, null, null),
-            new InputField("field3", null, IGNORED_TYPE, null, null)
+            new InputField("field1", null, IGNORED_TYPE, null, null, null),
+            new InputField("field2", null, IGNORED_TYPE, null, null, null),
+            new InputField("field3", null, IGNORED_TYPE, null, null, null)
     };
     private static final InputField[] expectedFilteredDefaultFields = new InputField[] {expectedDefaultFields[0], expectedDefaultFields[2]};
     private static final InputField[] expectedExplicitFields = new InputField[] {
-            new InputField("aaa", "AAA", IGNORED_TYPE, null, "AAAA"),
-            new InputField("bbb", "BBB", IGNORED_TYPE, null, 2222),
-            new InputField("ccc", "CCC", IGNORED_TYPE, null, 3333)
+            new InputField("aaa", "AAA", IGNORED_TYPE, null, "AAAA", null),
+            new InputField("bbb", "BBB", IGNORED_TYPE, null, 2222, null),
+            new InputField("ccc", "CCC", IGNORED_TYPE, null, 3333, null)
     };
     private static final InputField[] expectedQueryFields = new InputField[] {
-            new InputField("aaa", null, IGNORED_TYPE, null, null),
-            new InputField("bbb", null, IGNORED_TYPE, null, null),
-            new InputField("ccc", null, IGNORED_TYPE, null, null)
+            new InputField("aaa", null, IGNORED_TYPE, null, null, null),
+            new InputField("bbb", null, IGNORED_TYPE, null, null, null),
+            new InputField("ccc", null, IGNORED_TYPE, null, null, null)
     };
     
     @Test

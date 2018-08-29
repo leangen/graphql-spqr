@@ -2,6 +2,8 @@ package io.leangen.graphql.util;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -79,5 +81,9 @@ public class Utils {
             throw new IllegalArgumentException("Empty string is not a valid value");
         }
         return value;
+    }
+
+    public static <T> List<T> singletonList(T element) {
+        return element == null ? Collections.emptyList() : Collections.singletonList(element);
     }
 }
