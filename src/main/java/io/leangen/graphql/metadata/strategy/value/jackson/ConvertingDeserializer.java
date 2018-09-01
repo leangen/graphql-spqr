@@ -59,7 +59,7 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
         }
         List<Annotation> annotations = new ArrayList<>();
         beanProperty.getMember().getAllAnnotations().annotations().forEach(annotations::add);
-        return annotations.toArray(new Annotation[annotations.size()]);
+        return annotations.toArray(new Annotation[0]);
     }
 
     @Override

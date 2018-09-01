@@ -98,7 +98,7 @@ public class UnionTest {
         assertEquals("This union is strong!", ((GraphQLUnionType) union).getDescription());
     }
 
-    private class InlineUnionService {
+    public class InlineUnionService {
         @GraphQLQuery(name = "union")
         public List<Map<@io.leangen.graphql.annotations.GraphQLUnion(name = "Simple_One_Two") ? super SimpleOne, @io.leangen.graphql.annotations.GraphQLUnion(name = "Education_Street") Street>> union(@GraphQLArgument(name = "id") int id) {
             return null;
@@ -115,21 +115,21 @@ public class UnionTest {
         }
     }
 
-    private class ExplicitUnionClassService {
+    public class ExplicitUnionClassService {
         @GraphQLQuery(name = "union")
         public UC union(@GraphQLArgument(name = "id") int id) {
             return null;
         }
     }
 
-    private class ExplicitUnionInterfaceService {
+    public class ExplicitUnionInterfaceService {
         @GraphQLQuery(name = "union")
         public UI union(@GraphQLArgument(name = "id") int id) {
             return null;
         }
     }
 
-    private class AutoDiscoveredUnionService {
+    public class AutoDiscoveredUnionService {
         @GraphQLQuery(name = "union")
         public UA union(@GraphQLArgument(name = "id") int id) {
             return null;

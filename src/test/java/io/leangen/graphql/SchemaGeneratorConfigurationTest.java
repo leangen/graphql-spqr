@@ -224,7 +224,7 @@ public class SchemaGeneratorConfigurationTest {
         }
     }
 
-    private static class Dummy {
+    public static class Dummy {
         @GraphQLQuery
         public byte[] bytes;
     }

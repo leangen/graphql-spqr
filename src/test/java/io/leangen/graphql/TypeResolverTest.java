@@ -70,7 +70,7 @@ public class TypeResolverTest {
     }
 
     @GraphQLInterface(name = "GenericRepository")
-    private interface GenericRepo {
+    public interface GenericRepo {
 
         @GraphQLQuery(name = "identifier")
         String identifier();

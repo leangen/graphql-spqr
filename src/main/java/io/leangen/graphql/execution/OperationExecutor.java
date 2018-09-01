@@ -46,8 +46,12 @@ public class OperationExecutor {
         try {
             Object result = execute(resolver, resolutionEnvironment, env.getArguments());
             return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
-        } catch (ReflectiveOperationException e) {
-            throw unwrap(e);
+        } catch (Throwable throwable) {
+            if (throwable instanceof RuntimeException) {
+                throw (RuntimeException) throwable;
+            } else {
+                throw new RuntimeException(throwable);
+            }
         }
     }
 
@@ -65,7 +69,7 @@ public class OperationExecutor {
      * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
      */
     private Object execute(Resolver resolver, ResolutionEnvironment resolutionEnvironment, Map<String, Object> rawArguments)
-            throws InvocationTargetException, IllegalAccessException {
+            throws Throwable {
 
         int queryArgumentsCount = resolver.getArguments().size();
 
@@ -77,13 +81,5 @@ public class OperationExecutor {
             args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor.getJavaType(), argDescriptor.getParameter());
         }
         return resolver.resolve(resolutionEnvironment.context, args);
-    }
-
-    private RuntimeException unwrap(ReflectiveOperationException e) {
-        Throwable cause = e.getCause();
-        if (cause != null && cause != e) {
-            return cause instanceof RuntimeException ? (RuntimeException) cause : new RuntimeException(cause.getMessage(), cause);
-        }
-        return new RuntimeException(e.getMessage(), e);
     }
 }
