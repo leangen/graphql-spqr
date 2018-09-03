@@ -1,16 +1,5 @@
 package io.leangen.graphql.services;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLContext;
@@ -22,6 +11,17 @@ import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.domain.User;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
 /**
  * Created by bojan.tomic on 3/5/16.
  */
@@ -32,8 +32,8 @@ public class UserService<T> {
     public UserService() {
         Address address1 = new Address();
         address1.setTypes(Arrays.asList("residential", "home"));
-        Street street11 = new Street("Vrolijkstraat", 300);
-        Street street12 = new Street("Wibaustraat", 123);
+        Street street11 = new Street("Fakestreet", 300);
+        Street street12 = new Street("Realstreet", 123);
         address1.getStreets().add(street11);
         address1.getStreets().add(street12);
         Address address2 = new Address();
@@ -82,7 +82,7 @@ public class UserService<T> {
     @SuppressWarnings("unchecked")
     public User<String>[] getUsersByAnyEducationArray(@GraphQLArgument(name = "educations") T[] educations) {
         List<User<String>> users = getUsersById(1);
-        return users.toArray(new User[users.size()]);
+        return users.toArray(new User[0]);
     }
 
     @GraphQLQuery(name = "users")

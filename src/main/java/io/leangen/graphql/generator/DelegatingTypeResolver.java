@@ -62,7 +62,7 @@ public class DelegatingTypeResolver implements TypeResolver {
         }
 
         //Try to deduce the type
-        if (returnType != null && resultTypeName.equals(env.getFieldType().getName())) {
+        if (returnType != null) {
             AnnotatedType resolvedJavaType = GenericTypeReflector.getExactSubType(returnType, resultType);
             if (resolvedJavaType != null && !ClassUtils.isMissingTypeParameters(resolvedJavaType.getType())) {
                 GraphQLType resolved = env.getSchema().getType(typeInfoGenerator.generateTypeName(resolvedJavaType, messageBundle));
