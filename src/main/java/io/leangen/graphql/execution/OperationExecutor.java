@@ -8,7 +8,6 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
@@ -32,19 +31,20 @@ public class OperationExecutor {
         Resolver resolver;
         if (env.getContext() instanceof ContextWrapper) {
             ContextWrapper context = env.getContext();
-            if (env.getArguments().get(CLIENT_MUTATION_ID) != null) {
-                context.setClientMutationId((String) env.getArguments().get(CLIENT_MUTATION_ID));
+            if (env.getArgument(CLIENT_MUTATION_ID) != null) {
+                context.setClientMutationId(env.getArgument(CLIENT_MUTATION_ID));
             }
         }
 
-        resolver = this.operation.getApplicableResolver(env.getArguments().keySet());
+        Map<String, Object> arguments = env.getArguments();
+        resolver = this.operation.getApplicableResolver(arguments.keySet());
         if (resolver == null) {
             throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
-                    + env.getArguments().keySet() + " not implemented");
+                    + arguments.keySet() + " not implemented");
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(env, this.valueMapper, this.globalEnvironment);
         try {
-            Object result = execute(resolver, resolutionEnvironment, env.getArguments());
+            Object result = execute(resolver, resolutionEnvironment, arguments);
             return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
         } catch (Throwable throwable) {
             if (throwable instanceof RuntimeException) {
@@ -65,8 +65,7 @@ public class OperationExecutor {
      *
      * @return The result returned by the underlying method/field, potentially proxied and wrapped
      *
-     * @throws InvocationTargetException If a reflective invocation of the underlying method/field fails
-     * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
+     * @throws Throwable If the underlying method/field throws when invoked
      */
     private Object execute(Resolver resolver, ResolutionEnvironment resolutionEnvironment, Map<String, Object> rawArguments)
             throws Throwable {

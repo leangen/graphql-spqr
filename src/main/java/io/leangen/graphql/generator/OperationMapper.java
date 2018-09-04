@@ -276,19 +276,12 @@ public class OperationMapper {
                         .name("input")
                         .type(new GraphQLNonNull(inputObjectType)))
                 .dataFetcher(env -> {
-                    @SuppressWarnings("unchecked") Map<String, Object> input = (Map<String, Object>) env.getArguments().get("input");
-                    env.getArguments().clear();
-                    env.getArguments().putAll(input);
+                    DataFetchingEnvironment innerEnv = new RelayDataFetchingEnvironmentDecorator(env);
                     if (env.getContext() instanceof ContextWrapper) {
                         ContextWrapper context = env.getContext();
-                        context.setClientMutationId(env.getArgument(CLIENT_MUTATION_ID));
-//                        if (!(mutation.getType() instanceof GraphQLObjectType)) {
-//                            Object result = mutation.getDataFetcher().get(env);
-//                            context.putExtension("result", result);
-//                            return result;
-//                        }
+                        context.setClientMutationId(innerEnv.getArgument(CLIENT_MUTATION_ID));
                     }
-                    return mutation.getDataFetcher().get(env);
+                    return mutation.getDataFetcher().get(innerEnv);
                 })
                 .build();
     }
@@ -325,9 +318,9 @@ public class OperationMapper {
         return env -> {
             String typeName;
             try {
-                typeName = relay.fromGlobalId((String) env.getArguments().get(GraphQLId.RELAY_ID_FIELD_NAME)).getType();
+                typeName = relay.fromGlobalId(env.getArgument(GraphQLId.RELAY_ID_FIELD_NAME)).getType();
             } catch (Exception e) {
-                throw new IllegalArgumentException(env.getArguments().get(GraphQLId.RELAY_ID_FIELD_NAME) + " is not a valid Relay node ID");
+                throw new IllegalArgumentException(env.getArgument(GraphQLId.RELAY_ID_FIELD_NAME) + " is not a valid Relay node ID");
             }
             if (!nodeQueriesByType.containsKey(typeName)) {
                 throw new IllegalArgumentException(typeName + " is not a Relay node type or no registered query can fetch it by ID");
