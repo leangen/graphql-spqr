@@ -882,18 +882,21 @@ public class GraphQLSchemaGenerator {
                 abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), inclusionStrategy, relayMappingConfig, additionalTypes.values(), typeComparator, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
-        GraphQLSchema.Builder builder = GraphQLSchema.newSchema()
-                .query(newObject()
-                        .name(queryRoot)
-                        .description("Query root type")
-                        .fields(operationMapper.getQueries())
-                        .build());
+        GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
+        List<GraphQLFieldDefinition> queries = operationMapper.getQueries();
+        if (!queries.isEmpty()) {
+            builder.query(newObject()
+                    .name(queryRoot)
+                    .description("Query root")
+                    .fields(queries)
+                    .build());
+        }
 
         List<GraphQLFieldDefinition> mutations = operationMapper.getMutations();
         if (!mutations.isEmpty()) {
             builder.mutation(newObject()
                     .name(mutationRoot)
-                    .description("Mutation root type")
+                    .description("Mutation root")
                     .fields(mutations)
                     .build());
         }
@@ -902,7 +905,7 @@ public class GraphQLSchemaGenerator {
         if (!subscriptions.isEmpty()) {
             builder.subscription(newObject()
                     .name(subscriptionRoot)
-                    .description("Subscription root type")
+                    .description("Subscription root")
                     .fields(subscriptions)
                     .build());
         }
