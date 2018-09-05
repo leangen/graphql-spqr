@@ -7,11 +7,13 @@ import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
 import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Parameter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -28,6 +30,7 @@ public class ResolutionEnvironment {
     public final GraphQLType parentType;
     public final GraphQLSchema graphQLSchema;
     public final DataFetchingEnvironment dataFetchingEnvironment;
+    public final Map<String, Object> arguments;
 
     public ResolutionEnvironment(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
         
@@ -40,6 +43,7 @@ public class ResolutionEnvironment {
         this.parentType = env.getParentType();
         this.graphQLSchema = env.getGraphQLSchema();
         this.dataFetchingEnvironment = env;
+        this.arguments = new HashMap<>();
     }
 
     @SuppressWarnings("unchecked")
@@ -51,8 +55,12 @@ public class ResolutionEnvironment {
         return outputConverter == null ? (S) output : outputConverter.convertOutput(output, type, this);
     }
 
-    public Object getInputValue(Object input, AnnotatedType type, Parameter parameter) {
-        ArgumentInjectorParams params = new ArgumentInjectorParams(input, type, parameter, this);
-        return this.globalEnvironment.injectors.getInjector(type, parameter).getArgumentValue(params);
+    public Object getInputValue(Object input, OperationArgument argument) {
+        ArgumentInjectorParams params = new ArgumentInjectorParams(input, argument.getJavaType(), argument.getParameter(), this);
+        Object value = this.globalEnvironment.injectors.getInjector(argument.getJavaType(), argument.getParameter()).getArgumentValue(params);
+        if (dataFetchingEnvironment.containsArgument(argument.getName())) {
+            arguments.put(argument.getName(), value);
+        }
+        return value;
     }
 }

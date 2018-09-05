@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Upgraded to [graphql-java 10.0](https://github.com/graphql-java/graphql-java/releases)
 - Introduced [`SchemaTransformer`](https://github.com/leangen/graphql-spqr/blob/ad27b1dda67dc818e24fea28167f4f59aca6e659/src/main/java/io/leangen/graphql/generator/mapping/SchemaTransformer.java) to enable modifying field and argument definitions
+- A way to get all deserialized arguments `ResolutionEnvironment` [#174](https://github.com/leangen/graphql-spqr/issues/174)
 
 ### Fixed
-- Fixed interface type resolution logic [#168]((https://github.com/leangen/graphql-spqr/issues/168))
+- Fixed interface type resolution logic [#168](https://github.com/leangen/graphql-spqr/issues/168)
 - Arguments with default values will no longer be mapped as non-null [#163](https://github.com/leangen/graphql-spqr/issues/163)
 - `javax.annotation.Nonnull` works again [#165](https://github.com/leangen/graphql-spqr/issues/165)
 

@@ -75,7 +75,7 @@ public class OperationExecutor {
             OperationArgument argDescriptor =  resolver.getArguments().get(i);
             Object rawArgValue = rawArguments.get(argDescriptor.getName());
 
-            args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor.getJavaType(), argDescriptor.getParameter());
+            args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor);
         }
         return resolver.resolve(resolutionEnvironment.context, args);
     }
