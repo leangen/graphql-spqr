@@ -92,7 +92,7 @@ public class TypeRegistry {
                     } else {
                         log.warn("Type reference " + entry.getKey() + " could not be replaced correctly. " +
                                 "This can occur when the schema generator is initialized with " +
-                                "additional types not built by GraphQL-SPQR. If this type implements " +
+                                "additional types not built by GraphQL SPQR. If this type implements " +
                                 "Node, in some edge cases it may end up not exposed via the 'node' query.");
                         //the edge case is when the primary resolver returns an interface or a union and not the node type directly
                         toRemove.add(entry.getKey());

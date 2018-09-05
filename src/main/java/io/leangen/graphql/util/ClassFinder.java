@@ -2,7 +2,7 @@ package io.leangen.graphql.util;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLIgnore;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ public class ClassFinder {
 
     public static final Logger log = LoggerFactory.getLogger(ClassFinder.class);
 
-    private final Map<String, ClassInfoList> cache = new ConcurrentHashMap<>();
+    private final Map<String, ScanResult> cache = new ConcurrentHashMap<>();
 
     /**
      * Searches for the implementations/subtypes of the given {@link AnnotatedType}. Only the matching classes are loaded.
@@ -66,9 +66,9 @@ public class ClassFinder {
     public List<Class<?>> findImplementations(Class superType, Predicate<ClassInfo> filter, String... packages) {
         String[] scanPackages = Utils.emptyIfNull(packages);
         String cacheKey = Arrays.stream(scanPackages).sorted().collect(Collectors.joining());
-        ClassInfoList scanResults = cache.computeIfAbsent(cacheKey, k -> new ClassGraph().whitelistPackages(packages).enableAllInfo().scan().getAllClasses());
+        ScanResult scanResults = cache.computeIfAbsent(cacheKey, k -> new ClassGraph().whitelistPackages(packages).enableAllInfo().scan());
         try {
-            return scanResults.stream()
+            return scanResults.getAllClasses().stream()
                     .filter(impl -> superType.isInterface() ? impl.implementsInterface(superType.getName()) : impl.extendsSuperclass(superType.getName()))
                     .filter(filter == null ? info -> true : filter)
                     .flatMap(ClassFinder::loadClass)
@@ -96,6 +96,15 @@ public class ClassFinder {
         } catch (Exception e) {
             log.error("Auto discovered type " + classInfo.getName() + " failed to load and will be ignored", e);
             return Stream.empty();
+        }
+    }
+
+    public void close() {
+        try {
+            cache.values().forEach(ScanResult::close);
+            cache.clear();
+        } catch (Exception e) {
+            log.warn(ScanResult.class.getName() + " did not close cleanly", e);
         }
     }
 }

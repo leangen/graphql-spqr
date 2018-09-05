@@ -915,6 +915,7 @@ public class GraphQLSchemaGenerator {
         builder.additionalTypes(additional);
 
         applyProcessors(builder, buildContext);
+        buildContext.executePostBuildHooks();
         return builder.build();
     }
 

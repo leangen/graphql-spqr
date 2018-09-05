@@ -22,10 +22,13 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,6 +58,7 @@ public class BuildContext {
     public final TypeInfoGenerator typeInfoGenerator;
     public final RelayMappingConfig relayMappingConfig;
     public final ClassFinder classFinder;
+    public final List<Consumer<BuildContext>> postBuildHooks;
 
     final Validator validator;
 
@@ -108,6 +112,7 @@ public class BuildContext {
         this.relayMappingConfig = relayMappingConfig;
         this.classFinder = new ClassFinder();
         this.validator = new Validator(environment, typeMappers, knownTypes, typeComparator);
+        this.postBuildHooks = new ArrayList<>(Collections.singletonList(context -> classFinder.close()));
     }
 
     public String interpolate(String template) {
@@ -126,5 +131,9 @@ public class BuildContext {
 
     void resolveTypeReferences() {
         typeCache.resolveTypeReferences(typeRegistry);
+    }
+
+    public void executePostBuildHooks() {
+        postBuildHooks.forEach(hook -> hook.accept(this));
     }
 }
