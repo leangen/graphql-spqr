@@ -238,7 +238,7 @@ public class TypeResolverTest {
     }
 
     @GraphQLInterface(name = "GenericRepository")
-    public interface GenericRepo {
+    private interface GenericRepo {
 
         @GraphQLQuery(name = "identifier")
         String identifier();
@@ -254,6 +254,7 @@ public class TypeResolverTest {
         }
 
         @GraphQLQuery(name = "item")
+        @SuppressWarnings("WeakerAccess") //must stay public
         public T getStoredItem() {
             return item;
         }

@@ -2,8 +2,8 @@ package io.leangen.graphql.metadata.execution;
 
 import io.leangen.graphql.util.ClassUtils;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 
@@ -17,14 +17,13 @@ public class MethodInvoker extends Executable<Method> {
 
     public MethodInvoker(Method resolverMethod, AnnotatedType enclosingType) {
         this.delegate = resolverMethod;
-        this.handle = prepareHandle(() -> MethodHandles.lookup().unreflect(resolverMethod));
         this.enclosingType = enclosingType;
         this.returnType = resolveReturnType(enclosingType);
     }
 
     @Override
-    public Object execute(Object target, Object[] args) throws Throwable {
-        return handle.bindTo(target).invokeWithArguments(args);
+    public Object execute(Object target, Object[] args) throws InvocationTargetException, IllegalAccessException {
+        return delegate.invoke(target, args);
     }
 
     @Override

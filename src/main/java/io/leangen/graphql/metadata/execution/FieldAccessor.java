@@ -2,7 +2,6 @@ package io.leangen.graphql.metadata.execution;
 
 import io.leangen.graphql.util.ClassUtils;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
@@ -16,13 +15,12 @@ public class FieldAccessor extends Executable<Field> {
 
     public FieldAccessor(Field field, AnnotatedType enclosingType) {
         this.delegate = field;
-        this.handle = prepareHandle(() -> MethodHandles.lookup().unreflectGetter(field));
         this.enclosingType = enclosingType;
     }
 
     @Override
-    public Object execute(Object target, Object[] args) throws Throwable {
-        return handle.invoke(target);
+    public Object execute(Object target, Object[] args) throws IllegalAccessException {
+        return delegate.get(target);
     }
 
     @Override

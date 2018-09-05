@@ -90,7 +90,7 @@ public class TypeRegistryTest {
     private static class Foo {}
     private static class FooInput {}
 
-    public static class NameCollision {
+    private static class NameCollision {
         @GraphQLQuery
         public FooInput test(Foo foo, FooInput fooInput) {return fooInput;}
     }

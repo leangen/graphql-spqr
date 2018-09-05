@@ -1,6 +1,7 @@
 package io.leangen.graphql.metadata.execution;
 
 import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
@@ -16,7 +17,7 @@ public class SingletonMethodInvoker extends MethodInvoker {
     }
 
     @Override
-    public Object execute(Object target, Object[] arguments) throws Throwable {
-        return super.execute(this.target, arguments);
+    public Object execute(Object target, Object[] arguments) throws InvocationTargetException, IllegalAccessException {
+        return delegate.invoke(this.target, arguments);
     }
 }

@@ -454,7 +454,7 @@ public class RelayTest {
         }
     }
 
-    public static class InvalidArgsPagingService {
+    private static class InvalidArgsPagingService {
 
         @GraphQLQuery(name = "streets")
         public Page<Street> streets(@GraphQLArgument(name = "first") String first, @GraphQLArgument(name = "after") String after) {
@@ -462,7 +462,7 @@ public class RelayTest {
         }
     }
 
-    public static class MissingArgsPagingService {
+    private static class MissingArgsPagingService {
 
         @GraphQLQuery(name = "streets")
         public Page<Street> streets(@GraphQLArgument(name = "first") int first) {

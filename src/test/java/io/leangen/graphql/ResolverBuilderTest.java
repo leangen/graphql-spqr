@@ -100,13 +100,13 @@ public class ResolverBuilderTest {
         return resolvers;
     }
 
-    public interface BaseService<T, ID> {
+    private interface BaseService<T, ID> {
 
         T findOne(@GraphQLArgument(name = "id") ID id);
 
     }
 
-    public static class BaseServiceImpl<T, ID extends Serializable> implements BaseService<T, ID> {
+    private static class BaseServiceImpl<T, ID extends Serializable> implements BaseService<T, ID> {
 
         @Override
         public T findOne(@GraphQLArgument(name = "id") ID id) {
@@ -114,7 +114,7 @@ public class ResolverBuilderTest {
         }
     }
 
-    public static class One implements BaseService<Person, Long> {
+    private static class One implements BaseService<Person, Long> {
 
         @Override
         public Person findOne(Long aLong) {
@@ -127,7 +127,7 @@ public class ResolverBuilderTest {
         }
     }
 
-    public static class Two implements BaseService<Number, Long> {
+    private static class Two implements BaseService<Number, Long> {
 
         @Override
         public Number findOne(Long aLong) {
@@ -135,7 +135,7 @@ public class ResolverBuilderTest {
         }
     }
 
-    public static class IgnoredMethods {
+    private static class IgnoredMethods {
 
         @GraphQLQuery(name = "notIgnored")
         public String getNotIgnored() {
@@ -149,7 +149,7 @@ public class ResolverBuilderTest {
         }
     }
 
-    public static class IgnoredFields {
+    private static class IgnoredFields {
 
         @GraphQLIgnore
         @GraphQLQuery(name = "ignored")

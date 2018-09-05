@@ -49,7 +49,7 @@ public class InterpolationTest {
 
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withTypeAdapters(new MapToListTypeAdapter<>())
-                .withOperationsFromSingleton(new Cooker())
+                .withOperationsFromSingleton(new Quick())
                 .withStringInterpolation(new SimpleMessageBundle(translations))
                 .generate();
 
@@ -89,7 +89,7 @@ public class InterpolationTest {
         assertEquals(translations.get("type.temp.hot.deprecation"), hot.getDeprecationReason());
     }
 
-    public static class Cooker {
+    private static class Quick {
 
         @GraphQLMutation(name = "makeIt${mutation.dish.name}", description = "DESCRIPTION: ${mutation.dish.desc}", deprecationReason = "REASON: ${mutation.dish.deprecation}")
         public Dish test(@GraphQLArgument(name = "${mutation.dish.arg.name}", description = "${mutation.dish.arg.desc}", defaultValue = "${mutation.dish.arg.default}") Dish dish) {
@@ -98,7 +98,7 @@ public class InterpolationTest {
     }
 
     @GraphQLType(name = "${type.dish.name}", description = "Description: ${type.dish.desc}")
-    public static class Dish {
+    private static class Dish {
 
         private final Temperature temperature;
 
@@ -111,7 +111,7 @@ public class InterpolationTest {
             return new Dish(temperature);
         }
 
-        public Temperature getTemperature() {
+        Temperature getTemperature() {
             return temperature;
         }
 

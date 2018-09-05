@@ -8,6 +8,7 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
@@ -46,12 +47,8 @@ public class OperationExecutor {
         try {
             Object result = execute(resolver, resolutionEnvironment, arguments);
             return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
-        } catch (Throwable throwable) {
-            if (throwable instanceof RuntimeException) {
-                throw (RuntimeException) throwable;
-            } else {
-                throw new RuntimeException(throwable);
-            }
+        } catch (ReflectiveOperationException e) {
+            throw unwrap(e);
         }
     }
 
@@ -65,10 +62,11 @@ public class OperationExecutor {
      *
      * @return The result returned by the underlying method/field, potentially proxied and wrapped
      *
-     * @throws Throwable If the underlying method/field throws when invoked
+     * @throws InvocationTargetException If a reflective invocation of the underlying method/field fails
+     * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
      */
     private Object execute(Resolver resolver, ResolutionEnvironment resolutionEnvironment, Map<String, Object> rawArguments)
-            throws Throwable {
+            throws InvocationTargetException, IllegalAccessException {
 
         int queryArgumentsCount = resolver.getArguments().size();
 
@@ -80,5 +78,13 @@ public class OperationExecutor {
             args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor.getJavaType(), argDescriptor.getParameter());
         }
         return resolver.resolve(resolutionEnvironment.context, args);
+    }
+
+    private RuntimeException unwrap(ReflectiveOperationException e) {
+        Throwable cause = e.getCause();
+        if (cause != null && cause != e) {
+            return cause instanceof RuntimeException ? (RuntimeException) cause : new RuntimeException(cause.getMessage(), cause);
+        }
+        return new RuntimeException(e.getMessage(), e);
     }
 }

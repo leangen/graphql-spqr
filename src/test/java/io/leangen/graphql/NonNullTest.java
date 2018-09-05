@@ -43,7 +43,7 @@ public class NonNullTest {
         assertNonNull(field.getArgument("in").getType(), Scalars.GraphQLString);
     }
 
-    public static class Service {
+    private static class Service {
         @GraphQLQuery
         public Integer integerWithDefault(@GraphQLArgument(name = "in", defaultValue = "3") @GraphQLNonNull Integer in) {
             return in;
@@ -55,7 +55,7 @@ public class NonNullTest {
         }
     }
 
-    public static class Jsr305 {
+    private static class Jsr305 {
         @GraphQLQuery
         @Nonnull
         public String nonNull(@Nonnull String in) {
@@ -63,7 +63,7 @@ public class NonNullTest {
         }
     }
 
-    public static class Jsr380 {
+    private static class Jsr380 {
         @GraphQLQuery
         @NotNull
         public String nonNull(@NotNull String in) {
@@ -71,7 +71,7 @@ public class NonNullTest {
         }
     }
 
-    public static class Item {
+    private static class Item {
         @GraphQLInputField(name = "title", defaultValue = "<UNKNOWN>")
         public @GraphQLNonNull String name;
     }

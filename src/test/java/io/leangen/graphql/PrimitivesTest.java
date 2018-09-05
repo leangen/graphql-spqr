@@ -71,7 +71,7 @@ public class PrimitivesTest {
         assertSame(field.getArgument("in").getType(), Scalars.GraphQLBoolean);
     }
 
-    public static class PrimitiveService {
+    private static class PrimitiveService {
 
         @GraphQLQuery
         public int primitive(int in) {
@@ -104,7 +104,7 @@ public class PrimitivesTest {
         }
     }
 
-    public static class BooleanVoidService {
+    private static class BooleanVoidService {
 
         @GraphQLQuery
         public void primitiveVoid() {}
