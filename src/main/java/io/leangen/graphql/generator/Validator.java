@@ -58,11 +58,14 @@ class Validator {
         if (isMappingAllowed(resolvedType, knownType)) {
             return ValidationResult.valid();
         }
-        return ValidationResult.invalid(String.format("Potential type name collision detected: '%s' bound to multiple types: %s and %s." +
+        return ValidationResult.invalid(String.format("Potential type name collision detected: '%s' bound to multiple types:" +
+                        " %s (loaded by %s) and %s (loaded by %s)." +
                         " Assign unique names using the appropriate annotations or override the %s." +
                         " For details and solutions see %s." +
-                        " If this warning is a false positive, please report it: %s.", graphQLType.getName(), knownType,
-                resolvedType, TypeInfoGenerator.class.getSimpleName(), Urls.Errors.NON_UNIQUE_TYPE_NAME, Urls.ISSUES));
+                        " If this warning is a false positive, please report it: %s.", graphQLType.getName(),
+                knownType, ClassUtils.getRawType(knownType.getType()).getClassLoader(),
+                resolvedType, ClassUtils.getRawType(resolvedType.getType()).getClassLoader(),
+                TypeInfoGenerator.class.getSimpleName(), Urls.Errors.NON_UNIQUE_TYPE_NAME, Urls.ISSUES));
     }
 
     private AnnotatedType resolveType(GraphQLType graphQLType, Supplier<AnnotatedType> javaType) {
