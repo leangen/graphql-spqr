@@ -66,12 +66,16 @@ public class ClassFinder {
     public List<Class<?>> findImplementations(Class superType, Predicate<ClassInfo> filter, String... packages) {
         String[] scanPackages = Utils.emptyIfNull(packages);
         String cacheKey = Arrays.stream(scanPackages).sorted().collect(Collectors.joining());
-        ScanResult scanResults = cache.computeIfAbsent(cacheKey, k -> new ClassGraph().whitelistPackages(packages).enableAllInfo().scan());
+        ScanResult scanResults = cache.computeIfAbsent(cacheKey, k -> new ClassGraph()
+                .whitelistPackages(packages)
+                .enableAllInfo()
+                .initializeLoadedClasses()
+                .scan());
         try {
             return scanResults.getAllClasses().stream()
                     .filter(impl -> superType.isInterface() ? impl.implementsInterface(superType.getName()) : impl.extendsSuperclass(superType.getName()))
                     .filter(filter == null ? info -> true : filter)
-                    .flatMap(ClassFinder::loadClass)
+                    .flatMap(info -> loadClass(info, superType))
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Failed to auto discover the subtypes of " + superType.getName()
@@ -90,7 +94,14 @@ public class ClassFinder {
         return Stream.empty();
     }
 
-    private static Stream<Class<?>> loadClass(ClassInfo classInfo) {
+    private static Stream<Class<?>> loadClass(ClassInfo classInfo, Class superType) {
+        try {
+            return Stream.of(Class.forName(classInfo.getName(), true, superType.getClassLoader()));
+        } catch (ClassNotFoundException e) {
+            log.warn(String.format("Implementation class %s could not be loaded using the same loader that loaded %s." +
+                    " Trying other loaders... For details and possible solutions see %s",
+                    classInfo.getName(), superType.getName(), Urls.Errors.IMPLEMENTATION_CLASS_LOADING_FAILED));
+        }
         try {
             return Stream.of(classInfo.loadClass());
         } catch (Exception e) {
