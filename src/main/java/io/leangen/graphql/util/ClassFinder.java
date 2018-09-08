@@ -98,8 +98,8 @@ public class ClassFinder {
         try {
             return Stream.of(Class.forName(classInfo.getName(), true, superType.getClassLoader()));
         } catch (ClassNotFoundException e) {
-            log.warn(String.format("Implementation class %s could not be loaded using the same loader that loaded %s." +
-                    " Trying other loaders... For details and possible solutions see %s",
+            log.warn(String.format("Auto discovered class %s could not be loaded using the same loader that loaded %s." +
+                    " Trying other loaders... For details see %s",
                     classInfo.getName(), superType.getName(), Urls.Errors.IMPLEMENTATION_CLASS_LOADING_FAILED));
         }
         try {
