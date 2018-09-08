@@ -169,7 +169,7 @@ public class Resolver {
 
     @Override
     public boolean equals(Object that) {
-        return this == that || that instanceof Resolver && this.executable.equals(((Resolver) that).executable);
+        return this == that || (that instanceof Resolver && this.executable.equals(((Resolver) that).executable));
     }
 
     @Override

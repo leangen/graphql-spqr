@@ -42,8 +42,8 @@ public abstract class Executable<T extends AnnotatedElement & Member> {
      * {@inheritDoc}
      */
     @Override
-    public boolean equals(Object other) {
-        return other instanceof Executable && ((Executable) other).delegate.equals(this.delegate);
+    public boolean equals(Object that) {
+        return this == that || (that instanceof Executable && ((Executable) that).delegate.equals(this.delegate));
     }
 
     @Override

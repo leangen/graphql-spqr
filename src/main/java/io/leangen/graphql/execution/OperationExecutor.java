@@ -8,8 +8,12 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
-import java.lang.reflect.InvocationTargetException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
 
@@ -21,11 +25,13 @@ public class OperationExecutor {
     private final Operation operation;
     private final ValueMapper valueMapper;
     private final GlobalEnvironment globalEnvironment;
+    private final Map<Resolver, List<ResolverInterceptor>> interceptors;
 
-    public OperationExecutor(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
+    public OperationExecutor(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment, ResolverInterceptorFactory interceptorFactory) {
         this.operation = operation;
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
+        this.interceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(), interceptorFactory::getInterceptors));
     }
 
     public Object execute(DataFetchingEnvironment env) {
@@ -48,8 +54,11 @@ public class OperationExecutor {
             Object result = execute(resolver, resolutionEnvironment, arguments);
             return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
         } catch (ReflectiveOperationException e) {
-            throw unwrap(e);
+            sneakyThrow(unwrap(e));
+        } catch (Exception e) {
+            sneakyThrow(e);
         }
+        return null; //never happens, needed because of sneakyThrow
     }
 
     /**
@@ -62,11 +71,10 @@ public class OperationExecutor {
      *
      * @return The result returned by the underlying method/field, potentially proxied and wrapped
      *
-     * @throws InvocationTargetException If a reflective invocation of the underlying method/field fails
-     * @throws IllegalAccessException If a reflective invocation of the underlying method/field is not allowed
+     * @throws Exception If the invocation of the underlying method/field or any of the interceptors throws
      */
     private Object execute(Resolver resolver, ResolutionEnvironment resolutionEnvironment, Map<String, Object> rawArguments)
-            throws InvocationTargetException, IllegalAccessException {
+            throws Exception {
 
         int queryArgumentsCount = resolver.getArguments().size();
 
@@ -77,14 +85,26 @@ public class OperationExecutor {
 
             args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor);
         }
-        return resolver.resolve(resolutionEnvironment.context, args);
+        InvocationContext invocationContext = new InvocationContext(operation, resolver, resolutionEnvironment, args);
+        Queue<ResolverInterceptor> interceptors = new LinkedList<>(this.interceptors.get(resolver));
+        interceptors.add((ctx, cont) -> resolver.resolve(ctx.getResolutionEnvironment().context, ctx.getArguments()));
+        return execute(invocationContext, interceptors);
     }
 
-    private RuntimeException unwrap(ReflectiveOperationException e) {
+    private Object execute(InvocationContext context, Queue<ResolverInterceptor> interceptors) throws Exception {
+        return interceptors.remove().aroundInvoke(context, (ctx) -> execute(ctx, interceptors));
+    }
+
+    private Throwable unwrap(ReflectiveOperationException e) {
         Throwable cause = e.getCause();
         if (cause != null && cause != e) {
-            return cause instanceof RuntimeException ? (RuntimeException) cause : new RuntimeException(cause.getMessage(), cause);
+            return cause;
         }
-        return new RuntimeException(e.getMessage(), e);
+        return e;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> void sneakyThrow(Throwable t) throws T {
+        throw (T) t;
     }
 }

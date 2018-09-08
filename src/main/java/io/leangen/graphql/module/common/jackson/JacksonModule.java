@@ -43,7 +43,7 @@ public class JacksonModule implements SimpleModule {
         if (!getInputConverters().isEmpty()) {
             context.getSchemaGenerator().withInputConvertersPrepended(getInputConverters().toArray(new InputConverter[0]));
         }
-        context.getSchemaGenerator().withTypeAliasGroup(ObjectNode.class, POJONode.class);
-        context.getSchemaGenerator().withTypeAliasGroup(DecimalNode.class, NumericNode.class);
+        context.getSchemaGenerator().withTypeSynonymGroup(ObjectNode.class, POJONode.class);
+        context.getSchemaGenerator().withTypeSynonymGroup(DecimalNode.class, NumericNode.class);
     }
 }

@@ -21,6 +21,7 @@ import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.ContextWrapper;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
+import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
@@ -155,7 +156,7 @@ public class OperationMapper {
                 .filter(OperationArgument::isMappable)
                 .map(OperationArgument::getJavaType);
         ValueMapper valueMapper = buildContext.createValueMapper(inputTypes);
-        fieldBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment));
+        fieldBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment, buildContext.interceptorFactory));
         fieldBuilder.withDirective(Directives.mappedOperation(operation));
 
         return buildContext.transformers.transform(fieldBuilder.build(), operation, this, buildContext);
@@ -293,14 +294,15 @@ public class OperationMapper {
      * @param operation The operation for which the resolver is being created
      * @param valueMapper Mapper to be used to deserialize raw argument values
      * @param globalEnvironment The shared context containing all the global information needed for operation resolution
+     * @param interceptorFactory A factory producing interceptors applicable to the given {@code operation}'s resolvers
      *
      * @return The resolver for the given operation
      */
-    private DataFetcher createResolver(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
+    private DataFetcher createResolver(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment, ResolverInterceptorFactory interceptorFactory) {
         if (operation.isBatched()) {
-            return (BatchedDataFetcher) environment -> new OperationExecutor(operation, valueMapper, globalEnvironment).execute(environment);
+            return (BatchedDataFetcher) environment -> new OperationExecutor(operation, valueMapper, globalEnvironment, interceptorFactory).execute(environment);
         }
-        return new OperationExecutor(operation, valueMapper, globalEnvironment)::execute;
+        return new OperationExecutor(operation, valueMapper, globalEnvironment, interceptorFactory)::execute;
     }
 
     /**

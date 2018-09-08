@@ -9,6 +9,8 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.execution.ResolverInterceptor;
+import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.InputFieldBuilderRegistry;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
@@ -64,6 +66,7 @@ import io.leangen.graphql.generator.mapping.strategy.DefaultImplementationDiscov
 import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.generator.mapping.strategy.NoOpAbstractInputHandler;
+import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.DelegatingMessageBundle;
 import io.leangen.graphql.metadata.messages.MessageBundle;
@@ -101,6 +104,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
@@ -163,6 +167,7 @@ public class GraphQLSchemaGenerator {
     private List<SchemaTransformer> transformers;
     private Comparator<AnnotatedType> typeComparator;
     private List<InputFieldBuilder> inputFieldBuilders;
+    private ResolverInterceptorFactory interceptorFactory;
     private JavaDeprecationMappingConfig javaDeprecationConfig = new JavaDeprecationMappingConfig(true, "Deprecated");
     private final OperationSourceRegistry operationSourceRegistry = new OperationSourceRegistry();
     private final List<ExtensionProvider<Configuration, TypeMapper>> typeMapperProviders = new ArrayList<>();
@@ -174,6 +179,7 @@ public class GraphQLSchemaGenerator {
     private final List<ExtensionProvider<Configuration, ResolverBuilder>> resolverBuilderProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, ResolverBuilder>> nestedResolverBuilderProviders = new ArrayList<>();
     private final List<ExtensionProvider<Configuration, Module>> moduleProviders = new ArrayList<>();
+    private final List<ExtensionProvider<Configuration, ResolverInterceptorFactory>> interceptorFactoryProviders = new ArrayList<>();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Map<String, GraphQLType> additionalTypes = new HashMap<>();
@@ -658,6 +664,15 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withResolverInterceptors(ResolverInterceptor... interceptors) {
+        return withResolverInterceptorFactories((config, current) -> current.append(new GlobalResolverInterceptorFactory(Arrays.asList(interceptors))));
+    }
+
+    public GraphQLSchemaGenerator withResolverInterceptorFactories(ExtensionProvider<Configuration, ResolverInterceptorFactory> provider) {
+        this.interceptorFactoryProviders.add(provider);
+        return this;
+    }
+
     public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes) {
         additionalTypes.stream()
                 .filter(type -> !isInternalType(type))
@@ -669,12 +684,12 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withTypeAliasGroup(Type... aliases) {
+    public GraphQLSchemaGenerator withTypeSynonymGroup(Type... aliases) {
         this.typeComparators.add(new BaseTypeAliasComparator(aliases));
         return this;
     }
 
-    public GraphQLSchemaGenerator withTypeAliasGroup(AnnotatedType... aliases) {
+    public GraphQLSchemaGenerator withTypeSynonymGroup(AnnotatedType... aliases) {
         Set<AnnotatedType> aliasGroup = new AnnotatedTypeSet<>();
         Collections.addAll(aliasGroup, aliases);
         this.typeComparators.add((t1, t2) -> aliasGroup.contains(t1) && aliasGroup.contains(t2) ? 0 : -1);
@@ -841,6 +856,12 @@ public class GraphQLSchemaGenerator {
         }
         checkForDuplicates("argument injectors", argumentInjectors);
 
+        List<ResolverInterceptorFactory> interceptorFactories = Collections.emptyList();
+        for (ExtensionProvider<Configuration, ResolverInterceptorFactory> provider : this.interceptorFactoryProviders) {
+            interceptorFactories = provider.getExtensions(configuration, new ExtensionList<>(interceptorFactories));
+        }
+        interceptorFactory = new DelegatingResolverInterceptorFactory(interceptorFactories);
+
         environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes.values()), new ConverterRegistry(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors));
         ExtendedConfiguration extendedConfig = new ExtendedConfiguration(configuration, environment);
         valueMapperFactory = new MemoizedValueMapperFactory(environment, internalValueMapperFactory);
@@ -879,18 +900,15 @@ public class GraphQLSchemaGenerator {
         BuildContext buildContext = new BuildContext(
                 basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy, typeTransformer, basePackages, environment),
                 new TypeMapperRegistry(typeMappers), new SchemaTransformerRegistry(transformers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
-                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), inclusionStrategy, relayMappingConfig, additionalTypes.values(), typeComparator, implDiscoveryStrategy);
+                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), interceptorFactory, inclusionStrategy, relayMappingConfig, additionalTypes.values(), typeComparator, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
-        List<GraphQLFieldDefinition> queries = operationMapper.getQueries();
-        if (!queries.isEmpty()) {
-            builder.query(newObject()
-                    .name(queryRoot)
-                    .description("Query root")
-                    .fields(queries)
-                    .build());
-        }
+        builder.query(newObject()
+                .name(queryRoot)
+                .description("Query root")
+                .fields(operationMapper.getQueries())
+                .build());
 
         List<GraphQLFieldDefinition> mutations = operationMapper.getMutations();
         if (!mutations.isEmpty()) {
@@ -991,6 +1009,36 @@ public class GraphQLSchemaGenerator {
                 return this.defaultValueMapper;
             }
             return delegate.getValueMapper(concreteSubTypes, environment);
+        }
+    }
+
+    private static class GlobalResolverInterceptorFactory implements ResolverInterceptorFactory {
+
+        private final List<ResolverInterceptor> interceptors;
+
+        private GlobalResolverInterceptorFactory(List<ResolverInterceptor> interceptors) {
+            this.interceptors = interceptors;
+        }
+
+        @Override
+        public List<ResolverInterceptor> getInterceptors(Resolver resolver) {
+            return interceptors;
+        }
+    }
+
+    private static class DelegatingResolverInterceptorFactory implements ResolverInterceptorFactory {
+
+        private final List<ResolverInterceptorFactory> delegates;
+
+        private DelegatingResolverInterceptorFactory(List<ResolverInterceptorFactory> delegates) {
+            this.delegates = delegates;
+        }
+
+        @Override
+        public List<ResolverInterceptor> getInterceptors(Resolver resolver) {
+            return delegates.stream()
+                    .flatMap(delegate -> delegate.getInterceptors(resolver).stream())
+                    .collect(Collectors.toList());
         }
     }
 }
