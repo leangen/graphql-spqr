@@ -1,9 +1,12 @@
 package io.leangen.graphql;
 
 import graphql.relay.Relay;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.AnnotatedTypeSet;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
@@ -109,6 +112,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static graphql.schema.GraphQLObjectType.newObject;
 import static java.util.Collections.addAll;
@@ -187,6 +191,7 @@ public class GraphQLSchemaGenerator {
     private final List<ExtensionProvider<Configuration, ResolverInterceptorFactory>> interceptorFactoryProviders = new ArrayList<>();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
+    private final Map<String, GraphQLDirective> additionalDirectives = new HashMap<>();
     private final Map<String, GraphQLType> additionalTypes = new HashMap<>();
     private final Set<Comparator<AnnotatedType>> typeComparators = new HashSet<>();
 
@@ -695,11 +700,19 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes) {
-        additionalTypes.stream()
-                .filter(type -> !isInternalType(type))
-                .forEach(type -> {
-                    if (this.additionalTypes.put(type.getName(), type) != null) {
-                        throw new ConfigurationException("Type name collision: multiple registered additional types are named '" + type.getName() + "'");
+        additionalTypes.forEach(type -> {
+            if (this.additionalTypes.put(type.getName(), type) != null) {
+                throw new ConfigurationException("Type name collision: multiple registered additional types are named '" + type.getName() + "'");
+            }
+        });
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withAdditionalDirectives(GraphQLDirective... additionalDirectives) {
+        Arrays.stream(additionalDirectives)
+                .forEach(directive -> {
+                    if (this.additionalDirectives.put(directive.getName(), directive) != null) {
+                        throw new ConfigurationException("Directive name collision: multiple registered additional directives are named '" + directive.getName() + "'");
                     }
                 });
         return this;
@@ -926,7 +939,7 @@ public class GraphQLSchemaGenerator {
         BuildContext buildContext = new BuildContext(
                 basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy, typeTransformer, basePackages, environment),
                 new TypeMapperRegistry(typeMappers), new SchemaTransformerRegistry(transformers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
-                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), interceptorFactory, directiveBuilder, inclusionStrategy, relayMappingConfig, additionalTypes.values(), typeComparator, implDiscoveryStrategy);
+                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), interceptorFactory, directiveBuilder, inclusionStrategy, relayMappingConfig, additionalTypes(), typeComparator, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
@@ -958,6 +971,8 @@ public class GraphQLSchemaGenerator {
         additional.addAll(buildContext.typeRegistry.getDiscoveredTypes());
         builder.additionalTypes(additional);
 
+        builder.additionalDirectives(new HashSet<>(additionalDirectives.values()));
+
         applyProcessors(builder, buildContext);
         buildContext.executePostBuildHooks();
         return builder.build();
@@ -974,6 +989,21 @@ public class GraphQLSchemaGenerator {
                 type.getName().equals(messageBundle.interpolate(queryRoot)) ||
                 type.getName().equals(messageBundle.interpolate(mutationRoot)) ||
                 type.getName().equals(messageBundle.interpolate(subscriptionRoot));
+    }
+
+    private Collection<GraphQLType> additionalTypes() {
+        Set<GraphQLType> additional = Stream.concat(
+                additionalTypes.values().stream(),
+                additionalDirectives.values().stream().flatMap(directive -> directive.getArguments().stream().map(GraphQLArgument::getType)))
+                .filter(type -> !(type instanceof GraphQLTypeReference))
+                .filter(type -> !isInternalType(type))
+                .collect(Collectors.toSet());
+        additional.stream().collect(Collectors.groupingBy(GraphQLType::getName)).forEach((name, types) -> {
+            if (types.stream().anyMatch(type -> types.stream().anyMatch(t -> !t.equals(type)))) {
+                throw new ConfigurationException("Type name collision: multiple registered additional types are named '" + name + "'");
+            }
+        });
+        return additional;
     }
 
     private void checkType(Type type) {
