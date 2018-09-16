@@ -71,7 +71,7 @@ public class Directives {
 
         @Override
         public Object serialize(Object dataFetcherResult) {
-            return "__java type__";
+            return "__internal__";
         }
 
         @Override

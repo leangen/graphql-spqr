@@ -49,6 +49,9 @@ public abstract class UnionMapper implements TypeMapper {
                 });
 
         builder.withDirective(Directives.mappedType(javaType));
+        buildContext.directiveBuilder.buildUnionTypeDirectives(javaType).forEach(directive ->
+                builder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
+
         GraphQLUnionType union = builder.build();
         for (int i = 0; i < possibleJavaTypes.size(); i++) {
             buildContext.typeRegistry.registerCovariantType(union.getName(), possibleJavaTypes.get(i), union.getTypes().get(i));

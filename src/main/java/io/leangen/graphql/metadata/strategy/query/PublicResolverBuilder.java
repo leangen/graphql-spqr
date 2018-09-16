@@ -117,6 +117,7 @@ public class PublicResolverBuilder extends FilteredResolverBuilder {
                         argumentBuilder.buildResolverArguments(
                                 new ArgumentBuilderParams(method, beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment())),
                         method.isAnnotationPresent(GraphQLComplexity.class) ? method.getAnnotation(GraphQLComplexity.class).value() : null
+//                        Collections.emptyList()
                 ))
                 .collect(Collectors.toList());
     }

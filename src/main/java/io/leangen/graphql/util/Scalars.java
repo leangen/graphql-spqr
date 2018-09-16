@@ -14,6 +14,7 @@ import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
+import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLScalarType;
 
@@ -321,8 +322,13 @@ public class Scalars {
         }
     };
 
-    public static GraphQLScalarType graphQLMapScalar(String name) {
-        return new GraphQLScalarType(name, "Built-in scalar for map-like structures", MAP_SCALAR_COERCION);
+    public static GraphQLScalarType graphQLMapScalar(String name, GraphQLDirective[] directives) {
+        return GraphQLScalarType.newScalar()
+                .name(name)
+                .description("Built-in scalar for map-like structures")
+                .withDirectives(directives)
+                .coercing(MAP_SCALAR_COERCION)
+                .build();
     }
 
     private static Coercing OBJECT_SCALAR_COERCION = new Coercing() {
@@ -343,8 +349,13 @@ public class Scalars {
         }
     };
 
-    public static GraphQLScalarType graphQLObjectScalar(String name) {
-        return new GraphQLScalarType(name, "Built-in scalar for dynamic values", OBJECT_SCALAR_COERCION);
+    public static GraphQLScalarType graphQLObjectScalar(String name, GraphQLDirective[] directives) {
+        return GraphQLScalarType.newScalar()
+                .name(name)
+                .description("Built-in scalar for dynamic values")
+                .withDirectives(directives)
+                .coercing(OBJECT_SCALAR_COERCION)
+                .build();
     }
 
     private static Object parseObjectValue(Value value) {

@@ -12,6 +12,7 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.metadata.DirectiveArgument;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
@@ -91,13 +92,22 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
 
     @Override
     public GraphQLArgument transformArgument(GraphQLArgument argument, OperationArgument operationArgument, OperationMapper operationMapper, BuildContext buildContext) {
-        if (argument.getDefaultValue() == null && shouldWrap(argument.getType(), operationArgument.getTypedElement())) {
+        return transformArgument(argument, operationArgument.getTypedElement(), operationArgument.toString(), operationMapper, buildContext);
+    }
+
+    @Override
+    public GraphQLArgument transformArgument(GraphQLArgument argument, DirectiveArgument directiveArgument, OperationMapper operationMapper, BuildContext buildContext) {
+        return transformArgument(argument, directiveArgument.getTypedElement(), directiveArgument.toString(), operationMapper, buildContext);
+    }
+
+    private GraphQLArgument transformArgument(GraphQLArgument argument, TypedElement element, String description, OperationMapper operationMapper, BuildContext buildContext) {
+        if (argument.getDefaultValue() == null && shouldWrap(argument.getType(), element)) {
             return argument.transform(builder -> builder.type(new GraphQLNonNull(argument.getType())));
         }
         if (shouldUnwrap(argument.getDefaultValue(), argument.getType())) {
             //do not warn on primitives as their non-nullness is implicit
-            if (!ClassUtils.getRawType(operationArgument.getJavaType().getType()).isPrimitive()) {
-                log.warn("Non-null argument with a default value will be treated as nullable: " + operationArgument);
+            if (!ClassUtils.getRawType(element.getJavaType().getType()).isPrimitive()) {
+                log.warn("Non-null argument with a default value will be treated as nullable: " + description);
             }
             return argument.transform(builder -> builder.type((GraphQLInputType) GraphQLUtils.unwrapNonNull(argument.getType())));
         }

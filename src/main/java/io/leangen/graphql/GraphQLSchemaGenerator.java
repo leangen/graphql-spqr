@@ -31,6 +31,7 @@ import io.leangen.graphql.generator.mapping.SchemaTransformer;
 import io.leangen.graphql.generator.mapping.SchemaTransformerRegistry;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
+import io.leangen.graphql.generator.mapping.common.AnnotationMapper;
 import io.leangen.graphql.generator.mapping.common.ArrayAdapter;
 import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
 import io.leangen.graphql.generator.mapping.common.ContextInjector;
@@ -72,15 +73,18 @@ import io.leangen.graphql.metadata.messages.DelegatingMessageBundle;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
+import io.leangen.graphql.metadata.strategy.query.AnnotatedDirectiveBuilder;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.DefaultOperationBuilder;
+import io.leangen.graphql.metadata.strategy.query.DirectiveBuilder;
 import io.leangen.graphql.metadata.strategy.query.OperationBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import io.leangen.graphql.metadata.strategy.value.AnnotationInputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
@@ -155,6 +159,7 @@ public class GraphQLSchemaGenerator {
     private ScalarDeserializationStrategy scalarStrategy;
     private AbstractInputHandler abstractInputHandler = new NoOpAbstractInputHandler();
     private OperationBuilder operationBuilder = new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.NONE);
+    private DirectiveBuilder directiveBuilder = new AnnotatedDirectiveBuilder();
     private ValueMapperFactory valueMapperFactory;
     private InclusionStrategy inclusionStrategy;
     private ImplementationDiscoveryStrategy implDiscoveryStrategy = new DefaultImplementationDiscoveryStrategy();
@@ -188,6 +193,9 @@ public class GraphQLSchemaGenerator {
     private final String queryRoot;
     private final String mutationRoot;
     private final String subscriptionRoot;
+    private final String queryRootDescription;
+    private final String mutationRootDescription;
+    private final String subscriptionRootDescription;
 
     /**
      * Default constructor
@@ -203,9 +211,22 @@ public class GraphQLSchemaGenerator {
      * @param subscriptionRoot name of subscription root type
      */
     public GraphQLSchemaGenerator(String queryRoot, String mutationRoot, String subscriptionRoot) {
+        this(queryRoot, "Query root", mutationRoot, "Mutation root", subscriptionRoot, "Subscription root");
+    }
+
+    /**
+     * Constructor which allows to customize names of root types.
+     * @param queryRoot name of query root type
+     * @param mutationRoot name of mutation root type
+     * @param subscriptionRoot name of subscription root type
+     */
+    public GraphQLSchemaGenerator(String queryRoot, String queryRootDescription, String mutationRoot, String mutationRootDescription, String subscriptionRoot, String subscriptionRootDescription) {
         this.queryRoot = queryRoot;
         this.mutationRoot = mutationRoot;
         this.subscriptionRoot = subscriptionRoot;
+        this.queryRootDescription = queryRootDescription;
+        this.mutationRootDescription = mutationRootDescription;
+        this.subscriptionRootDescription = subscriptionRootDescription;
     }
 
     /**
@@ -706,6 +727,11 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withDirectiveBuilder(DirectiveBuilder directiveBuilder) {
+        this.directiveBuilder = directiveBuilder;
+        return this;
+    }
+
     /**
      * Sets a flag that all mutations should be mapped in a Relay-compliant way,
      * using the default name and description for output wrapper fields.
@@ -815,7 +841,7 @@ public class GraphQLSchemaGenerator {
         EnumMapper enumMapper = new EnumMapper(javaDeprecationConfig);
         typeMappers = Arrays.asList(
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
-                new PublisherMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
+                new PublisherMapper(), new AnnotationMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
                 new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
                 new ListMapper(), new IterableAdapter<>(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
@@ -873,7 +899,7 @@ public class GraphQLSchemaGenerator {
         } else {
             defaultInputFieldBuilder = (InputFieldBuilder) Defaults.valueMapperFactory(typeInfoGenerator).getValueMapper(Collections.emptyMap(), environment);
         }
-        inputFieldBuilders = Collections.singletonList(defaultInputFieldBuilder);
+        inputFieldBuilders = Arrays.asList(new AnnotationInputFieldBuilder(), defaultInputFieldBuilder);
         for (ExtensionProvider<ExtendedConfiguration, InputFieldBuilder> provider : this.inputFieldBuilderProviders) {
             inputFieldBuilders = provider.getExtensions(extendedConfig, new ExtensionList<>(inputFieldBuilders));
         }
@@ -900,21 +926,21 @@ public class GraphQLSchemaGenerator {
         BuildContext buildContext = new BuildContext(
                 basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy, typeTransformer, basePackages, environment),
                 new TypeMapperRegistry(typeMappers), new SchemaTransformerRegistry(transformers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy, scalarStrategy, typeTransformer,
-                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), interceptorFactory, inclusionStrategy, relayMappingConfig, additionalTypes.values(), typeComparator, implDiscoveryStrategy);
+                abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders), interceptorFactory, directiveBuilder, inclusionStrategy, relayMappingConfig, additionalTypes.values(), typeComparator, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();
         builder.query(newObject()
-                .name(queryRoot)
-                .description("Query root")
+                .name(messageBundle.interpolate(queryRoot))
+                .description(messageBundle.interpolate(queryRootDescription))
                 .fields(operationMapper.getQueries())
                 .build());
 
         List<GraphQLFieldDefinition> mutations = operationMapper.getMutations();
         if (!mutations.isEmpty()) {
             builder.mutation(newObject()
-                    .name(mutationRoot)
-                    .description("Mutation root")
+                    .name(messageBundle.interpolate(mutationRoot))
+                    .description(messageBundle.interpolate(mutationRootDescription))
                     .fields(mutations)
                     .build());
         }
@@ -922,8 +948,8 @@ public class GraphQLSchemaGenerator {
         List<GraphQLFieldDefinition> subscriptions = operationMapper.getSubscriptions();
         if (!subscriptions.isEmpty()) {
             builder.subscription(newObject()
-                    .name(subscriptionRoot)
-                    .description("Subscription root")
+                    .name(messageBundle.interpolate(subscriptionRoot))
+                    .description(messageBundle.interpolate(subscriptionRootDescription))
                     .fields(subscriptions)
                     .build());
         }
@@ -945,9 +971,9 @@ public class GraphQLSchemaGenerator {
 
     private boolean isInternalType(GraphQLType type) {
         return GraphQLUtils.isIntrospectionType(type) ||
-                type.getName().equals(queryRoot) ||
-                type.getName().equals(mutationRoot) ||
-                type.getName().equals(subscriptionRoot);
+                type.getName().equals(messageBundle.interpolate(queryRoot)) ||
+                type.getName().equals(messageBundle.interpolate(mutationRoot)) ||
+                type.getName().equals(messageBundle.interpolate(subscriptionRoot));
     }
 
     private void checkType(Type type) {

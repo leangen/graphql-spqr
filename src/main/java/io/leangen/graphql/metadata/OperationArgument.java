@@ -68,7 +68,7 @@ public class OperationArgument {
 
     @Override
     public String toString() {
-        return String.format("Argument '%s' of type %s bound to [%s]", name, ClassUtils.toString(getJavaType()),
+        return String.format("Operation argument '%s' of type %s bound to [%s]", name, ClassUtils.toString(getJavaType()),
                 typedElement.getElements().stream().map(ClassUtils::toString).collect(Collectors.joining()));
     }
 }

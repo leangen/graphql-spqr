@@ -13,6 +13,7 @@ import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStra
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
+import io.leangen.graphql.metadata.strategy.query.DirectiveBuilder;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
@@ -58,6 +59,7 @@ public class BuildContext {
     public final ImplementationDiscoveryStrategy implDiscoveryStrategy;
     public final TypeInfoGenerator typeInfoGenerator;
     public final ResolverInterceptorFactory interceptorFactory;
+    public final DirectiveBuilder directiveBuilder;
     public final RelayMappingConfig relayMappingConfig;
     public final ClassFinder classFinder;
     public final List<Consumer<BuildContext>> postBuildHooks;
@@ -79,20 +81,22 @@ public class BuildContext {
      * @param abstractInputHandler The strategy deciding what Java type gets mapped to a GraphQL interface
      * @param inputFieldBuilders The strategy deciding how GraphQL input fields are discovered from Java types
      * @param interceptorFactory The factory to use to obtain interceptors applicable to a resolver
+     * @param directiveBuilder The factory used to create directives where applicable
      * @param relayMappingConfig Relay specific configuration
      * @param knownTypes The cache of known type names
      */
     public BuildContext(String[] basePackages, GlobalEnvironment environment, OperationRegistry operationRegistry,
-                        TypeMapperRegistry typeMappers, SchemaTransformerRegistry transformers, ValueMapperFactory valueMapperFactory, TypeInfoGenerator typeInfoGenerator,
-                        MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
+                        TypeMapperRegistry typeMappers, SchemaTransformerRegistry transformers, ValueMapperFactory valueMapperFactory,
+                        TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
-                        InputFieldBuilderRegistry inputFieldBuilders, ResolverInterceptorFactory interceptorFactory, InclusionStrategy inclusionStrategy,
-                        RelayMappingConfig relayMappingConfig, Collection<GraphQLType> knownTypes, Comparator<AnnotatedType> typeComparator,
-                        ImplementationDiscoveryStrategy implementationStrategy) {
+                        InputFieldBuilderRegistry inputFieldBuilders, ResolverInterceptorFactory interceptorFactory, DirectiveBuilder directiveBuilder,
+                        InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig, Collection<GraphQLType> knownTypes,
+                        Comparator<AnnotatedType> typeComparator, ImplementationDiscoveryStrategy implementationStrategy) {
         this.operationRegistry = operationRegistry;
         this.typeRegistry = environment.typeRegistry;
         this.transformers = transformers;
         this.interceptorFactory = interceptorFactory;
+        this.directiveBuilder = directiveBuilder;
         this.typeCache = new TypeCache(knownTypes);
         this.typeMappers = typeMappers;
         this.typeInfoGenerator = typeInfoGenerator;

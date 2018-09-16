@@ -387,6 +387,12 @@ public class ClassUtils {
                 .anyMatch(ann -> ann.annotationType().isAnnotationPresent(annotation));
     }
 
+    public static List<Method> getAnnotationFields(Class<? extends Annotation> annotation) {
+        return Arrays.stream(annotation.getMethods())
+                .filter(method -> annotation.equals(method.getDeclaringClass()))
+                .collect(Collectors.toList());
+    }
+
     public static boolean containsTypeAnnotation(AnnotatedType type, Class<? extends Annotation> annotation) {
         if (type.isAnnotationPresent(annotation)) {
             return true;

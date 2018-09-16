@@ -1,5 +1,6 @@
 package io.leangen.graphql.generator.mapping.common;
 
+import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLScalarType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLScalar;
@@ -17,7 +18,12 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
 
     @Override
     public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        return GenericTypeReflector.isSuperType(Map.class, javaType.getType()) ? Scalars.graphQLMapScalar(typeName) : Scalars.graphQLObjectScalar(typeName);
+        GraphQLDirective[] directives = buildContext.directiveBuilder.buildScalarTypeDirectives(javaType).stream()
+                .map(directive -> operationMapper.toGraphQLDirective(directive, buildContext))
+                .toArray(GraphQLDirective[]::new);
+        return GenericTypeReflector.isSuperType(Map.class, javaType.getType())
+                ? Scalars.graphQLMapScalar(typeName, directives)
+                : Scalars.graphQLObjectScalar(typeName, directives);
     }
 
     @Override

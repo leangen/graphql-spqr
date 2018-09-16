@@ -5,6 +5,7 @@ import graphql.relay.Relay;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
@@ -23,9 +24,12 @@ import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.metadata.Directive;
+import io.leangen.graphql.metadata.DirectiveArgument;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
+import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.Directives;
@@ -34,6 +38,7 @@ import io.leangen.graphql.util.Urls;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -141,7 +147,9 @@ public class OperationMapper {
                 .name(operation.getName())
                 .description(operation.getDescription())
                 .deprecate(operation.getDeprecationReason())
-                .type(type);
+                .type(type)
+                .withDirective(Directives.mappedOperation(operation))
+                .withDirectives(toGraphQLDirectives(operation.getTypedElement(), buildContext.directiveBuilder::buildFieldDefinitionDirectives, buildContext));
 
         List<GraphQLArgument> arguments = operation.getArguments().stream()
                 .filter(OperationArgument::isMappable)
@@ -157,7 +165,6 @@ public class OperationMapper {
                 .map(OperationArgument::getJavaType);
         ValueMapper valueMapper = buildContext.createValueMapper(inputTypes);
         fieldBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment, buildContext.interceptorFactory));
-        fieldBuilder.withDirective(Directives.mappedOperation(operation));
 
         return buildContext.transformers.transform(fieldBuilder.build(), operation, this, buildContext);
     }
@@ -196,6 +203,7 @@ public class OperationMapper {
                 .name(inputField.getName())
                 .description(inputField.getDescription())
                 .type(toGraphQLInputType(inputField.getJavaType(), buildContext))
+                .withDirectives(toGraphQLDirectives(inputField.getTypedElement(), buildContext.directiveBuilder::buildInputFieldDefinitionDirectives, buildContext))
                 .defaultValue(inputField.getDefaultValue());
         return buildContext.transformers.transform(builder.build(), inputField, this, buildContext);
     }
@@ -226,8 +234,36 @@ public class OperationMapper {
                 .description(operationArgument.getDescription())
                 .type(toGraphQLInputType(operationArgument.getJavaType(), buildContext))
                 .defaultValue(operationArgument.getDefaultValue())
+                .withDirectives(toGraphQLDirectives(operationArgument.getTypedElement(), buildContext.directiveBuilder::buildArgumentDefinitionDirectives, buildContext))
                 .build();
         return buildContext.transformers.transform(argument, operationArgument, this, buildContext);
+    }
+
+    private GraphQLDirective[] toGraphQLDirectives(TypedElement element, Function<AnnotatedElement, List<Directive>> directiveBuilder, BuildContext buildContext) {
+        return element.getElements().stream()
+                .flatMap(el -> directiveBuilder.apply(el).stream())
+                .map(directive -> toGraphQLDirective(directive, buildContext))
+                .toArray(GraphQLDirective[]::new);
+    }
+
+    public GraphQLDirective toGraphQLDirective(Directive directive, BuildContext buildContext) {
+        GraphQLDirective.Builder builder = GraphQLDirective.newDirective()
+                .name(directive.getName())
+                .description(directive.getDescription())
+                .validLocations(directive.getLocations());
+        directive.getArguments().forEach(arg -> builder.argument(toGraphQLArgument(arg, buildContext)));
+        return buildContext.transformers.transform(builder.build(), directive, this, buildContext);
+    }
+
+    private GraphQLArgument toGraphQLArgument(DirectiveArgument directiveArgument, BuildContext buildContext) {
+        GraphQLArgument argument = newArgument()
+                .name(directiveArgument.getName())
+                .description(directiveArgument.getDescription())
+                .type(toGraphQLInputType(directiveArgument.getJavaType(), buildContext))
+                .value(directiveArgument.getValue())
+                .withDirectives(toGraphQLDirectives(directiveArgument.getTypedElement(), buildContext.directiveBuilder::buildArgumentDefinitionDirectives, buildContext))
+                .build();
+        return buildContext.transformers.transform(argument, directiveArgument, this, buildContext);
     }
 
     private GraphQLFieldDefinition toRelayMutation(GraphQLFieldDefinition mutation, RelayMappingConfig relayMappingConfig) {
