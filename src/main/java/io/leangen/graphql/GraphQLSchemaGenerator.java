@@ -25,6 +25,7 @@ import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRegistry;
 import io.leangen.graphql.generator.mapping.BaseTypeAliasComparator;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
+import io.leangen.graphql.generator.mapping.ConverterRegistryFactory;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
@@ -168,6 +169,7 @@ public class GraphQLSchemaGenerator {
     private Comparator<AnnotatedType> typeComparator;
     private List<InputFieldBuilder> inputFieldBuilders;
     private ResolverInterceptorFactory interceptorFactory;
+    private ConverterRegistryFactory converterRegistryFactory = ConverterRegistry::new;
     private JavaDeprecationMappingConfig javaDeprecationConfig = new JavaDeprecationMappingConfig(true, "Deprecated");
     private final OperationSourceRegistry operationSourceRegistry = new OperationSourceRegistry();
     private final List<ExtensionProvider<Configuration, TypeMapper>> typeMapperProviders = new ArrayList<>();
@@ -621,6 +623,11 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withConverterRegistryFactory(ConverterRegistryFactory converterRegistryFactory) {
+        this.converterRegistryFactory = converterRegistryFactory;
+        return this;
+    }
+
     /**
      * Type adapters (instances of {@link AbstractTypeAdapter}) are both type mappers and bi-directional converters,
      * implementing {@link TypeMapper}, {@link InputConverter} and {@link OutputConverter}.
@@ -862,7 +869,8 @@ public class GraphQLSchemaGenerator {
         }
         interceptorFactory = new DelegatingResolverInterceptorFactory(interceptorFactories);
 
-        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes.values()), new ConverterRegistry(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors));
+        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes.values()),
+                converterRegistryFactory.create(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors));
         ExtendedConfiguration extendedConfig = new ExtendedConfiguration(configuration, environment);
         valueMapperFactory = new MemoizedValueMapperFactory(environment, internalValueMapperFactory);
         ValueMapper def = valueMapperFactory.getValueMapper(Collections.emptyMap(), environment);
