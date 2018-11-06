@@ -18,6 +18,12 @@ import java.util.Set;
 @SuppressWarnings("unused")
 public abstract class AbstractTypeSubstitutingMapper<S> implements TypeMapper, TypeSubstituter {
 
+    protected final AnnotatedType substituteType;
+
+    public AbstractTypeSubstitutingMapper() {
+        substituteType = GenericTypeReflector.getTypeParameter(getClass().getAnnotatedSuperclass(), AbstractTypeSubstitutingMapper.class.getTypeParameters()[0]);
+    }
+
     @Override
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
         return operationMapper.toGraphQLType(getSubstituteType(javaType), mappersToSkip, buildContext);
@@ -37,6 +43,6 @@ public abstract class AbstractTypeSubstitutingMapper<S> implements TypeMapper, T
      */
     @Override
     public AnnotatedType getSubstituteType(AnnotatedType original) {
-        return GenericTypeReflector.getTypeParameter(getClass().getAnnotatedSuperclass(), AbstractTypeSubstitutingMapper.class.getTypeParameters()[0]);
+        return substituteType;
     }
 }

@@ -6,6 +6,7 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
+import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
@@ -32,12 +33,15 @@ public class ResolutionEnvironment {
     public final DataFetchingEnvironment dataFetchingEnvironment;
     public final Map<String, Object> arguments;
 
-    public ResolutionEnvironment(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment) {
-        
+    private final ConverterRegistry converterRegistry;
+
+    public ResolutionEnvironment(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment, ConverterRegistry converterRegistry) {
+
         this.context = env.getSource();
         this.rootContext = env.getContext();
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
+        this.converterRegistry = converterRegistry;
         this.fields = env.getFields();
         this.fieldType = env.getFieldType();
         this.parentType = env.getParentType();
@@ -51,7 +55,7 @@ public class ResolutionEnvironment {
         if (output == null) {
             return null;
         }
-        OutputConverter<T, S> outputConverter = this.globalEnvironment.converters.getOutputConverter(type);
+        OutputConverter<T, S> outputConverter = converterRegistry.getOutputConverter(type);
         return outputConverter == null ? (S) output : outputConverter.convertOutput(output, type, this);
     }
 
