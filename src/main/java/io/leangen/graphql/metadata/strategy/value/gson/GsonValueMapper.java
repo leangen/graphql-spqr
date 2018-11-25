@@ -95,13 +95,13 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
                 }
                 AnnotatedType fieldType;
                 try {
-                    fieldType = params.getTypeTransformer().transform(ClassUtils.getFieldType(field, type));
+                    fieldType = params.getEnvironment().typeTransformer.transform(ClassUtils.getFieldType(field, type));
                 } catch (TypeMappingException e) {
                     throw new TypeMappingException(field, type, e);
                 }
                 Optional<Method> setter = ClassUtils.findSetter(field.getDeclaringClass(), field.getName(), field.getType());
                 Member target = setter.isPresent() ? setter.get() : field;
-                if (!params.getInclusionStrategy().includeInputField(target.getDeclaringClass(), (AnnotatedElement) target, fieldType)) {
+                if (!params.getEnvironment().inclusionStrategy.includeInputField(target.getDeclaringClass(), (AnnotatedElement) target, fieldType)) {
                     continue;
                 }
                 field.setAccessible(true);

@@ -18,7 +18,7 @@ public class ObjectScalarAdapter extends CachingMapper<GraphQLScalarType, GraphQ
 
     @Override
     public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        GraphQLDirective[] directives = buildContext.directiveBuilder.buildScalarTypeDirectives(javaType).stream()
+        GraphQLDirective[] directives = buildContext.directiveBuilder.buildScalarTypeDirectives(javaType, buildContext.directiveBuilderParams()).stream()
                 .map(directive -> operationMapper.toGraphQLDirective(directive, buildContext))
                 .toArray(GraphQLDirective[]::new);
         return GenericTypeReflector.isSuperType(Map.class, javaType.getType())

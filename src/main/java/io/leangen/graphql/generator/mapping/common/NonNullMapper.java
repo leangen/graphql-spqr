@@ -97,6 +97,9 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
 
     @Override
     public GraphQLArgument transformArgument(GraphQLArgument argument, DirectiveArgument directiveArgument, OperationMapper operationMapper, BuildContext buildContext) {
+        if (directiveArgument.getAnnotation() != null && directiveArgument.getDefaultValue() == null) {
+            return argument.transform(builder -> builder.type(GraphQLNonNull.nonNull(argument.getType())));
+        }
         return transformArgument(argument, directiveArgument.getTypedElement(), directiveArgument.toString(), operationMapper, buildContext);
     }
 

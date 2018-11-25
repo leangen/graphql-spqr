@@ -31,6 +31,7 @@ import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.MappingException;
+import io.leangen.graphql.metadata.strategy.query.DirectiveBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.GraphQLUtils;
@@ -47,7 +48,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,6 +72,7 @@ public class OperationMapper {
     private List<GraphQLFieldDefinition> queries; //The list of all mapped queries
     private List<GraphQLFieldDefinition> mutations; //The list of all mapped mutations
     private List<GraphQLFieldDefinition> subscriptions; //The list of all mapped subscriptions
+    private List<GraphQLDirective> directives; //The list of all added mapped directives
 
     private static final Logger log = LoggerFactory.getLogger(OperationMapper.class);
 
@@ -82,6 +84,7 @@ public class OperationMapper {
         this.queries = generateQueries(buildContext);
         this.mutations = generateMutations(buildContext);
         this.subscriptions = generateSubscriptions(buildContext);
+        this.directives = generateDirectives(buildContext);
     }
 
     /**
@@ -130,6 +133,13 @@ public class OperationMapper {
     private List<GraphQLFieldDefinition> generateSubscriptions(BuildContext buildContext) {
         return buildContext.operationRegistry.getSubscriptions().stream()
                 .map(subscription -> toGraphQLField(subscription, buildContext))
+                .collect(Collectors.toList());
+    }
+
+    private List<GraphQLDirective> generateDirectives(BuildContext buildContext) {
+        return buildContext.additionalDirectives.stream()
+                .map(directiveType -> buildContext.directiveBuilder.buildClientDirective(directiveType, buildContext.directiveBuilderParams()))
+                .map(directive -> toGraphQLDirective(directive, buildContext))
                 .collect(Collectors.toList());
     }
 
@@ -239,9 +249,9 @@ public class OperationMapper {
         return buildContext.transformers.transform(argument, operationArgument, this, buildContext);
     }
 
-    private GraphQLDirective[] toGraphQLDirectives(TypedElement element, Function<AnnotatedElement, List<Directive>> directiveBuilder, BuildContext buildContext) {
+    private GraphQLDirective[] toGraphQLDirectives(TypedElement element, BiFunction<AnnotatedElement, DirectiveBuilderParams, List<Directive>> directiveBuilder, BuildContext buildContext) {
         return element.getElements().stream()
-                .flatMap(el -> directiveBuilder.apply(el).stream())
+                .flatMap(el -> directiveBuilder.apply(el, buildContext.directiveBuilderParams()).stream())
                 .map(directive -> toGraphQLDirective(directive, buildContext))
                 .toArray(GraphQLDirective[]::new);
     }
@@ -261,6 +271,7 @@ public class OperationMapper {
                 .description(directiveArgument.getDescription())
                 .type(toGraphQLInputType(directiveArgument.getJavaType(), buildContext))
                 .value(directiveArgument.getValue())
+                .defaultValue(directiveArgument.getDefaultValue())
                 .withDirectives(toGraphQLDirectives(directiveArgument.getTypedElement(), buildContext.directiveBuilder::buildArgumentDefinitionDirectives, buildContext))
                 .build();
         return buildContext.transformers.transform(argument, directiveArgument, this, buildContext);
@@ -453,5 +464,9 @@ public class OperationMapper {
 
     public List<GraphQLFieldDefinition> getSubscriptions() {
         return subscriptions;
+    }
+
+    public List<GraphQLDirective> getDirectives() {
+        return directives;
     }
 }

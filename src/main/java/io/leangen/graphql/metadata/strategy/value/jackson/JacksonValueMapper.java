@@ -15,7 +15,6 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
-import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
@@ -94,35 +93,35 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
         BeanDescription desc = objectMapper.getDeserializationConfig().introspect(javaType);
         return desc.findProperties().stream()
                 .filter(BeanPropertyDefinition::couldDeserialize)
-                .flatMap(prop -> toInputField(params.getType(), prop, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment()))
+                .flatMap(prop -> toInputField(params.getType(), prop, params.getEnvironment()))
                 .collect(Collectors.toSet());
     }
 
-    private Stream<InputField> toInputField(AnnotatedType type, BeanPropertyDefinition prop, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, GlobalEnvironment environment) {
-        PropertyDescriptorFactory descFactory = new PropertyDescriptorFactory(type, typeTransformer);
+    private Stream<InputField> toInputField(AnnotatedType type, BeanPropertyDefinition prop, GlobalEnvironment environment) {
+        PropertyDescriptorFactory descFactory = new PropertyDescriptorFactory(type, environment.typeTransformer);
         AnnotatedParameter ctorParam = prop.getConstructorParameter();
         if (ctorParam != null) {
-            return toInputField(descFactory.fromConstructorParameter(ctorParam), prop, inclusionStrategy, objectMapper, typeTransformer, environment);
+            return toInputField(descFactory.fromConstructorParameter(ctorParam), prop, objectMapper, environment);
         }
         if (prop.getSetter() != null) {
-            return toInputField(descFactory.fromSetter(prop.getSetter()), prop, inclusionStrategy, objectMapper, typeTransformer, environment);
+            return toInputField(descFactory.fromSetter(prop.getSetter()), prop, objectMapper, environment);
         }
         if (prop.getGetter() != null) {
-            return toInputField(descFactory.fromGetter(prop.getGetter()), prop, inclusionStrategy, objectMapper, typeTransformer, environment);
+            return toInputField(descFactory.fromGetter(prop.getGetter()), prop, objectMapper, environment);
         }
         if (prop.getField() != null) {
-            return toInputField(descFactory.fromField(prop.getField()), prop, inclusionStrategy, objectMapper, typeTransformer, environment);
+            return toInputField(descFactory.fromField(prop.getField()), prop, objectMapper, environment);
         }
         throw new TypeMappingException("Unknown input field mapping style encountered");
     }
 
-    private Stream<InputField> toInputField(PropertyDescriptor desc, BeanPropertyDefinition prop, InclusionStrategy inclusionStrategy, ObjectMapper objectMapper, TypeTransformer transformer, GlobalEnvironment environment) {
-        if (!inclusionStrategy.includeInputField(desc.declaringClass, desc.element, desc.type)) {
+    private Stream<InputField> toInputField(PropertyDescriptor desc, BeanPropertyDefinition prop, ObjectMapper objectMapper, GlobalEnvironment environment) {
+        if (!environment.inclusionStrategy.includeInputField(desc.declaringClass, desc.element, desc.type)) {
             return Stream.empty();
         }
 
         AnnotatedType deserializableType = resolveDeserializableType(desc.accessor, desc.type, desc.accessor.getType(), objectMapper);
-        Object defaultValue = defaultValue(desc.declaringType, prop, desc.type, transformer, environment);
+        Object defaultValue = defaultValue(desc.declaringType, prop, desc.type, environment.typeTransformer, environment);
         return Stream.of(new InputField(prop.getName(), prop.getMetadata().getDescription(), desc.type, deserializableType, defaultValue, desc.element));
     }
 

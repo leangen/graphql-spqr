@@ -14,6 +14,7 @@ import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.query.DirectiveBuilder;
+import io.leangen.graphql.metadata.strategy.query.DirectiveBuilderParams;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
@@ -63,6 +64,7 @@ public class BuildContext {
     public final RelayMappingConfig relayMappingConfig;
     public final ClassFinder classFinder;
     public final List<Consumer<BuildContext>> postBuildHooks;
+    public final List<AnnotatedType> additionalDirectives;
 
     final Validator validator;
 
@@ -90,7 +92,7 @@ public class BuildContext {
                         TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldBuilderRegistry inputFieldBuilders, ResolverInterceptorFactory interceptorFactory, DirectiveBuilder directiveBuilder,
-                        InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig, Collection<GraphQLType> knownTypes,
+                        InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig, Collection<GraphQLType> knownTypes, List<AnnotatedType> additionalDirectives,
                         Comparator<AnnotatedType> typeComparator, ImplementationDiscoveryStrategy implementationStrategy) {
         this.operationRegistry = operationRegistry;
         this.typeRegistry = environment.typeRegistry;
@@ -98,6 +100,7 @@ public class BuildContext {
         this.interceptorFactory = interceptorFactory;
         this.directiveBuilder = directiveBuilder;
         this.typeCache = new TypeCache(knownTypes);
+        this.additionalDirectives = additionalDirectives;
         this.typeMappers = typeMappers;
         this.typeInfoGenerator = typeInfoGenerator;
         this.messageBundle = messageBundle;
@@ -143,5 +146,12 @@ public class BuildContext {
 
     public void executePostBuildHooks() {
         postBuildHooks.forEach(hook -> hook.accept(this));
+    }
+
+    public DirectiveBuilderParams directiveBuilderParams() {
+        return DirectiveBuilderParams.builder()
+                .withEnvironment(globalEnvironment)
+                .withInputFieldBuilders(inputFieldBuilders)
+                .build();
     }
 }

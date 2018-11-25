@@ -9,47 +9,51 @@ import java.util.List;
 
 public interface DirectiveBuilder {
 
-    default List<Directive> buildSchemaDirectives(AnnotatedType schemaDescriptorType) {
+    default List<Directive> buildSchemaDirectives(AnnotatedType schemaDescriptorType, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildObjectTypeDirectives(AnnotatedType type) {
+    default List<Directive> buildObjectTypeDirectives(AnnotatedType type, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildScalarTypeDirectives(AnnotatedType type) {
+    default List<Directive> buildScalarTypeDirectives(AnnotatedType type, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildFieldDefinitionDirectives(AnnotatedElement element) {
+    default List<Directive> buildFieldDefinitionDirectives(AnnotatedElement element, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildArgumentDefinitionDirectives(AnnotatedElement element) {
+    default List<Directive> buildArgumentDefinitionDirectives(AnnotatedElement element, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildInterfaceTypeDirectives(AnnotatedType type) {
+    default List<Directive> buildInterfaceTypeDirectives(AnnotatedType type, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildUnionTypeDirectives(AnnotatedType type) {
+    default List<Directive> buildUnionTypeDirectives(AnnotatedType type, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildEnumTypeDirectives(AnnotatedType type) {
+    default List<Directive> buildEnumTypeDirectives(AnnotatedType type, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildEnumValueDirectives(Enum<?> value) {
+    default List<Directive> buildEnumValueDirectives(Enum<?> value, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildInputObjectTypeDirectives(AnnotatedType type) {
+    default List<Directive> buildInputObjectTypeDirectives(AnnotatedType type, DirectiveBuilderParams params) {
         return Collections.emptyList();
     }
 
-    default List<Directive> buildInputFieldDefinitionDirectives(AnnotatedElement element) {
+    default List<Directive> buildInputFieldDefinitionDirectives(AnnotatedElement element, DirectiveBuilderParams params) {
         return Collections.emptyList();
+    }
+
+    default Directive buildClientDirective(AnnotatedType directiveType, DirectiveBuilderParams params) {
+        return null;
     }
 }

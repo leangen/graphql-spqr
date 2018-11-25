@@ -26,8 +26,6 @@ public class AnnotationMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
         InputFieldBuilderParams params = InputFieldBuilderParams.builder()
                 .withType(javaType)
-                .withInclusionStrategy(buildContext.inclusionStrategy)
-                .withTypeTransformer(buildContext.typeTransformer)
                 .withEnvironment(buildContext.globalEnvironment)
                 .build();
         buildContext.inputFieldBuilders.getInputFields(params).forEach(field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));

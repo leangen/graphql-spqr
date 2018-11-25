@@ -1,10 +1,12 @@
 package io.leangen.graphql.metadata;
 
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -12,6 +14,7 @@ import java.util.stream.Collectors;
 public class OperationArgument {
 
     private final TypedElement typedElement;
+    private final AnnotatedType baseType;
     private final String name;
     private final String description;
     private final Object defaultValue;
@@ -27,6 +30,7 @@ public class OperationArgument {
                              List<Parameter> parameters, boolean context, boolean mappable) {
 
         this.typedElement = new TypedElement(Objects.requireNonNull(javaType), parameters);
+        this.baseType = resolveBaseType(typedElement.getJavaType());
         this.name = Objects.requireNonNull(name);
         this.description = description;
         this.defaultValue = defaultValue;
@@ -36,6 +40,10 @@ public class OperationArgument {
 
     public AnnotatedType getJavaType() {
         return typedElement.getJavaType();
+    }
+
+    public AnnotatedType getBaseType() {
+        return baseType;
     }
 
     public String getName() {
@@ -64,6 +72,15 @@ public class OperationArgument {
 
     public boolean isMappable() {
         return mappable;
+    }
+
+    private static AnnotatedType resolveBaseType(AnnotatedType type) {
+        //Unwrap collection types
+        AnnotatedType unwrappedCollectionType = GenericTypeReflector.isSuperType(Collection.class, type.getType())
+                ? GenericTypeReflector.getTypeParameter(type, Collection.class.getTypeParameters()[0])
+                : type;
+        // Lose all the TYPE_USE annotations
+        return GenericTypeReflector.annotate(unwrappedCollectionType.getType());
     }
 
     @Override

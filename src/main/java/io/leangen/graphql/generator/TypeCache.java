@@ -27,7 +27,7 @@ public class TypeCache {
         return knownTypes.containsKey(typeName);
     }
 
-    public GraphQLType resolveType(String typeName) {
+    GraphQLType resolveType(String typeName) {
         GraphQLType resolved = knownTypes.get(typeName);
         if (resolved instanceof GraphQLTypeReference) {
             throw new IllegalStateException("Type " + typeName + " is not yet resolvable");

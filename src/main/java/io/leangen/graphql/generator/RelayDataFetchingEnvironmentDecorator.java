@@ -2,7 +2,7 @@ package io.leangen.graphql.generator;
 
 import graphql.execution.ExecutionContext;
 import graphql.execution.ExecutionId;
-import graphql.execution.ExecutionTypeInfo;
+import graphql.execution.ExecutionStepInfo;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.schema.DataFetchingEnvironment;
@@ -11,6 +11,7 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import org.dataloader.DataLoader;
 
 import java.util.Collections;
 import java.util.List;
@@ -78,8 +79,8 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     }
 
     @Override
-    public ExecutionTypeInfo getFieldTypeInfo() {
-        return delegate.getFieldTypeInfo();
+    public ExecutionStepInfo getExecutionStepInfo() {
+        return delegate.getExecutionStepInfo();
     }
 
     @Override
@@ -110,5 +111,10 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     @Override
     public ExecutionContext getExecutionContext() {
         return delegate.getExecutionContext();
+    }
+
+    @Override
+    public <K, V> DataLoader<K, V> getDataLoader(String dataLoaderName) {
+        return delegate.getDataLoader(dataLoaderName);
     }
 }

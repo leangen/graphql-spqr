@@ -102,8 +102,6 @@ public class AutoScanAbstractInputHandler implements AbstractInputHandler {
         buildContext.inputFieldBuilders.getInputFields(
                 InputFieldBuilderParams.builder()
                         .withType(javaType)
-                        .withInclusionStrategy(buildContext.inclusionStrategy)
-                        .withTypeTransformer(buildContext.typeTransformer)
                         .withEnvironment(buildContext.globalEnvironment)
                         .build())
                 .forEach(childQuery -> abstractTypes.addAll(findConstituentAbstractTypes(childQuery.getDeserializableType(), buildContext)));

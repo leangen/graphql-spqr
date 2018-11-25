@@ -1,6 +1,7 @@
 package io.leangen.graphql;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLFieldDefinition;
@@ -74,6 +75,7 @@ public class NestedQueryTest {
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static class Essay {
         private String title;
         private int wordCount;
@@ -92,11 +94,12 @@ public class NestedQueryTest {
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static class Author {
         private String name;
 
         @JsonCreator
-        public Author(String name) {
+        public Author(@JsonProperty("name") String name) {
             this.name = name;
         }
 

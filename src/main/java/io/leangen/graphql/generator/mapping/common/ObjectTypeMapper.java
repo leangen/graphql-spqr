@@ -51,7 +51,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         });
 
         typeBuilder.withDirective(Directives.mappedType(javaType));
-        buildContext.directiveBuilder.buildObjectTypeDirectives(javaType).forEach(directive ->
+        buildContext.directiveBuilder.buildObjectTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 typeBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
 
         GraphQLObjectType type = typeBuilder.build();
@@ -67,8 +67,6 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
         InputFieldBuilderParams params = InputFieldBuilderParams.builder()
                 .withType(javaType)
-                .withInclusionStrategy(buildContext.inclusionStrategy)
-                .withTypeTransformer(buildContext.typeTransformer)
                 .withEnvironment(buildContext.globalEnvironment)
                 .build();
         buildContext.inputFieldBuilders.getInputFields(params).forEach(field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));
@@ -77,7 +75,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         }
 
         typeBuilder.withDirective(Directives.mappedType(javaType));
-        buildContext.directiveBuilder.buildInputObjectTypeDirectives(javaType).forEach(directive ->
+        buildContext.directiveBuilder.buildInputObjectTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 typeBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
 
         return typeBuilder.build();

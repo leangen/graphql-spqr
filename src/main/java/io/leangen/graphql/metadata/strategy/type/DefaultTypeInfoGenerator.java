@@ -1,5 +1,6 @@
 package io.leangen.graphql.metadata.strategy.type;
 
+import io.leangen.graphql.annotations.types.GraphQLDirective;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.annotations.types.GraphQLType;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
@@ -7,6 +8,7 @@ import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
+import java.beans.Introspector;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
@@ -52,6 +54,23 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
                 Optional.ofNullable(type.getAnnotation(GraphQLType.class))
                         .map(GraphQLType::fieldOrder))
                 .orElse(Utils.emptyArray());
+    }
+
+    @Override
+    public String generateDirectiveTypeName(AnnotatedType type, MessageBundle messageBundle) {
+        return messageBundle.interpolate(
+                Optional.ofNullable(type.getAnnotation(GraphQLDirective.class))
+                        .map(GraphQLDirective::name)
+                        .filter(Utils::isNotEmpty)
+                        .orElse(Introspector.decapitalize(ClassUtils.getRawType(type.getType()).getSimpleName())));
+    }
+
+    @Override
+    public String generateDirectiveTypeDescription(AnnotatedType type, MessageBundle messageBundle) {
+        return messageBundle.interpolate(
+                Optional.ofNullable(type.getAnnotation(GraphQLDirective.class))
+                        .map(GraphQLDirective::description)
+                        .orElse(""));
     }
 
     @SuppressWarnings("unchecked")

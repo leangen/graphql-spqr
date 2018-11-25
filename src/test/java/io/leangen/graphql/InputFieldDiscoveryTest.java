@@ -7,10 +7,6 @@ import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.InputField;
-import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
-import io.leangen.graphql.metadata.strategy.InclusionStrategy;
-import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
-import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapper;
@@ -33,8 +29,6 @@ public class InputFieldDiscoveryTest {
     private JacksonValueMapper jackson = new JacksonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
     private GsonValueMapper gson = new GsonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
 
-    private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy("io.leangen");
-    private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
     private static final AnnotatedType IGNORED_TYPE = GenericTypeReflector.annotate(Object.class);
     private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
 
@@ -151,8 +145,6 @@ public class InputFieldDiscoveryTest {
         Set<InputField> fields = mapper.getInputFields(
                 InputFieldBuilderParams.builder()
                         .withType(GenericTypeReflector.annotate(typeToScan))
-                        .withInclusionStrategy(INCLUSION_STRATEGY)
-                        .withTypeTransformer(TYPE_TRANSFORMER)
                         .withEnvironment(ENVIRONMENT)
                         .build());
         assertEquals(templates.length, fields.size());

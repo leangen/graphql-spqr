@@ -4,10 +4,9 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.beans.Introspector;
+import java.io.Externalizable;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedArrayType;
@@ -53,7 +52,7 @@ public class ClassUtils {
     private static final Class<?> javassistProxyClass;
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
     private static final Set<Class> ROOT_TYPES = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(Object.class, Annotation.class, Cloneable.class, Comparable.class, Serializable.class)));
+            new HashSet<>(Arrays.asList(Object.class, Annotation.class, Cloneable.class, Comparable.class, Externalizable .class, Serializable.class)));
 
     static {
         Class<?> proxy;
@@ -64,8 +63,6 @@ public class ClassUtils {
         }
         javassistProxyClass = proxy;
     }
-
-    private static final Logger log = LoggerFactory.getLogger(ClassUtils.class);
 
     /**
      * Retrieves all public methods on the given class (same as {@link Class#getMethods()}) annotated by the given annotation

@@ -2,6 +2,7 @@ package io.leangen.graphql.metadata.strategy.type;
 
 import io.leangen.graphql.metadata.messages.MessageBundle;
 
+import java.beans.Introspector;
 import java.lang.reflect.AnnotatedType;
 
 /**
@@ -31,6 +32,14 @@ public interface TypeInfoGenerator {
     }
     
     default String generateScalarTypeDescription(AnnotatedType type, MessageBundle messageBundle) {
+        return generateTypeDescription(type, messageBundle);
+    }
+
+    default String generateDirectiveTypeName(AnnotatedType type, MessageBundle messageBundle) {
+        return Introspector.decapitalize(generateTypeName(type, messageBundle));
+    }
+
+    default String generateDirectiveTypeDescription(AnnotatedType type, MessageBundle messageBundle) {
         return generateTypeDescription(type, messageBundle);
     }
 }
