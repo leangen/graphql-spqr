@@ -180,16 +180,16 @@ public class GraphQLSchemaGenerator {
     private ResolverInterceptorFactory interceptorFactory;
     private JavaDeprecationMappingConfig javaDeprecationConfig = new JavaDeprecationMappingConfig(true, "Deprecated");
     private final OperationSourceRegistry operationSourceRegistry = new OperationSourceRegistry();
-    private final List<ExtensionProvider<Configuration, TypeMapper>> typeMapperProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Configuration, SchemaTransformer>> schemaTransformerProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Configuration, InputConverter>> inputConverterProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Configuration, OutputConverter>> outputConverterProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Configuration, ArgumentInjector>> argumentInjectorProviders = new ArrayList<>();
-    private final List<ExtensionProvider<ExtendedConfiguration, InputFieldBuilder>> inputFieldBuilderProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Configuration, ResolverBuilder>> resolverBuilderProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Configuration, ResolverBuilder>> nestedResolverBuilderProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Configuration, Module>> moduleProviders = new ArrayList<>();
-    private final List<ExtensionProvider<Configuration, ResolverInterceptorFactory>> interceptorFactoryProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, TypeMapper>> typeMapperProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, SchemaTransformer>> schemaTransformerProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, InputConverter>> inputConverterProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, OutputConverter>> outputConverterProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, ArgumentInjector>> argumentInjectorProviders = new ArrayList<>();
+    private final List<ExtensionProvider<ExtendedGeneratorConfiguration, InputFieldBuilder>> inputFieldBuilderProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, ResolverBuilder>> resolverBuilderProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, ResolverBuilder>> nestedResolverBuilderProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, Module>> moduleProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory>> interceptorFactoryProviders = new ArrayList<>();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Map<String, GraphQLDirective> additionalDirectives = new HashMap<>();
@@ -457,7 +457,7 @@ public class GraphQLSchemaGenerator {
         return withResolverBuilders((config, defaults) -> Arrays.asList(resolverBuilders));
     }
 
-    public GraphQLSchemaGenerator withResolverBuilders(ExtensionProvider<Configuration, ResolverBuilder> provider) {
+    public GraphQLSchemaGenerator withResolverBuilders(ExtensionProvider<GeneratorConfiguration, ResolverBuilder> provider) {
         this.resolverBuilderProviders.add(provider);
         return this;
     }
@@ -473,7 +473,7 @@ public class GraphQLSchemaGenerator {
         return withNestedResolverBuilders((config, defaults) -> Arrays.asList(resolverBuilders));
     }
 
-    public GraphQLSchemaGenerator withNestedResolverBuilders(ExtensionProvider<Configuration, ResolverBuilder> provider) {
+    public GraphQLSchemaGenerator withNestedResolverBuilders(ExtensionProvider<GeneratorConfiguration, ResolverBuilder> provider) {
         this.nestedResolverBuilderProviders.add(provider);
         return this;
     }
@@ -482,7 +482,7 @@ public class GraphQLSchemaGenerator {
         return withInputFieldBuilders((env, defaults) -> defaults.prepend(inputFieldBuilders));
     }
 
-    public GraphQLSchemaGenerator withInputFieldBuilders(ExtensionProvider<ExtendedConfiguration, InputFieldBuilder> provider) {
+    public GraphQLSchemaGenerator withInputFieldBuilders(ExtensionProvider<ExtendedGeneratorConfiguration, InputFieldBuilder> provider) {
         this.inputFieldBuilderProviders.add(provider);
         return this;
     }
@@ -581,7 +581,7 @@ public class GraphQLSchemaGenerator {
      *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
-    public GraphQLSchemaGenerator withTypeMappers(ExtensionProvider<Configuration, TypeMapper> provider) {
+    public GraphQLSchemaGenerator withTypeMappers(ExtensionProvider<GeneratorConfiguration, TypeMapper> provider) {
         this.typeMapperProviders.add(provider);
         return this;
     }
@@ -590,7 +590,7 @@ public class GraphQLSchemaGenerator {
         return withSchemaTransformers((conf, current) -> current.append(transformers));
     }
 
-    public GraphQLSchemaGenerator withSchemaTransformers(ExtensionProvider<Configuration, SchemaTransformer> provider) {
+    public GraphQLSchemaGenerator withSchemaTransformers(ExtensionProvider<GeneratorConfiguration, SchemaTransformer> provider) {
         this.schemaTransformerProviders.add(provider);
         return this;
     }
@@ -617,7 +617,7 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withInputConverters(ExtensionProvider<Configuration, InputConverter> provider) {
+    public GraphQLSchemaGenerator withInputConverters(ExtensionProvider<GeneratorConfiguration, InputConverter> provider) {
         this.inputConverterProviders.add(provider);
         return this;
     }
@@ -644,7 +644,7 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withOutputConverters(ExtensionProvider<Configuration, OutputConverter> provider) {
+    public GraphQLSchemaGenerator withOutputConverters(ExtensionProvider<GeneratorConfiguration, OutputConverter> provider) {
         this.outputConverterProviders.add(provider);
         return this;
     }
@@ -678,7 +678,7 @@ public class GraphQLSchemaGenerator {
         return withArgumentInjectors((config, current) -> current.insert(0, argumentInjectors));
     }
 
-    public GraphQLSchemaGenerator withArgumentInjectors(ExtensionProvider<Configuration, ArgumentInjector> provider) {
+    public GraphQLSchemaGenerator withArgumentInjectors(ExtensionProvider<GeneratorConfiguration, ArgumentInjector> provider) {
         this.argumentInjectorProviders.add(provider);
         return this;
     }
@@ -687,7 +687,7 @@ public class GraphQLSchemaGenerator {
         return withModules((config, current) -> current.append(modules));
     }
 
-    public GraphQLSchemaGenerator withModules(ExtensionProvider<Configuration, Module> provider) {
+    public GraphQLSchemaGenerator withModules(ExtensionProvider<GeneratorConfiguration, Module> provider) {
         this.moduleProviders.add(provider);
         return this;
     }
@@ -696,7 +696,7 @@ public class GraphQLSchemaGenerator {
         return withResolverInterceptorFactories((config, current) -> current.append(new GlobalResolverInterceptorFactory(Arrays.asList(interceptors))));
     }
 
-    public GraphQLSchemaGenerator withResolverInterceptorFactories(ExtensionProvider<Configuration, ResolverInterceptorFactory> provider) {
+    public GraphQLSchemaGenerator withResolverInterceptorFactories(ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory> provider) {
         this.interceptorFactoryProviders.add(provider);
         return this;
     }
@@ -822,7 +822,7 @@ public class GraphQLSchemaGenerator {
      * ensuring the builder is in a valid state
      */
     private void init() {
-        Configuration configuration = new Configuration(interfaceStrategy, scalarStrategy, typeTransformer, basePackages);
+        GeneratorConfiguration configuration = new GeneratorConfiguration(interfaceStrategy, scalarStrategy, typeTransformer, basePackages);
         if (operationSourceRegistry.isEmpty()) {
             throw new IllegalStateException("At least one top-level operation source must be registered");
         }
@@ -842,14 +842,14 @@ public class GraphQLSchemaGenerator {
         }
 
         List<Module> modules = Defaults.modules();
-        for (ExtensionProvider<Configuration, Module> provider : moduleProviders) {
+        for (ExtensionProvider<GeneratorConfiguration, Module> provider : moduleProviders) {
             modules = provider.getExtensions(configuration, new ExtensionList<>(modules));
         }
         checkForDuplicates("modules", modules);
         modules.forEach(module -> module.setUp(() -> this));
 
         List<ResolverBuilder> resolverBuilders = Collections.singletonList(new AnnotatedResolverBuilder());
-        for (ExtensionProvider<Configuration, ResolverBuilder> provider : resolverBuilderProviders) {
+        for (ExtensionProvider<GeneratorConfiguration, ResolverBuilder> provider : resolverBuilderProviders) {
             resolverBuilders = provider.getExtensions(configuration, new ExtensionList<>(resolverBuilders));
         }
         checkForEmptyOrDuplicates("resolver builders", resolverBuilders);
@@ -858,7 +858,7 @@ public class GraphQLSchemaGenerator {
         List<ResolverBuilder> nestedResolverBuilders = Arrays.asList(
                 new AnnotatedResolverBuilder(),
                 new BeanResolverBuilder(basePackages).withJavaDeprecation(javaDeprecationConfig));
-        for (ExtensionProvider<Configuration, ResolverBuilder> provider : nestedResolverBuilderProviders) {
+        for (ExtensionProvider<GeneratorConfiguration, ResolverBuilder> provider : nestedResolverBuilderProviders) {
             nestedResolverBuilders = provider.getExtensions(configuration, new ExtensionList<>(nestedResolverBuilders));
         }
         checkForEmptyOrDuplicates("nested resolver builders", nestedResolverBuilders);
@@ -873,13 +873,13 @@ public class GraphQLSchemaGenerator {
                 new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
                 new ListMapper(), new IterableAdapter<>(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
                 new ObjectScalarAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
-        for (ExtensionProvider<Configuration, TypeMapper> provider : typeMapperProviders) {
+        for (ExtensionProvider<GeneratorConfiguration, TypeMapper> provider : typeMapperProviders) {
             typeMappers = provider.getExtensions(configuration, new ExtensionList<>(typeMappers));
         }
         checkForEmptyOrDuplicates("type mappers", typeMappers);
 
         transformers = Collections.singletonList(new NonNullMapper());
-        for (ExtensionProvider<Configuration, SchemaTransformer> provider : schemaTransformerProviders) {
+        for (ExtensionProvider<GeneratorConfiguration, SchemaTransformer> provider : schemaTransformerProviders) {
             transformers = provider.getExtensions(configuration, new ExtensionList<>(transformers));
         }
         checkForEmptyOrDuplicates("schema transformers", transformers);
@@ -888,7 +888,7 @@ public class GraphQLSchemaGenerator {
                 new IdAdapter(), new VoidToBooleanTypeAdapter(), new ArrayAdapter(), new CollectionOutputConverter(),
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(), new OptionalAdapter(),
                 new StreamToCollectionTypeAdapter());
-        for (ExtensionProvider<Configuration, OutputConverter> provider : outputConverterProviders) {
+        for (ExtensionProvider<GeneratorConfiguration, OutputConverter> provider : outputConverterProviders) {
             outputConverters = provider.getExtensions(configuration, new ExtensionList<>(outputConverters));
         }
         checkForDuplicates("output converters", outputConverters);
@@ -896,7 +896,7 @@ public class GraphQLSchemaGenerator {
         List<InputConverter> inputConverters = Arrays.asList(
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new IterableAdapter<>(), new EnumMapToObjectTypeAdapter(enumMapper));
-        for (ExtensionProvider<Configuration, InputConverter> provider : inputConverterProviders) {
+        for (ExtensionProvider<GeneratorConfiguration, InputConverter> provider : inputConverterProviders) {
             inputConverters = provider.getExtensions(configuration, new ExtensionList<>(inputConverters));
         }
         checkForDuplicates("input converters", inputConverters);
@@ -904,13 +904,13 @@ public class GraphQLSchemaGenerator {
         List<ArgumentInjector> argumentInjectors = Arrays.asList(
                 new IdAdapter(), new RootContextInjector(), new ContextInjector(),
                 new EnvironmentInjector(), new DirectiveValueDeserializer(), new InputValueDeserializer());
-        for (ExtensionProvider<Configuration, ArgumentInjector> provider : argumentInjectorProviders) {
+        for (ExtensionProvider<GeneratorConfiguration, ArgumentInjector> provider : argumentInjectorProviders) {
             argumentInjectors = provider.getExtensions(configuration, new ExtensionList<>(argumentInjectors));
         }
         checkForDuplicates("argument injectors", argumentInjectors);
 
         List<ResolverInterceptorFactory> interceptorFactories = Collections.emptyList();
-        for (ExtensionProvider<Configuration, ResolverInterceptorFactory> provider : this.interceptorFactoryProviders) {
+        for (ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory> provider : this.interceptorFactoryProviders) {
             interceptorFactories = provider.getExtensions(configuration, new ExtensionList<>(interceptorFactories));
         }
         interceptorFactory = new DelegatingResolverInterceptorFactory(interceptorFactories);
@@ -918,7 +918,7 @@ public class GraphQLSchemaGenerator {
         environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes.values()),
                 new ConverterRegistry(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors),
                 typeTransformer, inclusionStrategy, typeInfoGenerator);
-        ExtendedConfiguration extendedConfig = new ExtendedConfiguration(configuration, environment);
+        ExtendedGeneratorConfiguration extendedConfig = new ExtendedGeneratorConfiguration(configuration, environment);
         valueMapperFactory = new MemoizedValueMapperFactory(environment, internalValueMapperFactory);
         ValueMapper def = valueMapperFactory.getValueMapper(Collections.emptyMap(), environment);
 
@@ -929,7 +929,7 @@ public class GraphQLSchemaGenerator {
             defaultInputFieldBuilder = (InputFieldBuilder) Defaults.valueMapperFactory(typeInfoGenerator).getValueMapper(Collections.emptyMap(), environment);
         }
         inputFieldBuilders = Arrays.asList(new AnnotationInputFieldBuilder(), defaultInputFieldBuilder);
-        for (ExtensionProvider<ExtendedConfiguration, InputFieldBuilder> provider : this.inputFieldBuilderProviders) {
+        for (ExtensionProvider<ExtendedGeneratorConfiguration, InputFieldBuilder> provider : this.inputFieldBuilderProviders) {
             inputFieldBuilders = provider.getExtensions(extendedConfig, new ExtensionList<>(inputFieldBuilders));
         }
         checkForEmptyOrDuplicates("input field builders", inputFieldBuilders);

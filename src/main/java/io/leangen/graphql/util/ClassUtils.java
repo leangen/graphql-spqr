@@ -37,7 +37,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -528,7 +528,7 @@ public class ClassUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends AnnotatedType> T transformType(T type, Function<T, T> transformer) {
+    public static <T extends AnnotatedType> T transformType(T type, UnaryOperator<T> transformer) {
         if (type instanceof AnnotatedArrayType) {
             return (T) TypeFactory.arrayOf(transformer.apply((T) ((AnnotatedArrayType) type).getAnnotatedGenericComponentType()), type.getAnnotations());
         }
