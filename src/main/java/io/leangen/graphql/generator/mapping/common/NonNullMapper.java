@@ -39,11 +39,19 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
 
     private static final Logger log = LoggerFactory.getLogger(NonNullMapper.class);
 
+    private static final String[] COMMON_NON_NULL_ANNOTATIONS = {
+            "javax.annotation.Nonnull",
+            "org.jetbrains.annotations.NotNull",
+            "javax.validation.constraints.NotNull",
+            "javax.validation.constraints.NotEmpty",
+            "javax.validation.constraints.NotBlank"
+    };
+
     @SuppressWarnings("unchecked")
     public NonNullMapper() {
         Set<Class<? extends Annotation>> annotations = new HashSet<>();
         annotations.add(io.leangen.graphql.annotations.GraphQLNonNull.class);
-        for (String additional : new String[] {"javax.annotation.Nonnull", "javax.validation.constraints.NotNull", "org.jetbrains.annotations.NotNull"}) {
+        for (String additional : COMMON_NON_NULL_ANNOTATIONS) {
             try {
                 annotations.add((Class<? extends Annotation>) ClassUtils.forName(additional));
             } catch (ClassNotFoundException e) {
