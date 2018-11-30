@@ -10,6 +10,7 @@ import graphql.language.NullValue;
 import graphql.language.ObjectValue;
 import graphql.language.StringValue;
 import graphql.language.Value;
+import graphql.language.VariableReference;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
@@ -302,7 +303,7 @@ public class Scalars {
         }
     }
 
-    private static Coercing MAP_SCALAR_COERCION = new Coercing() {
+    private static Coercing MAP_SCALAR_COERCION = new Coercing<Object, Object>() {
         @Override
         public Object serialize(Object dataFetcherResult) {
             return dataFetcherResult;
@@ -317,8 +318,13 @@ public class Scalars {
         }
 
         @Override
-        public Object parseLiteral(Object input) {
-            return parseObjectValue(literalOrException(input, ObjectValue.class));
+        public Object parseLiteral(Object input) throws CoercingParseLiteralException {
+            return parseLiteral(input, Collections.emptyMap());
+        }
+
+        @Override
+        public Object parseLiteral(Object input, Map<String, Object> variables) {
+            return parseObjectValue(literalOrException(input, ObjectValue.class), variables);
         }
     };
 
@@ -331,7 +337,7 @@ public class Scalars {
                 .build();
     }
 
-    private static Coercing OBJECT_SCALAR_COERCION = new Coercing() {
+    private static Coercing OBJECT_SCALAR_COERCION = new Coercing<Object, Object>() {
         @Override
         public Object serialize(Object dataFetcherResult) {
             GraphQLScalarType scalar = toGraphQLScalarType(dataFetcherResult.getClass());
@@ -344,8 +350,13 @@ public class Scalars {
         }
 
         @Override
-        public Object parseLiteral(Object input) {
-            return parseObjectValue(((Value) input));
+        public Object parseLiteral(Object input) throws CoercingParseLiteralException {
+            return parseLiteral(input, Collections.emptyMap());
+        }
+
+        @Override
+        public Object parseLiteral(Object input, Map<String, Object> variables) {
+            return parseObjectValue(((Value) input), variables);
         }
     };
 
@@ -358,7 +369,7 @@ public class Scalars {
                 .build();
     }
 
-    private static Object parseObjectValue(Value value) {
+    private static Object parseObjectValue(Value value, Map<String, Object> variables) {
         if (value instanceof StringValue) {
             return ((StringValue) value).getValue();
         }
@@ -379,16 +390,19 @@ public class Scalars {
         }
         if (value instanceof ArrayValue) {
             return ((ArrayValue) value).getValues().stream()
-                    .map(Scalars::parseObjectValue)
+                    .map(v -> parseObjectValue(v, variables))
                     .collect(Collectors.toList());
+        }
+        if (value instanceof VariableReference) {
+            return variables.get(((VariableReference) value).getName());
         }
         if (value instanceof ObjectValue) {
             Map<String, Object> map = new LinkedHashMap<>();
             ((ObjectValue) value).getObjectFields().forEach(field ->
-                    map.put(field.getName(), parseObjectValue(field.getValue())));
+                    map.put(field.getName(), parseObjectValue(field.getValue(), variables)));
             return map;
         }
-        //Should never happen, as it would mean the variable was not replaced by the parser
+        //Should never happen
         throw new CoercingParseLiteralException("Unknown scalar AST type: " + value.getClass().getName());
     }
 

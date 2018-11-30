@@ -1,6 +1,7 @@
 package io.leangen.graphql.module.common.jackson;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -14,6 +15,7 @@ import graphql.language.NullValue;
 import graphql.language.ObjectValue;
 import graphql.language.StringValue;
 import graphql.language.Value;
+import graphql.language.VariableReference;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.GraphQLScalarType;
@@ -29,7 +31,9 @@ import static io.leangen.graphql.util.Scalars.literalOrException;
 @SuppressWarnings("WeakerAccess")
 public class JacksonObjectScalars {
 
-    public static final GraphQLScalarType JsonObjectNode = new GraphQLScalarType("JsonObject", "JSON object", new Coercing() {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public static final GraphQLScalarType JsonObjectNode = new GraphQLScalarType("JsonObject", "JSON object", new Coercing<Object, Object>() {
 
         @Override
         public Object serialize(Object dataFetcherResult) {
@@ -42,12 +46,17 @@ public class JacksonObjectScalars {
         }
 
         @Override
-        public Object parseLiteral(Object input) {
-            return parseJsonValue(literalOrException(input, ObjectValue.class));
+        public Object parseLiteral(Object input) throws CoercingParseLiteralException {
+            return parseLiteral(input, Collections.emptyMap());
+        }
+
+        @Override
+        public Object parseLiteral(Object input, Map<String, Object> variables) {
+            return parseJsonValue(literalOrException(input, ObjectValue.class), variables);
         }
     });
 
-    public static final GraphQLScalarType JsonAnyNode = new GraphQLScalarType("Json", "Any JSON value", new Coercing() {
+    public static final GraphQLScalarType JsonAnyNode = new GraphQLScalarType("Json", "Any JSON value", new Coercing<Object, Object>() {
 
         @Override
         public Object serialize(Object dataFetcherResult) {
@@ -61,12 +70,17 @@ public class JacksonObjectScalars {
         }
 
         @Override
-        public Object parseLiteral(Object input) {
-            return parseJsonValue(((Value) input));
+        public Object parseLiteral(Object input) throws CoercingParseLiteralException {
+            return parseLiteral(input, Collections.emptyMap());
+        }
+
+        @Override
+        public Object parseLiteral(Object input, Map<String, Object> variables) {
+            return parseJsonValue(((Value) input), variables);
         }
     });
 
-    private static JsonNode parseJsonValue(Value value) {
+    private static JsonNode parseJsonValue(Value value, Map<String, Object> variables) {
         if (value instanceof BooleanValue) {
             return JsonNodeFactory.instance.booleanNode(((BooleanValue) value).isValue());
         }
@@ -88,16 +102,19 @@ public class JacksonObjectScalars {
         if (value instanceof ArrayValue) {
             List<Value> values = ((ArrayValue) value).getValues();
             ArrayNode jsonArray = JsonNodeFactory.instance.arrayNode(values.size());
-            values.forEach(v -> jsonArray.add(parseJsonValue(v)));
+            values.forEach(v -> jsonArray.add(parseJsonValue(v, variables)));
             return jsonArray;
+        }
+        if (value instanceof VariableReference) {
+            return OBJECT_MAPPER.convertValue(variables.get(((VariableReference) value).getName()), JsonNode.class);
         }
         if (value instanceof ObjectValue) {
             final ObjectNode result = JsonNodeFactory.instance.objectNode();
             ((ObjectValue) value).getObjectFields().forEach(objectField ->
-                    result.set(objectField.getName(), parseJsonValue(objectField.getValue())));
+                    result.set(objectField.getName(), parseJsonValue(objectField.getValue(), variables)));
             return result;
         }
-        //Should never happen, as it would mean the variable was not replaced by the parser
+        //Should never happen
         throw new CoercingParseLiteralException("Unknown scalar AST type: " + value.getClass().getName());
     }
 
