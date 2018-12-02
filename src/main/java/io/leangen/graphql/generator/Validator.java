@@ -4,6 +4,7 @@ import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLModifiedType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
@@ -35,11 +36,17 @@ class Validator {
     }
 
     ValidationResult checkUniqueness(GraphQLOutputType graphQLType, AnnotatedType javaType) {
-        return checkUniqueness(graphQLType, () -> mappers.getMappableOutputType(javaType));
+        return checkUniqueness(graphQLType, () -> mappers.getMappableType(javaType));
     }
 
     ValidationResult checkUniqueness(GraphQLInputType graphQLType, AnnotatedType javaType) {
-        return checkUniqueness(graphQLType, () -> environment.getMappableInputType(javaType));
+        return checkUniqueness(graphQLType, () -> {
+            AnnotatedType inputType = environment.getMappableInputType(javaType);
+            if (GenericTypeReflector.equals(javaType, inputType)) {
+                return mappers.getMappableType(javaType);
+            }
+            return inputType;
+        });
     }
 
     private ValidationResult checkUniqueness(GraphQLType graphQLType, Supplier<AnnotatedType> javaType) {

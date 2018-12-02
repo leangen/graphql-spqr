@@ -33,7 +33,6 @@ public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeseria
     private final TypeInfoGenerator typeInfoGenerator;
     private final List<Configurer> configurers;
 
-    @SuppressWarnings("WeakerAccess")
     public GsonValueMapperFactory() {
         this(null, new DefaultTypeInfoGenerator(), null, Collections.singletonList(new AbstractClassAdapterConfigurer()));
     }
@@ -52,6 +51,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeseria
 
     private GsonBuilder initBuilder(Map<Class, List<Class<?>>> concreteSubTypes, GlobalEnvironment environment) {
         GsonBuilder gsonBuilder = (prototype != null ? prototype.newBuilder() : new GsonBuilder())
+                .serializeNulls()
                 .setFieldNamingStrategy(fieldNamingStrategy != null ? fieldNamingStrategy : new GsonFieldNamingStrategy(environment.messageBundle))
                 .registerTypeAdapterFactory(new GsonJava8TypeAdapterFactory());
         return configurers.stream().reduce(gsonBuilder, (builder, config) ->
@@ -102,7 +102,6 @@ public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeseria
         GsonBuilder configure(ConfigurerParams params);
     }
 
-    @SuppressWarnings("WeakerAccess")
     public static class ConfigurerParams {
 
         final GsonBuilder gsonBuilder;

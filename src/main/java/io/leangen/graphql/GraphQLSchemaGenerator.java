@@ -26,7 +26,7 @@ import io.leangen.graphql.generator.TypeRegistry;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRegistry;
-import io.leangen.graphql.generator.mapping.BaseTypeAliasComparator;
+import io.leangen.graphql.generator.mapping.BaseTypeSynonymComparator;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
@@ -732,15 +732,15 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withTypeSynonymGroup(Type... aliases) {
-        this.typeComparators.add(new BaseTypeAliasComparator(aliases));
+    public GraphQLSchemaGenerator withTypeSynonymGroup(Type... synonyms) {
+        this.typeComparators.add(new BaseTypeSynonymComparator(synonyms));
         return this;
     }
 
-    public GraphQLSchemaGenerator withTypeSynonymGroup(AnnotatedType... aliases) {
-        Set<AnnotatedType> aliasGroup = new AnnotatedTypeSet<>();
-        Collections.addAll(aliasGroup, aliases);
-        this.typeComparators.add((t1, t2) -> aliasGroup.contains(t1) && aliasGroup.contains(t2) ? 0 : -1);
+    public GraphQLSchemaGenerator withTypeSynonymGroup(AnnotatedType... synonyms) {
+        Set<AnnotatedType> synonymGroup = new AnnotatedTypeSet<>();
+        Collections.addAll(synonymGroup, synonyms);
+        this.typeComparators.add((t1, t2) -> synonymGroup.contains(t1) && synonymGroup.contains(t2) ? 0 : -1);
         return this;
     }
 
@@ -894,8 +894,7 @@ public class GraphQLSchemaGenerator {
         checkForDuplicates("output converters", outputConverters);
 
         List<InputConverter> inputConverters = Arrays.asList(
-                new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
-                new OptionalAdapter(), new StreamToCollectionTypeAdapter(), new IterableAdapter<>(), new EnumMapToObjectTypeAdapter(enumMapper));
+                new StreamToCollectionTypeAdapter(), new IterableAdapter<>(), new EnumMapToObjectTypeAdapter(enumMapper));
         for (ExtensionProvider<GeneratorConfiguration, InputConverter> provider : inputConverterProviders) {
             inputConverters = provider.getExtensions(configuration, new ExtensionList<>(inputConverters));
         }

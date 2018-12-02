@@ -35,11 +35,11 @@ public class TypeMapperRegistry {
                 .findFirst();
     }
 
-    public AnnotatedType getMappableOutputType(AnnotatedType type) {
+    public AnnotatedType getMappableType(AnnotatedType type) {
         Optional<TypeMapper> mapper = this.getTypeMapper(type, typeMapper -> !typeMapper.getClass().isAnnotationPresent(GraphQLIgnore.class));
         if (mapper.isPresent() && mapper.get() instanceof TypeSubstituter) {
-            return getMappableOutputType(((TypeSubstituter) mapper.get()).getSubstituteType(type));
+            return getMappableType(((TypeSubstituter) mapper.get()).getSubstituteType(type));
         }
-        return ClassUtils.transformType(type, this::getMappableOutputType);
+        return ClassUtils.transformType(type, this::getMappableType);
     }
 }
