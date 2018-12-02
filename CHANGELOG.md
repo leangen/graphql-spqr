@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Introduced [`SchemaTransformer`](https://github.com/leangen/graphql-spqr/blob/master/src/main/java/io/leangen/graphql/generator/mapping/SchemaTransformer.java) to enable modifying field and argument definitions
 - Introduced [`ResolverInterceptor`](https://github.com/leangen/graphql-spqr/blob/master/src/main/java/io/leangen/graphql/execution/ResolverInterceptor.java) that can perform arbitrary logic around the invocation of the underlying method/field [#180](https://github.com/leangen/graphql-spqr/issues/180) [#92](https://github.com/leangen/graphql-spqr/issues/92)
 - Added a way to get all deserialized arguments `ResolutionEnvironment` [#174](https://github.com/leangen/graphql-spqr/issues/174)
+- `ArgumentInjectorParams#isPresent` to distinguish between the explicitly provided null input value vs no value provided [#197](https://github.com/leangen/graphql-spqr/issues/197)
 
 ### Changed
 - Upgraded to [graphql-java 11.0](https://github.com/graphql-java/graphql-java/releases/tag/v11.0)
 - Significantly improved the performance of converter selection [#194](https://github.com/leangen/graphql-spqr/issues/194)
+- `Optional` arguments will be injected with `Optional.empty` if `null` is explicitly provided, and `null` is no value was given [#197](https://github.com/leangen/graphql-spqr/issues/197)
 - All exceptions thrown during field resolution now bubble up unchanged (no longer wrapped in `RuntimeException`)
 - Try loading implementation classes using the parent class' loader first [#177](https://github.com/leangen/graphql-spqr/issues/177)
 - Renamed `withTypeAliasGroup` to `withTypeSynonymGroup`
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed interface type resolution logic [#168](https://github.com/leangen/graphql-spqr/issues/168)
 - Arguments with default values will no longer be mapped as non-null [#163](https://github.com/leangen/graphql-spqr/issues/163)
 - `javax.annotation.Nonnull` works again [#165](https://github.com/leangen/graphql-spqr/issues/165)
+- Fixed parsing of object/json scalar literals that contain variables
 
 ## [0.9.8] - 2018-08-19
 ### Added

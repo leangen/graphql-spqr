@@ -63,9 +63,10 @@ public class ResolutionEnvironment {
     }
 
     public Object getInputValue(Object input, OperationArgument argument) {
-        ArgumentInjectorParams params = new ArgumentInjectorParams(input, argument.getJavaType(), argument.getBaseType(), argument.getParameter(), this);
+        boolean argValuePresent = dataFetchingEnvironment.containsArgument(argument.getName());
+        ArgumentInjectorParams params = new ArgumentInjectorParams(input, argValuePresent, argument.getJavaType(), argument.getBaseType(), argument.getParameter(), this);
         Object value = this.globalEnvironment.injectors.getInjector(argument.getJavaType(), argument.getParameter()).getArgumentValue(params);
-        if (dataFetchingEnvironment.containsArgument(argument.getName())) {
+        if (argValuePresent) {
             arguments.put(argument.getName(), value);
         }
         return value;
