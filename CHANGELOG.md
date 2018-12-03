@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Introduced [`ResolverInterceptor`](https://github.com/leangen/graphql-spqr/blob/master/src/main/java/io/leangen/graphql/execution/ResolverInterceptor.java) that can perform arbitrary logic around the invocation of the underlying method/field [#180](https://github.com/leangen/graphql-spqr/issues/180) [#92](https://github.com/leangen/graphql-spqr/issues/92)
 - Added a way to get all deserialized arguments `ResolutionEnvironment` [#174](https://github.com/leangen/graphql-spqr/issues/174)
 - `ArgumentInjectorParams#isPresent` to distinguish between the explicitly provided null input value vs no value provided [#197](https://github.com/leangen/graphql-spqr/issues/197)
+- `OutputConverter#supports(ConverterSupportParams)` to enable output converters to be conditional on the operation type [#205](https://github.com/leangen/graphql-spqr/issues/205)
 
 ### Changed
 - Upgraded to [graphql-java 11.0](https://github.com/graphql-java/graphql-java/releases/tag/v11.0)

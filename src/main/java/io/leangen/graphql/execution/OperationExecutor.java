@@ -9,7 +9,6 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -34,11 +33,11 @@ public class OperationExecutor {
         this.operation = operation;
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
-        this.converterRegistry = filterConverters(globalEnvironment.converters);
+        this.converterRegistry = globalEnvironment.converters.forOperation(operation);
         this.interceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(), interceptorFactory::getInterceptors));
     }
 
-    public Object execute(DataFetchingEnvironment env) {
+    public Object execute(DataFetchingEnvironment env) throws Exception {
         Resolver resolver;
         if (env.getContext() instanceof ContextWrapper) {
             ContextWrapper context = env.getContext();
@@ -59,8 +58,6 @@ public class OperationExecutor {
             return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
         } catch (ReflectiveOperationException e) {
             sneakyThrow(unwrap(e));
-        } catch (Exception e) {
-            sneakyThrow(e);
         }
         return null; //never happens, needed because of sneakyThrow
     }
@@ -97,13 +94,6 @@ public class OperationExecutor {
 
     private Object execute(InvocationContext context, Queue<ResolverInterceptor> interceptors) throws Exception {
         return interceptors.remove().aroundInvoke(context, (ctx) -> execute(ctx, interceptors));
-    }
-
-    private ConverterRegistry filterConverters(ConverterRegistry converters) {
-        return operation.getResolvers().stream()
-                .allMatch(res -> globalEnvironment.converters.getOutputConverter(res.getReturnType()) == null)
-                ? new ConverterRegistry(converters.getInputConverters(), Collections.emptyList())
-                : converters;
     }
 
     private Throwable unwrap(ReflectiveOperationException e) {

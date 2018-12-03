@@ -1,5 +1,6 @@
 package io.leangen.graphql.metadata;
 
+import graphql.language.OperationDefinition;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.util.Utils;
 
@@ -25,10 +26,11 @@ public class Operation {
     private final Type contextType;
     private final Map<String, Resolver> resolversByFingerprint;
     private final List<OperationArgument> arguments;
+    private final OperationDefinition.Operation operationType;
     private final boolean batched;
 
-    public Operation(String name, AnnotatedType javaType, Type contextType, 
-                     List<OperationArgument> arguments, List<Resolver> resolvers, boolean batched) {
+    public Operation(String name, AnnotatedType javaType, Type contextType, List<OperationArgument> arguments,
+                     List<Resolver> resolvers, OperationDefinition.Operation operationType, boolean batched) {
 
         if (!(resolvers.stream().allMatch(Resolver::isBatched) || resolvers.stream().noneMatch(Resolver::isBatched))) {
             throw new IllegalArgumentException("Operation \"" + name + "\" mixes regular and batched resolvers");
@@ -41,6 +43,7 @@ public class Operation {
         this.contextType = contextType;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
+        this.operationType = operationType;
         this.batched = batched;
     }
     
@@ -104,6 +107,10 @@ public class Operation {
         return resolversByFingerprint.values();
     }
 
+    public OperationDefinition.Operation getOperationType() {
+        return operationType;
+    }
+
     public boolean isBatched() {
         return batched;
     }
@@ -114,14 +121,14 @@ public class Operation {
 
     @Override
     public String toString() {
-        return name + "(" + String.join(",", arguments.stream().map(OperationArgument::getName).collect(Collectors.toList())) + ")";
+        return name + "(" + arguments.stream().map(OperationArgument::getName).collect(Collectors.joining(",")) + ")";
     }
     
     private static class UnbatchedOperation extends Operation {
         
         private UnbatchedOperation(Operation operation) {
             super(operation.name, unbatchJavaType(operation.typedElement.getJavaType()), unbatchContextType(operation.contextType),
-                    operation.arguments, new ArrayList<>(operation.getResolvers()), true);
+                    operation.arguments, new ArrayList<>(operation.getResolvers()), operation.getOperationType(), true);
         }
 
         private static AnnotatedType unbatchJavaType(AnnotatedType javaType) {
