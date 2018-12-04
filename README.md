@@ -41,7 +41,7 @@ There's nothing that can be done about this from our side so, for the time being
 
 ### OpenJDK
 
-There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8146854) in OpenJDK's annotation parser that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious `AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull` occuring
+There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202473) in OpenJDK's annotation parser that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious `AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull` occuring
 when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`. Oracle JDK does not have this bug.
 Do note it is only relevant which Java **compiles** the sources, not which Java _runs_ the code. Also note that IntelliJ IDEA comes bundled with OpenJDK, so building the project in IDEA may lead to this error. You should configure your IDE to use the system Java if it is different.
 
