@@ -13,8 +13,10 @@ import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.RelayTest.Book;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLInputField;
+import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLRootContext;
 import io.leangen.graphql.annotations.GraphQLScalar;
@@ -111,7 +113,18 @@ public class DirectiveTest {
                 "    ...Details @timeout(afterMillis: 20)" +
                 "    ...on Book @timeout(afterMillis: 15) {review @timeout(afterMillis: 10)} id}}",
                 5, 10, 15, 20, 25, 30);
-
+        assertClientDirectiveValues(graphQL,"fragment Details on Book @timeout(afterMillis: 30) {\n" +
+                "  review @timeout(afterMillis: 5)" +
+                "  ... Review @timeout(afterMillis: 15)" +
+                "}" +
+                "fragment Review on Book @timeout(afterMillis: 25) {\n" +
+                "  review @timeout(afterMillis: 10)" +
+                "}" +
+                "query Books @timeout(afterMillis: 35) {" +
+                "  books(searchString: \"monkey\") @timeout(afterMillis: 40) {" +
+                "    ...Details @timeout(afterMillis: 20)" +
+                "  }}",
+                5, 10, 15, 20, 25, 30, 35);
     }
 
     private void assertDirective(GraphQLDirectiveContainer container, String directiveName, String innerName) {
@@ -145,18 +158,18 @@ public class DirectiveTest {
         assertTrue(result.getErrors().isEmpty());
         assertNotNull(interrupts.get());
         assertEquals(timeouts.length, interrupts.get().size());
-        assertArrayEquals(interrupts.get().stream().mapToInt(timeout -> timeout.after).toArray(), timeouts);
+        assertArrayEquals(timeouts, interrupts.get().stream().mapToInt(timeout -> timeout.after).toArray());
     }
 
     public static class BookService {
 
         @GraphQLQuery
-        public List<RelayTest.Book> books(String searchString) {
-            return Collections.singletonList(new RelayTest.Book(searchString, "x123"));
+        public List<@GraphQLNonNull Book> books(String searchString) {
+            return Collections.singletonList(new Book(searchString, "x123"));
         }
 
         @GraphQLQuery
-        public String review(@GraphQLContext RelayTest.Book book,
+        public String review(@GraphQLContext Book book,
                              @GraphQLRootContext AtomicReference<List<Interrupt>> context,
                              @io.leangen.graphql.annotations.GraphQLDirective List<Interrupt> timeouts) {
             context.set(timeouts);

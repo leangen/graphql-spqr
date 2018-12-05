@@ -1,6 +1,6 @@
 package io.leangen.graphql.execution;
 
-import graphql.introspection.Introspection;
+import graphql.execution.ExecutionStepInfo;
 import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLOutputType;
@@ -35,7 +35,6 @@ public class ResolutionEnvironment {
     public final Map<String, Object> arguments;
 
     private final ConverterRegistry converterRegistry;
-    private final Directives directives;
 
     public ResolutionEnvironment(DataFetchingEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment, ConverterRegistry converterRegistry) {
 
@@ -50,7 +49,6 @@ public class ResolutionEnvironment {
         this.graphQLSchema = env.getGraphQLSchema();
         this.dataFetchingEnvironment = env;
         this.arguments = new HashMap<>();
-        this.directives = new Directives(env);
     }
 
     @SuppressWarnings("unchecked")
@@ -72,7 +70,11 @@ public class ResolutionEnvironment {
         return value;
     }
 
-    public List<Map<String, Object>> getDirectives(Introspection.DirectiveLocation location, String directiveName) {
-        return directives.getDirectives().get(location).get(directiveName);
+    public Directives getDirectives(ExecutionStepInfo step) {
+        return new Directives(dataFetchingEnvironment, step);
+    }
+
+    public Directives getDirectives() {
+        return getDirectives(null);
     }
 }

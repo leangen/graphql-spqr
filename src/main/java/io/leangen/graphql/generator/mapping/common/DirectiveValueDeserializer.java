@@ -3,6 +3,7 @@ package io.leangen.graphql.generator.mapping.common;
 import graphql.introspection.Introspection;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLDirective;
+import io.leangen.graphql.execution.Directives;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
@@ -39,8 +40,9 @@ public class DirectiveValueDeserializer implements ArgumentInjector {
         Stream<Introspection.DirectiveLocation> locations = descriptor.locations().length != 0
                 ? Arrays.stream(descriptor.locations())
                 : sortedLocations(params.getResolutionEnvironment().dataFetchingEnvironment.getGraphQLSchema().getDirective(directiveName).validLocations());
+        Directives directives = env.getDirectives();
         Stream<Map<String, Object>> rawValues = locations
-                .map(loc -> env.getDirectives(loc, directiveName))
+                .map(loc -> directives.find(loc, directiveName))
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream);
         Object deserializableValue = allDirectives ? rawValues.collect(Collectors.toList()) : rawValues.findFirst().orElse(null);
