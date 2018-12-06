@@ -48,8 +48,8 @@ public class OperationNameGeneratorParams<T extends Member & AnnotatedElement> {
         return messageBundle;
     }
 
-    public boolean isField() {
-        return element instanceof Field;
+    public boolean isMethod() {
+        return element instanceof Method;
     }
 
     public static class Builder<T extends Member & AnnotatedElement> {

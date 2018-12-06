@@ -183,7 +183,6 @@ public class ClassUtils {
         return type;
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T instance(AnnotatedType type) {
         return instance(getRawType(type.getType()));
     }
@@ -222,7 +221,13 @@ public class ClassUtils {
     }
 
     public static String getFieldNameFromGetter(Method getter) {
-        return Introspector.decapitalize(getter.getName().replaceAll("^get", "").replaceAll("^is", ""));
+        String name = getter.getName();
+        if (name.startsWith("get") && name.length() > 3 && Character.isUpperCase(name.charAt(3))) {
+            name = getter.getName().replaceAll("^get", "");
+        } else if (name.startsWith("is") && name.length() > 2 && Character.isUpperCase(name.charAt(2))) {
+            name = getter.getName().replaceAll("^is", "");
+        }
+        return Introspector.decapitalize(name);
     }
 
     public static String getFieldNameFromSetter(Method setter) {

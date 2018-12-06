@@ -84,7 +84,7 @@ public class GenericsTest {
                 .withValueMapperFactory(valueMapperFactory)
                 .generate();
 
-        GraphQLOutputType itemType = schemaWithNonNullGenerics.getQueryType().getFieldDefinition("getItem").getType();
+        GraphQLOutputType itemType = schemaWithNonNullGenerics.getQueryType().getFieldDefinition("item").getType();
         assertNonNull(itemType, Scalars.GraphQLString);
 
         GraphQLOutputType itemCollectionType = schemaWithNonNullGenerics.getQueryType().getFieldDefinition("allItems").getType();
@@ -119,7 +119,7 @@ public class GenericsTest {
                 .withValueMapperFactory(valueMapperFactory)
                 .generate();
 
-        GraphQLOutputType itemType = schemaWithDateIds.getQueryType().getFieldDefinition("getItem").getType();
+        GraphQLOutputType itemType = schemaWithDateIds.getQueryType().getFieldDefinition("item").getType();
         assertTrue(isRelayId(itemType));
 
         GraphQLOutputType itemCollectionType = schemaWithDateIds.getQueryType().getFieldDefinition("allItems").getType();
@@ -154,7 +154,7 @@ public class GenericsTest {
                 .withValueMapperFactory(valueMapperFactory)
                 .generate();
 
-        GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("getItem").getType();
+        GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("item").getType();
         assertNonNull(itemType, GraphQLList.class);
         assertListOf(((graphql.schema.GraphQLNonNull) itemType).getWrappedType(), Scalars.GraphQLBigDecimal);
 
@@ -190,7 +190,7 @@ public class GenericsTest {
                 .withValueMapperFactory(valueMapperFactory)
                 .generate();
 
-        GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("getItem").getType();
+        GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("item").getType();
         assertNonNull(itemType, GraphQLList.class);
         GraphQLType inner = ((graphql.schema.GraphQLNonNull) itemType).getWrappedType();
         assertListOf(inner, graphql.schema.GraphQLNonNull.class);

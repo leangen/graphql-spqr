@@ -31,8 +31,8 @@ public class BeanResolverBuilderTest {
         List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
                 new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         assertEquals(2, resolvers.size());
-        assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
-        assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getNickname")));
+        assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("userHandle")));
+        assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("nickname")));
     }
 
     @Test
@@ -41,7 +41,7 @@ public class BeanResolverBuilderTest {
         List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
                 new UserHandleService(), GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         assertEquals(1, resolvers.size());
-        assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("getUserHandle")));
+        assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("userHandle")));
     }
 
     @SuppressWarnings("WeakerAccess")

@@ -10,23 +10,8 @@ public class PropertyOperationNameGenerator extends AnnotatedOperationNameGenera
     @Override
     public String generateQueryName(OperationNameGeneratorParams<?> params) {
         String name = super.generateQueryName(params);
-        if (Utils.isEmpty(name)) {
-            if (params.isField()) {
-                return params.getElement().getName();
-            }
-            Method queryMethod = (Method) params.getElement();
-            if (ClassUtils.isGetter(queryMethod)) {
-                name = ClassUtils.getFieldNameFromGetter(queryMethod);
-            }
-        }
-        return name;
-    }
-
-    @Override
-    public String generateMutationName(OperationNameGeneratorParams<Method> params) {
-        String name = super.generateMutationName(params);
-        if (Utils.isEmpty(name) && ClassUtils.isSetter(params.getElement())) {
-            name = ClassUtils.getFieldNameFromSetter(params.getElement());
+        if (Utils.isEmpty(name) && params.isMethod()) {
+            return ClassUtils.getFieldNameFromGetter((Method) params.getElement());
         }
         return name;
     }
