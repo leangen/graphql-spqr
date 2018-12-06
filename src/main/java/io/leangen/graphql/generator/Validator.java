@@ -70,8 +70,7 @@ class Validator {
                         " Assign unique names using the appropriate annotations or override the %s." +
                         " For details and solutions see %s." +
                         " If this warning is a false positive, please report it: %s.", graphQLType.getName(),
-                knownType, ClassUtils.getRawType(knownType.getType()).getClassLoader(),
-                resolvedType, ClassUtils.getRawType(resolvedType.getType()).getClassLoader(),
+                knownType, getLoaderName(knownType), resolvedType, getLoaderName(resolvedType),
                 TypeInfoGenerator.class.getSimpleName(), Urls.Errors.NON_UNIQUE_TYPE_NAME, Urls.ISSUES));
     }
 
@@ -87,6 +86,11 @@ class Validator {
 
     private boolean isMappingAllowed(AnnotatedType resolvedType, AnnotatedType knownType) {
         return resolvedType.equals(knownType) || typeComparator.compare(resolvedType, knownType) == 0;
+    }
+
+    private String getLoaderName(AnnotatedType type) {
+        ClassLoader loader = ClassUtils.getRawType(type.getType()).getClassLoader();
+        return loader != null ? loader.toString() : "the bootstrap class loader";
     }
 
     static class ValidationResult {

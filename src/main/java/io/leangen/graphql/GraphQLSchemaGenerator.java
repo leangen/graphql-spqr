@@ -49,7 +49,7 @@ import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
 import io.leangen.graphql.generator.mapping.common.IterableAdapter;
 import io.leangen.graphql.generator.mapping.common.ListMapper;
 import io.leangen.graphql.generator.mapping.common.NonNullMapper;
-import io.leangen.graphql.generator.mapping.common.ObjectScalarAdapter;
+import io.leangen.graphql.generator.mapping.common.ObjectScalarMapper;
 import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.OptionalDoubleAdapter;
@@ -872,7 +872,7 @@ public class GraphQLSchemaGenerator {
                 enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
                 new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
                 new ListMapper(), new IterableAdapter<>(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
-                new ObjectScalarAdapter(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
+                new ObjectScalarMapper(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         for (ExtensionProvider<GeneratorConfiguration, TypeMapper> provider : typeMapperProviders) {
             typeMappers = provider.getExtensions(configuration, new ExtensionList<>(typeMappers));
         }
