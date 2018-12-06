@@ -41,7 +41,6 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
 
     private static final String[] COMMON_NON_NULL_ANNOTATIONS = {
             "javax.annotation.Nonnull",
-            "org.jetbrains.annotations.NotNull",
             "javax.validation.constraints.NotNull",
             "javax.validation.constraints.NotEmpty",
             "javax.validation.constraints.NotBlank"
