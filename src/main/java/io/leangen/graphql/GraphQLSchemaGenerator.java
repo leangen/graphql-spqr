@@ -14,6 +14,7 @@ import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolverInterceptor;
 import io.leangen.graphql.execution.ResolverInterceptorFactory;
+import io.leangen.graphql.execution.ResolverInterceptorFactoryParams;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.InputFieldBuilderRegistry;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
@@ -71,7 +72,6 @@ import io.leangen.graphql.generator.mapping.strategy.DefaultImplementationDiscov
 import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
 import io.leangen.graphql.generator.mapping.strategy.NoOpAbstractInputHandler;
-import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.DelegatingMessageBundle;
 import io.leangen.graphql.metadata.messages.MessageBundle;
@@ -1101,7 +1101,7 @@ public class GraphQLSchemaGenerator {
         }
 
         @Override
-        public List<ResolverInterceptor> getInterceptors(Resolver resolver) {
+        public List<ResolverInterceptor> getInterceptors(ResolverInterceptorFactoryParams params) {
             return interceptors;
         }
     }
@@ -1115,9 +1115,9 @@ public class GraphQLSchemaGenerator {
         }
 
         @Override
-        public List<ResolverInterceptor> getInterceptors(Resolver resolver) {
+        public List<ResolverInterceptor> getInterceptors(ResolverInterceptorFactoryParams params) {
             return delegates.stream()
-                    .flatMap(delegate -> delegate.getInterceptors(resolver).stream())
+                    .flatMap(delegate -> delegate.getInterceptors(params).stream())
                     .collect(Collectors.toList());
         }
     }

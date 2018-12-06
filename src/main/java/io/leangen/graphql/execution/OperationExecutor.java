@@ -34,7 +34,8 @@ public class OperationExecutor {
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
         this.converterRegistry = globalEnvironment.converters.forOperation(operation);
-        this.interceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(), interceptorFactory::getInterceptors));
+        this.interceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(),
+                res -> interceptorFactory.getInterceptors(new ResolverInterceptorFactoryParams(res))));
     }
 
     public Object execute(DataFetchingEnvironment env) throws Exception {
