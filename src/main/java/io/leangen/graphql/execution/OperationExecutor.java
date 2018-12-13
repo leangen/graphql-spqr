@@ -9,6 +9,7 @@ import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,7 @@ public class OperationExecutor {
         this.operation = operation;
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
-        this.converterRegistry = globalEnvironment.converters.forOperation(operation);
+        this.converterRegistry = filterConverters(globalEnvironment.converters);
         this.interceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(),
                 res -> interceptorFactory.getInterceptors(new ResolverInterceptorFactoryParams(res))));
     }
@@ -95,6 +96,13 @@ public class OperationExecutor {
 
     private Object execute(InvocationContext context, Queue<ResolverInterceptor> interceptors) throws Exception {
         return interceptors.remove().aroundInvoke(context, (ctx) -> execute(ctx, interceptors));
+    }
+
+    private ConverterRegistry filterConverters(ConverterRegistry converters) {
+        return operation.getResolvers().stream()
+                .allMatch(res -> globalEnvironment.converters.getOutputConverter(res.getReturnType()) == null)
+                ? new ConverterRegistry(converters.getInputConverters(), Collections.emptyList())
+                : converters;
     }
 
     private Throwable unwrap(ReflectiveOperationException e) {

@@ -64,7 +64,7 @@ import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
 import io.leangen.graphql.generator.mapping.core.CompletableFutureMapper;
 import io.leangen.graphql.generator.mapping.core.DataFetcherResultMapper;
-import io.leangen.graphql.generator.mapping.core.PublisherMapper;
+import io.leangen.graphql.generator.mapping.core.PublisherAdapter;
 import io.leangen.graphql.generator.mapping.strategy.AbstractInputHandler;
 import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
 import io.leangen.graphql.generator.mapping.strategy.AutoScanAbstractInputHandler;
@@ -865,10 +865,11 @@ public class GraphQLSchemaGenerator {
         operationSourceRegistry.registerGlobalNestedResolverBuilders(nestedResolverBuilders);
 
         ObjectTypeMapper objectTypeMapper = new ObjectTypeMapper();
+        PublisherAdapter publisherAdapter = new PublisherAdapter();
         EnumMapper enumMapper = new EnumMapper(javaDeprecationConfig);
         typeMappers = Arrays.asList(
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
-                new PublisherMapper(), new AnnotationMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
+                publisherAdapter, new AnnotationMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
                 new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
                 new ListMapper(), new IterableAdapter<>(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
@@ -878,7 +879,7 @@ public class GraphQLSchemaGenerator {
         }
         checkForEmptyOrDuplicates("type mappers", typeMappers);
 
-        transformers = Collections.singletonList(new NonNullMapper());
+        transformers = Arrays.asList(new NonNullMapper(), publisherAdapter);
         for (ExtensionProvider<GeneratorConfiguration, SchemaTransformer> provider : schemaTransformerProviders) {
             transformers = provider.getExtensions(configuration, new ExtensionList<>(transformers));
         }
@@ -887,7 +888,7 @@ public class GraphQLSchemaGenerator {
         List<OutputConverter> outputConverters = Arrays.asList(
                 new IdAdapter(), new VoidToBooleanTypeAdapter(), new ArrayAdapter(), new CollectionOutputConverter(),
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(), new OptionalAdapter(),
-                new StreamToCollectionTypeAdapter());
+                new StreamToCollectionTypeAdapter(), publisherAdapter);
         for (ExtensionProvider<GeneratorConfiguration, OutputConverter> provider : outputConverterProviders) {
             outputConverters = provider.getExtensions(configuration, new ExtensionList<>(outputConverters));
         }

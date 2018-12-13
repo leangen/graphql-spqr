@@ -6,6 +6,7 @@ import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 
 import java.beans.Introspector;
+import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -51,8 +52,9 @@ public class ClassUtils {
 
     private static final Class<?> javassistProxyClass;
     private static final String CGLIB_CLASS_SEPARATOR = "$$";
-    private static final Set<Class> ROOT_TYPES = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(Object.class, Annotation.class, Cloneable.class, Comparable.class, Externalizable .class, Serializable.class)));
+    private static final Set<Class> ROOT_TYPES = Collections.unmodifiableSet( new HashSet<>(Arrays.asList(
+            Object.class, Annotation.class, Cloneable.class, Comparable.class, Externalizable .class, Serializable.class,
+            Closeable.class, AutoCloseable.class)));
 
     static {
         Class<?> proxy;

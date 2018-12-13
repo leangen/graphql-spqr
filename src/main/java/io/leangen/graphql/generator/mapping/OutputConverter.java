@@ -12,8 +12,4 @@ public interface OutputConverter<T, S> {
     S convertOutput(T original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment);
     
     boolean supports(AnnotatedType type);
-
-    default boolean supports(ConverterSupportParams params) {
-        return true;
-    }
 }

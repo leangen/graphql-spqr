@@ -1,33 +1,39 @@
 package io.leangen.graphql;
 
+import graphql.ExecutionResult;
+import graphql.GraphQL;
+import graphql.Scalars;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.annotations.GraphQLSubscription;
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Observable;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import graphql.ExecutionResult;
-import graphql.GraphQL;
-import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLSubscription;
-import io.reactivex.BackpressureStrategy;
-import io.reactivex.Observable;
-
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class SubscriptionTest {
 
     @Test
-    public void subscriptionTest() throws InterruptedException {
+    public void subscriptionTest() {
 
         GraphQLSchema schema = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Ticker())
                 .generate();
 
+        List<GraphQLFieldDefinition> subscriptions = schema.getSubscriptionType().getFieldDefinitions();
+        assertEquals(1, subscriptions.size());
+        assertSame(Scalars.GraphQLInt, subscriptions.get(0).getType());
         GraphQL exe = GraphQL.newGraphQL(schema).build();
 
         ExecutionResult res = exe.execute("subscription Tick { tick }");
