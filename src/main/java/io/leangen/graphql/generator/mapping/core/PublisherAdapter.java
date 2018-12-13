@@ -17,6 +17,7 @@ import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
 import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMapper;
 import io.leangen.graphql.metadata.Operation;
+import io.leangen.graphql.util.ClassUtils;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -37,13 +38,14 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper implemen
         this(Runnable::run); //Run on the caller thread
     }
 
+    @SuppressWarnings("WeakerAccess")
     public PublisherAdapter(Executor executor) {
         this.executor = executor;
     }
 
     @Override
     public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set mappersToSkip, BuildContext buildContext) {
-        throw new UnsupportedOperationException(Publisher.class.getSimpleName() + " can not be used as an input type");
+        throw new UnsupportedOperationException(ClassUtils.getRawType(javaType.getType()).getSimpleName() + " can not be used as an input type");
     }
 
     @Override
@@ -62,13 +64,6 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper implemen
         return field;
     }
 
-    private GraphQLOutputType unwrapList(GraphQLOutputType type) {
-        if (type instanceof GraphQLList) {
-            return (GraphQLOutputType) ((GraphQLList) type).getWrappedType();
-        }
-        return type;
-    }
-
     @Override
     public Object convertOutput(Publisher<T> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         //Subscriptions are expected to return a Publisher directly, so no conversion needed
@@ -76,8 +71,12 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper implemen
             return original;
         }
         //Otherwise, convert the Publisher into a CompletableFuture
-        ExecutionStepInfo step = resolutionEnvironment.dataFetchingEnvironment.getExecutionStepInfo();
-        return collect(original, step);
+        return convertOutputForNonSubscription(original, type, resolutionEnvironment);
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    protected Object convertOutputForNonSubscription(Publisher<T> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        return collect(original, resolutionEnvironment.dataFetchingEnvironment.getExecutionStepInfo());
     }
 
     @Override
@@ -114,5 +113,12 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper implemen
             }
         }));
         return promise;
+    }
+
+    private GraphQLOutputType unwrapList(GraphQLOutputType type) {
+        if (type instanceof GraphQLList) {
+            return (GraphQLOutputType) ((GraphQLList) type).getWrappedType();
+        }
+        return type;
     }
 }
