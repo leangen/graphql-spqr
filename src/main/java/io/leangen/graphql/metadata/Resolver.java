@@ -43,7 +43,7 @@ public class Resolver {
             validateBatching(executable.toString(), returnType, contextArguments);
         }
         
-        this.operationName = validateName(operationName);
+        this.operationName = validateName(operationName, executable);
         this.operationDescription = operationDescription;
         this.operationDeprecationReason = operationDeprecationReason;
         this.arguments = arguments;
@@ -54,7 +54,7 @@ public class Resolver {
         this.batched = batched;
     }
 
-    private String validateName(String operationName) {
+    private String validateName(String operationName, Executable executable) {
         if (Utils.isEmpty(operationName)) {
             throw new MappingException("The operation name for executable " + executable.toString() + " could not be determined");
         }
