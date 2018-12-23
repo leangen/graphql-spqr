@@ -213,6 +213,7 @@ public class OperationMapper {
                 .name(inputField.getName())
                 .description(inputField.getDescription())
                 .type(toGraphQLInputType(inputField.getJavaType(), buildContext))
+                .withDirective(Directives.mappedInputField(inputField))
                 .withDirectives(toGraphQLDirectives(inputField.getTypedElement(), buildContext.directiveBuilder::buildInputFieldDefinitionDirectives, buildContext))
                 .defaultValue(inputField.getDefaultValue());
         return buildContext.transformers.transform(builder.build(), inputField, this, buildContext);
