@@ -13,6 +13,7 @@ import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -43,7 +44,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
                 Optional.ofNullable(type.getAnnotation(GraphQLType.class))
                         .map(GraphQLType::description)
         };
-        return messageBundle.interpolate(getFirstNonEmptyOrDefault(descriptions, ""));
+        return messageBundle.interpolate(getFirstNonEmptyOrDefault(descriptions, () -> ""));
     }
 
     @Override
@@ -83,15 +84,21 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
                 Optional.ofNullable(type.getAnnotation(GraphQLType.class))
                         .map(GraphQLType::name)
         };
-        return messageBundle.interpolate(getFirstNonEmptyOrDefault(names, ClassUtils.getRawType(type.getType()).getSimpleName()));
+        return messageBundle.interpolate(getFirstNonEmptyOrDefault(names, () -> getSimpleName(ClassUtils.getRawType(type.getType()))));
     }
 
-    @SuppressWarnings({"OptionalGetWithoutIsPresent", "ConstantConditions"})
-    private String getFirstNonEmptyOrDefault(Optional<String>[] optionals, String defaultValue) {
+    private String getFirstNonEmptyOrDefault(Optional<String>[] optionals, Supplier<String> defaultValue) {
         return Arrays.stream(optionals)
                 .map(opt -> opt.filter(Utils::isNotEmpty))
                 .reduce(Utils::or)
-                .map(opt -> opt.orElse(defaultValue))
+                .map(opt -> opt.orElse(defaultValue.get()))
                 .get();
+    }
+
+    private String getSimpleName(Class<?> clazz) {
+        if (clazz.isArray()) {
+            return getSimpleName(clazz.getComponentType()) + "Array";
+        }
+        return clazz.getSimpleName();
     }
 }
