@@ -3,7 +3,7 @@ package io.leangen.graphql.generator.mapping.common;
 import graphql.language.Field;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.GraphQLEnvironment;
+import io.leangen.graphql.annotations.Info;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
@@ -39,11 +39,11 @@ public class EnvironmentInjector implements ArgumentInjector {
             return params.getResolutionEnvironment();
         }
         throw new IllegalArgumentException("Argument of type " + raw.getName() 
-                + " can not be injected via @" + GraphQLEnvironment.class.getSimpleName());
+                + " can not be injected via @" + Info.class.getSimpleName());
     }
 
     @Override
     public boolean supports(AnnotatedType type, Parameter parameter) {
-        return parameter != null && parameter.isAnnotationPresent(GraphQLEnvironment.class);
+        return parameter != null && parameter.isAnnotationPresent(Info.class);
     }
 }

@@ -1,8 +1,8 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.annotations.GraphQLMutation;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLSubscription;
+import io.leangen.graphql.annotations.Mutation;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.Subscription;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
@@ -14,22 +14,22 @@ public class AnnotatedOperationNameGenerator implements OperationNameGenerator {
 
     @Override
     public String generateQueryName(OperationNameGeneratorParams<?> params) {
-        return Optional.ofNullable(params.getElement().getAnnotation(GraphQLQuery.class))
-                .map(query -> params.getMessageBundle().interpolate(query.name()))
+        return Optional.ofNullable(params.getElement().getAnnotation(Query.class))
+                .map(query -> params.getMessageBundle().interpolate(query.value()))
                 .orElse(null);
     }
 
     @Override
     public String generateMutationName(OperationNameGeneratorParams<Method> params) {
-        return Optional.ofNullable(params.getElement().getAnnotation(GraphQLMutation.class))
-                .map(mutation -> params.getMessageBundle().interpolate(mutation.name()))
+        return Optional.ofNullable(params.getElement().getAnnotation(Mutation.class))
+                .map(mutation -> params.getMessageBundle().interpolate(mutation.value()))
                 .orElse(null);
     }
 
     @Override
     public String generateSubscriptionName(OperationNameGeneratorParams<Method> params) {
-        return Optional.ofNullable(params.getElement().getAnnotation(GraphQLSubscription.class))
-                .map(subscription -> params.getMessageBundle().interpolate(subscription.name()))
+        return Optional.ofNullable(params.getElement().getAnnotation(Subscription.class))
+                .map(subscription -> params.getMessageBundle().interpolate(subscription.value()))
                 .orElse(null);
     }
 }

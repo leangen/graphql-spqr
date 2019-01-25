@@ -16,8 +16,8 @@ import java.lang.annotation.Target;
  * <li>{@link io.leangen.graphql.execution.ResolutionEnvironment} - Injects the entire {@link io.leangen.graphql.execution.ResolutionEnvironment}</li>
  * </ol>
  */
-@GraphQLIgnore
+@Ignore
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
-public @interface GraphQLEnvironment {
+public @interface Info {
 }

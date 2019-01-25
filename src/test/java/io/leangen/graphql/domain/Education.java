@@ -2,8 +2,7 @@ package io.leangen.graphql.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 
 /**
  * Created by bojan.tomic on 5/28/16.
@@ -14,13 +13,13 @@ public class Education {
         TOP, BOTTOM
     }
 
-    @GraphQLQuery(name = "schoolName", description = "The school where education was obtained")
+    @Query(value = "schoolName", description = "The school where education was obtained")
     public String schoolName;
-    @GraphQLQuery(name = "startYear", description = "The starting year of education")
+    @Query(value = "startYear", description = "The starting year of education")
     public Integer startYear;
-    @GraphQLQuery(name = "endYear", description = "The final year of education")
+    @Query(value = "endYear", description = "The final year of education")
     public Integer endYear;
-    @GraphQLQuery(name = "tier", description = "The school tier")
+    @Query(value = "tier", description = "The school tier")
     public Tier tier;
 
     @JsonCreator

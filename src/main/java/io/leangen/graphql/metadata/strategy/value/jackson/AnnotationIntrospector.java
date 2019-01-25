@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
-import io.leangen.graphql.annotations.GraphQLEnumValue;
+import io.leangen.graphql.annotations.EnumValue;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
@@ -97,9 +97,9 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     public String[] findEnumValues(Class<?> enumType, Enum<?>[] enumValues, String[] defaultNames) {
         String[] jacksonNames = super.findEnumValues(enumType, enumValues, defaultNames);
         for (int i = 0; i < enumValues.length; i++) {
-            GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(enumValues[i]).getAnnotation(GraphQLEnumValue.class);
-            if (annotation != null && Utils.isNotEmpty(annotation.name())) {
-                jacksonNames[i] = messageBundle.interpolate(annotation.name());
+            EnumValue annotation = ClassUtils.getEnumConstantField(enumValues[i]).getAnnotation(EnumValue.class);
+            if (annotation != null && Utils.isNotEmpty(annotation.value())) {
+                jacksonNames[i] = messageBundle.interpolate(annotation.value());
             }
         }
         return jacksonNames;

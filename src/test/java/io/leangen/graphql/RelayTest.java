@@ -15,10 +15,10 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLUnion;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.domain.Cat;
 import io.leangen.graphql.domain.Character;
 import io.leangen.graphql.domain.Dog;
@@ -352,7 +352,7 @@ public class RelayTest {
             return title;
         }
 
-        @GraphQLQuery(name = "id")
+        @Query(value = "id")
         public @GraphQLId(relayId = true) String getIsbn() {
             return isbn;
         }
@@ -368,7 +368,7 @@ public class RelayTest {
             this.text = text;
         }
 
-        @GraphQLQuery(name = "id")
+        @Query(value = "id")
         public @GraphQLId(relayId = true) Book getBook() {
             return book;
         }
@@ -379,19 +379,19 @@ public class RelayTest {
     }
 
     public static class BookService {
-        @GraphQLQuery(name = "books")
-        public Page<Book> getBooks(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "books")
+        public Page<Book> getBooks(@Argument(value = "first") int first, @Argument(value = "after") String after) {
             List<Book> books = new ArrayList<>();
             books.add(new Book("Tesseract", "x123"));
             return PageFactory.createOffsetBasedPage(books, 100, 10);
         }
 
-        @GraphQLQuery(name = "empty")
-        public Page<Book> getEmpty(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "empty")
+        public Page<Book> getEmpty(@Argument(value = "first") int first, @Argument(value = "after") String after) {
             return PageFactory.createOffsetBasedPage(Collections.emptyList(), 100, 10);
         }
 
-        @GraphQLQuery
+        @Query
         public Book book(@GraphQLId(relayId = true) String isbn) {
             return new Book("Node Book", isbn);
         }
@@ -399,12 +399,12 @@ public class RelayTest {
 
     public static class DescriptorService {
 
-        @GraphQLQuery
+        @Query
         public Descriptor descriptor(@GraphQLId(relayId = true) Book book) {
             return new Descriptor(book, "An imaginative book description");
         }
 
-        @GraphQLQuery
+        @Query
         public Descriptor random() {
             return new Descriptor(null, UUID.randomUUID().toString());
         }
@@ -456,23 +456,23 @@ public class RelayTest {
 
     private static class InvalidArgsPagingService {
 
-        @GraphQLQuery(name = "streets")
-        public Page<Street> streets(@GraphQLArgument(name = "first") String first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "streets")
+        public Page<Street> streets(@Argument(value = "first") String first, @Argument(value = "after") String after) {
             return null;
         }
     }
 
     private static class MissingArgsPagingService {
 
-        @GraphQLQuery(name = "streets")
-        public Page<Street> streets(@GraphQLArgument(name = "first") int first) {
+        @Query(value = "streets")
+        public Page<Street> streets(@Argument(value = "first") int first) {
             return null;
         }
     }
 
     public static class ExtendedPageBookService {
-        @GraphQLQuery(name = "extended")
-        public ExtendedPage<Book> getExtended(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "extended")
+        public ExtendedPage<Book> getExtended(@Argument(value = "first") int first, @Argument(value = "after") String after) {
             List<Book> books = new ArrayList<>();
             books.add(new Book("Tesseract", "x123"));
             long count = 100L;
@@ -482,8 +482,8 @@ public class RelayTest {
     }
 
     public static class ExtendedEdgeBookService {
-        @GraphQLQuery(name = "extended")
-        public ExtendedConnection<ExtendedEdge<Book>> getExtended(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "extended")
+        public ExtendedConnection<ExtendedEdge<Book>> getExtended(@Argument(value = "first") int first, @Argument(value = "after") String after) {
             List<Book> books = new ArrayList<>();
             books.add(new Book("Tesseract", "x123"));
             long count = 100L;
@@ -495,13 +495,13 @@ public class RelayTest {
     }
 
     public static class ConflictingBookService {
-        @GraphQLQuery(name = "empty")
-        public Page<Book> getEmpty(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "empty")
+        public Page<Book> getEmpty(@Argument(value = "first") int first, @Argument(value = "after") String after) {
             return null;
         }
 
-        @GraphQLQuery(name = "extended")
-        public ExtendedPage<Book> getExtended(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "extended")
+        public ExtendedPage<Book> getExtended(@Argument(value = "first") int first, @Argument(value = "after") String after) {
             return null;
         }
     }

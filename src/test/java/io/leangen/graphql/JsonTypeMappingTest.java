@@ -16,7 +16,7 @@ import com.google.gson.JsonPrimitive;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import org.junit.Test;
@@ -89,7 +89,7 @@ public class JsonTypeMappingTest {
 
     public static class JacksonService {
 
-        @GraphQLQuery
+        @Query
         public JacksonContainer item(JacksonContainer in) {
             return in;
         }
@@ -157,7 +157,7 @@ public class JsonTypeMappingTest {
 
     public static class GsonService {
 
-        @GraphQLQuery
+        @Query
         public GsonContainer item(GsonContainer in) {
             return in;
         }

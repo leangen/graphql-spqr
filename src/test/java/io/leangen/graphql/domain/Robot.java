@@ -1,7 +1,7 @@
 package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 
 public class Robot implements Character {
 
@@ -13,7 +13,7 @@ public class Robot implements Character {
         this.name = name;
     }
 
-    @GraphQLQuery(name = "id")
+    @Query(value = "id")
     public @GraphQLId(relayId = true) String getModel() {
         return model;
     }

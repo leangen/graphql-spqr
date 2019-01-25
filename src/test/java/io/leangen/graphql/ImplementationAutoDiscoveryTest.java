@@ -1,9 +1,10 @@
 package io.leangen.graphql;
 
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.types.GraphQLInterface;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.types.Interface;
+import io.leangen.graphql.annotations.types.Type;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
@@ -47,11 +48,13 @@ public class ImplementationAutoDiscoveryTest {
                 .withOperationsFromSingleton(service)
                 .generate();
     }
-    
-    @GraphQLInterface(name = "Manual")
+
+    @Type("Manual")
+    @Interface
     interface Manual {}
-    
-    @GraphQLInterface(name = "Auto", implementationAutoDiscovery = true)
+
+    @Type("Auto")
+    @Interface(implementationAutoDiscovery = true)
     interface Auto {}
 
     public static class One implements Manual, Auto {
@@ -67,38 +70,38 @@ public class ImplementationAutoDiscoveryTest {
     }
 
     public static class ManualService {
-        @GraphQLQuery(name = "find")
-        public Manual findFlat(@GraphQLArgument(name = "one") boolean one) {
+        @Query(value = "find")
+        public Manual findFlat(@Argument(value = "one") boolean one) {
             return one ? new One() : new Two();
         }
     }
 
     public static class ManualExplicitService extends ManualService {
-        @GraphQLQuery(name = "one")
+        @Query(value = "one")
         public One findOne() {
             return new One();
         }
         
-        @GraphQLQuery(name = "two")
+        @Query(value = "two")
         public Two findTwo() {
             return new Two();
         }
     }
 
     public static class AutoService {
-        @GraphQLQuery(name = "find")
-        public Auto findDeep(@GraphQLArgument(name = "one") boolean one) {
+        @Query(value = "find")
+        public Auto findDeep(@Argument(value = "one") boolean one) {
             return one ? new One() : new Two();
         }
     }
 
     public static class AutoExplicitService extends AutoService {
-        @GraphQLQuery(name = "one")
+        @Query(value = "one")
         public One findOne() {
             return new One();
         }
 
-        @GraphQLQuery(name = "two")
+        @Query(value = "two")
         public Two findTwo() {
             return new Two();
         }

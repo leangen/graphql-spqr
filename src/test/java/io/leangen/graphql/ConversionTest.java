@@ -3,9 +3,9 @@ package io.leangen.graphql;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
@@ -118,8 +118,8 @@ public class ConversionTest {
     }
 
     public static class ComplexService {
-        @GraphQLQuery(name = "echo")
-        public ComplexObject echoArgument(@GraphQLArgument(name = "in") ComplexObject in) {
+        @Query(value = "echo")
+        public ComplexObject echoArgument(@Argument(value = "in") ComplexObject in) {
             return in;
         }
     }
@@ -180,13 +180,13 @@ public class ConversionTest {
     }
 
     public static class IdService {
-        @GraphQLQuery
+        @Query
         public NestedId echo(@GraphQLId(relayId = true) NestedId id) {
             return id;
         }
 
-        @GraphQLQuery
-        public AnnotatedId other(@GraphQLArgument(name = "id") AnnotatedId id) {
+        @Query
+        public AnnotatedId other(@Argument(value = "id") AnnotatedId id) {
             return id;
         }
     }

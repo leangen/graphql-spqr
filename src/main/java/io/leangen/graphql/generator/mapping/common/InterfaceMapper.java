@@ -4,7 +4,7 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
-import io.leangen.graphql.annotations.types.GraphQLInterface;
+import io.leangen.graphql.annotations.types.Interface;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
@@ -70,12 +70,12 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
 
     @SuppressWarnings("WeakerAccess")
     protected boolean isImplementationAutoDiscoveryEnabled(AnnotatedType javaType) {
-        return javaType.isAnnotationPresent(GraphQLInterface.class) && javaType.getAnnotation(GraphQLInterface.class).implementationAutoDiscovery();
+        return javaType.isAnnotationPresent(Interface.class) && javaType.getAnnotation(Interface.class).implementationAutoDiscovery();
     }
 
     @SuppressWarnings("WeakerAccess")
     protected String[] getScanPackages(AnnotatedType javaType) {
-        return javaType.isAnnotationPresent(GraphQLInterface.class) ? javaType.getAnnotation(GraphQLInterface.class).scanPackages() : Utils.emptyArray();
+        return javaType.isAnnotationPresent(Interface.class) ? javaType.getAnnotation(Interface.class).scanPackages() : Utils.emptyArray();
     }
 
     private Optional<GraphQLObjectType> getImplementingType(AnnotatedType implType, OperationMapper operationMapper, BuildContext buildContext) {

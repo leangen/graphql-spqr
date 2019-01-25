@@ -1,18 +1,17 @@
 package io.leangen.graphql;
 
+import graphql.ExecutionResult;
+import graphql.GraphQL;
+import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.Source;
+import io.leangen.graphql.execution.relay.Page;
+import io.leangen.graphql.execution.relay.generic.PageFactory;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
-
-import graphql.ExecutionResult;
-import graphql.GraphQL;
-import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLContext;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.execution.relay.Page;
-import io.leangen.graphql.execution.relay.generic.PageFactory;
 
 import static org.junit.Assert.assertTrue;
 
@@ -58,14 +57,14 @@ public class NestedPageTest {
 
     public static class VoteService {
 
-        @GraphQLQuery(name = "users")
-        public Page<User> getUsers(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "users")
+        public Page<User> getUsers(@Argument(value = "first") int first, @Argument(value = "after") String after) {
             List<User> users = Arrays.asList(new User("Bojack", "Horseman"), new User("Diane", "Nguyen"));
             return PageFactory.createOffsetBasedPage(users, 10, 0);
         }
 
-        @GraphQLQuery(name = "userVotes")
-        public Page<Vote> getUserVotes(@GraphQLContext User user, @GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "userVotes")
+        public Page<Vote> getUserVotes(@Source User user, @Argument(value = "first") int first, @Argument(value = "after") String after) {
             List<Vote> votes = Arrays.asList(new Vote("x1", "http://bojack.example.com"), new Vote("x2", "http://diane.example.com"));
             return PageFactory.createOffsetBasedPage(votes, 10, 0);
         }

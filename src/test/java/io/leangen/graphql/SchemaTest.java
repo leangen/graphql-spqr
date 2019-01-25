@@ -100,6 +100,7 @@ public class SchemaTest {
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .generate();
 
+
         List<String> context = Arrays.asList("xxx", "zzz", "yyy");
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
         ExecutionResult result;

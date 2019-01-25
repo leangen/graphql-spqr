@@ -1,6 +1,6 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 
 /**
  * Created by bojan.tomic on 6/24/16.
@@ -22,17 +22,17 @@ public class SimpleUser {
         this.friend = friend;
     }
 
-    @GraphQLQuery(name = "fullName", description = "A person's name")
+    @Query(value = "fullName", description = "A person's name")
     public String getFullName() {
         return fullName;
     }
 
-    @GraphQLQuery(name = "friend", description = "A person's name")
+    @Query(value = "friend", description = "A person's name")
     public SimpleUser getFriend() {
         return friend;
     }
 
-    @GraphQLQuery(name = "education")
+    @Query(value = "education")
     public Education getEducation(int year) {
         return new Education("alma mater", year - 1, year + 1);
     }

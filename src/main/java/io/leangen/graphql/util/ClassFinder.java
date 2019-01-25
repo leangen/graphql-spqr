@@ -4,7 +4,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public class ClassFinder {
     public final static Predicate<ClassInfo> CONCRETE = info -> !info.isAbstract() && !info.isInterface();
 
     public final static Predicate<ClassInfo> NON_IGNORED = info ->
-            info.getAnnotations().stream().noneMatch(ann -> ann.getName().equals(GraphQLIgnore.class.getName()));
+            info.getAnnotations().stream().noneMatch(ann -> ann.getName().equals(Ignore.class.getName()));
 
     public final static Predicate<ClassInfo> PUBLIC = ClassInfo::isPublic;
 

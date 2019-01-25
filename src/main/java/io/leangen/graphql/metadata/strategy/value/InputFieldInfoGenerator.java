@@ -1,7 +1,8 @@
 package io.leangen.graphql.metadata.strategy.value;
 
-import io.leangen.graphql.annotations.GraphQLInputField;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.DefaultValue;
+import io.leangen.graphql.annotations.InputField;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.util.ReservedStrings;
@@ -16,50 +17,32 @@ public class InputFieldInfoGenerator {
 
     public Optional<String> getName(List<AnnotatedElement> candidates, MessageBundle messageBundle) {
         Optional<String> explicit = candidates.stream()
-                .filter(element -> element.isAnnotationPresent(GraphQLInputField.class))
+                .filter(element -> element.isAnnotationPresent(InputField.class))
                 .findFirst()
-                .map(element -> element.getAnnotation(GraphQLInputField.class).name());
+                .map(element -> element.getAnnotation(InputField.class).name());
         Optional<String> implicit = candidates.stream()
-                .filter(element -> element.isAnnotationPresent(GraphQLQuery.class))
+                .filter(element -> element.isAnnotationPresent(Query.class))
                 .findFirst()
-                .map(element -> element.getAnnotation(GraphQLQuery.class).name());
+                .map(element -> element.getAnnotation(Query.class).value());
         return Utils.or(explicit, implicit).filter(Utils::isNotEmpty).map(messageBundle::interpolate);
     }
 
     public Optional<String> getDescription(List<AnnotatedElement> candidates, MessageBundle messageBundle) {
         Optional<String> explicit = candidates.stream()
-                .filter(element -> element.isAnnotationPresent(GraphQLInputField.class))
+                .filter(element -> element.isAnnotationPresent(InputField.class))
                 .findFirst()
-                .map(element -> element.getAnnotation(GraphQLInputField.class).description());
+                .map(element -> element.getAnnotation(InputField.class).description());
         Optional<String> implicit = candidates.stream()
-                .filter(element -> element.isAnnotationPresent(GraphQLQuery.class))
+                .filter(element -> element.isAnnotationPresent(Query.class))
                 .findFirst()
-                .map(element -> element.getAnnotation(GraphQLQuery.class).description());
+                .map(element -> element.getAnnotation(Query.class).description());
         return Utils.or(explicit, implicit).filter(Utils::isNotEmpty).map(messageBundle::interpolate);
     }
 
-    public Optional<Object> defaultValue(List<AnnotatedElement> candidates, AnnotatedType type, GlobalEnvironment environment) {
+    public Optional<Object> defaultValue(List<AnnotatedElement> candidates, AnnotatedType type, DefaultValueProvider defaultValueProvider, GlobalEnvironment environment) {
         return candidates.stream()
-                .filter(element -> element.isAnnotationPresent(GraphQLInputField.class))
+                .filter(element -> element.isAnnotationPresent(DefaultValue.class))
                 .findFirst()
-                .map(element -> {
-                    GraphQLInputField ann = element.getAnnotation(GraphQLInputField.class);
-                    try {
-                        return defaultValueProvider(ann.defaultValueProvider(), environment)
-                                .getDefaultValue(element, type, environment.messageBundle.interpolate(ReservedStrings.decode(ann.defaultValue())));
-                    } catch (ReflectiveOperationException e) {
-                        throw new IllegalArgumentException(
-                                ann.defaultValueProvider().getName() + " must expose a public default constructor, or a constructor accepting " + GlobalEnvironment.class.getName(), e);
-                    }
-                });
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected <T extends DefaultValueProvider> T defaultValueProvider(Class<T> type, GlobalEnvironment environment) throws ReflectiveOperationException {
-        try {
-            return type.getConstructor(GlobalEnvironment.class).newInstance(environment);
-        } catch (NoSuchMethodException e) {
-            return type.getConstructor().newInstance();
-        }
+                .map(element -> defaultValueProvider.getDefaultValue(element, type, environment.messageBundle.interpolate(ReservedStrings.decode(element.getAnnotation(DefaultValue.class).value()))));
     }
 }

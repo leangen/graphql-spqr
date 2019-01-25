@@ -2,11 +2,11 @@ package io.leangen.graphql;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLIgnore;
-import io.leangen.graphql.annotations.GraphQLInputField;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.DefaultValue;
+import io.leangen.graphql.annotations.Ignore;
+import io.leangen.graphql.annotations.InputField;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapper;
@@ -32,21 +32,21 @@ public class InputFieldDiscoveryTest {
     private static final AnnotatedType IGNORED_TYPE = GenericTypeReflector.annotate(Object.class);
     private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
 
-    private static final InputField[] expectedDefaultFields = new InputField[] {
-            new InputField("field1", null, IGNORED_TYPE, null, null, null),
-            new InputField("field2", null, IGNORED_TYPE, null, null, null),
-            new InputField("field3", null, IGNORED_TYPE, null, null, null)
+    private static final io.leangen.graphql.metadata.InputField[] expectedDefaultFields = new io.leangen.graphql.metadata.InputField[] {
+            new io.leangen.graphql.metadata.InputField("field1", null, IGNORED_TYPE, null, null, null),
+            new io.leangen.graphql.metadata.InputField("field2", null, IGNORED_TYPE, null, null, null),
+            new io.leangen.graphql.metadata.InputField("field3", null, IGNORED_TYPE, null, null, null)
     };
-    private static final InputField[] expectedFilteredDefaultFields = new InputField[] {expectedDefaultFields[0], expectedDefaultFields[2]};
-    private static final InputField[] expectedExplicitFields = new InputField[] {
-            new InputField("aaa", "AAA", IGNORED_TYPE, null, "AAAA", null),
-            new InputField("bbb", "BBB", IGNORED_TYPE, null, 2222, null),
-            new InputField("ccc", "CCC", IGNORED_TYPE, null, 3333, null)
+    private static final io.leangen.graphql.metadata.InputField[] expectedFilteredDefaultFields = new io.leangen.graphql.metadata.InputField[] {expectedDefaultFields[0], expectedDefaultFields[2]};
+    private static final io.leangen.graphql.metadata.InputField[] expectedExplicitFields = new io.leangen.graphql.metadata.InputField[] {
+            new io.leangen.graphql.metadata.InputField("aaa", "AAA", IGNORED_TYPE, null, "AAAA", null),
+            new io.leangen.graphql.metadata.InputField("bbb", "BBB", IGNORED_TYPE, null, 2222, null),
+            new io.leangen.graphql.metadata.InputField("ccc", "CCC", IGNORED_TYPE, null, 3333, null)
     };
-    private static final InputField[] expectedQueryFields = new InputField[] {
-            new InputField("aaa", null, IGNORED_TYPE, null, null, null),
-            new InputField("bbb", null, IGNORED_TYPE, null, null, null),
-            new InputField("ccc", null, IGNORED_TYPE, null, null, null)
+    private static final io.leangen.graphql.metadata.InputField[] expectedQueryFields = new io.leangen.graphql.metadata.InputField[] {
+            new io.leangen.graphql.metadata.InputField("aaa", null, IGNORED_TYPE, null, null, null),
+            new io.leangen.graphql.metadata.InputField("bbb", null, IGNORED_TYPE, null, null, null),
+            new io.leangen.graphql.metadata.InputField("ccc", null, IGNORED_TYPE, null, null, null)
     };
     
     @Test
@@ -134,35 +134,46 @@ public class InputFieldDiscoveryTest {
         assertFieldNamesEqual(jackson, HiddenCtorParams.class, expectedFilteredDefaultFields);
     }
 
-    private void assertFieldNamesEqual(Class typeToScan, InputField... expectedFields) {
-        Set<InputField> jFields = assertFieldNamesEqual(jackson, typeToScan, expectedFields);
-        Set<InputField> gFields = assertFieldNamesEqual(gson, typeToScan, expectedFields);
+    private void assertFieldNamesEqual(Class typeToScan, io.leangen.graphql.metadata.InputField... expectedFields) {
+        Set<io.leangen.graphql.metadata.InputField> jFields = assertFieldNamesEqual(jackson, typeToScan, expectedFields);
+        Set<io.leangen.graphql.metadata.InputField> gFields = assertFieldNamesEqual(gson, typeToScan, expectedFields);
 
         assertAllFieldsEqual(jFields, gFields);
     }
 
-    private Set<InputField> assertFieldNamesEqual(InputFieldBuilder mapper, Class typeToScan, InputField[] templates) {
-        Set<InputField> fields = mapper.getInputFields(
+    private Set<io.leangen.graphql.metadata.InputField> assertFieldNamesEqual(InputFieldBuilder mapper, Class typeToScan, io.leangen.graphql.metadata.InputField[] templates) {
+        Set<io.leangen.graphql.metadata.InputField> fields = mapper.getInputFields(
                 InputFieldBuilderParams.builder()
                         .withType(GenericTypeReflector.annotate(typeToScan))
                         .withEnvironment(ENVIRONMENT)
                         .build());
         assertEquals(templates.length, fields.size());
-        for (InputField template : templates) {
-            Optional<InputField> field = fields.stream().filter(input -> input.getName().equals(template.getName())).findFirst();
+        for (io.leangen.graphql.metadata.InputField template : templates) {
+            Optional<io.leangen.graphql.metadata.InputField> field = fields.stream().filter(input -> input.getName().equals(template.getName())).findFirst();
             assertTrue("Field '" + template.getName() + "' doesn't match between different strategies", field.isPresent());
             assertEquals(template.getDescription(), field.get().getDescription());
-            assertEquals(template.getDefaultValue(), field.get().getDefaultValue());
+            Object defaultValue = field.get().getDefaultValue();
+            if (defaultValue instanceof Double) {
+                defaultValue = ((Double) defaultValue).intValue();
+            }
+            assertEquals(template.getDefaultValue(), defaultValue);
         }
         return fields;
     }
 
-    private void assertAllFieldsEqual(Set<InputField> fields1, Set<InputField> fields2) {
+    private void assertAllFieldsEqual(Set<io.leangen.graphql.metadata.InputField> fields1, Set<io.leangen.graphql.metadata.InputField> fields2) {
         assertEquals(fields1.size(), fields2.size());
         fields1.forEach(f1 -> assertTrue(fields2.stream().anyMatch(f2 -> f1.getName().equals(f2.getName())
                         && Objects.equals(f1.getDescription(), f2.getDescription())
                         && GenericTypeReflector.equals(f1.getJavaType(), f2.getJavaType())
-                        && Objects.equals(f1.getDefaultValue(), f2.getDefaultValue()))));
+                        && Objects.equals(f1.getDefaultValue(), forceToInt(f2.getDefaultValue())))));
+    }
+
+    private static Object forceToInt(Object val) {
+        if (val instanceof Double) {
+            return  ((Double) val).intValue();
+        }
+        return val;
     }
 
     private class FieldsOnly {
@@ -208,11 +219,11 @@ public class InputFieldDiscoveryTest {
     }
 
     private class ExplicitFields {
-        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        @InputField(name = "aaa", description = "AAA") @DefaultValue("AAAA")
         public String field1;
-        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        @InputField(name = "bbb", description = "BBB") @DefaultValue("2222")
         public int field2;
-        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        @InputField(name = "ccc", description = "CCC") @DefaultValue("3333")
         public Object field3;
     }
 
@@ -221,17 +232,17 @@ public class InputFieldDiscoveryTest {
         private int field2;
         private Object field3;
 
-        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        @InputField(name = "aaa", description = "AAA") @DefaultValue("AAAA")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        @InputField(name = "bbb", description = "BBB") @DefaultValue("2222")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        @InputField(name = "ccc", description = "CCC") @DefaultValue("3333")
         public Object getField3() {
             return field3;
         }
@@ -242,28 +253,28 @@ public class InputFieldDiscoveryTest {
         private int field2;
         private Object field3;
 
-        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        @InputField(name = "aaa", description = "AAA") @DefaultValue("AAAA")
         public void setField1(String field1) {
             this.field1 = field1;
         }
 
-        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        @InputField(name = "bbb", description = "BBB") @DefaultValue("2222")
         public void setField2(int field2) {
             this.field2 = field2;
         }
 
-        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        @InputField(name = "ccc", description = "CCC") @DefaultValue("3333")
         public void setField3(Object field3) {
             this.field3 = field3;
         }
     }
     
     private class QueryFields {
-        @GraphQLQuery(name = "aaa")
+        @Query(value = "aaa")
         public String field1;
-        @GraphQLQuery(name = "bbb")
+        @Query(value = "bbb")
         public int field2;
-        @GraphQLQuery(name = "ccc")
+        @Query(value = "ccc")
         public Object field3;
     }
 
@@ -272,17 +283,17 @@ public class InputFieldDiscoveryTest {
         private int field2;
         private Object field3;
 
-        @GraphQLQuery(name = "aaa")
+        @Query(value = "aaa")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLQuery(name = "bbb")
+        @Query(value = "bbb")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLQuery(name = "ccc")
+        @Query(value = "ccc")
         public Object getField3() {
             return field3;
         }
@@ -293,176 +304,176 @@ public class InputFieldDiscoveryTest {
         private int field2;
         private Object field3;
 
-        @GraphQLQuery(name = "aaa")
+        @Query(value = "aaa")
         public void setField1(String field1) {
             this.field1 = field1;
         }
 
-        @GraphQLQuery(name = "bbb")
+        @Query(value = "bbb")
         public void setField2(int field2) {
             this.field2 = field2;
         }
 
-        @GraphQLQuery(name = "ccc")
+        @Query(value = "ccc")
         public void setField3(Object field3) {
             this.field3 = field3;
         }
     }
 
     private class MixedFieldsWin {
-        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        @InputField(name = "aaa", description = "AAA") @DefaultValue("AAAA")
         private String field1;
-        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        @InputField(name = "bbb", description = "BBB") @DefaultValue("2222")
         private int field2;
-        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        @InputField(name = "ccc", description = "CCC") @DefaultValue("3333")
         private Object field3;
 
-        @GraphQLQuery(name = "xxx")
+        @Query(value = "xxx")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLQuery(name = "yyy")
+        @Query(value = "yyy")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLQuery(name = "zzz")
+        @Query(value = "zzz")
         public Object getField3() {
             return field3;
         }
     }
     
     private class MixedGettersWin {
-        @GraphQLQuery(name = "xxx")
+        @Query(value = "xxx")
         private String field1;
-        @GraphQLQuery(name = "yyy")
+        @Query(value = "yyy")
         private int field2;
-        @GraphQLQuery(name = "zzz")
+        @Query(value = "zzz")
         private Object field3;
 
-        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        @InputField(name = "aaa", description = "AAA") @DefaultValue("AAAA")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        @InputField(name = "bbb", description = "BBB") @DefaultValue("2222")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        @InputField(name = "ccc", description = "CCC") @DefaultValue("3333")
         public Object getField3() {
             return field3;
         }
     }
 
     private class MixedSettersWin {
-        @GraphQLQuery(name = "xxx")
+        @Query(value = "xxx")
         private String field1;
-        @GraphQLQuery(name = "yyy")
+        @Query(value = "yyy")
         private int field2;
-        @GraphQLQuery(name = "zzz")
+        @Query(value = "zzz")
         private Object field3;
 
-        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        @InputField(name = "aaa", description = "AAA") @DefaultValue("AAAA")
         public void setField1(String field1) {
             this.field1 = field1;
         }
 
-        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        @InputField(name = "bbb", description = "BBB") @DefaultValue("2222")
         public void setField2(int field2) {
             this.field2 = field2;
         }
 
-        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        @InputField(name = "ccc", description = "CCC") @DefaultValue("3333")
         public void setField3(Object field3) {
             this.field3 = field3;
         }
     }
 
     private class ConflictingGettersWin {
-        @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
+        @InputField(name = "xxx", description = "XXX") @DefaultValue("XXXX")
         private String field1;
-        @GraphQLInputField(name = "yyy", description = "YYY", defaultValue = "-1")
+        @InputField(name = "yyy", description = "YYY") @DefaultValue("-1")
         private int field2;
-        @GraphQLInputField(name = "zzz", description = "ZZZ", defaultValue = "-1")
+        @InputField(name = "zzz", description = "ZZZ") @DefaultValue("-1")
         private Object field3;
 
-        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        @InputField(name = "aaa", description = "AAA") @DefaultValue("AAAA")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        @InputField(name = "bbb", description = "BBB") @DefaultValue("2222")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        @InputField(name = "ccc", description = "CCC") @DefaultValue("3333")
         public Object getField3() {
             return field3;
         }
     }
     
     private class ConflictingSettersWin {
-        @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
+        @InputField(name = "xxx", description = "XXX") @DefaultValue("XXXX")
         private String field1;
-        @GraphQLInputField(name = "yyy", description = "YYY", defaultValue = "-1")
+        @InputField(name = "yyy", description = "YYY") @DefaultValue("-1")
         private int field2;
-        @GraphQLInputField(name = "zzz", description = "ZZZ", defaultValue = "-1")
+        @InputField(name = "zzz", description = "ZZZ") @DefaultValue("-1")
         private Object field3;
 
-        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        @InputField(name = "aaa", description = "AAA") @DefaultValue("AAAA")
         public void setField1(String field1) {
             this.field1 = field1;
         }
 
-        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        @InputField(name = "bbb", description = "BBB") @DefaultValue("2222")
         public void setField2(int field2) {
             this.field2 = field2;
         }
 
-        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        @InputField(name = "ccc", description = "CCC") @DefaultValue("3333")
         public void setField3(Object field3) {
             this.field3 = field3;
         }
     }
 
     private class AllConflictingSettersWin {
-        @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
+        @InputField(name = "xxx", description = "XXX") @DefaultValue("XXXX")
         private String field1;
-        @GraphQLInputField(name = "yyy", description = "YYY", defaultValue = "-1")
+        @InputField(name = "yyy", description = "YYY") @DefaultValue("-1")
         private int field2;
-        @GraphQLInputField(name = "zzz", description = "ZZZ", defaultValue = "-1")
+        @InputField(name = "zzz", description = "ZZZ") @DefaultValue("-1")
         private Object field3;
 
-        @GraphQLInputField(name = "111", description = "1111", defaultValue = "XXXX")
+        @InputField(name = "111", description = "1111") @DefaultValue("XXXX")
         public String getField1() {
             return field1;
         }
 
-        @GraphQLInputField(name = "222", description = "2222", defaultValue = "-1")
+        @InputField(name = "222", description = "2222") @DefaultValue("-1")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLInputField(name = "333", description = "3333", defaultValue = "-1")
+        @InputField(name = "333", description = "3333") @DefaultValue("-1")
         public Object getField3() {
             return field3;
         }
 
-        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        @InputField(name = "aaa", description = "AAA") @DefaultValue("AAAA")
         public void setField1(String field1) {
             this.field1 = field1;
         }
 
-        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        @InputField(name = "bbb", description = "BBB") @DefaultValue("2222")
         public void setField2(int field2) {
             this.field2 = field2;
         }
 
-        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        @InputField(name = "ccc", description = "CCC") @DefaultValue("3333")
         public void setField3(Object field3) {
             this.field3 = field3;
         }
@@ -481,14 +492,14 @@ public class InputFieldDiscoveryTest {
             this.field1 = field1;
         }
 
-        @GraphQLQuery(name = "ignored")
-        @GraphQLInputField(name = "ignored")
+        @Query(value = "ignored")
+        @InputField(name = "ignored")
         public int getField2() {
             return field2;
         }
 
-        @GraphQLIgnore
-        @GraphQLInputField(name = "ignored")
+        @Ignore
+        @InputField(name = "ignored")
         public void setField2(int field2) {
             this.field2 = field2;
         }
@@ -497,7 +508,7 @@ public class InputFieldDiscoveryTest {
             return field3;
         }
 
-        @GraphQLInputField
+        @InputField
         public void setField3(Object field3) {
             this.field3 = field3;
         }
@@ -509,7 +520,7 @@ public class InputFieldDiscoveryTest {
         private Object field3;
 
         @JsonCreator
-        public HiddenCtorParams(String field1, @GraphQLIgnore int field2, Object field3) {
+        public HiddenCtorParams(String field1, @Ignore int field2, Object field3) {
             this.field1 = field1;
             this.field2 = field2;
             this.field3 = field3;

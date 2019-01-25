@@ -1,11 +1,11 @@
 package io.leangen.graphql.services;
 
-import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLComplexity;
-import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLMutation;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Mutation;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.Source;
 import io.leangen.graphql.domain.Address;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
@@ -46,8 +46,8 @@ public class UserService<T> {
         this.addresses.add(address2);
     }
 
-    @GraphQLQuery(name = "users")
-    public List<User<String>> getUsersById(@GraphQLArgument(name = "id") @GraphQLId Integer id) {
+    @Query(value = "users")
+    public List<User<String>> getUsersById(@Argument(value = "id") @GraphQLId Integer id) {
         User<String> user = new User<>();
         user.id = id;
         user.name = "Tatko";
@@ -63,8 +63,8 @@ public class UserService<T> {
         return Arrays.asList(user, user2);
     }
 
-    @GraphQLQuery(name = "users")
-    public List<User<String>> getUsersByEducation(@GraphQLArgument(name = "education") Education education) {
+    @Query(value = "users")
+    public List<User<String>> getUsersByEducation(@Argument(value = "education") Education education) {
         return getUsersById(1);
     }
 
@@ -73,33 +73,33 @@ public class UserService<T> {
 //		return (G)getUserById(magic);
 //	}
 
-    @GraphQLQuery(name = "users")
-    public List<User<String>> getUsersByAnyEducation(@GraphQLArgument(name = "educations") List<? super T> educations) {
+    @Query(value = "users")
+    public List<User<String>> getUsersByAnyEducation(@Argument(value = "educations") List<? super T> educations) {
         return getUsersById(1);
     }
 
-    @GraphQLQuery(name = "usersArr")
+    @Query(value = "usersArr")
     @SuppressWarnings("unchecked")
-    public User<String>[] getUsersByAnyEducationArray(@GraphQLArgument(name = "educations") T[] educations) {
+    public User<String>[] getUsersByAnyEducationArray(@Argument(value = "educations") T[] educations) {
         List<User<String>> users = getUsersById(1);
         return users.toArray(new User[0]);
     }
 
-    @GraphQLQuery(name = "users")
+    @Query(value = "users")
     @GraphQLComplexity("2 * childScore")
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    public List<User<String>> getUsersByRegDate(@GraphQLArgument(name = "regDate") Optional<Date> date) {
+    public List<User<String>> getUsersByRegDate(@Argument(value = "regDate") Optional<Date> date) {
         return getUsersById(1);
     }
 
-    @GraphQLQuery(name = "usersByDate")
+    @Query(value = "usersByDate")
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    public List<User<String>> getUsersByDate(@GraphQLArgument(name = "regDate") Optional<Date> date) {
+    public List<User<String>> getUsersByDate(@Argument(value = "regDate") Optional<Date> date) {
         return getUsersById(1);
     }
 
-    @GraphQLMutation(name = "updateUsername")
-    public User<String> updateUsername(@GraphQLContext User<String> user, @GraphQLArgument(name = "username") String username) {
+    @Mutation(value = "updateUsername")
+    public User<String> updateUsername(@Source User<String> user, @Argument(value = "username") String username) {
         user.name = username;
         return user;
     }
@@ -110,7 +110,7 @@ public class UserService<T> {
 //		user.title = title;
 //	}
 
-    @GraphQLQuery(name = "user")
+    @Query(value = "user")
     public User<String> getUserById(@GraphQLId(relayId = true) Integer wonkyName) {
         User<String> user = new User<>();
         user.id = 1;
@@ -122,17 +122,17 @@ public class UserService<T> {
         return user;
     }
 
-    @GraphQLQuery(name = "users")
-    public List<User<String>> getUserByUuid(@GraphQLArgument(name = "uuid") UUID uuid) {
+    @Query(value = "users")
+    public List<User<String>> getUserByUuid(@Argument(value = "uuid") UUID uuid) {
         return getUsersById(1);
     }
 
-    @GraphQLQuery(name = "zmajs")
-    public Collection<String> extraFieldAll(@GraphQLContext User<String> source) {
+    @Query(value = "zmajs")
+    public Collection<String> extraFieldAll(@Source User<String> source) {
         return Arrays.asList("zmaj", "azdaha");
     }
 
-    @GraphQLQuery(name = "me")
+    @Query(value = "me")
     public Map<String, String> getCurrentUser() {
         Map<String, String> user = new HashMap<>();
         user.put("id", "1000");
@@ -140,8 +140,8 @@ public class UserService<T> {
         return user;
     }
 
-    @GraphQLMutation(name = "upMe")
-    public Map<String, String> getUpdateCurrentUser(@GraphQLArgument(name = "updates") Map<String, String> updates) {
+    @Mutation(value = "upMe")
+    public Map<String, String> getUpdateCurrentUser(@Argument(value = "updates") Map<String, String> updates) {
         return updates;
     }
 }

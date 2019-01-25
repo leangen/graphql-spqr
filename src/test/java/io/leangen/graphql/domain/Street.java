@@ -1,7 +1,7 @@
 package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -19,7 +19,7 @@ public class Street {
         this.number = number;
     }
 
-    @GraphQLQuery(name = "name", description = "Street name")
+    @Query(value = "name", description = "Street name")
     public @GraphQLNonNull String getName() {
         return name;
     }
@@ -28,7 +28,7 @@ public class Street {
         this.name = name;
     }
 
-    @GraphQLQuery(name = "number", description = "House number")
+    @Query(value = "number", description = "House number")
     public Integer getNumber() {
         return number;
     }
@@ -37,7 +37,7 @@ public class Street {
         this.number = number;
     }
 
-    @GraphQLQuery(name = "uri", description = "A uniform resource identifier")
+    @Query(value = "uri", description = "A uniform resource identifier")
     public URI getUri() throws URISyntaxException {
         return new URI("scheme://random.street");
     }

@@ -3,9 +3,9 @@ package io.leangen.graphql;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLIgnore;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.Ignore;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.domain.Person;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.Resolver;
@@ -102,14 +102,14 @@ public class ResolverBuilderTest {
 
     private interface BaseService<T, ID> {
 
-        T findOne(@GraphQLArgument(name = "id") ID id);
+        T findOne(@Argument(value = "id") ID id);
 
     }
 
     private static class BaseServiceImpl<T, ID extends Serializable> implements BaseService<T, ID> {
 
         @Override
-        public T findOne(@GraphQLArgument(name = "id") ID id) {
+        public T findOne(@Argument(value = "id") ID id) {
             return null;
         }
     }
@@ -137,13 +137,13 @@ public class ResolverBuilderTest {
 
     private static class IgnoredMethods {
 
-        @GraphQLQuery(name = "notIgnored")
+        @Query(value = "notIgnored")
         public String getNotIgnored() {
             return null;
         }
 
-        @GraphQLIgnore
-        @GraphQLQuery(name = "ignored")
+        @Ignore
+        @Query(value = "ignored")
         public String getIgnored() {
             return null;
         }
@@ -151,11 +151,11 @@ public class ResolverBuilderTest {
 
     private static class IgnoredFields {
 
-        @GraphQLIgnore
-        @GraphQLQuery(name = "ignored")
+        @Ignore
+        @Query(value = "ignored")
         public String ignored;
 
-        @GraphQLQuery(name = "notIgnored")
+        @Query(value = "notIgnored")
         public String getNotIgnored() {
             return null;
         }

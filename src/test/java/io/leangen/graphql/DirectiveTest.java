@@ -14,12 +14,12 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.RelayTest.Book;
-import io.leangen.graphql.annotations.GraphQLContext;
-import io.leangen.graphql.annotations.GraphQLInputField;
+import io.leangen.graphql.annotations.Context;
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLRootContext;
 import io.leangen.graphql.annotations.GraphQLScalar;
+import io.leangen.graphql.annotations.InputField;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.Source;
 import io.leangen.graphql.annotations.types.GraphQLDirective;
 import io.leangen.graphql.util.GraphQLUtils;
 import org.junit.Test;
@@ -163,14 +163,14 @@ public class DirectiveTest {
 
     public static class BookService {
 
-        @GraphQLQuery
+        @Query
         public List<@GraphQLNonNull Book> books(String searchString) {
             return Collections.singletonList(new Book(searchString, "x123"));
         }
 
-        @GraphQLQuery
-        public String review(@GraphQLContext Book book,
-                             @GraphQLRootContext AtomicReference<List<Interrupt>> context,
+        @Query
+        public String review(@Source Book book,
+                             @Context AtomicReference<List<Interrupt>> context,
                              @io.leangen.graphql.annotations.GraphQLDirective List<Interrupt> timeouts) {
             context.set(timeouts);
             return "Wholesome";
@@ -179,13 +179,13 @@ public class DirectiveTest {
 
     private static class ServiceWithDirectives {
 
-        @GraphQLQuery
+        @Query
         @FieldDef(@Wrapper(name = "fieldDef", value = "test"))
         public @GraphQLScalar ScalarResult scalar(@ArgDef(@Wrapper(name = "argument", value = "test")) Input in) {
             return null;
         }
 
-        @GraphQLQuery
+        @Query
         @FieldDef(@Wrapper(name = "fieldDef", value = "test"))
         public ObjectResult obj(@ArgDef(@Wrapper(name = "argument", value = "test")) String in) {
             return null;
@@ -200,7 +200,7 @@ public class DirectiveTest {
     @ObjectType(@Wrapper(name = "object", value = "test"))
     private static class ObjectResult {
         @FieldDef(@Wrapper(name = "field", value = "test"))
-        @GraphQLQuery
+        @Query
         public String value;
     }
 
@@ -296,7 +296,7 @@ public class DirectiveTest {
 
     @GraphQLDirective(name = "timeout")
     public static class Interrupt {
-        @GraphQLInputField(name = "afterMillis")
+        @InputField(name = "afterMillis")
         @SuppressWarnings("WeakerAccess")
         public int after;
     }

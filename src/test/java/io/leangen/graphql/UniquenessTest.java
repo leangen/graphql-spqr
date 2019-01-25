@@ -6,7 +6,8 @@ import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
-import io.leangen.graphql.annotations.GraphQLEnumValue;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.EnumValue;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.domain.Address;
@@ -165,15 +166,15 @@ public class UniquenessTest {
     public static class EnumMapService {
 
         enum LIGHT_OR_DARK {
-            @GraphQLEnumValue(name = "Lucidus", description = "Bright") LIGHT,
-            @GraphQLEnumValue(name = "Tenebris", description = "Shady") DARK
+            @EnumValue(value = "Lucidus", description = "Bright") LIGHT,
+            @EnumValue(value = "Tenebris", description = "Shady") DARK
         }
 
-        public EnumMap<LIGHT_OR_DARK, Number> map(@io.leangen.graphql.annotations.GraphQLArgument(name = "in") EnumMap<LIGHT_OR_DARK, Number> in) {
+        public EnumMap<LIGHT_OR_DARK, Number> map(@Argument(value = "in") EnumMap<LIGHT_OR_DARK, Number> in) {
             return in;
         }
 
-        public EnumMap<LIGHT_OR_DARK, Number> mapAgain(@io.leangen.graphql.annotations.GraphQLArgument(name = "in") EnumMap<LIGHT_OR_DARK, Number> in) {
+        public EnumMap<LIGHT_OR_DARK, Number> mapAgain(@Argument(value = "in") EnumMap<LIGHT_OR_DARK, Number> in) {
             return in;
         }
     }

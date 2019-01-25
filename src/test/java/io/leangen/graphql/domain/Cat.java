@@ -1,7 +1,7 @@
 package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 
 public class Cat implements Pet {
 
@@ -27,7 +27,7 @@ public class Cat implements Pet {
         this.owner = owner;
     }
 
-    @GraphQLQuery(name = "id")
+    @Query(value = "id")
     public @GraphQLId(relayId = true) String getPassportNumber() {
         return passportNumber;
     }

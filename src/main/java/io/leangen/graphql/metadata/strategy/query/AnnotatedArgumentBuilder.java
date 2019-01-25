@@ -1,14 +1,16 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLContext;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.DefaultValue;
 import io.leangen.graphql.annotations.GraphQLId;
+import io.leangen.graphql.annotations.Source;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.value.DefaultValueProvider;
+import io.leangen.graphql.metadata.strategy.value.JsonDefaultValueProvider;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
 import io.leangen.graphql.util.Urls;
@@ -48,13 +50,16 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
 
     protected OperationArgument buildResolverArgument(Parameter parameter, AnnotatedType parameterType,
                                                       InclusionStrategy inclusionStrategy, GlobalEnvironment environment) {
+
+        DefaultValueProvider defaultValueProvider = new JsonDefaultValueProvider(environment);
+
         return new OperationArgument(
                 parameterType,
                 getArgumentName(parameter, parameterType, inclusionStrategy, environment.messageBundle),
                 getArgumentDescription(parameter, parameterType, environment.messageBundle),
-                defaultValue(parameter, parameterType, environment),
+                defaultValue(parameter, parameterType, defaultValueProvider, environment),
                 parameter,
-                parameter.isAnnotationPresent(GraphQLContext.class),
+                parameter.isAnnotationPresent(Source.class),
                 inclusionStrategy.includeArgument(parameter, parameterType)
         );
     }
@@ -63,9 +68,9 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         if (Optional.ofNullable(parameterType.getAnnotation(GraphQLId.class)).filter(GraphQLId::relayId).isPresent()) {
             return GraphQLId.RELAY_ID_FIELD_NAME;
         }
-        GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
-        if (meta != null && !meta.name().isEmpty()) {
-            return messageBundle.interpolate(meta.name());
+        Argument meta = parameter.getAnnotation(Argument.class);
+        if (meta != null && !meta.value().isEmpty()) {
+            return messageBundle.interpolate(meta.value());
         } else {
             if (!parameter.isNamePresent() && inclusionStrategy.includeArgument(parameter, parameterType)) {
                 log.warn("No explicit argument name given and the parameter name lost in compilation: "
@@ -77,29 +82,14 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
     }
 
     protected String getArgumentDescription(Parameter parameter, AnnotatedType parameterType, MessageBundle messageBundle) {
-        GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
+        Argument meta = parameter.getAnnotation(Argument.class);
         return meta != null ? messageBundle.interpolate(meta.description()) : null;
     }
 
-    protected Object defaultValue(Parameter parameter, AnnotatedType parameterType, GlobalEnvironment environment) {
+    protected Object defaultValue(Parameter parameter, AnnotatedType parameterType, DefaultValueProvider defaultValueProvider, GlobalEnvironment environment) {
 
-        GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
+        DefaultValue meta = parameter.getAnnotation(DefaultValue.class);
         if (meta == null) return null;
-        try {
-            return defaultValueProvider(meta.defaultValueProvider(), environment)
-                    .getDefaultValue(parameter, parameterType, ReservedStrings.decode(environment.messageBundle.interpolate(meta.defaultValue())));
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException(
-                    meta.defaultValueProvider().getName() + " must expose a public default constructor, or a constructor accepting " + GlobalEnvironment.class.getName(), e);
-        }
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected <T extends DefaultValueProvider> T defaultValueProvider(Class<T> type, GlobalEnvironment environment) throws ReflectiveOperationException {
-        try {
-            return type.getConstructor(GlobalEnvironment.class).newInstance(environment);
-        } catch (NoSuchMethodException e) {
-            return type.getConstructor().newInstance();
-        }
+        return defaultValueProvider.getDefaultValue(parameter, parameterType, ReservedStrings.decode(environment.messageBundle.interpolate(meta.value())));
     }
 }

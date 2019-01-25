@@ -2,7 +2,7 @@ package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 
 public class Dog implements Pet {
 
@@ -41,7 +41,7 @@ public class Dog implements Pet {
         return owner;
     }
 
-    @GraphQLQuery(name = "id")
+    @Query(value = "id")
     public @GraphQLId(relayId = true) Number getDogTagNum() {
         return dogTagNum;
     }

@@ -1,9 +1,9 @@
 package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLScalar;
-import io.leangen.graphql.annotations.types.GraphQLType;
+import io.leangen.graphql.annotations.types.Type;
 
-@GraphQLType(name = "JsonPatch")
+@Type(value = "JsonPatch")
 public class JsonPatch {
     private JsonPatchOp op;
 

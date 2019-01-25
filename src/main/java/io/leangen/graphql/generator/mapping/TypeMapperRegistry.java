@@ -1,6 +1,6 @@
 package io.leangen.graphql.generator.mapping;
 
-import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.Ignore;
 import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -36,7 +36,7 @@ public class TypeMapperRegistry {
     }
 
     public AnnotatedType getMappableType(AnnotatedType type) {
-        Optional<TypeMapper> mapper = this.getTypeMapper(type, typeMapper -> !typeMapper.getClass().isAnnotationPresent(GraphQLIgnore.class));
+        Optional<TypeMapper> mapper = this.getTypeMapper(type, typeMapper -> !typeMapper.getClass().isAnnotationPresent(Ignore.class));
         if (mapper.isPresent() && mapper.get() instanceof TypeSubstituter) {
             return getMappableType(((TypeSubstituter) mapper.get()).getSubstituteType(type));
         }

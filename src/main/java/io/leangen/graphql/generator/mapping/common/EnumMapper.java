@@ -3,7 +3,7 @@ package io.leangen.graphql.generator.mapping.common;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLEnumValueDefinition;
-import io.leangen.graphql.annotations.GraphQLEnumValue;
+import io.leangen.graphql.annotations.EnumValue;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.generator.OperationMapper;
@@ -61,21 +61,21 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
 
     @SuppressWarnings("WeakerAccess")
     protected String getValueName(Enum<?> value, MessageBundle messageBundle) {
-        GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
-        return annotation != null && !annotation.name().isEmpty() ? messageBundle.interpolate(annotation.name()) : value.name();
+        EnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(EnumValue.class);
+        return annotation != null && !annotation.value().isEmpty() ? messageBundle.interpolate(annotation.value()) : value.name();
     }
 
     @SuppressWarnings("WeakerAccess")
     protected String getValueDescription(Enum<?> value, MessageBundle messageBundle) {
-        GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
+        EnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(EnumValue.class);
         return annotation != null ? messageBundle.interpolate(annotation.description()) : null;
     }
 
     @SuppressWarnings("WeakerAccess")
     protected String getValueDeprecationReason(Enum<?> value, MessageBundle messageBundle) {
-        GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(value).getAnnotation(GraphQLEnumValue.class);
+        io.leangen.graphql.annotations.Deprecated annotation = ClassUtils.getEnumConstantField(value).getAnnotation(io.leangen.graphql.annotations.Deprecated.class);
         if (annotation != null) {
-            return ReservedStrings.decode(messageBundle.interpolate(annotation.deprecationReason()));
+            return ReservedStrings.decode(messageBundle.interpolate(annotation.value()));
         }
         Deprecated deprecated = ClassUtils.getEnumConstantField(value).getAnnotation(Deprecated.class);
         return javaDeprecationConfig.enabled && deprecated != null ? javaDeprecationConfig.deprecationReason : null;

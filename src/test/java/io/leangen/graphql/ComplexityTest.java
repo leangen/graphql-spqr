@@ -7,12 +7,12 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.RelayTest.BookService;
-import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLComplexity;
-import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLSubscription;
+import io.leangen.graphql.annotations.Mutation;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.Subscription;
 import io.leangen.graphql.domain.Cat;
 import io.leangen.graphql.domain.Dog;
 import io.leangen.graphql.domain.Education;
@@ -168,18 +168,18 @@ public class ComplexityTest {
 
     public static class PetService {
 
-        @GraphQLQuery(name = "pet")
-        public @GraphQLNonNull Pet findPet(@GraphQLArgument(name = "cat") boolean cat) {
+        @Query(value = "pet")
+        public @GraphQLNonNull Pet findPet(@Argument(value = "cat") boolean cat) {
             return cat ? new Cat() : new Dog();
         }
 
-        @GraphQLMutation
+        @Mutation
         @GraphQLComplexity("2 + childScore")
-        public @GraphQLNonNull List<@GraphQLNonNull Pet> addPet(@GraphQLArgument(name = "pet") Pet pet) {
+        public @GraphQLNonNull List<@GraphQLNonNull Pet> addPet(@Argument(value = "pet") Pet pet) {
             return Collections.singletonList(pet);
         }
 
-        @GraphQLSubscription
+        @Subscription
         @GraphQLComplexity("2 + childScore")
         public Publisher<Pet> newPets() {
             return null;
@@ -188,8 +188,8 @@ public class ComplexityTest {
 
     public static class PagedPetService {
 
-        @GraphQLQuery(name = "pets")
-        public Page<Pet> findPets(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+        @Query(value = "pets")
+        public Page<Pet> findPets(@Argument(value = "first") int first, @Argument(value = "after") String after) {
             return PageFactory.createPage(Collections.emptyList(), PageFactory.offsetBasedCursorProvider(0L), false, false);
         }
     }

@@ -5,8 +5,8 @@ import graphql.GraphQL;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.Query;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -86,28 +86,28 @@ public class OptionalsTest {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static class PrimitiveService {
 
-        @GraphQLQuery(name = "int")
-        public OptionalInt getInt(@GraphQLArgument(name = "opt") OptionalInt optInt) {
+        @Query(value = "int")
+        public OptionalInt getInt(@Argument(value = "opt") OptionalInt optInt) {
             return optInt;
         }
 
-        @GraphQLQuery(name = "long")
-        public OptionalLong getLong(@GraphQLArgument(name = "opt") OptionalLong optLong) {
+        @Query(value = "long")
+        public OptionalLong getLong(@Argument(value = "opt") OptionalLong optLong) {
             return optLong;
         }
 
-        @GraphQLQuery(name = "double")
-        public OptionalDouble getDouble(@GraphQLArgument(name = "opt") OptionalDouble optDouble) {
+        @Query(value = "double")
+        public OptionalDouble getDouble(@Argument(value = "opt") OptionalDouble optDouble) {
             return optDouble;
         }
 
-        @GraphQLQuery(name = "string")
-        public Optional<String> getString(@GraphQLArgument(name = "opt") Optional<String> optString) {
+        @Query(value = "string")
+        public Optional<String> getString(@Argument(value = "opt") Optional<String> optString) {
             return optString != null ? optString : Optional.empty();
         }
 
-        @GraphQLQuery(name = "nested")
-        public Optional<Optional<String>> getNestedString(@GraphQLArgument(name = "opt") Optional<Optional<String>> optString) {
+        @Query(value = "nested")
+        public Optional<Optional<String>> getNestedString(@Argument(value = "opt") Optional<Optional<String>> optString) {
             return optString != null ? optString : Optional.of(Optional.empty());
         }
     }

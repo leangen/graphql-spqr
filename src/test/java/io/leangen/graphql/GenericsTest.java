@@ -11,7 +11,7 @@ import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
@@ -237,7 +237,7 @@ public class GenericsTest {
 
     public static class EchoService<G> implements GenericEcho<G> {
         @Override
-        public <S extends G> S echo(@GraphQLArgument(name = "in") S input) {
+        public <S extends G> S echo(@Argument(value = "in") S input) {
             return input;
         }
     }

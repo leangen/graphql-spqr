@@ -6,10 +6,11 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
-import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
+import io.leangen.graphql.annotations.types.Type;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
@@ -99,39 +100,39 @@ public class UnionTest {
     }
 
     private class InlineUnionService {
-        @GraphQLQuery(name = "union")
-        public List<Map<@io.leangen.graphql.annotations.GraphQLUnion(name = "Simple_One_Two") ? super SimpleOne, @io.leangen.graphql.annotations.GraphQLUnion(name = "Education_Street") Street>> union(@GraphQLArgument(name = "id") int id) {
+        @Query(value = "union")
+        public List<Map<@io.leangen.graphql.annotations.GraphQLUnion(name = "Simple_One_Two") ? super SimpleOne, @io.leangen.graphql.annotations.GraphQLUnion(name = "Education_Street") Street>> union(@Argument(value = "id") int id) {
             return null;
         }
 
-        @GraphQLQuery(name = "union")
-        public @GraphQLNonNull List<Map<@io.leangen.graphql.annotations.GraphQLUnion(name = "Simple_One_Two") ? extends SimpleTwo, @io.leangen.graphql.annotations.GraphQLUnion(name = "Education_Street") Education>> union2(@GraphQLArgument(name = "id") int id) {
+        @Query(value = "union")
+        public @GraphQLNonNull List<Map<@io.leangen.graphql.annotations.GraphQLUnion(name = "Simple_One_Two") ? extends SimpleTwo, @io.leangen.graphql.annotations.GraphQLUnion(name = "Education_Street") Education>> union2(@Argument(value = "id") int id) {
             return null;
         }
 
-        @GraphQLQuery(name = "union")
-        public List<Map<@io.leangen.graphql.annotations.GraphQLUnion(name = "Simple_One_Two", description = "nice") SimpleTwo, @io.leangen.graphql.annotations.GraphQLUnion(name = "Education_Street") Street>> union3(@GraphQLArgument(name = "id") int id) {
+        @Query(value = "union")
+        public List<Map<@io.leangen.graphql.annotations.GraphQLUnion(name = "Simple_One_Two", description = "nice") SimpleTwo, @io.leangen.graphql.annotations.GraphQLUnion(name = "Education_Street") Street>> union3(@Argument(value = "id") int id) {
             return null;
         }
     }
 
     private class ExplicitUnionClassService {
-        @GraphQLQuery(name = "union")
-        public UC union(@GraphQLArgument(name = "id") int id) {
+        @Query(value = "union")
+        public UC union(@Argument(value = "id") int id) {
             return null;
         }
     }
 
     private class ExplicitUnionInterfaceService {
-        @GraphQLQuery(name = "union")
-        public UI union(@GraphQLArgument(name = "id") int id) {
+        @Query(value = "union")
+        public UI union(@Argument(value = "id") int id) {
             return null;
         }
     }
 
     private class AutoDiscoveredUnionService {
-        @GraphQLQuery(name = "union")
-        public UA union(@GraphQLArgument(name = "id") int id) {
+        @Query(value = "union")
+        public UA union(@Argument(value = "id") int id) {
             return null;
         }
     }
@@ -154,19 +155,19 @@ public class UnionTest {
     public static class A1 implements UA {}
     public static class A2 implements UA {}
 
-    @io.leangen.graphql.annotations.types.GraphQLType(name = "SimpleOne")
+    @Type(value = "SimpleOne")
     public static class SimpleOne {
 
-        @GraphQLQuery(name = "one")
+        @Query(value = "one")
         public String getOne() {
             return "one";
         }
     }
 
-    @io.leangen.graphql.annotations.types.GraphQLType(name = "SimpleTwo")
+    @Type(value = "SimpleTwo")
     public static class SimpleTwo {
 
-        @GraphQLQuery(name = "two")
+        @Query(value = "two")
         public String getTwo() {
             return "two";
         }

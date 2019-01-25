@@ -4,10 +4,11 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLTypeResolver;
-import io.leangen.graphql.annotations.types.GraphQLInterface;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.types.Interface;
+import io.leangen.graphql.annotations.types.Type;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.execution.TypeResolutionEnvironment;
@@ -71,7 +72,7 @@ public class TypeResolverTest {
     }
 
     public static class RootQuery {
-        @GraphQLQuery
+        @Query
         public List<Content> contents() {
             return Arrays.asList(new Trailer("1", "Argo"),
                     new Trailer("2", "Gravity"),
@@ -82,7 +83,7 @@ public class TypeResolverTest {
     }
 
     public static class RootQuery2 {
-        @GraphQLQuery
+        @Query
         public List<Content> contents() {
             return Arrays.asList(new Trailer2("1", "Argo"),
                     new Trailer2("2", "Gravity"),
@@ -92,12 +93,13 @@ public class TypeResolverTest {
         }
     }
 
-    @GraphQLInterface(name = "Content", implementationAutoDiscovery = true)
+    @Type("Content")
+    @Interface(implementationAutoDiscovery = true)
     public interface Content {
-        @GraphQLQuery
+        @Query
         String id();
 
-        @GraphQLQuery
+        @Query
         String title();
     }
 
@@ -109,11 +111,11 @@ public class TypeResolverTest {
             this.id = id;
         }
         @Override
-        @GraphQLQuery
+        @Query
         public String id() {return id;}
 
         @Override
-        @GraphQLQuery
+        @Query
         public String title() {return title;}
     }
 
@@ -124,7 +126,7 @@ public class TypeResolverTest {
             this.rating = rating;
         }
 
-        @GraphQLQuery
+        @Query
         public String rating() {return rating;}
     }
 
@@ -143,10 +145,10 @@ public class TypeResolverTest {
             this.episodeNumber = episodeNumber;
         }
 
-        @GraphQLQuery
+        @Query
         public Integer seasonNumber() {return seasonNumber;}
 
-        @GraphQLQuery
+        @Query
         public Integer episodeNumber() {return episodeNumber;}
     }
 
@@ -161,14 +163,14 @@ public class TypeResolverTest {
         }
 
         @Override
-        @GraphQLQuery
+        @Query
         public String id() {return id;}
 
         @Override
-        @GraphQLQuery
+        @Query
         public String title() {return title;}
 
-        @GraphQLQuery
+        @Query
         public String rating() {return rating;}
     }
 
@@ -180,11 +182,11 @@ public class TypeResolverTest {
             this.title = title;
         }
         @Override
-        @GraphQLQuery
+        @Query
         public String id() {return id;}
 
         @Override
-        @GraphQLQuery
+        @Query
         public String title() {return title;}
     }
 
@@ -201,24 +203,24 @@ public class TypeResolverTest {
         }
 
         @Override
-        @GraphQLQuery
+        @Query
         public String id() {return id;}
 
         @Override
-        @GraphQLQuery
+        @Query
         public String title() {return title;}
 
-        @GraphQLQuery
+        @Query
         public Integer seasonNumber() {return seasonNumber;}
 
-        @GraphQLQuery
+        @Query
         public Integer episodeNumber() {return episodeNumber;}
     }
 
     public static class RepoService {
 
-        @GraphQLQuery(name = "repo")
-        public List<Stream<GenericRepo>> getRepo(@GraphQLArgument(name = "id") int id) {
+        @Query(value = "repo")
+        public List<Stream<GenericRepo>> getRepo(@Argument(value = "id") int id) {
             if (id % 2 == 0) {
                 return Collections.singletonList(Stream.of(new SessionRepo<>(new Street("Baker street", 1))));
             } else {
@@ -226,21 +228,22 @@ public class TypeResolverTest {
             }
         }
 
-        @GraphQLQuery(name = "repo1")
+        @Query(value = "repo1")
         public SessionRepo<Street> repo1() {
             return null;
         }
 
-        @GraphQLQuery(name = "repo2")
+        @Query(value = "repo2")
         public SessionRepo<Education> repo2() {
             return null;
         }
     }
 
-    @GraphQLInterface(name = "GenericRepository")
+    @Type("GenericRepository")
+    @Interface
     private interface GenericRepo {
 
-        @GraphQLQuery(name = "identifier")
+        @Query(value = "identifier")
         String identifier();
     }
 
@@ -253,14 +256,14 @@ public class TypeResolverTest {
             this.item = item;
         }
 
-        @GraphQLQuery(name = "item")
+        @Query(value = "item")
         @SuppressWarnings("WeakerAccess") //must stay public
         public T getStoredItem() {
             return item;
         }
 
         @Override
-        @GraphQLQuery(name = "identifier")
+        @Query(value = "identifier")
         public String identifier() {
             return "SESSION";
         }

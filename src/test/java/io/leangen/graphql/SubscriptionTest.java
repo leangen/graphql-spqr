@@ -5,13 +5,12 @@ import graphql.GraphQL;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLSubscription;
+import io.leangen.graphql.annotations.Subscription;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Observable;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,7 +42,7 @@ public class SubscriptionTest {
         AtomicBoolean complete = new AtomicBoolean(false);
         stream.subscribe(new Subscriber<ExecutionResult>() {
             @Override
-            public void onSubscribe(Subscription subscription) {
+            public void onSubscribe(org.reactivestreams.Subscription subscription) {
                 subscription.request(10);
             }
 
@@ -68,7 +67,7 @@ public class SubscriptionTest {
 
     public static class Ticker {
 
-        @GraphQLSubscription
+        @Subscription
         public Publisher<Integer> tick() {
             Observable<Integer> observable = Observable.create(emitter -> {
                 emitter.onNext(1);

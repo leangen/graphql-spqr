@@ -1,9 +1,9 @@
 package io.leangen.graphql.metadata.strategy.type;
 
 import io.leangen.graphql.annotations.types.GraphQLDirective;
-import io.leangen.graphql.annotations.types.GraphQLInterface;
-import io.leangen.graphql.annotations.types.GraphQLType;
-import io.leangen.graphql.annotations.types.GraphQLUnion;
+import io.leangen.graphql.annotations.types.InputType;
+import io.leangen.graphql.annotations.types.Interface;
+import io.leangen.graphql.annotations.types.Type;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
@@ -36,24 +36,33 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
     @Override
     @SuppressWarnings("unchecked")
     public String generateTypeDescription(AnnotatedType type, MessageBundle messageBundle) {
-        Optional<String>[] descriptions = new Optional[]{
-                Optional.ofNullable(type.getAnnotation(GraphQLUnion.class))
-                        .map(GraphQLUnion::description),
-                Optional.ofNullable(type.getAnnotation(GraphQLInterface.class))
-                        .map(GraphQLInterface::description),
-                Optional.ofNullable(type.getAnnotation(GraphQLType.class))
-                        .map(GraphQLType::description)
-        };
-        return messageBundle.interpolate(getFirstNonEmptyOrDefault(descriptions, () -> ""));
+        return Optional.ofNullable(type.getAnnotation(Type.class))
+                .map(ann -> messageBundle.interpolate(ann.description()))
+                .orElse("");
+    }
+
+    @Override
+    public String generateInputTypeName(AnnotatedType type, MessageBundle messageBundle) {
+        return Optional.ofNullable(type.getAnnotation(InputType.class))
+                .map(ann -> messageBundle.interpolate(ann.name()))
+                .filter(Utils::isNotEmpty)
+                .orElse(TypeInfoGenerator.super.generateInputTypeName(type, messageBundle));
+    }
+
+    @Override
+    public String generateInputTypeDescription(AnnotatedType type, MessageBundle messageBundle) {
+        return Optional.ofNullable(type.getAnnotation(InputType.class))
+                .map(ann -> messageBundle.interpolate(ann.description()))
+                .orElse(generateTypeDescription(type, messageBundle));
     }
 
     @Override
     public String[] getFieldOrder(AnnotatedType type, MessageBundle messageBundle) {
         return Utils.or(
-                Optional.ofNullable(type.getAnnotation(GraphQLInterface.class))
-                        .map(GraphQLInterface::fieldOrder),
-                Optional.ofNullable(type.getAnnotation(GraphQLType.class))
-                        .map(GraphQLType::fieldOrder))
+                Optional.ofNullable(type.getAnnotation(Interface.class))
+                        .map(Interface::fieldOrder),
+                Optional.ofNullable(type.getAnnotation(Type.class))
+                        .map(Type::fieldOrder))
                 .orElse(Utils.emptyArray());
     }
 
@@ -76,15 +85,10 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
 
     @SuppressWarnings("unchecked")
     private String generateSimpleName(AnnotatedType type, MessageBundle messageBundle) {
-        Optional<String>[] names = new Optional[]{
-                Optional.ofNullable(type.getAnnotation(GraphQLUnion.class))
-                        .map(GraphQLUnion::name),
-                Optional.ofNullable(type.getAnnotation(GraphQLInterface.class))
-                        .map(GraphQLInterface::name),
-                Optional.ofNullable(type.getAnnotation(GraphQLType.class))
-                        .map(GraphQLType::name)
-        };
-        return messageBundle.interpolate(getFirstNonEmptyOrDefault(names, () -> getSimpleName(ClassUtils.getRawType(type.getType()))));
+        Optional<String> name = Optional.ofNullable(type.getAnnotation(Type.class))
+                .map(Type::value)
+                .filter(Utils::isNotEmpty);
+        return messageBundle.interpolate(name.orElseGet(() -> getSimpleName(ClassUtils.getRawType(type.getType()))));
     }
 
     private String getFirstNonEmptyOrDefault(Optional<String>[] optionals, Supplier<String> defaultValue) {

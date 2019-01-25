@@ -10,11 +10,11 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface GraphQLType {
+public @interface Interface {
 
-    String name() default "";
+    boolean implementationAutoDiscovery() default false;
 
-    String description() default "";
+    String[] scanPackages() default {};
 
     String[] fieldOrder() default {};
 }

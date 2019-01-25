@@ -7,8 +7,8 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.util.Scalars;
 import org.junit.Test;
 
@@ -143,8 +143,8 @@ public class TemporalScalarsTest {
     
     public static class ScalarService<T> {
         
-        @GraphQLQuery(name = "identity")
-        public T identity(@GraphQLArgument(name = "input") T input) {
+        @Query(value = "identity")
+        public T identity(@Argument(value = "input") T input) {
             return input;
         }
     }

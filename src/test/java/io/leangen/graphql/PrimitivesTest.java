@@ -4,10 +4,11 @@ import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.DefaultValue;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 import org.junit.Test;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;
@@ -73,32 +74,32 @@ public class PrimitivesTest {
 
     private static class PrimitiveService {
 
-        @GraphQLQuery
+        @Query
         public int primitive(int in) {
             return in;
         }
 
-        @GraphQLQuery
-        public int primitiveWithDefault(@GraphQLArgument(name = "in", defaultValue = "3") int in) {
+        @Query
+        public int primitiveWithDefault(@Argument(value = "in") @DefaultValue("3") int in) {
             return in;
         }
 
-        @GraphQLQuery
+        @Query
         public @GraphQLNonNull int nonNullPrimitive(@GraphQLNonNull int in) {
             return in;
         }
 
-        @GraphQLQuery
+        @Query
         public @GraphQLId(relayId = true) int relayIdPrimitive(@GraphQLId(relayId = true) int in) {
             return in;
         }
 
-        @GraphQLQuery
+        @Query
         public Integer integer(Integer in) {
             return in;
         }
 
-        @GraphQLQuery
+        @Query
         public @GraphQLNonNull Integer nonNullInteger(@GraphQLNonNull Integer in) {
             return in;
         }
@@ -106,20 +107,20 @@ public class PrimitivesTest {
 
     private static class BooleanVoidService {
 
-        @GraphQLQuery
+        @Query
         public void primitiveVoid() {}
 
-        @GraphQLQuery
+        @Query
         public Void objVoid() {
             return null;
         }
 
-        @GraphQLQuery
+        @Query
         public boolean primitiveBoolean(boolean in) {
             return in;
         }
 
-        @GraphQLQuery
+        @Query
         public Boolean objBoolean(Boolean in) {
             return in;
         }

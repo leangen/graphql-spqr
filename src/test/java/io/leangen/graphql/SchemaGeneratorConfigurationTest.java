@@ -3,7 +3,7 @@ package io.leangen.graphql;
 import graphql.Scalars;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLType;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.NonNullMapper;
@@ -225,7 +225,7 @@ public class SchemaGeneratorConfigurationTest {
     }
 
     private static class Dummy {
-        @GraphQLQuery
+        @Query
         public byte[] bytes;
     }
 }

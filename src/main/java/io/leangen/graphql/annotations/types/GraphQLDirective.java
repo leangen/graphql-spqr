@@ -1,7 +1,7 @@
 package io.leangen.graphql.annotations.types;
 
 import graphql.introspection.Introspection;
-import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.Ignore;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -26,7 +26,7 @@ import static graphql.introspection.Introspection.DirectiveLocation.SCALAR;
 import static graphql.introspection.Introspection.DirectiveLocation.SCHEMA;
 import static graphql.introspection.Introspection.DirectiveLocation.UNION;
 
-@GraphQLIgnore
+@Ignore
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface GraphQLDirective {

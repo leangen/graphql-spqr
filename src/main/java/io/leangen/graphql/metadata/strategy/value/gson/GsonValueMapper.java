@@ -123,7 +123,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
     }
 
     protected Object defaultValue(Field field, AnnotatedType fieldType, GlobalEnvironment environment) {
-        return inputInfoGen.defaultValue(ClassUtils.getPropertyMembers(field), fieldType, environment).orElse(null);
+        return inputInfoGen.defaultValue(ClassUtils.getPropertyMembers(field), fieldType, (element, type, val) -> fromString((String) val, type), environment).orElse(null);
     }
 
     @Override

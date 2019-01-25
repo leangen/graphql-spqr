@@ -1,6 +1,6 @@
 package io.leangen.graphql.metadata.strategy;
 
-import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.Ignore;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
@@ -19,17 +19,17 @@ public class DefaultInclusionStrategy implements InclusionStrategy {
 
     @Override
     public boolean includeOperation(AnnotatedElement element, AnnotatedType type) {
-        return !ClassUtils.hasAnnotation(element, GraphQLIgnore.class);
+        return !ClassUtils.hasAnnotation(element, Ignore.class);
     }
 
     @Override
     public boolean includeArgument(Parameter parameter, AnnotatedType type) {
-        return !ClassUtils.hasAnnotation(parameter, GraphQLIgnore.class);
+        return !ClassUtils.hasAnnotation(parameter, Ignore.class);
     }
 
     @Override
     public boolean includeInputField(Class<?> declaringClass, AnnotatedElement element, AnnotatedType elementType) {
-        return !ClassUtils.hasAnnotation(element, GraphQLIgnore.class)
+        return !ClassUtils.hasAnnotation(element, Ignore.class)
                 && (Utils.isArrayEmpty(basePackages)
                 || Arrays.stream(basePackages).anyMatch(pkg -> ClassUtils.isSubPackage(declaringClass.getPackage(), pkg)));
     }

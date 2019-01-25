@@ -5,10 +5,10 @@ import graphql.GraphQL;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLEnvironment;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLUnion;
+import io.leangen.graphql.annotations.Info;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.execution.ResolutionEnvironment;
@@ -74,13 +74,13 @@ public class TypeRegistryTest {
 
     public static class Service {
 
-        @GraphQLQuery(name = "street")
+        @Query(value = "street")
         public Street getStreet() {
             return null;
         }
 
-        @GraphQLQuery
-        public @GraphQLUnion(name = "mix") Union2<Street, Education> mix(@GraphQLEnvironment ResolutionEnvironment env, @GraphQLId(relayId = true) int id) {
+        @Query
+        public @GraphQLUnion(name = "mix") Union2<Street, Education> mix(@Info ResolutionEnvironment env, @GraphQLId(relayId = true) int id) {
             GraphQLOutputType mixType = env.globalEnvironment.typeRegistry.getOutputTypes("mix").get(0).graphQLType;
             assertTrue(mixType instanceof GraphQLObjectType);
             return null;
@@ -91,7 +91,7 @@ public class TypeRegistryTest {
     private static class FooInput {}
 
     private static class NameCollision {
-        @GraphQLQuery
+        @Query
         public FooInput test(Foo foo, FooInput fooInput) {return fooInput;}
     }
 }

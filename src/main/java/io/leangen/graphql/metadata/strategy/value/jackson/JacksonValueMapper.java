@@ -165,7 +165,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
         if (prop.getField() != null) {
             annotatedCandidates.add(descFactory.fromField(prop.getField()).element);
         }
-        return inputInfoGen.defaultValue(annotatedCandidates, fieldType, environment).orElse(null);
+        return inputInfoGen.defaultValue(annotatedCandidates, fieldType, (element, t, val) -> fromString((String) val, t), environment).orElse(null);
     }
 
     @Override

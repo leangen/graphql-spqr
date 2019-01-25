@@ -7,11 +7,13 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLEnumValue;
-import io.leangen.graphql.annotations.GraphQLInputField;
-import io.leangen.graphql.annotations.GraphQLMutation;
-import io.leangen.graphql.annotations.types.GraphQLType;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.DefaultValue;
+import io.leangen.graphql.annotations.Deprecated;
+import io.leangen.graphql.annotations.EnumValue;
+import io.leangen.graphql.annotations.InputField;
+import io.leangen.graphql.annotations.Mutation;
+import io.leangen.graphql.annotations.types.Type;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.metadata.messages.SimpleMessageBundle;
 import org.junit.Test;
@@ -91,13 +93,14 @@ public class InterpolationTest {
 
     private static class Quick {
 
-        @GraphQLMutation(name = "makeIt${mutation.dish.name}", description = "DESCRIPTION: ${mutation.dish.desc}", deprecationReason = "REASON: ${mutation.dish.deprecation}")
-        public Dish test(@GraphQLArgument(name = "${mutation.dish.arg.name}", description = "${mutation.dish.arg.desc}", defaultValue = "${mutation.dish.arg.default}") Dish dish) {
+        @Mutation(value = "makeIt${mutation.dish.name}", description = "DESCRIPTION: ${mutation.dish.desc}")
+        @Deprecated("REASON: ${mutation.dish.deprecation}")
+        public Dish test(@Argument(value = "${mutation.dish.arg.name}", description = "${mutation.dish.arg.desc}") @DefaultValue("${mutation.dish.arg.default}") Dish dish) {
             return dish;
         }
     }
 
-    @GraphQLType(name = "${type.dish.name}", description = "Description: ${type.dish.desc}")
+    @Type(value = "${type.dish.name}", description = "Description: ${type.dish.desc}")
     private static class Dish {
 
         private final Temperature temperature;
@@ -107,7 +110,7 @@ public class InterpolationTest {
         }
 
         @JsonCreator
-        public static Dish make(@GraphQLInputField(name = "${type.dish.fields.temp.name}", description = "${type.dish.fields.temp.desc}", defaultValue = "${type.dish.fields.temp.default}") Temperature temperature) {
+        public static Dish make(@InputField(name = "${type.dish.fields.temp.name}", description = "${type.dish.fields.temp.desc}") @DefaultValue("${type.dish.fields.temp.default}") Temperature temperature) {
             return new Dish(temperature);
         }
 
@@ -115,10 +118,10 @@ public class InterpolationTest {
             return temperature;
         }
 
-        @GraphQLType(name = "${type.temp.name}", description = "${type.temp.desc}")
+        @Type(value = "${type.temp.name}", description = "${type.temp.desc}")
         enum Temperature {
-            @GraphQLEnumValue(name = "${type.temp.cool.name}", description = "${type.temp.cool.desc}", deprecationReason = "${type.temp.cool.deprecation}") COOL,
-            @GraphQLEnumValue(name = "${type.temp.hot.name}", description = "${type.temp.hot.desc}", deprecationReason = "${type.temp.hot.deprecation}") HOT
+            @EnumValue(value = "${type.temp.cool.name}", description = "${type.temp.cool.desc}") @Deprecated("${type.temp.cool.deprecation}") COOL,
+            @EnumValue(value = "${type.temp.hot.name}", description = "${type.temp.hot.desc}") @Deprecated("${type.temp.hot.deprecation}") HOT
         }
     }
 }

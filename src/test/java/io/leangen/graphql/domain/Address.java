@@ -1,10 +1,10 @@
 package io.leangen.graphql.domain;
 
+import io.leangen.graphql.annotations.Query;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import io.leangen.graphql.annotations.GraphQLQuery;
 
 /**
  * Created by bojan.tomic on 3/14/16.
@@ -14,7 +14,7 @@ public class Address {
     private List<String> types = new ArrayList<>();
     private List<Street> streets = new ArrayList<>();
 
-    @GraphQLQuery(name = "owner", description = "The landlord")
+    @Query(value = "owner", description = "The landlord")
     public User<String> getOwner() {
         User<String> owner = new User<>();
         owner.id = 666;
@@ -27,7 +27,7 @@ public class Address {
         return owner;
     }
 
-    @GraphQLQuery(name = "streets", description = "The streets")
+    @Query(value = "streets", description = "The streets")
     public List<Street> getStreets() {
         return streets;
     }
@@ -36,7 +36,7 @@ public class Address {
         this.streets = streets;
     }
 
-    @GraphQLQuery(name = "types", description = "Address types e.g. residential or office")
+    @Query(value = "types", description = "Address types e.g. residential or office")
     public List<String> getTypes() {
         return types;
     }

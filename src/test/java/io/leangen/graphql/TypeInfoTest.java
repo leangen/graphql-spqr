@@ -4,11 +4,11 @@ import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLEnumValue;
-import io.leangen.graphql.annotations.GraphQLMutation;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLSubscription;
-import io.leangen.graphql.annotations.types.GraphQLType;
+import io.leangen.graphql.annotations.EnumValue;
+import io.leangen.graphql.annotations.Mutation;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.Subscription;
+import io.leangen.graphql.annotations.types.Type;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -120,78 +120,81 @@ public class TypeInfoTest {
             assertEquals("Deprecated", bunnyType.getValue("AVERAGE").getDeprecationReason());
         }
 
-        assertFalse(bunnyType.getValue("Omg").isDeprecated());
+        assertEquals(respectJavaDeprecation, bunnyType.getValue("Omg").isDeprecated());
     }
 
     @SuppressWarnings("unused")
     public static class BoringService {
-        @GraphQLQuery(deprecationReason = "Boring")
+        @Query
+        @io.leangen.graphql.annotations.Deprecated("Boring")
         @Deprecated
         public Blob staleQuery() {
             return null;
         }
 
-        @GraphQLQuery
+        @Query
         public String freshQuery() {
             return "";
         }
 
-        @GraphQLQuery(name = "sneakyQuery", description = "Maybe hides its deprecation")
+        @Query(value = "sneakyQuery", description = "Maybe hides its deprecation")
         @Deprecated
         public String trickyQuery() {
             return "";
         }
 
-        @GraphQLMutation(deprecationReason = "Boring")
+        @Mutation
+        @io.leangen.graphql.annotations.Deprecated("Boring")
         @Deprecated
         public void staleMutation() {
         }
 
-        @GraphQLMutation
+        @Mutation
         public void freshMutation() {
         }
 
-        @GraphQLMutation(name = "sneakyMutation", description = "Maybe hides its deprecation")
+        @Mutation(value = "sneakyMutation", description = "Maybe hides its deprecation")
         @Deprecated
         public void trickyMutation() {
         }
 
-        @GraphQLSubscription(deprecationReason = "Boring")
+        @Subscription
+        @io.leangen.graphql.annotations.Deprecated("Boring")
         @Deprecated
         public Publisher<String> staleSubscription() {
             return null;
         }
 
-        @GraphQLSubscription
+        @Subscription
         public Publisher<String> freshSubscription() {
             return null;
         }
 
-        @GraphQLSubscription(name = "sneakySubscription", description = "Maybe hides its deprecation")
+        @Subscription(value = "sneakySubscription", description = "Maybe hides its deprecation")
         @Deprecated
         public Publisher<String> trickySubscription() {
             return null;
         }
     }
 
-    @GraphQLType(name = "TheBlob", description = "Blip Bloop")
+    @Type(value = "TheBlob", description = "Blip Bloop")
     static class Blob {}
 
     @SuppressWarnings("unused")
     public static class BunnyService {
-        @GraphQLQuery
+        @Query
         public BunnyType bunnyType() {
             return BunnyType.ADORABLE;
         }
     }
 
     @SuppressWarnings("unused")
-    @GraphQLType(description = "Types of bunnies")
+    @Type(description = "Types of bunnies")
     public enum BunnyType {
-        @GraphQLEnumValue(name = "IntenselyCute") CUTE,
-        @GraphQLEnumValue(description = "Thoroughly adorable") ADORABLE,
-        @GraphQLEnumValue(deprecationReason = "Impossible") MEH,
+        @EnumValue(value = "IntenselyCute") CUTE,
+        @EnumValue(description = "Thoroughly adorable") ADORABLE,
+        @io.leangen.graphql.annotations.Deprecated("Impossible") MEH,
         @Deprecated AVERAGE,
-        @Deprecated @GraphQLEnumValue(name = "Omg") WOW
+        @Deprecated @EnumValue(value = "Omg") WOW
     }
 }

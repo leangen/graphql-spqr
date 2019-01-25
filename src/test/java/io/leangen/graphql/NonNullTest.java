@@ -3,10 +3,11 @@ package io.leangen.graphql;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLInputField;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.DefaultValue;
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.InputField;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.generator.mapping.common.NonNullMapper;
 import io.leangen.graphql.support.TestLog;
 import org.junit.Test;
@@ -44,19 +45,19 @@ public class NonNullTest {
     }
 
     private static class Service {
-        @GraphQLQuery
-        public Integer integerWithDefault(@GraphQLArgument(name = "in", defaultValue = "3") @GraphQLNonNull Integer in) {
+        @Query
+        public Integer integerWithDefault(@Argument(value = "in") @DefaultValue("3") @GraphQLNonNull Integer in) {
             return in;
         }
 
-        @GraphQLQuery
+        @Query
         public Item fieldWithDefault(Item in) {
             return in;
         }
     }
 
     private static class Jsr305 {
-        @GraphQLQuery
+        @Query
         @Nonnull
         public String nonNull(@Nonnull String in) {
             return in;
@@ -64,7 +65,7 @@ public class NonNullTest {
     }
 
     private static class Jsr380 {
-        @GraphQLQuery
+        @Query
         @NotNull
         public String nonNull(@NotNull String in) {
             return in;
@@ -72,7 +73,7 @@ public class NonNullTest {
     }
 
     private static class Item {
-        @GraphQLInputField(name = "title", defaultValue = "<UNKNOWN>")
+        @InputField(name = "title") @DefaultValue("<UNKNOWN>")
         public @GraphQLNonNull String name;
     }
 }

@@ -4,9 +4,8 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.introspection.IntrospectionQuery;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.types.GraphQLInterface;
-import io.leangen.graphql.annotations.types.GraphQLType;
+import io.leangen.graphql.annotations.types.Interface;
+import io.leangen.graphql.annotations.types.Type;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,11 +33,12 @@ public class FieldOrderTest {
     }
 
     public static class Query {
-        @GraphQLQuery
+        @io.leangen.graphql.annotations.Query
         public Character hero() { return null; }
     }
 
-    @GraphQLInterface(name = "Character", implementationAutoDiscovery = true, fieldOrder = {"id", "name", "friends", "appearsIn"})
+    @Type("Character")
+    @Interface(implementationAutoDiscovery = true, fieldOrder = {"id", "name", "friends", "appearsIn"})
     public interface Character {
         String getId();
         String getName();
@@ -46,7 +46,7 @@ public class FieldOrderTest {
         String getAppearsIn();
     }
 
-    @GraphQLType(name = "Human", fieldOrder = {"id", "name", "friends", "appearsIn", "starships", "totalCredits"})
+    @Type(value = "Human", fieldOrder = {"id", "name", "friends", "appearsIn", "starships", "totalCredits"})
     public static class Human implements Character {
         public String getId() { return null; }
         public String getName() { return null; }
@@ -56,7 +56,7 @@ public class FieldOrderTest {
         public String getTotalCredits() { return null; }
     }
 
-    @GraphQLType(name = "Droid", fieldOrder = {"id" /*rest alphabetically*/})
+    @Type(value = "Droid", fieldOrder = {"id" /*rest alphabetically*/})
     public static class Droid implements Character {
         public String getId() { return null; }
         public String getName() { return null; }

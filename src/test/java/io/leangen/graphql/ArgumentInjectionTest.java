@@ -3,10 +3,10 @@ package io.leangen.graphql;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLRootContext;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.Context;
 import io.leangen.graphql.annotations.GraphQLScalar;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.domain.Street;
 import org.junit.Test;
 
@@ -75,15 +75,15 @@ public class ArgumentInjectionTest {
     }
 
     public static class SimpleService {
-        @GraphQLQuery(name = ECHO)
-        public String echoRootContext(@GraphQLRootContext("target") String target) {
+        @Query(value = ECHO)
+        public String echoRootContext(@Context("target") String target) {
             return target;
         }
     }
 
     public static class SimpleService2 {
-        @GraphQLQuery(name = ECHO)
-        public @GraphQLScalar Street echoArgument(@GraphQLArgument(name = "user") @GraphQLScalar Street street) {
+        @Query(value = ECHO)
+        public @GraphQLScalar Street echoArgument(@Argument(value = "user") @GraphQLScalar Street street) {
             return street;
         }
     }

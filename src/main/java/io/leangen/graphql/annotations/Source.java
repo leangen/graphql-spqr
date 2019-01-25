@@ -6,12 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks the parameters representing the root context
+ * Created by bojan.tomic on 3/16/16.
  */
-@GraphQLIgnore
+@Ignore
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
-public @interface GraphQLRootContext {
-
-    String value() default "";
+public @interface Source {
 }

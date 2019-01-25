@@ -1,8 +1,9 @@
 package io.leangen.graphql;
 
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.DefaultValue;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.strategy.value.JsonDefaultValueProvider;
 import org.junit.Test;
@@ -42,13 +43,13 @@ public class ArgumentValueTest {
 
     private static class BookService {
 
-        @GraphQLQuery
-        RelayTest.Book findBook(@GraphQLArgument(name = "title", defaultValue = "Monkey") String title) {
+        @Query
+        RelayTest.Book findBook(@Argument(value = "title") @DefaultValue("Monkey") String title) {
             return new RelayTest.Book("The Silent Monkey Club", "x123");
         }
 
-        @GraphQLQuery
-        RelayTest.Book findBook(@GraphQLArgument(name = "author", defaultValue = "Monkey") NestedQueryTest.Author author) {
+        @Query
+        RelayTest.Book findBook(@Argument(value = "author") @DefaultValue("Monkey") NestedQueryTest.Author author) {
             return new RelayTest.Book("The Silent Monkey Club", "x123");
         }
     }

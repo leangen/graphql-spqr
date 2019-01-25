@@ -7,9 +7,9 @@ import graphql.GraphQL;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLContext;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.Source;
 import org.junit.Test;
 
 import java.time.LocalDate;
@@ -44,33 +44,33 @@ public class NestedQueryTest {
     
     public static class BookService {
         
-        @GraphQLQuery(name = "books")
-        public RelayTest.Book[] getBooks(@GraphQLArgument(name = "after") LocalDate after) {
+        @Query(value = "books")
+        public RelayTest.Book[] getBooks(@Argument(value = "after") LocalDate after) {
             return new RelayTest.Book[] {new RelayTest.Book("Tesseract", "x123")};
         }
 
-        @GraphQLQuery(name = "essay")
-        public Essay getEssay(@GraphQLArgument(name = "title") String title) {
+        @Query(value = "essay")
+        public Essay getEssay(@Argument(value = "title") String title) {
             return new Essay(title, 300);
         }
 
-        @GraphQLQuery(name = "author")
-        public Author getEssayAuthor(@GraphQLContext Essay essay) {
+        @Query(value = "author")
+        public Author getEssayAuthor(@Source Essay essay) {
             return new Author("The writer of ' " + essay.getTitle() + "'");
         }
 
-        @GraphQLQuery(name = "author")
-        public Author getAuthor(@GraphQLContext RelayTest.Book book, @GraphQLArgument(name = "age") int age) {
+        @Query(value = "author")
+        public Author getAuthor(@Source RelayTest.Book book, @Argument(value = "age") int age) {
             return new Author("Famous Author");
         }
 
-        @GraphQLQuery(name = "author")
-        public Author getAuthor(@GraphQLContext RelayTest.Book book, @GraphQLArgument(name = "award") String award) {
+        @Query(value = "author")
+        public Author getAuthor(@Source RelayTest.Book book, @Argument(value = "award") String award) {
             return new Author("Award Winner");
         }
 
-        @GraphQLQuery(name = "author")
-        public Author findAuthor(@GraphQLArgument(name = "name") String name) {
+        @Query(value = "author")
+        public Author findAuthor(@Argument(value = "name") String name) {
             return new Author(name);
         }
     }

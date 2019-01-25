@@ -1,10 +1,11 @@
 package io.leangen.graphql.metadata.strategy.query;
 
 import graphql.execution.batched.Batched;
+import io.leangen.graphql.annotations.Deprecated;
 import io.leangen.graphql.annotations.GraphQLComplexity;
-import io.leangen.graphql.annotations.GraphQLMutation;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLSubscription;
+import io.leangen.graphql.annotations.Mutation;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.Subscription;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.execution.FieldAccessor;
 import io.leangen.graphql.metadata.execution.MethodInvoker;
@@ -15,6 +16,7 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A resolver builder that exposes only the methods explicitly annotated with {@link GraphQLQuery}
+ * A resolver builder that exposes only the methods explicitly annotated with {@link Query}
  */
 public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
 
@@ -39,17 +41,17 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
     public Collection<Resolver> buildQueryResolvers(ResolverBuilderParams params) {
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         Stream<Resolver> methodInvokers =
-                buildResolvers(params, GraphQLQuery.class, operationNameGenerator::generateQueryName, true).stream();
+                buildResolvers(params, Query.class, operationNameGenerator::generateQueryName, true).stream();
 
         AnnotatedType beanType = params.getBeanType();
-        Stream<Resolver> fieldAccessors = ClassUtils.getAnnotatedFields(ClassUtils.getRawType(beanType.getType()), GraphQLQuery.class).stream()
+        Stream<Resolver> fieldAccessors = ClassUtils.getAnnotatedFields(ClassUtils.getRawType(beanType.getType()), Query.class).stream()
                 .filter(getFilters().stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .filter(field -> params.getInclusionStrategy().includeOperation(field, getFieldType(field, params)))
                 .map(field -> new Resolver(
                         operationNameGenerator.generateQueryName(
                                 new OperationNameGeneratorParams<>(field, beanType, params.getQuerySourceBean(), messageBundle)),
-                        messageBundle.interpolate(field.getAnnotation(GraphQLQuery.class).description()),
-                        messageBundle.interpolate(ReservedStrings.decode(field.getAnnotation(GraphQLQuery.class).deprecationReason())),
+                        messageBundle.interpolate(field.getAnnotation(Query.class).description()),
+                        deprecationReason(field, messageBundle),
                         false,
                         new FieldAccessor(field, beanType),
                         getFieldType(field, params),
@@ -61,12 +63,12 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
 
     @Override
     public Collection<Resolver> buildMutationResolvers(ResolverBuilderParams params) {
-        return buildResolvers(params, GraphQLMutation.class, operationNameGenerator::generateMutationName, false);
+        return buildResolvers(params, Mutation.class, operationNameGenerator::generateMutationName, false);
     }
 
     @Override
     public Collection<Resolver> buildSubscriptionResolvers(ResolverBuilderParams params) {
-        return buildResolvers(params, GraphQLSubscription.class, operationNameGenerator::generateSubscriptionName, false);
+        return buildResolvers(params, Subscription.class, operationNameGenerator::generateSubscriptionName, false);
     }
 
     private Collection<Resolver> buildResolvers(ResolverBuilderParams params, Class<? extends Annotation> annotation,
@@ -82,7 +84,7 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
                 .map(method -> new Resolver(
                         nameGenerator.apply(new OperationNameGeneratorParams<>(method, beanType, querySourceBean, messageBundle)),
                         description(method.getAnnotation(annotation), messageBundle),
-                        ReservedStrings.decode(deprecationReason(method.getAnnotation(annotation), messageBundle)),
+                        ReservedStrings.decode(deprecationReason(method, messageBundle)),
                         batchable && method.isAnnotationPresent(Batched.class),
                         querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
                         getReturnType(method, params),
@@ -92,29 +94,23 @@ public class AnnotatedResolverBuilder extends FilteredResolverBuilder {
     }
 
     private String description(Annotation annotation, MessageBundle messageBundle) {
-        if (annotation instanceof GraphQLQuery) {
-            return messageBundle.interpolate(((GraphQLQuery) annotation).description());
+        if (annotation instanceof Query) {
+            return messageBundle.interpolate(((Query) annotation).description());
         }
-        if (annotation instanceof GraphQLMutation) {
-            return messageBundle.interpolate(((GraphQLMutation) annotation).description());
+        if (annotation instanceof Mutation) {
+            return messageBundle.interpolate(((Mutation) annotation).description());
         }
-        if (annotation instanceof GraphQLSubscription) {
-            return messageBundle.interpolate(((GraphQLSubscription) annotation).description());
+        if (annotation instanceof Subscription) {
+            return messageBundle.interpolate(((Subscription) annotation).description());
         }
         throw new IllegalArgumentException("Invalid operation annotations " + annotation);
     }
 
-    private String deprecationReason(Annotation annotation, MessageBundle messageBundle) {
-        if (annotation instanceof GraphQLQuery) {
-            return messageBundle.interpolate(((GraphQLQuery) annotation).deprecationReason());
+    private String deprecationReason(AnnotatedElement element, MessageBundle messageBundle) {
+        if (element.isAnnotationPresent(Deprecated.class)) {
+            return messageBundle.interpolate(ReservedStrings.decode(element.getAnnotation(Deprecated.class).value()));
         }
-        if (annotation instanceof GraphQLMutation) {
-            return messageBundle.interpolate(((GraphQLMutation) annotation).deprecationReason());
-        }
-        if (annotation instanceof GraphQLSubscription) {
-            return messageBundle.interpolate(((GraphQLSubscription) annotation).deprecationReason());
-        }
-        throw new IllegalArgumentException("Invalid operation annotations " + annotation);
+        return null;
     }
 
     @Override

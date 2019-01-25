@@ -6,10 +6,10 @@ import graphql.GraphQL;
 import graphql.execution.batched.Batched;
 import graphql.execution.batched.BatchedExecutionStrategy;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLContext;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLRootContext;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.Context;
+import io.leangen.graphql.annotations.Query;
+import io.leangen.graphql.annotations.Source;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.SimpleUser;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class BatchingTest {
     }
 
     public static class CandidatesService {
-        @GraphQLQuery(name = "candidates")
+        @Query(value = "candidates")
         public List<SimpleUser> getCandidates() {
             SimpleUser friend = new SimpleUser("Other Guy");
             SimpleUser one = new SimpleUser("One", friend);
@@ -70,8 +70,8 @@ public class BatchingTest {
         }
 
         @Batched
-        @GraphQLQuery
-        public List<Education> educations(@GraphQLArgument(name = "users") @GraphQLContext List<SimpleUser> users, @GraphQLRootContext AtomicBoolean flag) {
+        @Query
+        public List<Education> educations(@Argument(value = "users") @Source List<SimpleUser> users, @Context AtomicBoolean flag) {
             assertEquals(3, users.size());
             flag.getAndSet(true);
             return users.stream()

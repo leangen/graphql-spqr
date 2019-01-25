@@ -1,8 +1,10 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.types.GraphQLInterface;
+import io.leangen.graphql.annotations.types.Interface;
+import io.leangen.graphql.annotations.types.Type;
 
-@GraphQLInterface(name = "Pet", implementationAutoDiscovery = true)
+@Type("Pet")
+@Interface(implementationAutoDiscovery = true)
 public interface Pet {
     String getSound();
     Human getOwner();

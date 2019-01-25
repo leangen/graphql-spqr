@@ -1,17 +1,18 @@
 package io.leangen.graphql.annotations;
 
-import graphql.introspection.Introspection;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Ignore
+/**
+ * Created by bojan.tomic on 3/2/16.
+ */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.PARAMETER)
-public @interface GraphQLDirective {
+@Target({ElementType.METHOD, ElementType.FIELD})
+public @interface Query {
 
-    String name() default "";
-    Introspection.DirectiveLocation[] locations() default {};
+    String value() default "";
+
+    String description() default "";
 }

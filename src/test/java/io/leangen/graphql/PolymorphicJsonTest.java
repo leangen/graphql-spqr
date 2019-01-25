@@ -5,9 +5,9 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLInputField;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.InputField;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -99,7 +99,7 @@ public class PolymorphicJsonTest {
 
     public static class VehicleService {
 
-        @GraphQLQuery
+        @Query
         public Vehicle vehicle(Vehicle in) {
             return in;
         }
@@ -108,8 +108,8 @@ public class PolymorphicJsonTest {
     public static abstract class Parent<T> {
         String item;
         
-        @GraphQLQuery(name = "item")
-        @GraphQLInputField(name = "item")
+        @Query(value = "item")
+        @InputField(name = "item")
         public abstract T getItem();
         public abstract void setItem(T item);
     }
@@ -117,7 +117,7 @@ public class PolymorphicJsonTest {
     public static class Child extends Parent<String> {
 
         @Override
-        @GraphQLQuery(name = "item")
+        @Query(value = "item")
         public String getItem() {
             return item + getClass().getSimpleName();
         }
@@ -130,7 +130,7 @@ public class PolymorphicJsonTest {
     public static class ChildTwo extends Parent<String> {
 
         @Override
-        @GraphQLQuery(name = "item")
+        @Query(value = "item")
         public String getItem() {
             return item + getClass().getSimpleName();
         }
@@ -142,15 +142,15 @@ public class PolymorphicJsonTest {
 
     public static class Operations {
 
-        @GraphQLQuery
-        public Parent<String> test(@GraphQLArgument(name = "container") Parent<String> container) {
+        @Query
+        public Parent<String> test(@Argument(value = "container") Parent<String> container) {
             return container;
         }
     }
 
     public static class Service {
 
-        @GraphQLQuery
+        @Query
         public String item(Wrapper in) {
             return in.item.getItem();
         }

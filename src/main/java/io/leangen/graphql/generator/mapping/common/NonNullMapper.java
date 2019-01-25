@@ -7,7 +7,7 @@ import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
-import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.Ignore;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
@@ -32,7 +32,7 @@ import java.util.Set;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-@GraphQLIgnore
+@Ignore
 public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, SchemaTransformer {
 
     private final Set<Class<? extends Annotation>> nonNullAnnotations;

@@ -5,8 +5,8 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.execution.SimpleDataFetcherExceptionHandler;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.Argument;
+import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.execution.InvocationContext;
 import io.leangen.graphql.execution.ResolverInterceptor;
 import io.leangen.graphql.support.TestLog;
@@ -156,29 +156,29 @@ public class InterceptorTest {
     }
 
     public static class ProtectedService {
-        @GraphQLQuery
+        @Query
         @Auth(rolesRequired = {"Admin"})
-        public String admin(@GraphQLArgument(name = "in") String in) {
+        public String admin(@Argument(value = "in") String in) {
             return in;
         }
 
-        @GraphQLQuery
+        @Query
         @Auth(rolesRequired = {"RegularUser"})
-        public String user(@GraphQLArgument(name = "in") String in) {
+        public String user(@Argument(value = "in") String in) {
             return in;
         }
     }
 
     public static class TestService {
-        @GraphQLQuery
-        public String test(@GraphQLArgument(name = "string") String s, @GraphQLArgument(name = "int") int i) {
+        @Query
+        public String test(@Argument(value = "string") String s, @Argument(value = "int") int i) {
             return s + i;
         }
     }
 
     public static class BrokenService {
 
-        @GraphQLQuery
+        @Query
         public String test() {
             throw new IllegalArgumentException("Always broken!");
         }
