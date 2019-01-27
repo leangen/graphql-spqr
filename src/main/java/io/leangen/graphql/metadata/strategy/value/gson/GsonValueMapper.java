@@ -4,33 +4,37 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.InputField;
+import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
+import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputParsingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
 
     private final Gson gson;
     private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
 
-    public GsonValueMapper(Gson gson) {
+    GsonValueMapper(Gson gson) {
         this.gson = gson;
     }
 
@@ -78,6 +82,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
      * @return All deserializable fields that could be discovered from this {@link AnnotatedType}
      */
     @Override
+    @SuppressWarnings("JavadocReference")
     public Set<InputField> getInputFields(InputFieldBuilderParams params) {
         Set<InputField> inputFields = new HashSet<>();
         AnnotatedType type = params.getType();
@@ -93,21 +98,14 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
                         || gson.excluder().excludeField(field, false)) {
                     continue;
                 }
-                AnnotatedType fieldType;
-                try {
-                    fieldType = params.getEnvironment().typeTransformer.transform(ClassUtils.getFieldType(field, type));
-                } catch (TypeMappingException e) {
-                    throw new TypeMappingException(field, type, e);
-                }
-                Optional<Method> setter = ClassUtils.findSetter(field.getDeclaringClass(), field.getName(), field.getType());
-                Member target = setter.isPresent() ? setter.get() : field;
-                if (!params.getEnvironment().inclusionStrategy.includeInputField(target.getDeclaringClass(), (AnnotatedElement) target, fieldType)) {
+                TypedElement element = reduce(type, field, params.getEnvironment().typeTransformer);
+                if (!params.getEnvironment().inclusionStrategy.includeInputField(field.getDeclaringClass(), element, element.getJavaType())) {
                     continue;
                 }
                 field.setAccessible(true);
                 String fieldName = gson.fieldNamingStrategy().translateName(field);
                 InputField inputField = new InputField(fieldName, getDescription(field, params.getEnvironment().messageBundle),
-                        fieldType, null, defaultValue(field, fieldType, params.getEnvironment()), (AnnotatedElement) target);
+                        element, null, defaultValue(field, element.getJavaType(), params.getEnvironment()));
                 if (!inputFields.add(inputField)) {
                     throw new IllegalArgumentException(raw + " declares multiple input fields named " + fieldName);
                 }
@@ -118,12 +116,31 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
         return inputFields;
     }
 
+    @SuppressWarnings("WeakerAccess")
+    protected TypedElement reduce(AnnotatedType declaringType, Field field, TypeTransformer transformer) {
+        Optional<TypedElement> fld = Optional.of(element(ClassUtils.getFieldType(field, declaringType), field, declaringType, transformer));
+        Optional<TypedElement> setter = ClassUtils.findSetter(field.getDeclaringClass(), field.getName(), field.getType())
+                .map(mutator -> element(ClassUtils.getParameterTypes(mutator, declaringType)[0], mutator, declaringType, transformer));
+        Optional<TypedElement> getter = ClassUtils.findGetter(field.getDeclaringClass(), field.getName())
+                .filter(accessor -> accessor.isAnnotationPresent(GraphQLInputField.class))
+                .map(accessor -> element(ClassUtils.getReturnType(accessor, declaringType), accessor, declaringType, transformer));
+        return new TypedElement(Utils.flatten(getter, setter, fld).collect(Collectors.toList()));
+    }
+
     protected String getDescription(Field field, MessageBundle messageBundle) {
         return inputInfoGen.getDescription(ClassUtils.getPropertyMembers(field), messageBundle).orElse(null);
     }
 
     protected Object defaultValue(Field field, AnnotatedType fieldType, GlobalEnvironment environment) {
         return inputInfoGen.defaultValue(ClassUtils.getPropertyMembers(field), fieldType, environment).orElse(null);
+    }
+
+    private <T extends Member & AnnotatedElement> TypedElement element(AnnotatedType type, T annotatedMember, AnnotatedType declaringType, TypeTransformer transformer) {
+        try {
+            return new TypedElement(transformer.transform(type), annotatedMember);
+        } catch (TypeMappingException e) {
+            throw new TypeMappingException(annotatedMember, declaringType, e);
+        }
     }
 
     @Override

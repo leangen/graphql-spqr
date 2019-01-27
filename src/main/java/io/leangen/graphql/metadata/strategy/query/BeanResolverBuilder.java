@@ -11,16 +11,16 @@ public class BeanResolverBuilder extends PublicResolverBuilder {
 
     public BeanResolverBuilder(String... basePackages) {
         super(basePackages);
-        this.operationNameGenerator = new PropertyOperationNameGenerator();
+        this.operationInfoGenerator = new PropertyOperationInfoGenerator();
     }
 
     @Override
-    protected boolean isQuery(Method method) {
-        return super.isQuery(method) && ClassUtils.isGetter(method);
+    protected boolean isQuery(Method method, ResolverBuilderParams params) {
+        return super.isQuery(method, params) && ClassUtils.isGetter(method);
     }
 
     @Override
-    protected boolean isMutation(Method method) {
-        return ClassUtils.isSetter(method);
+    protected boolean isMutation(Method method, ResolverBuilderParams params) {
+        return super.isMutation(method, params) && ClassUtils.isSetter(method);
     }
 }

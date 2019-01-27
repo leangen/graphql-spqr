@@ -39,7 +39,9 @@ public class Operation {
         this.name = name;
         this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(Utils::isNotEmpty).findFirst().orElse(null);
         this.deprecationReason = resolvers.stream().map(Resolver::getOperationDeprecationReason).filter(Objects::nonNull).findFirst().orElse(null);
-        this.typedElement = new TypedElement(javaType, resolvers.stream().map(resolver -> resolver.getExecutable().getDelegate()).collect(Collectors.toList()));
+        this.typedElement = new TypedElement(javaType, resolvers.stream()
+                .flatMap(resolver -> resolver.getTypedElement().getElements().stream())
+                .distinct().collect(Collectors.toList()));
         this.contextType = contextType;
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;

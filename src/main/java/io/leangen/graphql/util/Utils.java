@@ -2,6 +2,7 @@ package io.leangen.graphql.util;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,11 @@ public class Utils {
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     public static <T> Optional<T> or(Optional<T> left, Supplier<Optional<T>> right) {
         return left.isPresent() ? left : right.get();
+    }
+
+    @SafeVarargs
+    public static <T> Stream<T> flatten(Optional<T>... optionals) {
+        return Arrays.stream(optionals).filter(Optional::isPresent).map(Optional::get);
     }
 
     public static boolean isEmpty(String string) {
@@ -68,6 +74,10 @@ public class Utils {
         return Arrays.stream(streams).reduce(Stream::concat).orElse(Stream.empty());
     }
 
+    public static <T> Stream<T> extractInstances(Collection<?> collection, Class<T> clazz) {
+        return collection.stream().filter(clazz::isInstance).map(clazz::cast);
+    }
+
     public static String[] emptyArray() {
         return EMPTY_STRING_ARRAY;
     }
@@ -85,5 +95,9 @@ public class Utils {
 
     public static <T> List<T> singletonList(T element) {
         return element == null ? Collections.emptyList() : Collections.singletonList(element);
+    }
+
+    public static <T> List<T> asList(T[] elements) {
+        return elements == null || elements.length == 0 ? Collections.emptyList() : Arrays.asList(elements);
     }
 }

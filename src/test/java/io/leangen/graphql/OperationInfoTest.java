@@ -9,26 +9,38 @@ import io.leangen.graphql.annotations.GraphQLMutation;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLSubscription;
 import io.leangen.graphql.annotations.types.GraphQLType;
+import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
+import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class TypeInfoTest {
+public class OperationInfoTest {
 
     @Test
-    public void testExplicitTypeInfo() {
+    public void testExplicitOperationInfo() {
+        testOperationInfo(new AnnotatedResolverBuilder(), false);
+    }
+
+    @Test
+    public void testImplicitOperationInfo() {
+        testOperationInfo(new PublicResolverBuilder().withJavaDeprecationRespected(true), true);
+        testOperationInfo(new PublicResolverBuilder().withJavaDeprecationRespected(false), false);
+    }
+
+    private void testOperationInfo(ResolverBuilder resolverBuilder, boolean sneakyFieldDeprecated) {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
-                .withOperationsFromSingleton(new BoringService())
+                .withOperationsFromSingleton(new BoringService(), resolverBuilder)
                 .generate();
 
         GraphQLObjectType boringService = (GraphQLObjectType) schema.getType("TheBlob");
-        assertNotEquals(null, boringService);
+        assertNotNull(boringService);
         assertEquals("Blip Bloop", boringService.getDescription());
 
         for (GraphQLFieldDefinition field : new GraphQLFieldDefinition[] {
@@ -49,44 +61,8 @@ public class TypeInfoTest {
                 schema.getMutationType().getFieldDefinition("sneakyMutation"),
                 schema.getSubscriptionType().getFieldDefinition("sneakySubscription")}) {
 
-            assertFalse(field.isDeprecated());
+            assertEquals(sneakyFieldDeprecated, field.isDeprecated());
             assertEquals("Maybe hides its deprecation", field.getDescription());
-        }
-    }
-
-    @Test
-    public void testImplicitTypeInfo() {
-        testImplicitTypeInfo(true);
-        testImplicitTypeInfo(false);
-    }
-
-    private void testImplicitTypeInfo(boolean respectJavaDeprecation) {
-        GraphQLSchema schema = new GraphQLSchemaGenerator()
-                .withOperationsFromSingleton(new BoringService(), new PublicResolverBuilder().withJavaDeprecationRespected(respectJavaDeprecation))
-                .generate();
-
-        for (GraphQLFieldDefinition field : new GraphQLFieldDefinition[] {
-                schema.getQueryType().getFieldDefinition("staleQuery"),
-                schema.getMutationType().getFieldDefinition("staleMutation"),
-                schema.getSubscriptionType().getFieldDefinition("staleSubscription")}) {
-
-            assertEquals(respectJavaDeprecation, field.isDeprecated());
-            if (respectJavaDeprecation) {
-                assertEquals("Deprecated", field.getDeprecationReason());
-            }
-        }
-
-        assertFalse(schema.getQueryType().getFieldDefinition("freshQuery").isDeprecated());
-        assertFalse(schema.getMutationType().getFieldDefinition("freshMutation").isDeprecated());
-        assertFalse(schema.getSubscriptionType().getFieldDefinition("freshSubscription").isDeprecated());
-
-        for (GraphQLFieldDefinition field : new GraphQLFieldDefinition[] {
-                schema.getQueryType().getFieldDefinition("sneakyQuery"),
-                schema.getMutationType().getFieldDefinition("sneakyMutation"),
-                schema.getSubscriptionType().getFieldDefinition("sneakySubscription")}) {
-
-            assertEquals(respectJavaDeprecation, field.isDeprecated());
-            assertNull(field.getDescription());
         }
     }
 
@@ -126,7 +102,6 @@ public class TypeInfoTest {
     @SuppressWarnings("unused")
     public static class BoringService {
         @GraphQLQuery(deprecationReason = "Boring")
-        @Deprecated
         public Blob staleQuery() {
             return null;
         }
@@ -143,7 +118,6 @@ public class TypeInfoTest {
         }
 
         @GraphQLMutation(deprecationReason = "Boring")
-        @Deprecated
         public void staleMutation() {
         }
 
@@ -157,7 +131,6 @@ public class TypeInfoTest {
         }
 
         @GraphQLSubscription(deprecationReason = "Boring")
-        @Deprecated
         public Publisher<String> staleSubscription() {
             return null;
         }

@@ -38,7 +38,7 @@ public class InputFieldInfoGenerator {
         return Utils.or(explicit, implicit).filter(Utils::isNotEmpty).map(messageBundle::interpolate);
     }
 
-    public Optional<Object> defaultValue(List<AnnotatedElement> candidates, AnnotatedType type, GlobalEnvironment environment) {
+    public Optional<Object> defaultValue(List<? extends AnnotatedElement> candidates, AnnotatedType type, GlobalEnvironment environment) {
         return candidates.stream()
                 .filter(element -> element.isAnnotationPresent(GraphQLInputField.class))
                 .findFirst()

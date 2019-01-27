@@ -3,9 +3,9 @@ package io.leangen.graphql.metadata;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class InputField {
 
@@ -15,11 +15,11 @@ public class InputField {
     private final AnnotatedType deserializableType;
     private final Object defaultValue;
 
-    public InputField(String name, String description, AnnotatedType javaType, AnnotatedType deserializableType, Object defaultValue, AnnotatedElement element) {
+    public InputField(String name, String description, TypedElement element, AnnotatedType deserializableType, Object defaultValue) {
         this.name = Utils.requireNonEmpty(name);
         this.description = description;
-        this.typedElement = new TypedElement(Objects.requireNonNull(javaType), element);
-        this.deserializableType = deserializableType != null ? deserializableType : javaType;
+        this.typedElement = Objects.requireNonNull(element);
+        this.deserializableType = deserializableType != null ? deserializableType : element.getJavaType();
         this.defaultValue = defaultValue;
     }
 
@@ -49,6 +49,7 @@ public class InputField {
 
     @Override
     public String toString() {
-        return String.format("Input field '%s' of type %s bound to [%s]", name, ClassUtils.toString(getJavaType()), ClassUtils.toString(typedElement.getElement()));
+        return String.format("Input field '%s' of type %s bound to [%s]", name, ClassUtils.toString(getJavaType()),
+                typedElement.getElements().stream().map(ClassUtils::toString).collect(Collectors.joining()));
     }
 }

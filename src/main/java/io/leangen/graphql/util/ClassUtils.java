@@ -4,6 +4,7 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.metadata.strategy.value.Property;
 
 import java.beans.Introspector;
 import java.io.Closeable;
@@ -93,6 +94,17 @@ public class ClassUtils {
         return stream(type.getFields())
                 .filter(element -> element.isAnnotationPresent(annotation))
                 .collect(Collectors.toSet());
+    }
+
+    public static Set<Property> getProperties(final Class<?> type) {
+        Set<Property> properties = new HashSet<>();
+        stream(type.getDeclaredFields())
+                .filter(field -> !Modifier.isPublic(field.getModifiers()))
+                .forEach(field -> findGetter(type, field.getName())
+                        .filter(getter -> getter.getDeclaringClass().equals(type))
+                        .filter(getter -> !Modifier.isAbstract(getter.getModifiers()))
+                        .ifPresent(getter -> properties.add(new Property(field, getter))));
+        return properties;
     }
 
     private static void collectPublicAbstractMethods(Class type, Set<Method> methods) {

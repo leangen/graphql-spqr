@@ -2,11 +2,15 @@ package io.leangen.graphql;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.annotations.GraphQLInputField;
+import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.InputField;
+import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapper;
@@ -15,8 +19,11 @@ import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapper;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import org.junit.Test;
 
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -29,24 +36,24 @@ public class InputFieldDiscoveryTest {
     private JacksonValueMapper jackson = new JacksonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
     private GsonValueMapper gson = new GsonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
 
-    private static final AnnotatedType IGNORED_TYPE = GenericTypeReflector.annotate(Object.class);
+    private static final TypedElement IGNORED_TYPE = new TypedElement(GenericTypeReflector.annotate(Object.class), (AnnotatedElement) null);
     private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
 
     private static final InputField[] expectedDefaultFields = new InputField[] {
-            new InputField("field1", null, IGNORED_TYPE, null, null, null),
-            new InputField("field2", null, IGNORED_TYPE, null, null, null),
-            new InputField("field3", null, IGNORED_TYPE, null, null, null)
+            new InputField("field1", null, IGNORED_TYPE, null, null),
+            new InputField("field2", null, IGNORED_TYPE, null, null),
+            new InputField("field3", null, IGNORED_TYPE, null, null)
     };
     private static final InputField[] expectedFilteredDefaultFields = new InputField[] {expectedDefaultFields[0], expectedDefaultFields[2]};
     private static final InputField[] expectedExplicitFields = new InputField[] {
-            new InputField("aaa", "AAA", IGNORED_TYPE, null, "AAAA", null),
-            new InputField("bbb", "BBB", IGNORED_TYPE, null, 2222, null),
-            new InputField("ccc", "CCC", IGNORED_TYPE, null, 3333, null)
+            new InputField("aaa", "AAA", IGNORED_TYPE, null, "AAAA"),
+            new InputField("bbb", "BBB", IGNORED_TYPE, null, 2222),
+            new InputField("ccc", "CCC", IGNORED_TYPE, null, 3333)
     };
     private static final InputField[] expectedQueryFields = new InputField[] {
-            new InputField("aaa", null, IGNORED_TYPE, null, null, null),
-            new InputField("bbb", null, IGNORED_TYPE, null, null, null),
-            new InputField("ccc", null, IGNORED_TYPE, null, null, null)
+            new InputField("aaa", null, IGNORED_TYPE, null, null),
+            new InputField("bbb", null, IGNORED_TYPE, null, null),
+            new InputField("ccc", null, IGNORED_TYPE, null, null)
     };
     
     @Test
@@ -134,6 +141,17 @@ public class InputFieldDiscoveryTest {
         assertFieldNamesEqual(jackson, HiddenCtorParams.class, expectedFilteredDefaultFields);
     }
 
+    @Test
+    public void jacksonMergedTypesTest() {
+        Set<InputField> jFields = getInputFields(jackson, MergedTypes.class);
+        Set<InputField> gFields = getInputFields(gson, MergedTypes.class);
+
+        assertTypesMerged(jFields);
+        assertTypesMerged(gFields);
+
+        assertAllFieldsEqual(jFields, gFields);
+    }
+
     private void assertFieldNamesEqual(Class typeToScan, InputField... expectedFields) {
         Set<InputField> jFields = assertFieldNamesEqual(jackson, typeToScan, expectedFields);
         Set<InputField> gFields = assertFieldNamesEqual(gson, typeToScan, expectedFields);
@@ -141,12 +159,8 @@ public class InputFieldDiscoveryTest {
         assertAllFieldsEqual(jFields, gFields);
     }
 
-    private Set<InputField> assertFieldNamesEqual(InputFieldBuilder mapper, Class typeToScan, InputField[] templates) {
-        Set<InputField> fields = mapper.getInputFields(
-                InputFieldBuilderParams.builder()
-                        .withType(GenericTypeReflector.annotate(typeToScan))
-                        .withEnvironment(ENVIRONMENT)
-                        .build());
+    private Set<InputField> assertFieldNamesEqual(InputFieldBuilder mapper, Class typeToScan, InputField... templates) {
+        Set<InputField> fields = getInputFields(mapper, typeToScan);
         assertEquals(templates.length, fields.size());
         for (InputField template : templates) {
             Optional<InputField> field = fields.stream().filter(input -> input.getName().equals(template.getName())).findFirst();
@@ -155,6 +169,29 @@ public class InputFieldDiscoveryTest {
             assertEquals(template.getDefaultValue(), field.get().getDefaultValue());
         }
         return fields;
+    }
+
+    private void assertTypesMerged(Set<InputField> fields) {
+        Optional<InputField> field1 = fields.stream().filter(field -> field.getName().equals("field1")).findFirst();
+        Optional<InputField> field2 = fields.stream().filter(field -> field.getName().equals("field2")).findFirst();
+        Optional<InputField> field3 = fields.stream().filter(field -> field.getName().equals("field3")).findFirst();
+        assertTrue(field1.isPresent() && field2.isPresent() && field3.isPresent());
+        AnnotatedType type1 = field1.get().getTypedElement().getJavaType();
+        assertTrue(type1.isAnnotationPresent(GraphQLNonNull.class) && type1.isAnnotationPresent(GraphQLId.class));
+        AnnotatedType type2 = field2.get().getTypedElement().getJavaType();
+        assertTrue(type2.isAnnotationPresent(GraphQLNonNull.class) && type2.isAnnotationPresent(GraphQLId.class));
+        AnnotatedType type3 = field3.get().getTypedElement().getJavaType();
+        assertTrue(type3.isAnnotationPresent(GraphQLNonNull.class));
+        AnnotatedType type31 = ((AnnotatedParameterizedType) type3).getAnnotatedActualTypeArguments()[0];
+        assertTrue(type31.isAnnotationPresent(GraphQLNonNull.class) && type31.isAnnotationPresent(GraphQLScalar.class));
+    }
+
+    private Set<InputField> getInputFields(InputFieldBuilder mapper, Class typeToScan) {
+        return mapper.getInputFields(
+                InputFieldBuilderParams.builder()
+                        .withType(GenericTypeReflector.annotate(typeToScan))
+                        .withEnvironment(ENVIRONMENT)
+                        .build());
     }
 
     private void assertAllFieldsEqual(Set<InputField> fields1, Set<InputField> fields2) {
@@ -512,6 +549,49 @@ public class InputFieldDiscoveryTest {
         public HiddenCtorParams(String field1, @GraphQLIgnore int field2, Object field3) {
             this.field1 = field1;
             this.field2 = field2;
+            this.field3 = field3;
+        }
+    }
+
+    private static class MergedTypes {
+        private @GraphQLNonNull String field1;
+        private RelayTest.Book field2;
+        private List<RelayTest.@GraphQLNonNull Book> field3;
+
+        @JsonCreator
+        // Only Jackson will pick this up. Gson does not use the constructor.
+        public MergedTypes(@GraphQLId String field1, @GraphQLId RelayTest.Book field2, List<RelayTest.@GraphQLScalar Book> field3) {
+            this.field1 = field1;
+            this.field2 = field2;
+            this.field3 = field3;
+        }
+
+        public String getField1() {
+            return field1;
+        }
+
+        // Only Gson will pick this up. In Jackson, the constructor parameter shadows the unannotated setter.
+        public void setField1(@GraphQLId String field1) {
+            this.field1 = field1;
+        }
+
+        @GraphQLInputField
+        public RelayTest.@GraphQLNonNull Book getField2() {
+            return field2;
+        }
+
+        // Only Gson will pick this up. In Jackson, the constructor parameter shadows the unannotated setter.
+        public void setField2(RelayTest.@GraphQLId Book field2) {
+            this.field2 = field2;
+        }
+
+        @GraphQLInputField
+        public @GraphQLNonNull List<RelayTest.Book> getField3() {
+            return field3;
+        }
+
+        // Only Gson will pick this up. In Jackson, the constructor parameter shadows the unannotated setter.
+        public void setField3(List<RelayTest.@GraphQLScalar Book> field3) {
             this.field3 = field3;
         }
     }

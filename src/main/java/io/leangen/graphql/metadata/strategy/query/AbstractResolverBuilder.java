@@ -1,5 +1,7 @@
 package io.leangen.graphql.metadata.strategy.query;
 
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -10,39 +12,49 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
 
 /**
- * Created by bojan.tomic on 3/21/17.
+ * The base class for all built-in {@code ResolverBuilder}s
  */
 @SuppressWarnings("WeakerAccess")
-public abstract class FilteredResolverBuilder implements ResolverBuilder {
+public abstract class AbstractResolverBuilder implements ResolverBuilder {
 
-    protected OperationNameGenerator operationNameGenerator;
+    protected OperationInfoGenerator operationInfoGenerator;
     protected ResolverArgumentBuilder argumentBuilder;
+    protected BinaryOperator<TypedElement> propertyElementReducer;
     protected List<Predicate<Member>> filters = new ArrayList<>();
 
-    @SuppressWarnings("unchecked")
-    public FilteredResolverBuilder withOperationNameGenerator(OperationNameGenerator operationNameGenerator) {
-        this.operationNameGenerator = operationNameGenerator;
+    public AbstractResolverBuilder withOperationInfoGenerator(OperationInfoGenerator operationInfoGenerator) {
+        this.operationInfoGenerator = operationInfoGenerator;
         return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public FilteredResolverBuilder withResolverArgumentBuilder(ResolverArgumentBuilder argumentBuilder) {
+    public AbstractResolverBuilder withResolverArgumentBuilder(ResolverArgumentBuilder argumentBuilder) {
         this.argumentBuilder = argumentBuilder;
         return this;
     }
 
+    public AbstractResolverBuilder withPropertyElementReducer(BinaryOperator<TypedElement> propertyElementReducer) {
+        this.propertyElementReducer = propertyElementReducer;
+        return this;
+    }
+
     @SafeVarargs
-    @SuppressWarnings("unchecked")
-    public final FilteredResolverBuilder withFilters(Predicate<Member>... filters) {
+    public final AbstractResolverBuilder withFilters(Predicate<Member>... filters) {
         Collections.addAll(this.filters, filters);
         return this;
     }
 
-    public FilteredResolverBuilder withDefaultFilters() {
+    public AbstractResolverBuilder withDefaultFilters() {
         return withFilters(REAL_ONLY);
+    }
+
+    public static TypedElement mergePropertyElements(TypedElement field, TypedElement getter) {
+        return new TypedElement(
+                GenericTypeReflector.mergeAnnotations(field.getJavaType(), getter.getJavaType()),
+                field.getElement(), getter.getElement());
     }
 
     protected List<Predicate<Member>> getFilters() {

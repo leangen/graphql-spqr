@@ -5,6 +5,7 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLIgnore;
+import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.domain.Person;
 import io.leangen.graphql.execution.GlobalEnvironment;
@@ -13,22 +14,26 @@ import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
-import io.leangen.graphql.metadata.strategy.query.OperationNameGenerator;
-import io.leangen.graphql.metadata.strategy.query.OperationNameGeneratorParams;
+import io.leangen.graphql.metadata.strategy.query.OperationInfoGenerator;
+import io.leangen.graphql.metadata.strategy.query.OperationInfoGeneratorParams;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilderParams;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import lombok.Getter;
 import org.junit.Test;
 
 import java.io.Serializable;
-import java.lang.reflect.Method;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Member;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ResolverBuilderTest {
 
@@ -39,7 +44,7 @@ public class ResolverBuilderTest {
 
     @Test
     public void bridgeMethodTest() {
-        Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGES) .buildQueryResolvers(new ResolverBuilderParams(
+        Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGES).buildQueryResolvers(new ResolverBuilderParams(
                 new BaseServiceImpl<Number, String>(), new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType(),
                 INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT));
         assertEquals(1, resolvers.size());
@@ -65,19 +70,19 @@ public class ResolverBuilderTest {
     @Test
     public void impreciseBeanTypeTest() {
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withResolverBuilders(new PublicResolverBuilder(BASE_PACKAGES).withOperationNameGenerator(new OperationNameGenerator() {
+                .withResolverBuilders(new PublicResolverBuilder(BASE_PACKAGES).withOperationInfoGenerator(new OperationInfoGenerator() {
                     @Override
-                    public String generateQueryName(OperationNameGeneratorParams<?> params) {
-                        return params.getInstance().getClass().getSimpleName() + "_" + params.getElement().getName();
+                    public String name(OperationInfoGeneratorParams params) {
+                        return params.getInstance().getClass().getSimpleName() + "_" + ((Member)params.getElement().getElement()).getName();
                     }
 
                     @Override
-                    public String generateMutationName(OperationNameGeneratorParams<Method> params) {
+                    public String description(OperationInfoGeneratorParams params) {
                         return null;
                     }
 
                     @Override
-                    public String generateSubscriptionName(OperationNameGeneratorParams<Method> params) {
+                    public String deprecationReason(OperationInfoGeneratorParams params) {
                         return null;
                     }
                 }))
@@ -89,6 +94,25 @@ public class ResolverBuilderTest {
         assertEquals("Person", schema.getQueryType().getFieldDefinitions().get(0).getType().getName());
         assertEquals("Two_findOne", schema.getQueryType().getFieldDefinitions().get(1).getName());
         assertEquals("BigDecimal", schema.getQueryType().getFieldDefinitions().get(1).getType().getName());
+    }
+
+    @Test
+    public void typeMergeTest() {
+        ResolverBuilder[] allBuilders = new ResolverBuilder[] {
+                new PublicResolverBuilder(BASE_PACKAGES), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder()};
+        for(Collection<Resolver> resolvers : resolvers(new MergedTypes(), allBuilders)) {
+            assertEquals(2, resolvers.size());
+
+            Optional<AnnotatedType> field1 = resolvers.stream().filter(res -> "field1".equals(res.getOperationName())).findFirst()
+                    .map(Resolver::getReturnType);
+            assertTrue(field1.isPresent());
+            assertTrue(field1.get().isAnnotationPresent(GraphQLNonNull.class));
+
+            Optional<AnnotatedType> field2 = resolvers.stream().filter(res -> "field2".equals(res.getOperationName())).findFirst()
+                    .map(Resolver::getReturnType);
+            assertTrue(field2.isPresent());
+            assertTrue(field2.get().isAnnotationPresent(GraphQLNonNull.class));
+        }
     }
 
     private Collection<Collection<Resolver>> resolvers(Object bean, ResolverBuilder... builders) {
@@ -117,6 +141,7 @@ public class ResolverBuilderTest {
     private static class One implements BaseService<Person, Long> {
 
         @Override
+        @SuppressWarnings("Convert2Lambda")
         public Person findOne(Long aLong) {
             return new Person() {
                 @Override
@@ -158,6 +183,19 @@ public class ResolverBuilderTest {
         @GraphQLQuery(name = "notIgnored")
         public String getNotIgnored() {
             return null;
+        }
+    }
+
+    @Getter
+    private static class MergedTypes {
+        @GraphQLQuery(name = "field1")
+        private @GraphQLNonNull Object badName;
+        private Object field2;
+        private @GraphQLIgnore Object ignored;
+
+        @GraphQLQuery
+        public @GraphQLNonNull Object getField2() {
+            return field2;
         }
     }
 }
