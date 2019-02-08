@@ -1,7 +1,7 @@
 package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.types.Interface;
-import io.leangen.graphql.annotations.types.Type;
+import org.eclipse.microprofile.graphql.Type;
 
 @Type("Pet")
 @Interface(implementationAutoDiscovery = true)

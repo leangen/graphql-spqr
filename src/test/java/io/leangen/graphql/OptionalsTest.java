@@ -5,8 +5,8 @@ import graphql.GraphQL;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.Query;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
 
 import java.util.Optional;

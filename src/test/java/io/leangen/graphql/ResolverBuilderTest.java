@@ -3,9 +3,7 @@ package io.leangen.graphql;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.Ignore;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.domain.Person;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.Resolver;
@@ -20,6 +18,8 @@ import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilderParams;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
 
 import java.io.Serializable;
@@ -153,7 +153,9 @@ public class ResolverBuilderTest {
 
         @Ignore
         @Query(value = "ignored")
-        public String ignored;
+        public String getIgnored() {
+            return null;
+        }
 
         @Query(value = "notIgnored")
         public String getNotIgnored() {

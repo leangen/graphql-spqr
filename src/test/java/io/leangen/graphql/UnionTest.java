@@ -6,15 +6,15 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
-import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
-import io.leangen.graphql.annotations.types.Type;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.util.GraphQLUtils;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Type;
 import org.junit.Test;
 
 import java.util.List;

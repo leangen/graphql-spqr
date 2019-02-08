@@ -1,11 +1,11 @@
 package io.leangen.graphql;
 
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.DefaultValue;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.strategy.value.JsonDefaultValueProvider;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.DefaultValue;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

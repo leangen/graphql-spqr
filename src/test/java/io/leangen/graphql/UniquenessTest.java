@@ -6,7 +6,6 @@ import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
-import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.EnumValue;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLScalar;
@@ -17,6 +16,7 @@ import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.util.GraphQLUtils;
+import org.eclipse.microprofile.graphql.Argument;
 import org.junit.Test;
 
 import java.util.EnumMap;

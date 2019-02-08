@@ -2,7 +2,7 @@ package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.Query;
+import org.eclipse.microprofile.graphql.Query;
 
 public class Dog implements Pet {
 

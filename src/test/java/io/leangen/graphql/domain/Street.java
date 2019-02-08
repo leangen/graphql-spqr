@@ -1,7 +1,7 @@
 package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.Query;
+import org.eclipse.microprofile.graphql.Query;
 
 import java.net.URI;
 import java.net.URISyntaxException;

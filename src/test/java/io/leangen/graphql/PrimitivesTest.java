@@ -4,11 +4,11 @@ import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.DefaultValue;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.Query;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.DefaultValue;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;

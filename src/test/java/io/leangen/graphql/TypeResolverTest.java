@@ -4,15 +4,15 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLTypeResolver;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.annotations.types.Interface;
-import io.leangen.graphql.annotations.types.Type;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.execution.TypeResolutionEnvironment;
 import io.leangen.graphql.execution.TypeResolver;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Type;
 import org.junit.Test;
 
 import java.util.Arrays;

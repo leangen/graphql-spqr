@@ -3,13 +3,13 @@ package io.leangen.graphql;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.DefaultValue;
 import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.InputField;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.generator.mapping.common.NonNullMapper;
 import io.leangen.graphql.support.TestLog;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.DefaultValue;
+import org.eclipse.microprofile.graphql.InputField;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
 
 import javax.annotation.Nonnull;
@@ -24,7 +24,7 @@ public class NonNullTest {
     public void testNonNullWithDefaultValueWarning() {
         try (TestLog log = new TestLog(NonNullMapper.class)) {
             new TestSchemaGenerator().withOperationsFromSingleton(new Service()).generate();
-            assertWarningsLogged(log.getEvents(), "Non-null input field", "Non-null argument");
+            assertWarningsLogged(log.getEvents(), "Non-null argument");
         }
     }
 
@@ -73,7 +73,7 @@ public class NonNullTest {
     }
 
     private static class Item {
-        @InputField(name = "title") @DefaultValue("<UNKNOWN>")
+        @InputField(value = "title")
         public @GraphQLNonNull String name;
     }
 }

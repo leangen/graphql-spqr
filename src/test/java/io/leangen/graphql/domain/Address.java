@@ -1,6 +1,6 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.Query;
+import org.eclipse.microprofile.graphql.Query;
 
 import java.util.ArrayList;
 import java.util.Collections;

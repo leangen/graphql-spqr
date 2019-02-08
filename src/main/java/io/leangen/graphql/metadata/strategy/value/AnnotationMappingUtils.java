@@ -1,7 +1,7 @@
 package io.leangen.graphql.metadata.strategy.value;
 
-import io.leangen.graphql.annotations.InputField;
 import io.leangen.graphql.util.Utils;
+import org.eclipse.microprofile.graphql.InputField;
 
 import java.lang.reflect.Method;
 
@@ -9,7 +9,7 @@ public class AnnotationMappingUtils {
 
     public static String inputFieldName(Method method) {
         if (method.isAnnotationPresent(InputField.class)) {
-            return Utils.coalesce(method.getAnnotation(InputField.class).name(), method.getName());
+            return Utils.coalesce(method.getAnnotation(InputField.class).value(), method.getName());
         }
         return method.getName();
     }

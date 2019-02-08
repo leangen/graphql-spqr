@@ -8,7 +8,6 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.annotations.Info;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.execution.ResolutionEnvironment;
@@ -17,6 +16,7 @@ import io.leangen.graphql.generator.union.Union2;
 import io.leangen.graphql.support.TestLog;
 import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
 
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;

@@ -35,7 +35,7 @@ public class OperationExecutor {
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
         this.converterRegistry = filterConverters(globalEnvironment.converters);
-        this.interceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(),
+        this.interceptors = operation.getResolvers().stream().distinct().collect(Collectors.toMap(Function.identity(),
                 res -> interceptorFactory.getInterceptors(new ResolverInterceptorFactoryParams(res))));
     }
 

@@ -17,11 +17,11 @@ import io.leangen.graphql.RelayTest.Book;
 import io.leangen.graphql.annotations.Context;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLScalar;
-import io.leangen.graphql.annotations.InputField;
-import io.leangen.graphql.annotations.Query;
-import io.leangen.graphql.annotations.Source;
 import io.leangen.graphql.annotations.types.GraphQLDirective;
 import io.leangen.graphql.util.GraphQLUtils;
+import org.eclipse.microprofile.graphql.InputField;
+import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Source;
 import org.junit.Test;
 
 import java.lang.annotation.ElementType;
@@ -201,7 +201,9 @@ public class DirectiveTest {
     private static class ObjectResult {
         @FieldDef(@Wrapper(name = "field", value = "test"))
         @Query
-        public String value;
+        public String getValue() {
+            return null;
+        }
     }
 
     @InputObjectType(@Wrapper(name = "input", value = "test"))
@@ -296,7 +298,7 @@ public class DirectiveTest {
 
     @GraphQLDirective(name = "timeout")
     public static class Interrupt {
-        @InputField(name = "afterMillis")
+        @InputField(value = "afterMillis")
         @SuppressWarnings("WeakerAccess")
         public int after;
     }

@@ -3,11 +3,11 @@ package io.leangen.graphql;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.Query;
-import io.leangen.graphql.annotations.Source;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Source;
 import org.junit.Test;
 
 import java.util.Arrays;

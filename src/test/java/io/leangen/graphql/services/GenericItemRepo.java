@@ -1,8 +1,8 @@
 package io.leangen.graphql.services;
 
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.Mutation;
-import io.leangen.graphql.annotations.Query;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Mutation;
+import org.eclipse.microprofile.graphql.Query;
 
 import java.util.Collection;
 import java.util.HashMap;

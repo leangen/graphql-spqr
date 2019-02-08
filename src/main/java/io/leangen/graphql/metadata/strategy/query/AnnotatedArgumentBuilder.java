@@ -1,9 +1,6 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.DefaultValue;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.Source;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
@@ -14,6 +11,9 @@ import io.leangen.graphql.metadata.strategy.value.JsonDefaultValueProvider;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
 import io.leangen.graphql.util.Urls;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.DefaultValue;
+import org.eclipse.microprofile.graphql.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

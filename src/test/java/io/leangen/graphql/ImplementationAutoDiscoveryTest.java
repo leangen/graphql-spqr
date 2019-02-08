@@ -1,10 +1,10 @@
 package io.leangen.graphql;
 
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.annotations.types.Interface;
-import io.leangen.graphql.annotations.types.Type;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Type;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;

@@ -1,12 +1,12 @@
 package io.leangen.graphql.metadata.strategy.value;
 
-import io.leangen.graphql.annotations.DefaultValue;
-import io.leangen.graphql.annotations.InputField;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.util.ReservedStrings;
 import io.leangen.graphql.util.Utils;
+import org.eclipse.microprofile.graphql.DefaultValue;
+import org.eclipse.microprofile.graphql.InputField;
+import org.eclipse.microprofile.graphql.Query;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
@@ -19,7 +19,7 @@ public class InputFieldInfoGenerator {
         Optional<String> explicit = candidates.stream()
                 .filter(element -> element.isAnnotationPresent(InputField.class))
                 .findFirst()
-                .map(element -> element.getAnnotation(InputField.class).name());
+                .map(element -> element.getAnnotation(InputField.class).value());
         Optional<String> implicit = candidates.stream()
                 .filter(element -> element.isAnnotationPresent(Query.class))
                 .findFirst()

@@ -7,9 +7,9 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeFactory;
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.util.Scalars;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
 
 import java.math.BigInteger;

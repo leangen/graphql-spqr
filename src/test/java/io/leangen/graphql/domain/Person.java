@@ -1,7 +1,7 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.Query;
-import io.leangen.graphql.annotations.types.Type;
+import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Type;
 
 /**
  * Created by bojan.tomic on 4/11/16.

@@ -1,15 +1,15 @@
 package io.leangen.graphql.services;
 
-import io.leangen.graphql.annotations.Argument;
 import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.Mutation;
-import io.leangen.graphql.annotations.Query;
-import io.leangen.graphql.annotations.Source;
 import io.leangen.graphql.domain.Address;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.domain.User;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Mutation;
+import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Source;
 
 import java.util.ArrayList;
 import java.util.Arrays;

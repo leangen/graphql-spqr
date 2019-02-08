@@ -4,9 +4,9 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.execution.batched.BatchedExecutionStrategy;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.Argument;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.domain.JsonPatch;
+import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
 
 import java.util.List;

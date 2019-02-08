@@ -3,8 +3,6 @@ package io.leangen.graphql.metadata.strategy.query;
 import graphql.execution.batched.Batched;
 import io.leangen.graphql.annotations.Deprecated;
 import io.leangen.graphql.annotations.GraphQLComplexity;
-import io.leangen.graphql.annotations.Mutation;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.annotations.Subscription;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.execution.FieldAccessor;
@@ -14,6 +12,8 @@ import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
+import org.eclipse.microprofile.graphql.Mutation;
+import org.eclipse.microprofile.graphql.Query;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;

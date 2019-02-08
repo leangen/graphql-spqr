@@ -1,7 +1,7 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import io.leangen.graphql.annotations.Source;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
+import org.eclipse.microprofile.graphql.Source;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;

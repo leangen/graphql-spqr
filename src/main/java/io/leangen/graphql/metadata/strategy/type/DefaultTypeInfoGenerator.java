@@ -1,12 +1,11 @@
 package io.leangen.graphql.metadata.strategy.type;
 
 import io.leangen.graphql.annotations.types.GraphQLDirective;
-import io.leangen.graphql.annotations.types.InputType;
-import io.leangen.graphql.annotations.types.Interface;
-import io.leangen.graphql.annotations.types.Type;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
+import org.eclipse.microprofile.graphql.InputType;
+import org.eclipse.microprofile.graphql.Type;
 
 import java.beans.Introspector;
 import java.lang.reflect.AnnotatedParameterizedType;
@@ -44,7 +43,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
     @Override
     public String generateInputTypeName(AnnotatedType type, MessageBundle messageBundle) {
         return Optional.ofNullable(type.getAnnotation(InputType.class))
-                .map(ann -> messageBundle.interpolate(ann.name()))
+                .map(ann -> messageBundle.interpolate(ann.value()))
                 .filter(Utils::isNotEmpty)
                 .orElse(TypeInfoGenerator.super.generateInputTypeName(type, messageBundle));
     }
@@ -58,12 +57,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
 
     @Override
     public String[] getFieldOrder(AnnotatedType type, MessageBundle messageBundle) {
-        return Utils.or(
-                Optional.ofNullable(type.getAnnotation(Interface.class))
-                        .map(Interface::fieldOrder),
-                Optional.ofNullable(type.getAnnotation(Type.class))
-                        .map(Type::fieldOrder))
-                .orElse(Utils.emptyArray());
+        return Utils.emptyArray();
     }
 
     @Override

@@ -3,7 +3,6 @@ package io.leangen.graphql;
 import graphql.Scalars;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLType;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.NonNullMapper;
@@ -11,6 +10,7 @@ import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.generator.mapping.common.ScalarMapper;
 import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -226,6 +226,8 @@ public class SchemaGeneratorConfigurationTest {
 
     private static class Dummy {
         @Query
-        public byte[] bytes;
+        public byte[] getBytes() {
+            return new byte[0];
+        }
     }
 }

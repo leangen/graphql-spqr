@@ -5,11 +5,11 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.EnumValue;
-import io.leangen.graphql.annotations.Mutation;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.annotations.Subscription;
-import io.leangen.graphql.annotations.types.Type;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
+import org.eclipse.microprofile.graphql.Mutation;
+import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Type;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 

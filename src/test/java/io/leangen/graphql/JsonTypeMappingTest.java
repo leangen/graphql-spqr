@@ -16,9 +16,9 @@ import com.google.gson.JsonPrimitive;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.Query;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
+import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
 
 import java.math.BigInteger;
