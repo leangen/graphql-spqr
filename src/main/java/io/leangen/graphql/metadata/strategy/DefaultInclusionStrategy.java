@@ -1,8 +1,11 @@
 package io.leangen.graphql.metadata.strategy;
 
+import io.leangen.graphql.annotations.Context;
 import io.leangen.graphql.annotations.Ignore;
+import io.leangen.graphql.annotations.Info;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
+import org.eclipse.microprofile.graphql.Source;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
@@ -24,7 +27,10 @@ public class DefaultInclusionStrategy implements InclusionStrategy {
 
     @Override
     public boolean includeArgument(Parameter parameter, AnnotatedType type) {
-        return !ClassUtils.hasAnnotation(parameter, Ignore.class);
+        return !ClassUtils.hasAnnotation(parameter, Ignore.class)
+                && !parameter.isAnnotationPresent(Source.class)
+                && !parameter.isAnnotationPresent(Context.class)
+                && !parameter.isAnnotationPresent(Info.class);
     }
 
     @Override
