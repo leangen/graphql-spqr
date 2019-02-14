@@ -886,7 +886,7 @@ public class GraphQLSchemaGenerator {
         checkForEmptyOrDuplicates("schema transformers", transformers);
 
         List<OutputConverter> outputConverters = Arrays.asList(
-                new IdAdapter(), new VoidToBooleanTypeAdapter(), new ArrayAdapter(), new CollectionOutputConverter(),
+                new IdAdapter(), new ArrayAdapter(), new CollectionOutputConverter(),
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(), new OptionalAdapter(),
                 new StreamToCollectionTypeAdapter(), publisherAdapter);
         for (ExtensionProvider<GeneratorConfiguration, OutputConverter> provider : outputConverterProviders) {
@@ -909,7 +909,7 @@ public class GraphQLSchemaGenerator {
         }
         checkForDuplicates("argument injectors", argumentInjectors);
 
-        List<ResolverInterceptorFactory> interceptorFactories = Collections.emptyList();
+        List<ResolverInterceptorFactory> interceptorFactories = Collections.singletonList(new VoidToBooleanTypeAdapter());
         for (ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory> provider : this.interceptorFactoryProviders) {
             interceptorFactories = provider.getExtensions(configuration, new ExtensionList<>(interceptorFactories));
         }
