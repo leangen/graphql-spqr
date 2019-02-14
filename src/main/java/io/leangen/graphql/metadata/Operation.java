@@ -55,7 +55,7 @@ public class Operation {
     
     private Map<String, Resolver> collectResolversByFingerprint(List<Resolver> resolvers) {
         Map<String, Resolver> resolversByFingerprint = new HashMap<>();
-        resolvers.forEach(resolver -> resolver.getFingerprints().forEach(fingerprint -> resolversByFingerprint.putIfAbsent(fingerprint, resolver)));
+        resolvers.forEach(resolver -> resolversByFingerprint.putIfAbsent(resolver.getFingerprint(), resolver));
         return resolversByFingerprint;
     }
 

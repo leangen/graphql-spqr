@@ -8,7 +8,6 @@ import io.leangen.graphql.util.Utils;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -132,11 +131,14 @@ public class Resolver {
      *
      * @return The unique "fingerprint" string identifying this resolver
      */
-    Set<String> getFingerprints() {
-        Set<String> fingerprints = new HashSet<>(contextArguments.size() + 1);
-        contextArguments.forEach(context -> fingerprints.add(fingerprint(context)));
-        fingerprints.add(fingerprint(null));
-        return fingerprints;
+    String getFingerprint() {
+        StringBuilder fingerprint = new StringBuilder();
+        arguments.stream()
+                .filter(OperationArgument::isMappable)
+                .map(OperationArgument::getName)
+                .sorted()
+                .forEach(fingerprint::append);
+        return fingerprint.toString();
     }
 
     public List<OperationArgument> getArguments() {
@@ -157,17 +159,6 @@ public class Resolver {
 
     public Executable getExecutable() {
         return executable;
-    }
-
-    private String fingerprint(OperationArgument ignoredResolverSource) {
-        StringBuilder fingerprint = new StringBuilder();
-        arguments.stream()
-                .filter(arg -> arg != ignoredResolverSource)
-                .filter(OperationArgument::isMappable)
-                .map(OperationArgument::getName)
-                .sorted()
-                .forEach(fingerprint::append);
-        return fingerprint.toString();
     }
 
     @Override
