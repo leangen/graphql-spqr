@@ -18,7 +18,6 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
 import graphql.schema.PropertyDataFetcher;
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.ContextWrapper;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
@@ -38,6 +37,8 @@ import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.eclipse.microprofile.graphql.Id;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
@@ -368,9 +369,9 @@ public class OperationMapper {
         return env -> {
             String typeName;
             try {
-                typeName = relay.fromGlobalId(env.getArgument(GraphQLId.RELAY_ID_FIELD_NAME)).getType();
+                typeName = relay.fromGlobalId(env.getArgument(Id.RELAY_ID_FIELD_NAME)).getType();
             } catch (Exception e) {
-                throw new IllegalArgumentException(env.getArgument(GraphQLId.RELAY_ID_FIELD_NAME) + " is not a valid Relay node ID");
+                throw new IllegalArgumentException(env.getArgument(Id.RELAY_ID_FIELD_NAME) + " is not a valid Relay node ID");
             }
             if (!nodeQueriesByType.containsKey(typeName)) {
                 throw new IllegalArgumentException(typeName + " is not a Relay node type or no registered query can fetch it by ID");
@@ -389,9 +390,9 @@ public class OperationMapper {
             Operation query = queries.get(i);
             GraphQLFieldDefinition graphQlQuery = graphQlQueries.get(i);
 
-            if (graphQlQuery.getArgument(GraphQLId.RELAY_ID_FIELD_NAME) != null
-                    && GraphQLUtils.isRelayId(graphQlQuery.getArgument(GraphQLId.RELAY_ID_FIELD_NAME))
-                    && query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME) != null) {
+            if (graphQlQuery.getArgument(Id.RELAY_ID_FIELD_NAME) != null
+                    && GraphQLUtils.isRelayId(graphQlQuery.getArgument(Id.RELAY_ID_FIELD_NAME))
+                    && query.getResolver(Id.RELAY_ID_FIELD_NAME) != null) {
 
                 GraphQLType unwrappedQueryType = GraphQLUtils.unwrapNonNull(graphQlQuery.getType());
                 unwrappedQueryType = buildContext.typeCache.resolveType(unwrappedQueryType.getName());
@@ -410,7 +411,7 @@ public class OperationMapper {
                             .filter(Directives::isMappedType)
                             // only register the possible types that can actually be returned from the primary resolver
                             // for interface-unions it is all the possible types but, for inline unions, only one (right?) possible type can match
-                            .filter(implementation -> GenericTypeReflector.isSuperType(query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME).getReturnType().getType(), Directives.getMappedType(implementation).getType()))
+                            .filter(implementation -> GenericTypeReflector.isSuperType(query.getResolver(Id.RELAY_ID_FIELD_NAME).getReturnType().getType(), Directives.getMappedType(implementation).getType()))
                             .forEach(nodeType -> nodeQueriesByType.putIfAbsent(nodeType.getName(), query.getName())); //never override more precise resolvers
                 }
             }

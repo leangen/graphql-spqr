@@ -7,7 +7,6 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.annotations.EnumValue;
-import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.domain.Address;
 import io.leangen.graphql.domain.SimpleUser;
@@ -17,6 +16,7 @@ import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.util.GraphQLUtils;
 import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Id;
 import org.junit.Test;
 
 import java.util.EnumMap;
@@ -117,11 +117,11 @@ public class UniquenessTest {
 
     public static class RelayIdService {
 
-        public @GraphQLId(relayId = true) String getId(@GraphQLId(relayId = true) String in) {
+        public @Id(relayId = true) String getId(@Id(relayId = true) String in) {
             return in;
         }
 
-        public @GraphQLId(relayId = true) String getIdAgain(@GraphQLId(relayId = true) String in) {
+        public @Id(relayId = true) String getIdAgain(@Id(relayId = true) String in) {
             return in;
         }
     }

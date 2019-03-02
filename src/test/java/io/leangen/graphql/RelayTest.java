@@ -15,7 +15,6 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.domain.Cat;
 import io.leangen.graphql.domain.Character;
@@ -37,6 +36,7 @@ import io.leangen.graphql.services.UserService;
 import io.leangen.graphql.support.TestLog;
 import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
+import org.eclipse.microprofile.graphql.Id;
 import org.eclipse.microprofile.graphql.Argument;
 import org.eclipse.microprofile.graphql.Query;
 import org.junit.Test;
@@ -353,7 +353,7 @@ public class RelayTest {
         }
 
         @Query(value = "id")
-        public @GraphQLId(relayId = true) String getIsbn() {
+        public @Id(relayId = true) String getIsbn() {
             return isbn;
         }
     }
@@ -369,7 +369,7 @@ public class RelayTest {
         }
 
         @Query(value = "id")
-        public @GraphQLId(relayId = true) Book getBook() {
+        public @Id(relayId = true) Book getBook() {
             return book;
         }
 
@@ -392,7 +392,7 @@ public class RelayTest {
         }
 
         @Query
-        public Book book(@GraphQLId(relayId = true) String isbn) {
+        public Book book(@Id(relayId = true) String isbn) {
             return new Book("Node Book", isbn);
         }
     }
@@ -400,7 +400,7 @@ public class RelayTest {
     public static class DescriptorService {
 
         @Query
-        public Descriptor descriptor(@GraphQLId(relayId = true) Book book) {
+        public Descriptor descriptor(@Id(relayId = true) Book book) {
             return new Descriptor(book, "An imaginative book description");
         }
 
@@ -412,44 +412,44 @@ public class RelayTest {
 
     public static class PolymorphicPrimaryResolverService {
 
-        public Pet pet(@GraphQLId(relayId = true) int id) {
+        public Pet pet(@Id(relayId = true) int id) {
             return id % 2 == 0 ? new Cat() : new Dog();
         }
 
-        public Character character(@GraphQLId(relayId = true) int id) {
+        public Character character(@Id(relayId = true) int id) {
             return id % 2 == 0 ? new Robot("X3R0", "Zero") : new Human("Jack Alman", "Jackal");
         }
     }
 
     public static class PartialUnionPrimaryResolverService {
 
-        public @GraphQLUnion(name = "Character") Human character(@GraphQLId(relayId = true) int id, String name) {
+        public @GraphQLUnion(name = "Character") Human character(@Id(relayId = true) int id, String name) {
             return new Human("Jack Alman", "Jackal");
         }
 
-        public @GraphQLUnion(name = "Character") Robot character(@GraphQLId(relayId = true) int id) {
+        public @GraphQLUnion(name = "Character") Robot character(@Id(relayId = true) int id) {
             return new Robot("X3R0", "Zero");
         }
     }
 
     public static class DirectAndPolymorphicPrimaryResolverService {
 
-        public Pet pet(@GraphQLId(relayId = true) int id) {
+        public Pet pet(@Id(relayId = true) int id) {
             return id % 2 == 0 ? new Cat("Wrong") : new Dog("Correct");
         }
 
-        public Cat cat(@GraphQLId(relayId = true) int id) {
+        public Cat cat(@Id(relayId = true) int id) {
             return new Cat("Correct");
         }
     }
 
     public static class ExplicitNodeService {
 
-        public Cat node(@GraphQLId(relayId = true) int id) {
+        public Cat node(@Id(relayId = true) int id) {
             return new Cat("Correct");
         }
 
-        public Cat cat(@GraphQLId(relayId = true) int id) {
+        public Cat cat(@Id(relayId = true) int id) {
             return new Cat("Wrong");
         }
     }

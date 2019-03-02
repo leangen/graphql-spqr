@@ -1,11 +1,11 @@
 package io.leangen.graphql.services;
 
 import io.leangen.graphql.annotations.GraphQLComplexity;
-import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.domain.Address;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.domain.User;
+import org.eclipse.microprofile.graphql.Id;
 import org.eclipse.microprofile.graphql.Argument;
 import org.eclipse.microprofile.graphql.Mutation;
 import org.eclipse.microprofile.graphql.Query;
@@ -47,7 +47,7 @@ public class UserService<T> {
     }
 
     @Query(value = "users")
-    public List<User<String>> getUsersById(@Argument(value = "id") @GraphQLId Integer id) {
+    public List<User<String>> getUsersById(@Argument(value = "id") @Id Integer id) {
         User<String> user = new User<>();
         user.id = id;
         user.name = "Tatko";
@@ -111,7 +111,7 @@ public class UserService<T> {
 //	}
 
     @Query(value = "user")
-    public User<String> getUserById(@GraphQLId(relayId = true) Integer wonkyName) {
+    public User<String> getUserById(@Id(relayId = true) Integer wonkyName) {
         User<String> user = new User<>();
         user.id = 1;
         user.name = "One Dude";

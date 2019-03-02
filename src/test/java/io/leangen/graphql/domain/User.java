@@ -1,7 +1,7 @@
 package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLComplexity;
-import io.leangen.graphql.annotations.GraphQLId;
+import org.eclipse.microprofile.graphql.Id;
 import org.eclipse.microprofile.graphql.Query;
 
 import java.util.Collection;
@@ -31,7 +31,7 @@ public class User<T> implements Person {
         return name;
     }
 
-    @GraphQLId(relayId = true)
+    @Id(relayId = true)
     @Query(value = "id", description = "A person's id")
     public Integer getId() {
         return id;

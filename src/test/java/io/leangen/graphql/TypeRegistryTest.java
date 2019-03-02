@@ -5,7 +5,6 @@ import graphql.GraphQL;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.annotations.Info;
 import io.leangen.graphql.domain.Education;
@@ -17,6 +16,7 @@ import io.leangen.graphql.support.TestLog;
 import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
 import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Id;
 import org.junit.Test;
 
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
@@ -80,7 +80,7 @@ public class TypeRegistryTest {
         }
 
         @Query
-        public @GraphQLUnion(name = "mix") Union2<Street, Education> mix(@Info ResolutionEnvironment env, @GraphQLId(relayId = true) int id) {
+        public @GraphQLUnion(name = "mix") Union2<Street, Education> mix(@Info ResolutionEnvironment env, @Id(relayId = true) int id) {
             GraphQLOutputType mixType = env.globalEnvironment.typeRegistry.getOutputTypes("mix").get(0).graphQLType;
             assertTrue(mixType instanceof GraphQLObjectType);
             return null;

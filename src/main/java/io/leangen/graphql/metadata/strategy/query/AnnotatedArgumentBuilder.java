@@ -1,6 +1,5 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
@@ -11,6 +10,7 @@ import io.leangen.graphql.metadata.strategy.value.JsonDefaultValueProvider;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
 import io.leangen.graphql.util.Urls;
+import org.eclipse.microprofile.graphql.Id;
 import org.eclipse.microprofile.graphql.Argument;
 import org.eclipse.microprofile.graphql.DefaultValue;
 import org.eclipse.microprofile.graphql.Source;
@@ -65,8 +65,8 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
     }
 
     protected String getArgumentName(Parameter parameter, AnnotatedType parameterType, InclusionStrategy inclusionStrategy, MessageBundle messageBundle) {
-        if (Optional.ofNullable(parameterType.getAnnotation(GraphQLId.class)).filter(GraphQLId::relayId).isPresent()) {
-            return GraphQLId.RELAY_ID_FIELD_NAME;
+        if (Optional.ofNullable(parameterType.getAnnotation(Id.class)).filter(Id::relayId).isPresent()) {
+            return Id.RELAY_ID_FIELD_NAME;
         }
         Argument meta = parameter.getAnnotation(Argument.class);
         if (meta != null && !meta.value().isEmpty()) {

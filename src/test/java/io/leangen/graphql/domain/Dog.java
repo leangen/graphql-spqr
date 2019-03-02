@@ -1,7 +1,7 @@
 package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLComplexity;
-import io.leangen.graphql.annotations.GraphQLId;
+import org.eclipse.microprofile.graphql.Id;
 import org.eclipse.microprofile.graphql.Query;
 
 public class Dog implements Pet {
@@ -42,7 +42,7 @@ public class Dog implements Pet {
     }
 
     @Query(value = "id")
-    public @GraphQLId(relayId = true) Number getDogTagNum() {
+    public @Id(relayId = true) Number getDogTagNum() {
         return dogTagNum;
     }
 }

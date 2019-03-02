@@ -1,6 +1,6 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.GraphQLId;
+import org.eclipse.microprofile.graphql.Id;
 import org.eclipse.microprofile.graphql.Query;
 
 public class Robot implements Character {
@@ -14,7 +14,7 @@ public class Robot implements Character {
     }
 
     @Query(value = "id")
-    public @GraphQLId(relayId = true) String getModel() {
+    public @Id(relayId = true) String getModel() {
         return model;
     }
 

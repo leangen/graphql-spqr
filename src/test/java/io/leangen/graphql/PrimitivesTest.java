@@ -4,11 +4,11 @@ import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import org.eclipse.microprofile.graphql.Argument;
 import org.eclipse.microprofile.graphql.DefaultValue;
 import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Id;
 import org.junit.Test;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;
@@ -38,7 +38,7 @@ public class PrimitivesTest {
 
         field = query.getFieldDefinition("relayIdPrimitive");
         assertSame(field.getType(), io.leangen.graphql.util.Scalars.RelayId);
-        assertSame(field.getArgument(GraphQLId.RELAY_ID_FIELD_NAME).getType(), io.leangen.graphql.util.Scalars.RelayId);
+        assertSame(field.getArgument(Id.RELAY_ID_FIELD_NAME).getType(), io.leangen.graphql.util.Scalars.RelayId);
 
         field = query.getFieldDefinition("nonNullInteger");
         assertNonNull(field.getType(), Scalars.GraphQLInt);
@@ -90,7 +90,7 @@ public class PrimitivesTest {
         }
 
         @Query
-        public @GraphQLId(relayId = true) int relayIdPrimitive(@GraphQLId(relayId = true) int in) {
+        public @Id(relayId = true) int relayIdPrimitive(@Id(relayId = true) int in) {
             return in;
         }
 

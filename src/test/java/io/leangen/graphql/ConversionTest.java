@@ -3,17 +3,16 @@ package io.leangen.graphql;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import org.eclipse.microprofile.graphql.Argument;
 import org.eclipse.microprofile.graphql.Query;
+import org.eclipse.microprofile.graphql.Id;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import java.lang.annotation.ElementType;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -181,7 +180,7 @@ public class ConversionTest {
 
     public static class IdService {
         @Query
-        public NestedId echo(@GraphQLId(relayId = true) NestedId id) {
+        public NestedId echo(@Id(relayId = true) NestedId id) {
             return id;
         }
 
@@ -195,7 +194,7 @@ public class ConversionTest {
 
         private Map<String, String> key;
 
-        public @GraphQLId(relayId = true) Map<String, String> getKey() {
+        public @Id(relayId = true) Map<String, String> getKey() {
             return key;
         }
 
@@ -204,7 +203,7 @@ public class ConversionTest {
         }
     }
 
-    @GraphQLId(relayId = true)
+    @Id(relayId = true)
     public static class AnnotatedId {
         public String value;
     }

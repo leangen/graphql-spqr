@@ -1,6 +1,6 @@
 package io.leangen.graphql.domain;
 
-import io.leangen.graphql.annotations.GraphQLId;
+import org.eclipse.microprofile.graphql.Id;
 import org.eclipse.microprofile.graphql.Query;
 
 public class Cat implements Pet {
@@ -28,7 +28,7 @@ public class Cat implements Pet {
     }
 
     @Query(value = "id")
-    public @GraphQLId(relayId = true) String getPassportNumber() {
+    public @Id(relayId = true) String getPassportNumber() {
         return passportNumber;
     }
 

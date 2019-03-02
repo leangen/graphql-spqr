@@ -9,7 +9,7 @@ import graphql.schema.GraphQLModifiedType;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLType;
-import io.leangen.graphql.annotations.GraphQLId;
+import org.eclipse.microprofile.graphql.Id;
 
 public class GraphQLUtils {
 
@@ -23,11 +23,11 @@ public class GraphQLUtils {
     private static final String CONNECTION = "Connection";
 
     public static boolean isRelayId(GraphQLFieldDefinition field) {
-        return field.getName().equals(GraphQLId.RELAY_ID_FIELD_NAME) && isRelayId(field.getType());
+        return field.getName().equals(Id.RELAY_ID_FIELD_NAME) && isRelayId(field.getType());
     }
 
     public static boolean isRelayId(GraphQLArgument argument) {
-        return argument.getName().equals(GraphQLId.RELAY_ID_FIELD_NAME) && isRelayId(argument.getType());
+        return argument.getName().equals(Id.RELAY_ID_FIELD_NAME) && isRelayId(argument.getType());
     }
 
     public static boolean isRelayId(GraphQLType type) {
@@ -38,8 +38,8 @@ public class GraphQLUtils {
         return node instanceof GraphQLInterfaceType
                 && node.getName().equals(Relay.NODE)
                 && ((GraphQLInterfaceType) node).getFieldDefinitions().size() == 1
-                && ((GraphQLInterfaceType) node).getFieldDefinition(GraphQLId.RELAY_ID_FIELD_NAME) != null
-                && isRelayId(((GraphQLInterfaceType) node).getFieldDefinition(GraphQLId.RELAY_ID_FIELD_NAME));
+                && ((GraphQLInterfaceType) node).getFieldDefinition(Id.RELAY_ID_FIELD_NAME) != null
+                && isRelayId(((GraphQLInterfaceType) node).getFieldDefinition(Id.RELAY_ID_FIELD_NAME));
     }
 
     public static boolean isRelayConnectionType(GraphQLType type) {

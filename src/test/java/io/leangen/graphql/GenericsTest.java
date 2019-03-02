@@ -11,7 +11,6 @@ import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
@@ -20,6 +19,7 @@ import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import io.leangen.graphql.services.GenericItemRepo;
 import org.eclipse.microprofile.graphql.Argument;
+import org.eclipse.microprofile.graphql.Id;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -59,7 +59,7 @@ public class GenericsTest {
     // This is a JDK8 bug: http://stackoverflow.com/questions/39952812
     private static final AnnotatedType nonNullString = new TypeToken<GenericItemRepo<@GraphQLNonNull String>>() {
     }.getAnnotatedType();
-    private static final AnnotatedType dateId = new TypeToken<GenericItemRepo<@GraphQLId(relayId = true) Date>>() {
+    private static final AnnotatedType dateId = new TypeToken<GenericItemRepo<@Id(relayId = true) Date>>() {
     }.getAnnotatedType();
     private static final AnnotatedType listOfWildcardNumbers = new TypeToken<GenericItemRepo<@GraphQLNonNull List<? extends Number>>>() {
     }.getAnnotatedType();
@@ -108,7 +108,7 @@ public class GenericsTest {
 
     @Test
     public void testRelayIdGenerics() {
-        GenericItemRepo<@GraphQLId(relayId = true) Date> dateIdService = new GenericItemRepo<>();
+        GenericItemRepo<@Id(relayId = true) Date> dateIdService = new GenericItemRepo<>();
         final Date firstEvent = new Date(1000);
         final Date secondEvent = new Date(2000);
         dateIdService.addItem("firstEvent", firstEvent);
