@@ -44,6 +44,7 @@ import io.leangen.graphql.generator.mapping.common.EnumMapToObjectTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.EnumMapper;
 import io.leangen.graphql.generator.mapping.common.EnvironmentInjector;
 import io.leangen.graphql.generator.mapping.common.IdAdapter;
+import io.leangen.graphql.generator.mapping.common.IdMapper;
 import io.leangen.graphql.generator.mapping.common.InputValueDeserializer;
 import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
 import io.leangen.graphql.generator.mapping.common.IterableAdapter;
@@ -868,7 +869,7 @@ public class GraphQLSchemaGenerator {
         PublisherAdapter publisherAdapter = new PublisherAdapter();
         EnumMapper enumMapper = new EnumMapper(javaDeprecationConfig);
         typeMappers = Arrays.asList(
-                new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
+                new NonNullMapper(), new IdMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
                 publisherAdapter, new AnnotationMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
                 new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
