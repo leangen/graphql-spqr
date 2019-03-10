@@ -2,6 +2,8 @@ package io.leangen.graphql.support;
 
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLInputObjectType;
+import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLModifiedType;
 import graphql.schema.GraphQLNonNull;
@@ -66,6 +68,16 @@ public class GraphQLTypeAssertions {
         assertTrue(entry instanceof GraphQLObjectType);
         GraphQLOutputType key = ((GraphQLObjectType) entry).getFieldDefinition("key").getType();
         GraphQLOutputType value = ((GraphQLObjectType) entry).getFieldDefinition("value").getType();
+        assertTrue(keyType.isAssignableFrom(key.getClass()));
+        assertTrue(valueType.isAssignableFrom(value.getClass()));
+    }
+
+    public static void assertInputMapOf(GraphQLType mapType, Class<? extends GraphQLType> keyType, Class<? extends GraphQLType> valueType) {
+        assertEquals(GraphQLList.class, mapType.getClass());
+        GraphQLType entry = GraphQLUtils.unwrap(mapType);
+        assertTrue(entry instanceof GraphQLInputObjectType);
+        GraphQLInputType key = ((GraphQLInputObjectType) entry).getFieldDefinition("key").getType();
+        GraphQLInputType value = ((GraphQLInputObjectType) entry).getFieldDefinition("value").getType();
         assertTrue(keyType.isAssignableFrom(key.getClass()));
         assertTrue(valueType.isAssignableFrom(value.getClass()));
     }

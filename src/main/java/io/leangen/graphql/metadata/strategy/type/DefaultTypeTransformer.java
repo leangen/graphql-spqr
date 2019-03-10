@@ -23,8 +23,8 @@ public class DefaultTypeTransformer implements TypeTransformer {
     }
 
     @Override
-    public AnnotatedType transform(AnnotatedType annotatedType) throws TypeMappingException {
-        annotatedType = ClassUtils.eraseBounds(annotatedType, unboundedReplacement);
-        return ClassUtils.completeGenerics(annotatedType, rawReplacement);
+    public AnnotatedType transform(AnnotatedType type) throws TypeMappingException {
+        type = ClassUtils.eraseBounds(type, unboundedReplacement);
+        return ClassUtils.completeGenerics(type, rawReplacement);
     }
 }

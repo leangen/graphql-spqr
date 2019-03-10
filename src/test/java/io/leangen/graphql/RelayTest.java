@@ -115,7 +115,7 @@ public class RelayTest {
     public void testRelayMutations() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
-                .withTypeAdapters(new MapToListTypeAdapter<>())
+                .withTypeAdapters(new MapToListTypeAdapter())
                 .withRelayCompliantMutations()
                 .generate();
 

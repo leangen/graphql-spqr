@@ -22,10 +22,13 @@ public class EnvironmentInjector implements ArgumentInjector {
     
     @Override
     public Object getArgumentValue(ArgumentInjectorParams params) {
+        Class raw = GenericTypeReflector.erase(params.getType().getType());
+        if (ResolutionEnvironment.class.isAssignableFrom(raw)) {
+            return params.getResolutionEnvironment();
+        }
         if (GenericTypeReflector.isSuperType(setOfStrings, params.getType().getType())) {
             return params.getResolutionEnvironment().dataFetchingEnvironment.getSelectionSet().get().keySet();
         }
-        Class raw = GenericTypeReflector.erase(params.getType().getType());
         if (Field.class.equals(raw)) {
             return params.getResolutionEnvironment().fields.get(0);
         }
@@ -35,10 +38,7 @@ public class EnvironmentInjector implements ArgumentInjector {
         if (ValueMapper.class.isAssignableFrom(raw)) {
             return params.getResolutionEnvironment().valueMapper;
         }
-        if (ResolutionEnvironment.class.isAssignableFrom(raw)) {
-            return params.getResolutionEnvironment();
-        }
-        throw new IllegalArgumentException("Argument of type " + raw.getName() 
+        throw new IllegalArgumentException("Argument of type " + raw.getName()
                 + " can not be injected via @" + GraphQLEnvironment.class.getSimpleName());
     }
 

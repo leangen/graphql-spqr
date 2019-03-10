@@ -96,7 +96,7 @@ public class SchemaTest {
     public void testSchema() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
-                .withTypeAdapters(new MapToListTypeAdapter<>())
+                .withTypeAdapters(new MapToListTypeAdapter())
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .generate();
 

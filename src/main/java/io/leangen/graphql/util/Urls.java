@@ -5,6 +5,7 @@ public final class Urls {
     public static final String ISSUES = "https://github.com/leangen/graphql-spqr/issues";
 
     public static final class Errors {
+        public static final String DERIVED_TYPES = "https://github.com/leangen/graphql-spqr/wiki/Errors#derived-types";
         public static final String DYNAMIC_PROXIES = "https://github.com/leangen/graphql-spqr/wiki/Errors#dynamic-proxies";
         public static final String TOP_LEVEL_GENERICS = "https://github.com/leangen/graphql-spqr/wiki/Errors#generic-top-level-singletons";
         public static final String NON_UNIQUE_TYPE_NAME = "https://github.com/leangen/graphql-spqr/wiki/Errors#non-unique-type-name";

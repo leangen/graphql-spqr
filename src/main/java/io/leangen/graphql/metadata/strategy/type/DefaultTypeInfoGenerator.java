@@ -26,7 +26,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
             String baseName = generateSimpleName(type, messageBundle);
             StringBuilder genericName = new StringBuilder(baseName);
             Arrays.stream(((AnnotatedParameterizedType) type).getAnnotatedActualTypeArguments())
-                    .map(t -> generateSimpleName(t, messageBundle))
+                    .map(t -> generateTypeName(t, messageBundle))
                     .forEach(argName -> genericName.append("_").append(argName));
             return genericName.toString();
         }

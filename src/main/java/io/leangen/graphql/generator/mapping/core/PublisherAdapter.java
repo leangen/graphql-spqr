@@ -81,7 +81,7 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper implemen
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(Publisher.class, type.getType());
+        return ClassUtils.isSuperClass(Publisher.class, type);
     }
 
     private <R> CompletableFuture<DataFetcherResult<List<R>>> collect(Publisher<R> publisher, ExecutionStepInfo step) {

@@ -60,7 +60,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeseria
 
     @Override
     public boolean isDirectlyDeserializable(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(JsonElement.class, type.getType());
+        return ClassUtils.isSuperClass(JsonElement.class, type);
     }
 
     public static Builder builder() {

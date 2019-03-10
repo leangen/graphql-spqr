@@ -1,12 +1,12 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import graphql.schema.GraphQLOutputType;
-import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.union.Union;
+import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
@@ -28,6 +28,6 @@ public class UnionInlineMapper extends UnionMapper {
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(Union.class, type.getType());
+        return ClassUtils.isSuperClass(Union.class, type);
     }
 }

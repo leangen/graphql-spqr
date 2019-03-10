@@ -1,14 +1,14 @@
 package io.leangen.graphql.generator.mapping.common;
 
+import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.execution.ResolutionEnvironment;
+import io.leangen.graphql.generator.mapping.AbstractSimpleTypeAdapter;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+
 import java.lang.reflect.AnnotatedType;
 import java.util.OptionalLong;
 
-import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.execution.ResolutionEnvironment;
-import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
-import io.leangen.graphql.metadata.strategy.value.ValueMapper;
-
-public class OptionalLongAdapter extends AbstractTypeAdapter<OptionalLong, Long> {
+public class OptionalLongAdapter extends AbstractSimpleTypeAdapter<OptionalLong, Long> {
     
     @Override
     public Long convertOutput(OptionalLong original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {

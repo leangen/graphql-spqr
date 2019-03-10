@@ -15,5 +15,5 @@ public interface ValueMapper {
 
     <T> T fromString(String json, AnnotatedType type) throws InputParsingException;
     
-    String toString(Object output);
+    String toString(Object output, AnnotatedType type);
 }

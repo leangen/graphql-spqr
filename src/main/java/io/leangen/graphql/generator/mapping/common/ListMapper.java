@@ -7,6 +7,7 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
@@ -29,7 +30,7 @@ public class ListMapper implements TypeMapper {
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(Collection.class, type.getType());
+        return ClassUtils.isSuperClass(Collection.class, type);
     }
     
     private AnnotatedType getElementType(AnnotatedType javaType) {

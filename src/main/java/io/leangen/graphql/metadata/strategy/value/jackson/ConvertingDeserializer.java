@@ -23,19 +23,22 @@ import java.util.List;
 public class ConvertingDeserializer extends JsonDeserializer implements ContextualDeserializer {
 
     private final AnnotatedType detectedType;
+    private final JavaType substituteType;
     private final InputConverter inputConverter;
     private final GlobalEnvironment environment;
     private final ValueMapper valueMapper;
 
     public ConvertingDeserializer(InputConverter inputConverter, GlobalEnvironment environment) {
         this.detectedType = null;
+        this.substituteType = null;
         this.inputConverter = inputConverter;
         this.environment = environment;
         this.valueMapper = null;
     }
 
-    private ConvertingDeserializer(AnnotatedType detectedType, InputConverter inputConverter, GlobalEnvironment environment, ObjectMapper objectMapper) {
+    private ConvertingDeserializer(AnnotatedType detectedType, JavaType substituteType, InputConverter inputConverter, GlobalEnvironment environment, ObjectMapper objectMapper) {
         this.detectedType = detectedType;
+        this.substituteType = substituteType;
         this.inputConverter = inputConverter;
         this.environment = environment;
         this.valueMapper = new JacksonValueMapper(objectMapper);
@@ -45,9 +48,10 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
     public JsonDeserializer<?> createContextual(DeserializationContext deserializationContext, BeanProperty beanProperty) {
         JavaType javaType = deserializationContext.getContextualType() != null ? deserializationContext.getContextualType() : extractType(beanProperty.getMember());
         Annotation[] annotations = annotations(beanProperty);
-        AnnotatedType detectedType = ClassUtils.addAnnotations(TypeUtils.toJavaType(javaType), annotations);
+        AnnotatedType detectedType = environment.typeTransformer.transform(ClassUtils.addAnnotations(TypeUtils.toJavaType(javaType), annotations));
+        JavaType substituteType = deserializationContext.getTypeFactory().constructType(environment.getMappableInputType(detectedType).getType());
         if (inputConverter.supports(detectedType)) {
-            return new ConvertingDeserializer(detectedType, inputConverter, environment, (ObjectMapper) deserializationContext.getParser().getCodec());
+            return new ConvertingDeserializer(detectedType, substituteType, inputConverter, environment, (ObjectMapper) deserializationContext.getParser().getCodec());
         } else {
             return new DefaultDeserializer(javaType);
         }
@@ -65,7 +69,6 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
     @Override
     @SuppressWarnings("unchecked")
     public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-        JavaType substituteType = deserializationContext.getTypeFactory().constructType(environment.getMappableInputType(detectedType).getType());
         Object substitute = deserializationContext.readValue(jsonParser, substituteType);
         return inputConverter.convertInput(substitute, detectedType, environment, valueMapper);
     }

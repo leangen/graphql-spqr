@@ -33,6 +33,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
 
     private final Gson gson;
     private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
+    private static final Gson NO_CONVERTERS = new Gson();
 
     GsonValueMapper(Gson gson) {
         this.gson = gson;
@@ -45,7 +46,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
             return (T) graphQLInput;
         }
         try {
-            JsonElement jsonElement = gson.toJsonTree(graphQLInput, sourceType);
+            JsonElement jsonElement = NO_CONVERTERS.toJsonTree(graphQLInput, sourceType);
             return gson.fromJson(jsonElement, outputType.getType());
         } catch (JsonSyntaxException e) {
             throw new InputParsingException(graphQLInput, outputType.getType(), e);
@@ -66,11 +67,11 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
     }
 
     @Override
-    public String toString(Object output) {
+    public String toString(Object output, AnnotatedType type) {
         if (output == null || output instanceof String) {
             return (String) output;
         }
-        return gson.toJson(output);
+        return gson.toJson(output, type.getType());
     }
 
     /**

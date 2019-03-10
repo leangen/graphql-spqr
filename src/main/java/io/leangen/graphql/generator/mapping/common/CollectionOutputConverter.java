@@ -1,48 +1,48 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.AnnotatedType;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.ResolutionEnvironment;
-import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
+import io.leangen.graphql.util.ClassUtils;
+
+import java.lang.reflect.AnnotatedType;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Only used to trigger the conversion on the components of collections, or keys/values of maps
- * @author Bojan Tomic (kaqqao)
+ * Only used to trigger the conversion of collection elements
  */
-public class CollectionOutputConverter implements OutputConverter {
+public class CollectionOutputConverter implements DelegatingOutputConverter<Collection<?>, Collection<?>> {
 
     @Override
-    public Object convertOutput(Object original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        if (GenericTypeReflector.isSuperType(Collection.class, type.getType())) {
-            return processCollection((Collection<?>) original, (AnnotatedParameterizedType) type, resolutionEnvironment);
-        }
-        return processMap((Map<?, ?>) original, (AnnotatedParameterizedType) type, resolutionEnvironment);
+    public Collection<?> convertOutput(Collection<?> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        return processCollection(original, resolutionEnvironment.getDerived(type, 0), resolutionEnvironment);
+    }
+
+    @Override
+    public List<AnnotatedType> getDerivedTypes(AnnotatedType collectionType) {
+        return Collections.singletonList(getElementType(collectionType));
+    }
+
+    @Override
+    public boolean isTransparent() {
+        return true;
     }
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(Collection.class, type.getType())
-                || GenericTypeReflector.isSuperType(Map.class, type.getType());
+        return ClassUtils.isSuperClass(Collection.class, type);
     }
 
-    private List<?> processCollection(Collection<?> collection, AnnotatedParameterizedType type, ResolutionEnvironment resolutionEnvironment) {
+    private List<?> processCollection(Collection<?> collection, AnnotatedType elementType, ResolutionEnvironment resolutionEnvironment) {
         return collection.stream()
-                .map(e -> resolutionEnvironment.convertOutput(e, type.getAnnotatedActualTypeArguments()[0]))
+                .map(e -> resolutionEnvironment.convertOutput(e, elementType))
                 .collect(Collectors.toList());
     }
 
-    private Map<?, ?> processMap(Map<?, ?> map, AnnotatedParameterizedType type, ResolutionEnvironment resolutionEnvironment) {
-        Map<?, ?> processed = new LinkedHashMap<>();
-        map.forEach((k, v) -> processed.put(
-                resolutionEnvironment.convertOutput(k, type.getAnnotatedActualTypeArguments()[0]),
-                resolutionEnvironment.convertOutput(v, type.getAnnotatedActualTypeArguments()[1])));
-        return processed;
+    private AnnotatedType getElementType(AnnotatedType collectionType) {
+        return GenericTypeReflector.getTypeParameter(collectionType, Collection.class.getTypeParameters()[0]);
     }
 }

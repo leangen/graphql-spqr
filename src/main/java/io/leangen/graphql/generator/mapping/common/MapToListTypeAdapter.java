@@ -15,6 +15,7 @@ import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
@@ -38,18 +39,29 @@ import static graphql.schema.GraphQLObjectType.newObject;
  * As maps are dynamic structures with no equivalent in GraphQL, they require special treatment.
  * This adapter turns a map into a list of key-value pairs (instances of {@link MapToListTypeAdapter.MapEntry}).
  */
-public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, List<MapToListTypeAdapter.MapEntry<K,V>>> {
+public class MapToListTypeAdapter extends AbstractTypeAdapter<Map<?, ?>, List<MapToListTypeAdapter.MapEntry<?, ?>>>
+        implements DelegatingOutputConverter<Map<?, ?>, List<MapToListTypeAdapter.MapEntry<?, ?>>> {
+
+    private final MapOutputConverter converter;
+
+    public MapToListTypeAdapter() {
+        this.converter = new MapOutputConverter();
+    }
+
+    private MapToListTypeAdapter(MapOutputConverter converter) {
+        this.converter = converter;
+    }
 
     @Override
-    public List<MapToListTypeAdapter.MapEntry<K,V>> convertOutput(Map<K, V> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        return original.entrySet().stream()
+    public List<MapToListTypeAdapter.MapEntry<?, ?>> convertOutput(Map<?, ?> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        return converter.convertOutput(original, type, resolutionEnvironment).entrySet().stream()
                 .map(entry -> new MapToListTypeAdapter.MapEntry<>(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Map<K,V> convertInput(List<MapEntry<K, V>> original, AnnotatedType type, GlobalEnvironment environment, ValueMapper valueMapper) {
-        Map<K, V> initial = GenericTypeReflector.isSuperType(type.getType(), HashMap.class) ? new HashMap<>() : ClassUtils.instance(type);
+    public Map<?, ?> convertInput(List<MapEntry<?, ?>> original, AnnotatedType type, GlobalEnvironment environment, ValueMapper valueMapper) {
+        Map<Object, Object> initial = ClassUtils.isSuperClass(type, HashMap.class) ? new HashMap<>() : ClassUtils.instance(type);
         return original.stream().collect(toMap(MapEntry::getKey, MapEntry::getValue, initial));
     }
 
@@ -78,8 +90,13 @@ public class MapToListTypeAdapter<K,V> extends AbstractTypeAdapter<Map<K,V>, Lis
     }
 
     @Override
+    public List<AnnotatedType> getDerivedTypes(AnnotatedType mapType) {
+        return converter.getDerivedTypes(mapType);
+    }
+
+    @Override
     public boolean supports(AnnotatedType type) {
-        return super.supports(type) && !type.isAnnotationPresent(GraphQLScalar.class);
+        return ClassUtils.isSuperClass(Map.class, type) && !type.isAnnotationPresent(GraphQLScalar.class);
     }
 
     private GraphQLOutputType mapEntry(GraphQLOutputType keyType, GraphQLOutputType valueType, BuildContext buildContext) {

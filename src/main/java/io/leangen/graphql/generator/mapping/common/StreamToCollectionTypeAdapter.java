@@ -1,27 +1,30 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import java.lang.reflect.AnnotatedType;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolutionEnvironment;
-import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.generator.mapping.AbstractSimpleTypeAdapter;
+import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+
+import java.lang.reflect.AnnotatedType;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class StreamToCollectionTypeAdapter<T> extends AbstractTypeAdapter<Stream<T>, List<T>> {
+public class StreamToCollectionTypeAdapter<T> extends AbstractSimpleTypeAdapter<Stream<T>, List<T>>
+        implements DelegatingOutputConverter<Stream<T>, List<T>> {
 
     @Override
-    public List<T> convertOutput(Stream<T> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+    public List<T> convertOutput(Stream<T> original, AnnotatedType type, ResolutionEnvironment env) {
         try (Stream<T> stream = original) {
             return stream
-                    .map(item -> resolutionEnvironment.<T, T>convertOutput(item, getElementType(type)))
+                    .map(item -> env.<T, T>convertOutput(item, env.getDerived(type, 0)))
                     .collect(Collectors.toList());
         }
     }
@@ -38,5 +41,10 @@ public class StreamToCollectionTypeAdapter<T> extends AbstractTypeAdapter<Stream
     
     private AnnotatedType getElementType(AnnotatedType type) {
         return GenericTypeReflector.getTypeParameter(type, Stream.class.getTypeParameters()[0]);
+    }
+
+    @Override
+    public List<AnnotatedType> getDerivedTypes(AnnotatedType streamType) {
+        return Collections.singletonList(getElementType(streamType));
     }
 }

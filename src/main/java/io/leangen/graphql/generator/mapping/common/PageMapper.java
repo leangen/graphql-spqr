@@ -11,6 +11,7 @@ import io.leangen.graphql.execution.relay.Connection;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedType;
@@ -50,6 +51,6 @@ public class PageMapper extends ObjectTypeMapper {
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(Connection.class, type.getType());
+        return ClassUtils.isSuperClass(Connection.class, type);
     }
 }

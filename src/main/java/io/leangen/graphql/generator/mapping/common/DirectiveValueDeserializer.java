@@ -1,12 +1,12 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import graphql.introspection.Introspection;
-import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLDirective;
 import io.leangen.graphql.execution.Directives;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
@@ -33,7 +33,7 @@ public class DirectiveValueDeserializer implements ArgumentInjector {
     @Override
     public Object getArgumentValue(ArgumentInjectorParams params) {
         GraphQLDirective descriptor = params.getParameter().getAnnotation(GraphQLDirective.class);
-        boolean allDirectives = GenericTypeReflector.isSuperType(Collection.class, params.getType().getType());
+        boolean allDirectives = ClassUtils.isSuperClass(Collection.class, params.getType());
         ResolutionEnvironment env = params.getResolutionEnvironment();
         String fallBackDirectiveName = env.globalEnvironment.typeInfoGenerator.generateDirectiveTypeName(params.getBaseType(), env.globalEnvironment.messageBundle);
         String directiveName = Utils.coalesce(descriptor.name(), fallBackDirectiveName);

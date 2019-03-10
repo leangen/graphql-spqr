@@ -11,6 +11,7 @@ import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
+import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Set;
@@ -53,13 +54,13 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
     }
 
     private String getTypeName(AnnotatedType javaType, AnnotatedType graphQLType, TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle) {
-        if (GenericTypeReflector.isSuperType(GraphQLScalarType.class, graphQLType.getType())) {
+        if (ClassUtils.isSuperClass(GraphQLScalarType.class, graphQLType)) {
             return typeInfoGenerator.generateScalarTypeName(javaType, messageBundle);
         }
-        if (GenericTypeReflector.isSuperType(GraphQLEnumType.class, graphQLType.getType())) {
+        if (ClassUtils.isSuperClass(GraphQLEnumType.class, graphQLType)) {
             return typeInfoGenerator.generateTypeName(javaType, messageBundle);
         }
-        if (GenericTypeReflector.isSuperType(GraphQLInputType.class, graphQLType.getType())) {
+        if (ClassUtils.isSuperClass(GraphQLInputType.class, graphQLType)) {
             return typeInfoGenerator.generateInputTypeName(javaType, messageBundle);
         }
         return typeInfoGenerator.generateTypeName(javaType, messageBundle);

@@ -2,7 +2,6 @@ package io.leangen.graphql.generator.mapping.common;
 
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLScalarType;
-import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
@@ -26,7 +25,7 @@ public class ObjectScalarMapper extends CachingMapper<GraphQLScalarType, GraphQL
         GraphQLDirective[] directives = buildContext.directiveBuilder.buildScalarTypeDirectives(javaType, buildContext.directiveBuilderParams()).stream()
                 .map(directive -> operationMapper.toGraphQLDirective(directive, buildContext))
                 .toArray(GraphQLDirective[]::new);
-        return GenericTypeReflector.isSuperType(Map.class, javaType.getType())
+        return ClassUtils.isSuperClass(Map.class, javaType)
                 ? Scalars.graphQLMapScalar(typeName, directives)
                 : Scalars.graphQLObjectScalar(typeName, directives);
     }
@@ -40,7 +39,7 @@ public class ObjectScalarMapper extends CachingMapper<GraphQLScalarType, GraphQL
     public boolean supports(AnnotatedType type) {
         return type.isAnnotationPresent(GraphQLScalar.class)
                 || Object.class.equals(type.getType())
-                || GenericTypeReflector.isSuperType(Map.class, type.getType());
+                || ClassUtils.isSuperClass(Map.class, type);
     }
 
     @Override

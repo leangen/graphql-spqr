@@ -3,10 +3,15 @@ package io.leangen.graphql;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
+import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.generator.mapping.ConverterRegistry;
+import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
+import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -15,17 +20,23 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.lang.annotation.ElementType;
+import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests whether various input/output converters are doing their job
@@ -86,6 +97,15 @@ public class ConversionTest {
         assertValueAtPathEquals("YnVubmllcyBhcmUgY3VkZGx5IHRvbw==", result, "echo.binaries.1");
     }
 
+    @Test
+    public void testFutureConversion() {
+        GraphQL api = getApi();
+
+        ExecutionResult result = api.execute("{echo(in:{future: \"xyz\"}) {future}}");
+        assertNoErrors(result);
+        assertValueAtPathEquals("xyz", result, "echo.future");
+    }
+
     /**
      * Due to the lack of support for {@code AnnotatedType} in <i>all</i> JSON libraries for Java,
      * {@link ElementType#TYPE_USE} annotations on input field types or nested operation argument types are lost.
@@ -107,11 +127,44 @@ public class ConversionTest {
         assertNoErrors(result);
     }
 
+    @Test
+    public void testConverterOptimization() {
+        OutputConverter collectionConverter = new CollectionOutputConverter();
+        OutputConverter optionalAdapter = new OptionalAdapter();
+        OutputConverter mapToListAdapter = new MapToListTypeAdapter();
+        ConverterRegistry registry = new ConverterRegistry(Collections.emptyList(), Arrays.asList(
+                collectionConverter, optionalAdapter, mapToListAdapter));
+
+        AnnotatedType string = new TypeToken<String>(){}.getAnnotatedType();
+        AnnotatedType listOfStrings = new TypeToken<List<String>>(){}.getAnnotatedType();
+        AnnotatedType listOfOptionals = new TypeToken<List<Optional<String>>>(){}.getAnnotatedType();
+        AnnotatedType mapOfOptionals = new TypeToken<Map<String, Optional<String>>>(){}.getAnnotatedType();
+
+        List<OutputConverter> optimized = registry.optimize(Collections.singletonList(string)).getOutputConverters();
+        assertTrue(optimized.isEmpty());
+
+        optimized = registry.optimize(Collections.singletonList(listOfStrings)).getOutputConverters();
+        assertTrue(optimized.isEmpty());
+
+        optimized = registry.optimize(Collections.singletonList(listOfOptionals)).getOutputConverters();
+        assertEquals(2, optimized.size());
+        assertTrue(optimized.contains(collectionConverter));
+        assertTrue(optimized.contains(optionalAdapter));
+
+        optimized = registry.optimize(Collections.singletonList(mapOfOptionals)).getOutputConverters();
+        assertEquals(2, optimized.size());
+        assertTrue(optimized.contains(mapToListAdapter));
+        assertTrue(optimized.contains(optionalAdapter));
+
+        ConverterRegistry optimizedRegistry = registry.optimize(Arrays.asList(listOfOptionals, mapOfOptionals));
+        assertSame(registry, optimizedRegistry);
+    }
+
     private GraphQL getApi() {
         return GraphQL.newGraphQL(
                 new TestSchemaGenerator()
                         .withValueMapperFactory(valueMapperFactory)
-                        .withTypeAdapters(new MapToListTypeAdapter<>())
+                        .withTypeAdapters(new MapToListTypeAdapter())
                         .withOperationsFromSingleton(new ComplexService())
                         .generate())
                 .build();
@@ -131,6 +184,7 @@ public class ConversionTest {
         private List<Optional<LinkedHashMap<String, Integer>>> mapList;
         private List<byte[]> binaries;
         private Stream<Iterable<List<Optional<String>>>> iterable;
+        private CompletableFuture<Optional<String>> future;
 
         public String getName() {
             return name;
@@ -176,6 +230,14 @@ public class ConversionTest {
 
         public void setIterable(Stream<Iterable<List<Optional<String>>>> iterable) {
             this.iterable = iterable;
+        }
+
+        public CompletableFuture<Optional<String>> getFuture() {
+            return future;
+        }
+
+        public void setFuture(CompletableFuture<Optional<String>> future) {
+            this.future = future;
         }
     }
 

@@ -40,9 +40,9 @@ public class IdAdapter implements TypeMapper, ArgumentInjector, OutputConverter<
     @Override
     public String convertOutput(Object original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         if (type.getAnnotation(GraphQLId.class).relayId()) {
-            return resolutionEnvironment.globalEnvironment.relay.toGlobalId(resolutionEnvironment.parentType.getName(), resolutionEnvironment.valueMapper.toString(original));
+            return resolutionEnvironment.globalEnvironment.relay.toGlobalId(resolutionEnvironment.parentType.getName(), resolutionEnvironment.valueMapper.toString(original, type));
         }
-        return resolutionEnvironment.valueMapper.toString(original);
+        return resolutionEnvironment.valueMapper.toString(original, type);
     }
 
     @Override

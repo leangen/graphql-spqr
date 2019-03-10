@@ -23,7 +23,12 @@ public class QueryResultAssertions {
     }
 
     public static void assertValueAtPathEquals(Object expected, ExecutionResult result, String path) {
-        assertEquals(expected, get(path, result));
+        Object actual = get(path, result);
+        if (expected instanceof Number) {
+            assertEquals(((Number) expected).doubleValue(), ((Number) actual).doubleValue(), 0.0001);
+        } else {
+            assertEquals(expected, actual);
+        }
     }
 
     public static void assertTypeAtPathIs(Class<?> expected, ExecutionResult result, String path) {

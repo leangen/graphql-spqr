@@ -1,21 +1,28 @@
 package io.leangen.graphql;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
 import graphql.relay.Relay;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
+import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -35,10 +42,13 @@ import java.util.List;
 import java.util.Map;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertArgumentsPresent;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertInputMapOf;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOf;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOfNonNull;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOfRelayIds;
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertMapOf;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static io.leangen.graphql.util.GraphQLUtils.isRelayId;
 import static org.junit.Assert.assertArrayEquals;
@@ -132,7 +142,7 @@ public class GenericsTest {
         assertListOfRelayIds(addManyItems.getArgument("items").getType());
         
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithDateIds).build();
-        String jsonDate = valueMapperFactory.getValueMapper(Collections.emptyMap(), ENVIRONMENT).toString(firstEvent);
+        String jsonDate = valueMapperFactory.getValueMapper(Collections.emptyMap(), ENVIRONMENT).toString(firstEvent, GenericTypeReflector.annotate(Date.class));
         String relayId = new Relay().toGlobalId("Query", jsonDate);
         ExecutionResult result = graphQL.execute("{ contains(id: \"" + relayId+ "\") }");
         assertTrue(ERRORS, result.getErrors().isEmpty());
@@ -231,6 +241,41 @@ public class GenericsTest {
         assertValueAtPathEquals(new BigDecimal(3), result, "echo");
     }
 
+    @Test
+    public void testMissingGenerics() {
+        Type type = TypeFactory.parameterizedClass(EchoService.class, MissingGenerics.class);
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withValueMapperFactory(valueMapperFactory)
+                .withOperationsFromSingleton(new EchoService(), type, new PublicResolverBuilder())
+                .withTypeTransformer(new DefaultTypeTransformer(true, true))
+                .withTypeAdapters(new MapToListTypeAdapter())
+                .generate();
+
+        GraphQLFieldDefinition query = schema.getQueryType().getFieldDefinition("echo");
+        GraphQLObjectType output = (GraphQLObjectType) query.getType();
+        assertMapOf(output.getFieldDefinition("raw").getType(), GraphQLScalarType.class, GraphQLScalarType.class);
+        assertMapOf(output.getFieldDefinition("unbounded").getType(), GraphQLScalarType.class, GraphQLScalarType.class);
+
+        GraphQLInputObjectType input = (GraphQLInputObjectType) query.getArgument("in").getType();
+        assertInputMapOf(input.getFieldDefinition("raw").getType(), GraphQLScalarType.class, GraphQLScalarType.class);
+        assertInputMapOf(input.getFieldDefinition("unbounded").getType(), GraphQLScalarType.class, GraphQLScalarType.class);
+
+        GraphQL runtime = GraphQL.newGraphQL(schema).build();
+        ExecutionResult result = runtime.execute("{" +
+                "echo (in: {" +
+                "   raw: [{key: 2, value: 3}]" +
+                "   unbounded: [{key: 2, value: 3}]" +
+                "}) {" +
+                "   raw {key, value}" +
+                "   unbounded {key, value}" +
+                "}}");
+        assertNoErrors(result);
+        assertValueAtPathEquals(2, result, "echo.raw.0.key");
+        assertValueAtPathEquals(3, result, "echo.raw.0.value");
+        assertValueAtPathEquals(2, result, "echo.unbounded.0.key");
+        assertValueAtPathEquals(3, result, "echo.unbounded.0.value");
+    }
+
     public interface GenericEcho<T> {
         <S extends T> S echo(S input);
     }
@@ -239,6 +284,25 @@ public class GenericsTest {
         @Override
         public <S extends G> S echo(@GraphQLArgument(name = "in") S input) {
             return input;
+        }
+    }
+
+    public static class MissingGenerics {
+        private final Map raw;
+        private final Map<?, ?> unbounded;
+
+        @JsonCreator
+        public MissingGenerics(Map raw, Map<?, ?> unbounded) {
+            this.raw = raw;
+            this.unbounded = unbounded;
+        }
+
+        public Map<Integer, Integer> getRaw() {
+            return raw;
+        }
+
+        public Map<?, ?> getUnbounded() {
+            return unbounded;
         }
     }
 }

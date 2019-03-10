@@ -78,7 +78,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
     }
 
     @Override
-    public String toString(Object output) {
+    public String toString(Object output, AnnotatedType type) {
         if (output == null || output instanceof String) {
             return (String) output;
         }
@@ -121,7 +121,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
             JavaType refined = introspector.refineDeserializationType(objectMapper.getDeserializationConfig(), accessor, baseType);
             Class<?> raw = ClassUtils.getRawType(realType.getType());
             if (!refined.getRawClass().equals(raw)) {
-                if (GenericTypeReflector.isSuperType(realType.getType(), refined.getRawClass())) {
+                if (ClassUtils.isSuperClass(realType, refined.getRawClass())) {
                     AnnotatedType candidate = GenericTypeReflector.getExactSubType(realType, refined.getRawClass());
                     if (!ClassUtils.isMissingTypeParameters(candidate.getType())) {
                         return candidate;

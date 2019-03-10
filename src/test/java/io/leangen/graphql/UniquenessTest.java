@@ -67,7 +67,7 @@ public class UniquenessTest {
     @Test
     public void testMapUniqueness() {
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withTypeAdapters(new MapToListTypeAdapter<>())
+                .withTypeAdapters(new MapToListTypeAdapter())
                 .withOperationsFromSingleton(new MapService(), new PublicResolverBuilder(thisPackage))
                 .generate();
         testRootQueryTypeUniqueness(schema);

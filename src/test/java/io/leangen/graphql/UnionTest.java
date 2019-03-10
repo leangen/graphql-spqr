@@ -36,7 +36,7 @@ public class UnionTest {
         InlineUnionService unionService = new InlineUnionService();
 
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withTypeAdapters(new MapToListTypeAdapter<>())
+                .withTypeAdapters(new MapToListTypeAdapter())
                 .withOperationsFromSingleton(unionService)
                 .generate();
 

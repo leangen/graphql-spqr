@@ -62,7 +62,7 @@ import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter
 import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
 import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
 import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
-import io.leangen.graphql.generator.mapping.core.CompletableFutureMapper;
+import io.leangen.graphql.generator.mapping.core.CompletableFutureAdapter;
 import io.leangen.graphql.generator.mapping.core.DataFetcherResultMapper;
 import io.leangen.graphql.generator.mapping.core.PublisherAdapter;
 import io.leangen.graphql.generator.mapping.strategy.AbstractInputHandler;
@@ -868,7 +868,7 @@ public class GraphQLSchemaGenerator {
         PublisherAdapter publisherAdapter = new PublisherAdapter();
         EnumMapper enumMapper = new EnumMapper(javaDeprecationConfig);
         typeMappers = Arrays.asList(
-                new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureMapper(),
+                new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureAdapter<>(),
                 publisherAdapter, new AnnotationMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
                 new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
@@ -886,7 +886,7 @@ public class GraphQLSchemaGenerator {
         checkForEmptyOrDuplicates("schema transformers", transformers);
 
         List<OutputConverter> outputConverters = Arrays.asList(
-                new IdAdapter(), new ArrayAdapter(), new CollectionOutputConverter(),
+                new IdAdapter(), new ArrayAdapter(), new CollectionOutputConverter(), new CompletableFutureAdapter<>(),
                 new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(), new OptionalAdapter(),
                 new StreamToCollectionTypeAdapter(), publisherAdapter);
         for (ExtensionProvider<GeneratorConfiguration, OutputConverter> provider : outputConverterProviders) {
@@ -894,7 +894,7 @@ public class GraphQLSchemaGenerator {
         }
         checkForDuplicates("output converters", outputConverters);
 
-        List<InputConverter> inputConverters = Arrays.asList(
+        List<InputConverter> inputConverters = Arrays.asList(new CompletableFutureAdapter<>(),
                 new StreamToCollectionTypeAdapter(), new IterableAdapter<>(), new EnumMapToObjectTypeAdapter(enumMapper));
         for (ExtensionProvider<GeneratorConfiguration, InputConverter> provider : inputConverterProviders) {
             inputConverters = provider.getExtensions(configuration, new ExtensionList<>(inputConverters));
@@ -1063,13 +1063,11 @@ public class GraphQLSchemaGenerator {
         checkForDuplicates(extensionType, extensions);
     }
 
-    private void checkForDuplicates(String extensionType, List<?> extensions) {
-        Set<Class<?>> classes = new HashSet<>();
-        extensions.stream()
-                .map(Object::getClass)
-                .forEach(clazz -> {
-                    if (!classes.add(clazz)) {
-                        throw new ConfigurationException("Multiple " + extensionType + " of type " + clazz.getName() + " registered");
+    private <E> void checkForDuplicates(String extensionType, List<E> extensions) {
+        Set<E> seen = new HashSet<>();
+        extensions.forEach(element -> {
+                    if (!seen.add(element)) {
+                        throw new ConfigurationException("Duplicate " + extensionType + " of type " + element.getClass().getName() + " registered");
                     }
                 });
     }

@@ -76,7 +76,7 @@ public class OperationArgument {
 
     private static AnnotatedType resolveBaseType(AnnotatedType type) {
         //Unwrap collection types
-        AnnotatedType unwrappedCollectionType = GenericTypeReflector.isSuperType(Collection.class, type.getType())
+        AnnotatedType unwrappedCollectionType = ClassUtils.isSuperClass(Collection.class, type)
                 ? GenericTypeReflector.getTypeParameter(type, Collection.class.getTypeParameters()[0])
                 : type;
         // Lose all the TYPE_USE annotations

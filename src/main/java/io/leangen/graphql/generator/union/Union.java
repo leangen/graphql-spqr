@@ -37,7 +37,7 @@ public abstract class Union {
     public static AnnotatedType unionize(AnnotatedType[] types, MessageBundle messageBundle) {
         Objects.requireNonNull(types);
         if (types.length < 2) {
-            if (types.length == 1 && GenericTypeReflector.isSuperType(Union.class, types[0].getType())) {
+            if (types.length == 1 && ClassUtils.isSuperClass(Union.class, types[0])) {
                 return types[0];
             }
             throw new IllegalArgumentException(SINGLE_TYPE_UNION_ERROR);
@@ -80,7 +80,7 @@ public abstract class Union {
     public static AnnotatedType of(AnnotatedType[] types) {
         Objects.requireNonNull(types);
         if (types.length < 2) {
-            if (types.length == 1 && GenericTypeReflector.isSuperType(Union.class, types[0].getType())) {
+            if (types.length == 1 && ClassUtils.isSuperClass(Union.class, types[0])) {
                 return types[0];
             }
             throw new IllegalArgumentException(SINGLE_TYPE_UNION_ERROR);
@@ -91,7 +91,7 @@ public abstract class Union {
         try {
             union = ClassUtils.forName(Union.class.getName() + distinctTypes.length);
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Unions of more than 10 types are not supported");
+            throw new IllegalArgumentException("Unions of more than 10 types are not supported out-of-the-box");
         }
         Annotation unionAnnotation = stream(ClassUtils.getAllAnnotations(stream(types)))
                 .filter(annotation -> annotation.annotationType().equals(GraphQLUnion.class))

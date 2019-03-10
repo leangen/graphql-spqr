@@ -7,16 +7,19 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolutionEnvironment;
+import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
 import io.leangen.graphql.generator.mapping.InputConverter;
-import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-public class JsonArrayAdapter extends AbstractTypeSubstitutingMapper<List<JsonNode>> implements InputConverter<ArrayNode, List<JsonNode>>, OutputConverter<ArrayNode, List> {
+public class JsonArrayAdapter extends AbstractTypeSubstitutingMapper<List<JsonNode>>
+        implements InputConverter<ArrayNode, List<JsonNode>>, DelegatingOutputConverter<ArrayNode, List> {
 
     private static final AnnotatedType JSON = GenericTypeReflector.annotate(JsonNode.class);
 
@@ -40,7 +43,12 @@ public class JsonArrayAdapter extends AbstractTypeSubstitutingMapper<List<JsonNo
     }
 
     @Override
+    public List<AnnotatedType> getDerivedTypes(AnnotatedType type) {
+        return Collections.singletonList(JSON);
+    }
+
+    @Override
     public boolean supports(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(ArrayNode.class, type.getType());
+        return ClassUtils.isSuperClass(ArrayNode.class, type);
     }
 }

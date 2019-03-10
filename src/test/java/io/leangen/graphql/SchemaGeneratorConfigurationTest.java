@@ -74,7 +74,7 @@ public class SchemaGeneratorConfigurationTest {
 
         generator = new GraphQLSchemaGenerator()
                 .withOperationsFromSingleton(new Dummy())
-                .withTypeMappers((conf, mappers) -> mappers.insert(11, new MapToListTypeAdapter<>()));
+                .withTypeMappers((conf, mappers) -> mappers.insert(11, new MapToListTypeAdapter()));
         generator.generate();
 
         typeMappers = getTypeMappers(generator);
@@ -173,7 +173,7 @@ public class SchemaGeneratorConfigurationTest {
                 .withTypeMappers((config, defaults) -> defaults);
 
         thrown.expect(ConfigurationException.class);
-        thrown.expectMessage("Multiple");
+        thrown.expectMessage("Duplicate");
 
         generator.generate();
     }
@@ -188,7 +188,7 @@ public class SchemaGeneratorConfigurationTest {
                 .withTypeMappers(optionalAdapter, scalarMapper);
 
         thrown.expect(ConfigurationException.class);
-        thrown.expectMessage("Multiple");
+        thrown.expectMessage("Duplicate");
 
         generator.generate();
     }

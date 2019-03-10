@@ -379,6 +379,14 @@ public class ClassUtils {
                 || GenericTypeReflector.isSuperType(superType, subType);
     }
 
+    public static boolean isSuperClass(Class<?> superClass, AnnotatedType subType) {
+        return superClass.isAssignableFrom(GenericTypeReflector.erase(subType.getType()));
+    }
+
+    public static boolean isSuperClass(AnnotatedType superType, Class<?> subClass) {
+        return GenericTypeReflector.erase(superType.getType()).isAssignableFrom(subClass);
+    }
+
     public static boolean isSubPackage(Package pkg, String prefix) {
         String packageName = pkg != null ? pkg.getName() : "";
         return packageName.startsWith(prefix);

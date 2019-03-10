@@ -26,6 +26,6 @@ public class DataFetcherResultMapper extends AbstractTypeSubstitutingMapper {
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(DataFetcherResult.class, type.getType());
+        return ClassUtils.isSuperClass(DataFetcherResult.class, type);
     }
 }

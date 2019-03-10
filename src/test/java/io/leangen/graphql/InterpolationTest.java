@@ -48,7 +48,7 @@ public class InterpolationTest {
         translations.put("type.temp.hot.deprecation", "Too hot");
 
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withTypeAdapters(new MapToListTypeAdapter<>())
+                .withTypeAdapters(new MapToListTypeAdapter())
                 .withOperationsFromSingleton(new Quick())
                 .withStringInterpolation(new SimpleMessageBundle(translations))
                 .generate();

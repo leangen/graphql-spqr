@@ -7,9 +7,9 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 @SuppressWarnings("WeakerAccess")
-public final class ExtensionList<E> extends ArrayList<E> {
+public class ExtensionList<E> extends ArrayList<E> {
 
-    ExtensionList(Collection<? extends E> c) {
+    public ExtensionList(Collection<? extends E> c) {
         super(c);
     }
 
@@ -47,8 +47,18 @@ public final class ExtensionList<E> extends ArrayList<E> {
     }
 
     @SafeVarargs
+    public final ExtensionList<E> insertAfter(E extension, E... extensions) {
+        return insert(indexOf(extension) + 1, extensions);
+    }
+
+    @SafeVarargs
     public final ExtensionList<E> insertBefore(Class<? extends E> extensionType, E... extensions) {
         return insert(firstIndexOfTypeStrict(extensionType), extensions);
+    }
+
+    @SafeVarargs
+    public final ExtensionList<E> insertBefore(E extension, E... extensions) {
+        return insert(indexOf(extension), extensions);
     }
 
     @SafeVarargs

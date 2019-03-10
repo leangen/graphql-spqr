@@ -71,7 +71,7 @@ public class EnumMapToObjectTypeAdapter<E extends Enum<E>, V> extends CachingMap
 
     @Override
     public boolean supports(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(EnumMap.class, type.getType());
+        return ClassUtils.isSuperClass(EnumMap.class, type);
     }
 
     @Override

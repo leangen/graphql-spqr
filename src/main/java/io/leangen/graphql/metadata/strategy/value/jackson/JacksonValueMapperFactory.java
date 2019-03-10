@@ -13,6 +13,7 @@ import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
+import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
@@ -36,7 +37,6 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
 
     private static final Configurer IMPLICIT_MODULES = new ImplicitModuleConfigurer();
 
-    @SuppressWarnings("WeakerAccess")
     public JacksonValueMapperFactory() {
         this(null, new DefaultTypeInfoGenerator(), defaultConfigurers());
     }
@@ -60,7 +60,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
 
     @Override
     public boolean isDirectlyDeserializable(AnnotatedType type) {
-        return GenericTypeReflector.isSuperType(TreeNode.class, type.getType());
+        return ClassUtils.isSuperClass(TreeNode.class, type);
     }
 
     public static Builder builder() {
@@ -85,7 +85,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
                             ambiguousSubtypes(params.concreteSubTypes, params.metaDataGen, params.environment.messageBundle),
                             params.environment.messageBundle));
             if (!params.environment.getInputConverters().isEmpty()) {
-                mapper.registerModule(getDeserializersModule(params.environment));
+                mapper.registerModule(getDeserializersModule(params.environment, params.objectMapper));
             }
             return mapper;
         }
@@ -111,7 +111,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
             return types;
         }
 
-        private Module getDeserializersModule(GlobalEnvironment environment) {
+        private Module getDeserializersModule(GlobalEnvironment environment, ObjectMapper mapper) {
             return new Module() {
                 @Override
                 public String getModuleName() {
@@ -148,7 +148,6 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
         ObjectMapper configure(ConfigurerParams params);
     }
 
-    @SuppressWarnings("WeakerAccess")
     public static class ConfigurerParams {
 
         final ObjectMapper objectMapper;
