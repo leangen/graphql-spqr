@@ -103,8 +103,8 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper implemen
 
             @Override
             public void onError(Throwable error) {
-                ExceptionWhileDataFetching wrapped = new ExceptionWhileDataFetching(step.getPath(), error, step.getField().getSourceLocation());
-                promise.complete(new DataFetcherResult<>(buffer, Collections.singletonList(wrapped)));
+                DataFetchingException wrapped = new DataFetchingException(step.getPath(), error, step.getField().getSourceLocation());
+                promise.completeExceptionally(wrapped);
             }
 
             @Override
