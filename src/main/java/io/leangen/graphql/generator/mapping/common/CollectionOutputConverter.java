@@ -21,9 +21,9 @@ public class CollectionOutputConverter implements OutputConverter {
     @Override
     public Object convertOutput(Object original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         if (GenericTypeReflector.isSuperType(Collection.class, type.getType())) {
-            return processCollection((Collection<?>) original, (AnnotatedParameterizedType) type, resolutionEnvironment);
+            return processCollection((Collection<?>) original, type, resolutionEnvironment);
         }
-        return processMap((Map<?, ?>) original, (AnnotatedParameterizedType) type, resolutionEnvironment);
+        return processMap((Map<?, ?>) original, type, resolutionEnvironment);
     }
 
     @Override
@@ -32,17 +32,23 @@ public class CollectionOutputConverter implements OutputConverter {
                 || GenericTypeReflector.isSuperType(Map.class, type.getType());
     }
 
-    private List<?> processCollection(Collection<?> collection, AnnotatedParameterizedType type, ResolutionEnvironment resolutionEnvironment) {
+    private List<?> processCollection(Collection<?> collection, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        AnnotatedParameterizedType collectionType =
+                (AnnotatedParameterizedType) GenericTypeReflector.getExactSuperType(type, Collection.class);
+
         return collection.stream()
-                .map(e -> resolutionEnvironment.convertOutput(e, type.getAnnotatedActualTypeArguments()[0]))
+                .map(e -> resolutionEnvironment.convertOutput(e, collectionType.getAnnotatedActualTypeArguments()[0]))
                 .collect(Collectors.toList());
     }
 
-    private Map<?, ?> processMap(Map<?, ?> map, AnnotatedParameterizedType type, ResolutionEnvironment resolutionEnvironment) {
+    private Map<?, ?> processMap(Map<?, ?> map, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        AnnotatedParameterizedType mapType =
+                (AnnotatedParameterizedType) GenericTypeReflector.getExactSuperType(type, Map.class);
+
         Map<?, ?> processed = new LinkedHashMap<>();
         map.forEach((k, v) -> processed.put(
-                resolutionEnvironment.convertOutput(k, type.getAnnotatedActualTypeArguments()[0]),
-                resolutionEnvironment.convertOutput(v, type.getAnnotatedActualTypeArguments()[1])));
+                resolutionEnvironment.convertOutput(k, mapType.getAnnotatedActualTypeArguments()[0]),
+                resolutionEnvironment.convertOutput(v, mapType.getAnnotatedActualTypeArguments()[1])));
         return processed;
     }
 }
