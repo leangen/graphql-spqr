@@ -38,7 +38,7 @@ public class Defaults {
 
     private static boolean isAvailable(JsonLib jsonLib) {
         try {
-            ClassUtils.forName(jsonLib.requiredClass);
+            ClassUtils.forName(jsonLib.requiredClass, ClassUtils.getClassLoader(Defaults.class));
             return true;
         } catch (ClassNotFoundException ge) {
             return false;

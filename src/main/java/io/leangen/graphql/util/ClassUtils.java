@@ -27,6 +27,10 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -690,7 +694,36 @@ public class ClassUtils {
     }
 
     public static Class<?> forName(String className) throws ClassNotFoundException {
-        return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+        return forName(className, Thread.currentThread().getContextClassLoader());
+    }
+
+    public static Class<?> forName(String className, ClassLoader loader) throws ClassNotFoundException {
+        if (System.getSecurityManager() == null) {
+            return Class.forName(className, false, loader);
+        }
+        try {
+            return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>)() -> {
+                return Class.forName(className, false, loader);
+            });
+        } catch (PrivilegedActionException pae) {
+            Throwable t = pae.getCause();
+            if (t instanceof ClassNotFoundException) {
+                throw (ClassNotFoundException) t;
+            }
+            if (t instanceof NoClassDefFoundError) {
+                throw (NoClassDefFoundError) t;
+            }
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static ClassLoader getClassLoader(Class<?> clazz) {
+        if (System.getSecurityManager() == null) {
+            return clazz.getClassLoader();
+        }
+        return AccessController.doPrivileged((PrivilegedAction<ClassLoader>)() -> {
+            return clazz.getClassLoader();
+        });
     }
 
     /**
