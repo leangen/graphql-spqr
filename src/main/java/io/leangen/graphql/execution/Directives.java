@@ -12,10 +12,7 @@ import graphql.language.Field;
 import graphql.language.InlineFragment;
 import graphql.language.Node;
 import graphql.language.OperationDefinition;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLDirective;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLType;
+import graphql.schema.*;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.util.ArrayList;
@@ -35,9 +32,9 @@ public class Directives {
     private static final ValuesResolver valuesResolver = new ValuesResolver();
 
     Directives(DataFetchingEnvironment env, ExecutionStepInfo step) {
-        List<Field> fields = env.getFields();
+        List<Field> fields = env.getMergedField().getFields();
         if (step != null) {
-            fields = step.getField() != null ? Collections.singletonList(step.getField()) : Collections.emptyList();
+            fields = step.getField() != null ? step.getField().getFields() : Collections.emptyList();
         }
         step = step != null ? step : env.getExecutionStepInfo();
         // Field directives
@@ -50,8 +47,8 @@ public class Directives {
                 }));
 
         // Operation directives
-        Map<String, List<Map<String, Object>>> operationDirectives = parseDirectives(env.getExecutionContext().getOperationDefinition().getDirectives(), env);
-        if (OperationDefinition.Operation.MUTATION.equals(env.getExecutionContext().getOperationDefinition().getOperation())) {
+        Map<String, List<Map<String, Object>>> operationDirectives = parseDirectives(env.getOperationDefinition().getDirectives(), env);
+        if (OperationDefinition.Operation.MUTATION.equals(env.getOperationDefinition().getOperation())) {
             directives.put(Introspection.DirectiveLocation.MUTATION, operationDirectives);
             directives.put(Introspection.DirectiveLocation.QUERY, Collections.emptyMap());
         } else {
@@ -78,13 +75,13 @@ public class Directives {
     }
 
     private Map<String, Object> parseDirective(Directive dir, DataFetchingEnvironment env) {
-        GraphQLDirective directive = env.getExecutionContext().getGraphQLSchema().getDirective(dir.getName());
+        GraphQLDirective directive = env.getGraphQLSchema().getDirective(dir.getName());
         if (directive == null) {
             return null;
         }
         return Collections.unmodifiableMap(
-                valuesResolver.getArgumentValues(env.getGraphQLSchema().getFieldVisibility(), directive.getArguments(),
-                        dir.getArguments(), env.getExecutionContext().getVariables()));
+                valuesResolver.getArgumentValues(env.getGraphQLSchema().getCodeRegistry(), directive.getArguments(),
+                        dir.getArguments(), env.getVariables()));
     }
 
     Map<Introspection.DirectiveLocation, Map<String, List<Map<String, Object>>>>  getDirectives() {
@@ -107,7 +104,7 @@ public class Directives {
             this.inlineFragmentDirs = new ArrayList<>();
             this.fragmentDirs = new ArrayList<>();
             this.fragmentDefDirs = new ArrayList<>();
-            this.fieldsToFind = env.getFields();
+            this.fieldsToFind = env.getMergedField().getFields();
             this.relevantFragments = new HashSet<>();
         }
 
@@ -124,10 +121,10 @@ public class Directives {
                 rootParentType = GraphQLUtils.unwrapNonNull(rootStep.getType());
             }
             QueryTraversal traversal = QueryTraversal.newQueryTraversal()
-                    .fragmentsByName(env.getExecutionContext().getFragmentsByName())
+                    .fragmentsByName(env.getFragmentsByName())
                     .schema(env.getGraphQLSchema())
-                    .variables(env.getExecutionContext().getVariables())
-                    .root(env.getExecutionStepInfo().getParent().getField())
+                    .variables(env.getVariables())
+                    .root(env.getExecutionStepInfo().getParent().getField().getSingleField())
                     .rootParentType((GraphQLObjectType) rootParentType)
                     .build();
             traversal.visitPostOrder(fragmentDirectiveCollector);

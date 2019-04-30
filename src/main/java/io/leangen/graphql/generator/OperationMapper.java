@@ -2,21 +2,7 @@ package io.leangen.graphql.generator;
 
 import graphql.execution.batched.BatchedDataFetcher;
 import graphql.relay.Relay;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLDirective;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLInputObjectField;
-import graphql.schema.GraphQLInputObjectType;
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLNonNull;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLType;
-import graphql.schema.GraphQLUnionType;
-import graphql.schema.PropertyDataFetcher;
+import graphql.schema.*;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.ContextWrapper;
@@ -165,7 +151,7 @@ public class OperationMapper {
                 .filter(OperationArgument::isMappable)
                 .map(argument -> toGraphQLArgument(argument, buildContext))
                 .collect(Collectors.toList());
-        fieldBuilder.argument(arguments);
+        fieldBuilder.arguments(arguments);
         if (GraphQLUtils.isRelayConnectionType(type) && buildContext.relayMappingConfig.strictConnectionSpec) {
             validateConnectionSpecCompliance(operation.getName(), arguments, buildContext.relay);
         }
@@ -330,7 +316,9 @@ public class OperationMapper {
                         ContextWrapper context = env.getContext();
                         context.setClientMutationId(innerEnv.getArgument(CLIENT_MUTATION_ID));
                     }
-                    return mutation.getDataFetcher().get(innerEnv);
+                    return env.getGraphQLSchema().getCodeRegistry()
+                            .getDataFetcher(env.getGraphQLSchema().getMutationType(), mutation)
+                            .get(innerEnv);
                 })
                 .build();
     }
@@ -375,7 +363,11 @@ public class OperationMapper {
             if (!nodeQueriesByType.containsKey(typeName)) {
                 throw new IllegalArgumentException(typeName + " is not a Relay node type or no registered query can fetch it by ID");
             }
-            return env.getGraphQLSchema().getQueryType().getFieldDefinition(nodeQueriesByType.get(typeName)).getDataFetcher().get(env);
+            return env.getGraphQLSchema().getCodeRegistry().getDataFetcher(
+                    env.getGraphQLSchema().getQueryType(),
+                    env.getGraphQLSchema().getQueryType().getFieldDefinition(nodeQueriesByType.get(typeName))
+            )
+                    .get(env);
         };
     }
 
