@@ -12,10 +12,7 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
 
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static graphql.schema.GraphQLEnumType.newEnum;
 
@@ -48,7 +45,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
 
     private void addOptions(GraphQLEnumType.Builder enumBuilder, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         MessageBundle messageBundle = buildContext.messageBundle;
-        sortEnumValues((Enum[]) ClassUtils.getRawType(javaType.getType()).getEnumConstants(), buildContext.typeInfoGenerator.getFieldOrder(javaType, messageBundle), messageBundle).stream()
+        Arrays.stream((Enum[]) ClassUtils.getRawType(javaType.getType()).getEnumConstants())
                 .map(enumConst -> (Enum<?>) enumConst)
                 .forEach(enumConst -> enumBuilder.value(GraphQLEnumValueDefinition.newEnumValueDefinition()
                         .name(getValueName(enumConst, messageBundle))
@@ -90,20 +87,5 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
     @Override
     public boolean supports(AnnotatedType type) {
         return ClassUtils.getRawType(type.getType()).isEnum();
-    }
-
-    private List<Enum> sortEnumValues(Enum[] values, String[] order, MessageBundle messageBundle) {
-        Map<String, Enum> fieldMap = new TreeMap<>();
-        for (Enum value : values) {
-            fieldMap.put(getValueName(value, messageBundle), value);
-        }
-        List<Enum> result = new ArrayList<>();
-        for (String name : order) {
-            if (fieldMap.containsKey(name)) {
-                result.add(fieldMap.remove(name));
-            }
-        }
-        result.addAll(fieldMap.values());
-        return result;
     }
 }

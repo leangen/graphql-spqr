@@ -21,9 +21,7 @@ import io.leangen.graphql.util.GraphQLUtils;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
@@ -88,10 +86,9 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
     @SuppressWarnings("WeakerAccess")
     protected List<GraphQLFieldDefinition> getFields(AnnotatedType javaType, BuildContext buildContext, OperationMapper operationMapper) {
-        List<GraphQLFieldDefinition> fields = buildContext.operationRegistry.getChildQueries(javaType).stream()
+        return buildContext.operationRegistry.getChildQueries(javaType).stream()
                 .map(childQuery -> operationMapper.toGraphQLField(childQuery, buildContext))
                 .collect(Collectors.toList());
-        return sortFields(fields, buildContext.typeInfoGenerator.getFieldOrder(javaType, buildContext.messageBundle));
     }
 
     @SuppressWarnings("WeakerAccess")
@@ -106,21 +103,6 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 inter -> interfaces.add(operationMapper.toGraphQLType(inter, buildContext)));
 
         return interfaces;
-    }
-
-    private static List<GraphQLFieldDefinition> sortFields(List<GraphQLFieldDefinition> fields, String[] specifiedFieldOrder) {
-        Map<String, GraphQLFieldDefinition> fieldMap = new TreeMap<>();
-        for (GraphQLFieldDefinition field : fields) {
-            fieldMap.put(field.getName(), field);
-        }
-        List<GraphQLFieldDefinition> result = new ArrayList<>();
-        for (String name : specifiedFieldOrder) {
-            if (fieldMap.containsKey(name)) {
-                result.add(fieldMap.remove(name));
-            }
-        }
-        result.addAll(fieldMap.values());
-        return result;
     }
 
     @SuppressWarnings("WeakerAccess")

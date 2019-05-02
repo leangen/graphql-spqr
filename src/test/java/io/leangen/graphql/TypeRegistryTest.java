@@ -2,9 +2,11 @@ package io.leangen.graphql;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.relay.Relay;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
+import graphql.schema.GraphQLType;
 import io.leangen.graphql.annotations.GraphQLEnvironment;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
@@ -18,6 +20,8 @@ import io.leangen.graphql.support.TestLog;
 import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
 import org.junit.Test;
+
+import java.util.List;
 
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
 import static org.junit.Assert.assertEquals;
@@ -43,9 +47,11 @@ public class TypeRegistryTest {
                 .withOperationsFromSingleton(new Service())
                 .generate();
 
+        List<GraphQLType> allTypes = schema.getAllTypesAsList();
+        allTypes.remove(Relay.pageInfoType);
         GraphQLSchema schema2 = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
-                .withAdditionalTypes(schema.getAllTypesAsList())
+                .withAdditionalTypes(allTypes)
                 .generate();
 
         schema.getTypeMap().entrySet().stream()

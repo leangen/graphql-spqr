@@ -235,6 +235,7 @@ public class RelayTest {
     @Test
     public void testRelayId() {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withAdditionalTypes(Collections.singleton(Relay.pageInfoType))
                 .withOperationsFromSingletons(new BookService())
                 .generate();
 
@@ -251,6 +252,7 @@ public class RelayTest {
     @Test
     public void testDirectNodeQuery() {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withAdditionalTypes(Collections.singleton(Relay.pageInfoType))
                 .withOperationsFromSingletons(new BookService(), new DescriptorService())
                 .generate();
 

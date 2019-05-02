@@ -310,16 +310,6 @@ public class OperationMapper {
                 .argument(newArgument()
                         .name("input")
                         .type(new GraphQLNonNull(inputObjectType)))
-                .dataFetcher(env -> {
-                    DataFetchingEnvironment innerEnv = new RelayDataFetchingEnvironmentDecorator(env);
-                    if (env.getContext() instanceof ContextWrapper) {
-                        ContextWrapper context = env.getContext();
-                        context.setClientMutationId(innerEnv.getArgument(CLIENT_MUTATION_ID));
-                    }
-                    return env.getGraphQLSchema().getCodeRegistry()
-                            .getDataFetcher(env.getGraphQLSchema().getMutationType(), mutation)
-                            .get(innerEnv);
-                })
                 .build();
     }
 

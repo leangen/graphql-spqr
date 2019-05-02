@@ -1,6 +1,9 @@
 package io.leangen.graphql;
 
+import graphql.relay.Relay;
 import io.leangen.graphql.metadata.strategy.query.DefaultOperationBuilder;
+
+import java.util.Collections;
 
 /**
  * <b>For testing use only!</b>
@@ -12,6 +15,9 @@ public class TestSchemaGenerator extends GraphQLSchemaGenerator {
 
     public TestSchemaGenerator() {
         withBasePackages(basePackages);
+        withAdditionalTypes(Collections.singleton(
+                Relay.pageInfoType
+        ));
         withOperationBuilder(new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.LIMITED));
     }
 }
