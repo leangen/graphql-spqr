@@ -12,7 +12,10 @@ import graphql.language.Field;
 import graphql.language.InlineFragment;
 import graphql.language.Node;
 import graphql.language.OperationDefinition;
-import graphql.schema.*;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLDirective;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLType;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.util.ArrayList;

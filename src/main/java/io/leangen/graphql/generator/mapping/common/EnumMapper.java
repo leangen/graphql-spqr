@@ -12,7 +12,7 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
 
 import java.lang.reflect.AnnotatedType;
-import java.util.*;
+import java.util.Arrays;
 
 import static graphql.schema.GraphQLEnumType.newEnum;
 
