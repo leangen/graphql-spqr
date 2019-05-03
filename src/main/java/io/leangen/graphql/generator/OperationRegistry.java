@@ -150,19 +150,19 @@ public class OperationRegistry {
     private List<Resolver> buildQueryResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
                 builder.buildQueryResolvers(new ResolverBuilderParams(
-                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
+                        operationSource.getServiceBeanSupplier(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
     }
 
     private List<Resolver> buildMutationResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
                 builder.buildMutationResolvers(new ResolverBuilderParams(
-                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
+                        operationSource.getServiceBeanSupplier(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
     }
 
     private List<Resolver> buildSubscriptionResolvers(Collection<OperationSource> operationSources) {
         return buildResolvers(operationSources, ((operationSource, builder) ->
                 builder.buildSubscriptionResolvers(new ResolverBuilderParams(
-                        operationSource.getServiceSingleton(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
+                        operationSource.getServiceBeanSupplier(), operationSource.getJavaType(), inclusionStrategy, typeTransformer, basePackages, environment))));
     }
 
     private List<Resolver> buildResolvers(Collection<OperationSource> operationSources, BiFunction<OperationSource, ResolverBuilder, Collection<Resolver>> building) {

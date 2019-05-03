@@ -6,19 +6,20 @@ import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 @SuppressWarnings("WeakerAccess")
 public class ResolverBuilderParams {
 
-    private final Object querySourceBean;
+    private final Supplier<Object> querySourceBeanSupplier;
     private final AnnotatedType beanType;
     private final InclusionStrategy inclusionStrategy;
     private final TypeTransformer typeTransformer;
     private final String[] basePackages;
     private final GlobalEnvironment environment;
 
-    public ResolverBuilderParams(Object querySourceBean, AnnotatedType beanType, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages, GlobalEnvironment environment) {
-        this.querySourceBean = querySourceBean;
+    public ResolverBuilderParams(Supplier<Object> querySourceBeanSupplier, AnnotatedType beanType, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages, GlobalEnvironment environment) {
+        this.querySourceBeanSupplier = querySourceBeanSupplier;
         this.beanType = Objects.requireNonNull(beanType);
         this.inclusionStrategy = Objects.requireNonNull(inclusionStrategy);
         this.typeTransformer = Objects.requireNonNull(typeTransformer);
@@ -26,8 +27,8 @@ public class ResolverBuilderParams {
         this.environment = Objects.requireNonNull(environment);
     }
 
-    public Object getQuerySourceBean() {
-        return querySourceBean;
+    public Supplier<Object> getQuerySourceBeanSupplier() {
+        return querySourceBeanSupplier;
     }
 
     public AnnotatedType getBeanType() {

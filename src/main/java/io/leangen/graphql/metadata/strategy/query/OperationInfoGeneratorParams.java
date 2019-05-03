@@ -7,20 +7,21 @@ import io.leangen.graphql.metadata.messages.MessageBundle;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class OperationInfoGeneratorParams {
 
     private final TypedElement element;
     private final AnnotatedType declaringType;
-    private final Object instance;
+    private final Supplier<Object> instanceSupplier;
     private final MessageBundle messageBundle;
     private final OperationDefinition.Operation operationType;
 
-    OperationInfoGeneratorParams(TypedElement element, AnnotatedType declaringType, Object instance,
+    OperationInfoGeneratorParams(TypedElement element, AnnotatedType declaringType, Supplier<Object> instanceSupplier,
                                  MessageBundle messageBundle, OperationDefinition.Operation operationType) {
         this.element = Objects.requireNonNull(element);
         this.declaringType = Objects.requireNonNull(declaringType);
-        this.instance = instance;
+        this.instanceSupplier = instanceSupplier;
         this.messageBundle = messageBundle != null ? messageBundle : EmptyMessageBundle.INSTANCE;
         this.operationType = operationType;
     }
@@ -37,8 +38,8 @@ public class OperationInfoGeneratorParams {
         return declaringType;
     }
 
-    public Object getInstance() {
-        return instance;
+    public Supplier<Object> getInstanceSupplier() {
+        return instanceSupplier;
     }
 
     public MessageBundle getMessageBundle() {
@@ -52,7 +53,7 @@ public class OperationInfoGeneratorParams {
     public static class Builder {
         private TypedElement element;
         private AnnotatedType declaringType;
-        private Object instance;
+        private Supplier<Object> instanceSupplier;
         private MessageBundle messageBundle;
         private OperationDefinition.Operation operationType;
 
@@ -66,8 +67,8 @@ public class OperationInfoGeneratorParams {
             return this;
         }
 
-        public Builder withInstance(Object instance) {
-            this.instance = instance;
+        public Builder withInstance(Supplier<Object> instanceSupplier) {
+            this.instanceSupplier = instanceSupplier;
             return this;
         }
 
@@ -82,7 +83,7 @@ public class OperationInfoGeneratorParams {
         }
 
         public OperationInfoGeneratorParams build() {
-            return new OperationInfoGeneratorParams(element, declaringType, instance, messageBundle, operationType);
+            return new OperationInfoGeneratorParams(element, declaringType, instanceSupplier, messageBundle, operationType);
         }
     }
 }

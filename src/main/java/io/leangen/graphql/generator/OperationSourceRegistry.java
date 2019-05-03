@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Created by bojan.tomic on 7/12/16.
@@ -19,12 +20,12 @@ public class OperationSourceRegistry {
     private final Collection<OperationSource> operationSources = new HashSet<>();
     private final Map<AnnotatedType, OperationSource> nestedOperationSources = new AnnotatedTypeMap<>();
 
-    public void registerOperationSource(Object querySourceBean, AnnotatedType beanType) {
-        this.operationSources.add(new OperationSource(querySourceBean, beanType, topLevelResolverBuilders));
+    public void registerOperationSource(Supplier<Object> querySourceBeanSupplier, AnnotatedType beanType) {
+        this.operationSources.add(new OperationSource(querySourceBeanSupplier, beanType, topLevelResolverBuilders));
     }
 
-    public void registerOperationSource(Object querySourceBean, AnnotatedType beanType, Collection<ResolverBuilder> extractors) {
-        this.operationSources.add(new OperationSource(querySourceBean, beanType, extractors.isEmpty() ? topLevelResolverBuilders : extractors));
+    public void registerOperationSource(Supplier<Object> querySourceBeanSupplier, AnnotatedType beanType, Collection<ResolverBuilder> extractors) {
+        this.operationSources.add(new OperationSource(querySourceBeanSupplier, beanType, extractors.isEmpty() ? topLevelResolverBuilders : extractors));
     }
 
     public void registerOperationSource(AnnotatedType serviceType) {

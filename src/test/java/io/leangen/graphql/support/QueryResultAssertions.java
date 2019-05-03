@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.function.Predicate;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -34,6 +35,10 @@ public class QueryResultAssertions {
     public static void assertTypeAtPathIs(Class<?> expected, ExecutionResult result, String path) {
         Class<?> actual = get(path, result).getClass();
         assertTrue(String.format(TYPE_MISMATCH_TEMPLATE, actual.getName(), path, expected.getName()), expected.isAssignableFrom(actual));
+    }
+
+    public static void assertValueAtPath(Predicate<Object> assertion, ExecutionResult result, String path) {
+        assertTrue(assertion.test(get(path, result)));
     }
 
     private static Object get(String path, ExecutionResult result) {

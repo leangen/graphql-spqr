@@ -112,6 +112,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -288,9 +289,7 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType) {
-        checkType(beanType);
-        this.operationSourceRegistry.registerOperationSource(serviceSingleton, beanType);
-        return this;
+        return withOperationsFromBean(() -> serviceSingleton, beanType);
     }
 
     /**
@@ -343,7 +342,7 @@ public class GraphQLSchemaGenerator {
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType, ResolverBuilder... builders) {
         checkType(beanType);
-        this.operationSourceRegistry.registerOperationSource(serviceSingleton, beanType, Arrays.asList(builders));
+        this.operationSourceRegistry.registerOperationSource(() -> serviceSingleton, beanType, Arrays.asList(builders));
         return this;
     }
 
@@ -357,6 +356,27 @@ public class GraphQLSchemaGenerator {
      */
     public GraphQLSchemaGenerator withOperationsFromSingletons(Object... serviceSingletons) {
         Arrays.stream(serviceSingletons).forEach(this::withOperationsFromSingleton);
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, Type beanType) {
+        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(beanType));
+    }
+
+    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, AnnotatedType beanType) {
+        checkType(beanType);
+        this.operationSourceRegistry.registerOperationSource(serviceSupplier, beanType);
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, Type beanType, ResolverBuilder... builders) {
+        checkType(beanType);
+        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(beanType), builders);
+    }
+
+    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, AnnotatedType beanType, ResolverBuilder... builders) {
+        checkType(beanType);
+        this.operationSourceRegistry.registerOperationSource(serviceSupplier, beanType, Arrays.asList(builders));
         return this;
     }
 

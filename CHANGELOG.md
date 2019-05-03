@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Take annotations on private fields into account (Lombok compatibility) [#160](https://github.com/leangen/graphql-spqr/issues/160)
+- Optimize converter performance [#250](https://github.com/leangen/graphql-spqr/issues/250)
+- Use the `_mappedInputField` directive to attach meta data to input fields [#216](https://github.com/leangen/graphql-spqr/issues/216)
+- Generator should support accepting a bean supplier (makes prototype/dependent scoped beans easier to use) [#254](https://github.com/leangen/graphql-spqr/issues/254)
+
+### Changed
+- Dependencies upgraded
+- Small improvements [a663162](https://github.com/leangen/graphql-spqr/commit/a663162430add139fbb706f2973cbea8e9d0df78)
+
+### Fixed
+- Generate valid names for array types [#217](https://github.com/leangen/graphql-spqr/issues/217)
+- Generate GraphQL type names for generic Java types correctly [#255](https://github.com/leangen/graphql-spqr/issues/255)
+- `JavaDeprecationMappingConfig` accessible from `GeneratorConfiguration` [4aa8c5f](https://github.com/leangen/graphql-spqr/commit/4aa8c5fc539ef3b2837349df00ea318271e8f6cb) [7a34178](https://github.com/leangen/graphql-spqr/commit/7a341788cc2501232c77336bdb969f4c3fc551ef)
+
 ## [0.9.9] - 2018-12-13
 ### Added
 - Introduced full support for both schema and client directives [#200](https://github.com/leangen/graphql-spqr/issues/200)

@@ -5,6 +5,7 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
+import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
@@ -17,8 +18,10 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
+import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 
 @RunWith(Parameterized.class)
 public class SchemaTest {
@@ -93,6 +96,19 @@ public class SchemaTest {
     }
 
     @Test
+    public void testBeanSupplier() {
+        AtomicInteger counter = new AtomicInteger();
+
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withValueMapperFactory(valueMapperFactory)
+                .withOperationsFromBean(() -> new Dynamic(counter.incrementAndGet()), Dynamic.class)
+                .generate();
+        GraphQL graphQL = GraphQL.newGraphQL(schema).build();
+        assertValueAtPathEquals(1, graphQL.execute("{number}"), "number");
+        assertValueAtPathEquals(2, graphQL.execute("{number}"), "number");
+    }
+
+    @Test
     public void testSchema() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
@@ -118,5 +134,19 @@ public class SchemaTest {
 
     private ExecutionResult execute(GraphQL graphQL, String operation, Object context) {
         return graphQL.execute(ExecutionInput.newExecutionInput().query(operation).context(context).build());
+    }
+
+    public static class Dynamic {
+
+        private final int number;
+
+        Dynamic(int number) {
+            this.number = number;
+        }
+
+        @GraphQLQuery
+        public int number() {
+            return this.number;
+        }
     }
 }

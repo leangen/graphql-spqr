@@ -7,8 +7,8 @@ import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.execution.FieldAccessor;
+import io.leangen.graphql.metadata.execution.FixedMethodInvoker;
 import io.leangen.graphql.metadata.execution.MethodInvoker;
-import io.leangen.graphql.metadata.execution.SingletonMethodInvoker;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.value.Property;
 import io.leangen.graphql.util.ClassUtils;
@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -101,7 +102,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
     private Collection<Resolver> buildMethodInvokers(ResolverBuilderParams params, BiPredicate<Method, ResolverBuilderParams> filter, OperationDefinition.Operation operation, boolean batchable) {
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         AnnotatedType beanType = params.getBeanType();
-        Object querySourceBean = params.getQuerySourceBean();
+        Supplier<Object> querySourceBean = params.getQuerySourceBeanSupplier();
         Class<?> rawType = ClassUtils.getRawType(beanType.getType());
         if (rawType.isArray() || rawType.isPrimitive()) return Collections.emptyList();
 
@@ -117,7 +118,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                             messageBundle.interpolate(operationInfoGenerator.description(infoParams)),
                             messageBundle.interpolate(ReservedStrings.decode(operationInfoGenerator.deprecationReason(infoParams))),
                             batchable && method.isAnnotationPresent(Batched.class),
-                            querySourceBean == null ? new MethodInvoker(method, beanType) : new SingletonMethodInvoker(querySourceBean, method, beanType),
+                            querySourceBean == null ? new MethodInvoker(method, beanType) : new FixedMethodInvoker(querySourceBean, method, beanType),
                             element,
                             argumentBuilder.buildResolverArguments(
                                     new ArgumentBuilderParams(method, beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment())),
@@ -140,13 +141,13 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                 .map(pair -> {
                     Method getter = pair.getKey();
                     TypedElement element = pair.getValue();
-                    OperationInfoGeneratorParams infoParams = new OperationInfoGeneratorParams(element, beanType, params.getQuerySourceBean(), messageBundle, OperationDefinition.Operation.QUERY);
+                    OperationInfoGeneratorParams infoParams = new OperationInfoGeneratorParams(element, beanType, params.getQuerySourceBeanSupplier(), messageBundle, OperationDefinition.Operation.QUERY);
                     return new Resolver(
                             messageBundle.interpolate(operationInfoGenerator.name(infoParams)),
                             messageBundle.interpolate(operationInfoGenerator.description(infoParams)),
                             messageBundle.interpolate(ReservedStrings.decode(operationInfoGenerator.deprecationReason(infoParams))),
                             element.isAnnotationPresent(Batched.class),
-                            params.getQuerySourceBean() == null ? new MethodInvoker(getter, beanType) : new SingletonMethodInvoker(params.getQuerySourceBean(), getter, beanType),
+                            params.getQuerySourceBeanSupplier() == null ? new MethodInvoker(getter, beanType) : new FixedMethodInvoker(params.getQuerySourceBeanSupplier(), getter, beanType),
                             element,
                             argumentBuilder.buildResolverArguments(new ArgumentBuilderParams(getter, beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment())),
                             element.isAnnotationPresent(GraphQLComplexity.class) ? element.getAnnotation(GraphQLComplexity.class).value() : null
@@ -165,7 +166,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                 .filter(field -> params.getInclusionStrategy().includeOperation(field, getFieldType(field, params)))
                 .map(field -> {
                     TypedElement element = new TypedElement(getFieldType(field, params), field);
-                    OperationInfoGeneratorParams infoParams = new OperationInfoGeneratorParams(element, beanType, params.getQuerySourceBean(), messageBundle, OperationDefinition.Operation.QUERY);
+                    OperationInfoGeneratorParams infoParams = new OperationInfoGeneratorParams(element, beanType, params.getQuerySourceBeanSupplier(), messageBundle, OperationDefinition.Operation.QUERY);
                     return new Resolver(
                             messageBundle.interpolate(operationInfoGenerator.name(infoParams)),
                             messageBundle.interpolate(operationInfoGenerator.description(infoParams)),

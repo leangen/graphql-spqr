@@ -45,7 +45,7 @@ public class ResolverBuilderTest {
     @Test
     public void bridgeMethodTest() {
         Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGES).buildQueryResolvers(new ResolverBuilderParams(
-                new BaseServiceImpl<Number, String>(), new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType(),
+                BaseServiceImpl::new, new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType(),
                 INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT));
         assertEquals(1, resolvers.size());
         assertEquals(resolvers.iterator().next().getReturnType().getType(), Number.class);
@@ -73,7 +73,7 @@ public class ResolverBuilderTest {
                 .withResolverBuilders(new PublicResolverBuilder(BASE_PACKAGES).withOperationInfoGenerator(new OperationInfoGenerator() {
                     @Override
                     public String name(OperationInfoGeneratorParams params) {
-                        return params.getInstance().getClass().getSimpleName() + "_" + ((Member)params.getElement().getElement()).getName();
+                        return params.getInstanceSupplier().get().getClass().getSimpleName() + "_" + ((Member)params.getElement().getElement()).getName();
                     }
 
                     @Override
@@ -119,7 +119,7 @@ public class ResolverBuilderTest {
         Collection<Collection<Resolver>> resolvers = new ArrayList<>(builders.length);
         for (ResolverBuilder builder : builders) {
             resolvers.add(builder.buildQueryResolvers(new ResolverBuilderParams(
-                    bean, GenericTypeReflector.annotate(bean.getClass()), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+                    () -> bean, GenericTypeReflector.annotate(bean.getClass()), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         }
         return resolvers;
     }

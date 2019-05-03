@@ -1,21 +1,22 @@
 package io.leangen.graphql.generator;
 
+import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
+
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
-
-import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
+import java.util.function.Supplier;
 
 /**
  * Created by bojan.tomic on 7/10/16.
  */
 public class OperationSource {
 
-    private final Object serviceSingleton;
+    private final Supplier<Object> serviceBeanSupplier;
     private final AnnotatedType javaType;
     private final Collection<ResolverBuilder> resolverBuilders;
 
-    OperationSource(Object serviceSingleton, AnnotatedType javaType, Collection<ResolverBuilder> resolverBuilders) {
-        this.serviceSingleton = serviceSingleton;
+    OperationSource(Supplier<Object> serviceBeanSupplier, AnnotatedType javaType, Collection<ResolverBuilder> resolverBuilders) {
+        this.serviceBeanSupplier = serviceBeanSupplier;
         this.javaType = javaType;
         this.resolverBuilders = resolverBuilders;
     }
@@ -24,8 +25,8 @@ public class OperationSource {
         this(null, javaType, resolverBuilders);
     }
 
-    Object getServiceSingleton() {
-        return serviceSingleton;
+    Supplier<Object> getServiceBeanSupplier() {
+        return serviceBeanSupplier;
     }
 
     AnnotatedType getJavaType() {
