@@ -12,6 +12,7 @@ import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.Directives;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -35,9 +36,15 @@ public abstract class UnionMapper implements TypeMapper {
                 .description(description)
                 .typeResolver(buildContext.typeResolver);
 
+        Set<String> seen = new HashSet<>(possibleJavaTypes.size());
+
         possibleJavaTypes.stream()
                 .map(pos -> operationMapper.toGraphQLType(pos, buildContext))
                 .forEach(type -> {
+                    if (!seen.add(type.getName())) {
+                        throw new TypeMappingException("Duplicate possible type " + type.getName() + " for union " + name);
+                    }
+
                     if (type instanceof GraphQLObjectType) {
                         builder.possibleType((GraphQLObjectType) type);
                     } else if (type instanceof GraphQLTypeReference) {
