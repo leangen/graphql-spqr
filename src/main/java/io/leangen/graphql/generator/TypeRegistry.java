@@ -5,7 +5,6 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
-import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Directives;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +68,7 @@ public class TypeRegistry {
         if (mappedTypes == null) return Collections.emptyList();
         if (objectType == null) return new ArrayList<>(mappedTypes.values());
         return mappedTypes.values().stream()
-                .filter(mappedType -> ClassUtils.getRawType(mappedType.javaType.getType()).isAssignableFrom(objectType))
+                .filter(mappedType -> mappedType.rawJavaType.isAssignableFrom(objectType))
                 .collect(Collectors.toList());
     }
 

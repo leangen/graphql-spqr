@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -85,6 +84,7 @@ public class OperationMapper {
         this.mutations = generateMutations(buildContext);
         this.subscriptions = generateSubscriptions(buildContext);
         this.directives = generateDirectives(buildContext);
+        buildContext.resolveTypeReferences();
     }
 
     /**
@@ -122,8 +122,7 @@ public class OperationMapper {
      * @return A list of {@link GraphQLFieldDefinition}s representing all mutations
      */
     private List<GraphQLFieldDefinition> generateMutations(BuildContext buildContext) {
-        Collection<Operation> mutations = buildContext.operationRegistry.getMutations();
-        return mutations.stream()
+        return buildContext.operationRegistry.getMutations().stream()
                 .map(mutation -> buildContext.relayMappingConfig.relayCompliantMutations
                         ? toRelayMutation(toGraphQLField(mutation, buildContext), buildContext.relayMappingConfig)
                         : toGraphQLField(mutation, buildContext))

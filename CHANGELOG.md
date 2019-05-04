@@ -14,11 +14,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Jackson and ClassGraph versions upgraded [#226](https://github.com/leangen/graphql-spqr/issues/226) [#227](https://github.com/leangen/graphql-spqr/issues/227)
 - Small improvements [a663162](https://github.com/leangen/graphql-spqr/commit/a663162430add139fbb706f2973cbea8e9d0df78)
+- `JavaDeprecationMappingConfig` accessible from `GeneratorConfiguration` [4aa8c5f](https://github.com/leangen/graphql-spqr/commit/4aa8c5fc539ef3b2837349df00ea318271e8f6cb) [7a34178](https://github.com/leangen/graphql-spqr/commit/7a341788cc2501232c77336bdb969f4c3fc551ef)
 
 ### Fixed
 - Generate valid names for array types [#217](https://github.com/leangen/graphql-spqr/issues/217)
 - Generate GraphQL type names for generic Java types correctly [#255](https://github.com/leangen/graphql-spqr/issues/255)
-- `JavaDeprecationMappingConfig` accessible from `GeneratorConfiguration` [4aa8c5f](https://github.com/leangen/graphql-spqr/commit/4aa8c5fc539ef3b2837349df00ea318271e8f6cb) [7a34178](https://github.com/leangen/graphql-spqr/commit/7a341788cc2501232c77336bdb969f4c3fc551ef)
+- Resolve type references discovered in subscriptions and mutations [#238](https://github.com/leangen/graphql-spqr/issues/238)
+- Duplicate possible types in unions cause `TypeMappingException` and not `IndexOutOfBoundsException` [#256](https://github.com/leangen/graphql-spqr/issues/256)
 
 ## [0.9.9] - 2018-12-13
 ### Added
