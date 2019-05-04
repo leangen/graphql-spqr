@@ -264,7 +264,7 @@ public class Scalars {
             s -> Time.valueOf(LocalTime.parse(s)), i -> Time.valueOf(i.atZone(ZoneOffset.UTC).toLocalTime()), t -> t.toLocalTime().toString());
 
     public static final GraphQLScalarType GraphQLSqlTimestamp = temporalScalar(Timestamp.class,"SqlTimestamp", "a SQL compliant local date-time",
-            s -> Timestamp.valueOf(LocalDateTime.parse(s)), i -> Timestamp.valueOf(i.atZone(ZoneOffset.UTC).toLocalDateTime()), t -> t.toLocalDateTime().toString());
+            s -> Timestamp.from(Instant.parse(s)), Timestamp::from, t -> t.toInstant().toString());
 
     public static final GraphQLScalarType GraphQLCalendar = temporalScalar(Calendar.class,"Calendar", "a date-time with a time-zone",
             s -> GregorianCalendar.from(ZonedDateTime.parse(s)), i -> GregorianCalendar.from(i.atZone(ZoneOffset.UTC)), c -> c.toInstant().toString());

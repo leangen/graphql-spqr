@@ -46,7 +46,7 @@ public class TemporalScalarsTest {
 
     @Test
     public void testSqlTimestamp() {
-        testTemporal(Timestamp.class, "2017-06-24T23:15:44.500", 1498346144500L);
+        testTemporal(Timestamp.class, "2017-06-24T23:15:44.500Z", 1498346144500L);
     }
 
     @Test
