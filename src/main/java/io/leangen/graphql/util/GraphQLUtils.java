@@ -81,6 +81,6 @@ public class GraphQLUtils {
     }
 
     private static boolean isIntrospection(String name) {
-        return name.startsWith("__");
+        return name != null && name.startsWith("__");
     }
 }

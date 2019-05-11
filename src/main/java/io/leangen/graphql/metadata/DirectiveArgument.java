@@ -3,7 +3,6 @@ package io.leangen.graphql.metadata;
 import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.stream.Collectors;
 
@@ -16,9 +15,9 @@ public class DirectiveArgument {
     private final Object defaultValue;
     private final Annotation annotation;
 
-    public DirectiveArgument(String name, String description, AnnotatedType javaType, Object value, Object defaultValue, AnnotatedElement element, Annotation annotation) {
+    public DirectiveArgument(String name, String description, TypedElement element, Object value, Object defaultValue, Annotation annotation) {
         this.name = name;
-        this.typedElement = new TypedElement(javaType, element);
+        this.typedElement = element;
         this.description = description;
         this.value = value;
         this.defaultValue = defaultValue;

@@ -1041,6 +1041,7 @@ public class GraphQLSchemaGenerator {
         Set<GraphQLType> additional = Stream.concat(
                 additionalTypes.values().stream(),
                 additionalDirectives.values().stream().flatMap(directive -> directive.getArguments().stream().map(GraphQLArgument::getType)))
+                .map(GraphQLUtils::unwrap)
                 .filter(this::isRealType)
                 .collect(Collectors.toSet());
         additional.stream().collect(Collectors.groupingBy(GraphQLType::getName)).forEach((name, types) -> {
