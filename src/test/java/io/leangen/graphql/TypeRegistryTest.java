@@ -38,7 +38,7 @@ public class TypeRegistryTest {
     }
 
     @Test
-    public void knownTypesTest() {
+    public void additionalTypesTest() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
                 .generate();

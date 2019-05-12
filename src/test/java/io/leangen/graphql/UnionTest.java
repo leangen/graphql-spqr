@@ -85,6 +85,21 @@ public class UnionTest {
     }
 
     @Test
+    public void testRegisteredImplementationsUnionInterface() {
+        AdditionalUnionInterfaceService unionService = new AdditionalUnionInterfaceService();
+
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(unionService)
+                .withAdditionalImplementations(I1.class, I2.class)
+                .generate();
+
+        GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
+        assertUnionOf(union, schema.getType("I1"), schema.getType("I2"));
+        assertEquals("Strong_union", union.getName());
+        assertEquals("This union is strong!", ((GraphQLUnionType) union).getDescription());
+    }
+
+    @Test
     public void testAutoDiscoveredUnionInterface() {
         AutoDiscoveredUnionService unionService = new AutoDiscoveredUnionService();
 
@@ -129,6 +144,13 @@ public class UnionTest {
         }
     }
 
+    private class AdditionalUnionInterfaceService {
+        @GraphQLQuery(name = "union")
+        public UE union(@GraphQLArgument(name = "id") int id) {
+            return null;
+        }
+    }
+
     private class AutoDiscoveredUnionService {
         @GraphQLQuery(name = "union")
         public UA union(@GraphQLArgument(name = "id") int id) {
@@ -145,8 +167,11 @@ public class UnionTest {
     @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypes = {I1.class, I2.class})
     public interface UI {}
 
-    public static class I1 implements UI {}
-    public static class I2 implements UI {}
+    @GraphQLUnion(name = "Strong_union", description = "This union is strong!")
+    public interface UE {}
+
+    public static class I1 implements UI, UE {}
+    public static class I2 implements UI, UE {}
 
     @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypeAutoDiscovery = true, scanPackages = "io.leangen")
     public interface UA {}

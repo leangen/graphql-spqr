@@ -6,6 +6,8 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import org.junit.Test;
 
+import java.util.List;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
@@ -20,7 +22,16 @@ public class ImplementationAutoDiscoveryTest {
         assertNull(schema.getType("One"));
         assertNull(schema.getType("Two"));
     }
-    
+
+    @Test
+    public void explicitAdditionalTypesTest() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new ContainerService())
+                .withAdditionalImplementations(MultiContainer.class)
+                .generate();
+        assertNotNull(schema.getType("MultiContainer_String"));
+    }
+
     @Test
     public void explicitTypesTest() {
         GraphQLSchema schema = schemaFor(new ManualExplicitService());
@@ -101,6 +112,25 @@ public class ImplementationAutoDiscoveryTest {
         @GraphQLQuery(name = "two")
         public Two findTwo() {
             return new Two();
+        }
+    }
+
+    @GraphQLInterface(name = "Container")
+    public interface Container<T> {
+        T getItem();
+    }
+
+    public static class MultiContainer<T> implements Container<List<T>> {
+        @Override
+        public List<T> getItem() {
+            return null;
+        }
+    }
+
+    public static class ContainerService {
+        @GraphQLQuery
+        public Container<List<String>> strings() {
+            return null;
         }
     }
 }
