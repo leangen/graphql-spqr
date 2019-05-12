@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.Date;
@@ -91,6 +92,11 @@ public class TemporalScalarsTest {
     @Test
     public void testZonedDateTime() {
         testTemporal(ZonedDateTime.class, "2017-06-24T23:15:44.510Z", 1498346144510L);
+    }
+
+    @Test
+    public void testOffsetTime() {
+        testTemporal(OffsetTime.class, "09:15:30Z", 33330000L);
     }
 
     @Test

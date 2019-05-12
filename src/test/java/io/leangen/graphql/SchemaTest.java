@@ -16,7 +16,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.OffsetTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -110,6 +113,8 @@ public class SchemaTest {
 
     @Test
     public void testSchema() {
+        OffsetTime t = OffsetTime.ofInstant(new Date(36000000).toInstant(), ZoneOffset.UTC);
+
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
                 .withTypeAdapters(new MapToListTypeAdapter())
