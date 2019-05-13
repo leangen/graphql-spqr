@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Use the `_mappedInputField` directive to attach meta data to input fields [#216](https://github.com/leangen/graphql-spqr/issues/216)
 - Generator should support accepting a bean supplier (makes prototype/dependent scoped beans easier to use) [#254](https://github.com/leangen/graphql-spqr/issues/254)
 - Ability to register additional Java types (used as additional interface implementations or possible union types) [#208](https://github.com/leangen/graphql-spqr/issues/208)
+- Support for `OffsetTime` [#260](https://github.com/leangen/graphql-spqr/issues/260)
 
 ### Changed
 - Jackson and ClassGraph versions upgraded [#226](https://github.com/leangen/graphql-spqr/issues/226) [#227](https://github.com/leangen/graphql-spqr/issues/227)
