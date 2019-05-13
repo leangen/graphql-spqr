@@ -38,32 +38,29 @@ public abstract class UnionMapper implements TypeMapper {
 
         Set<String> seen = new HashSet<>(possibleJavaTypes.size());
 
-        possibleJavaTypes.stream()
-                .map(pos -> operationMapper.toGraphQLType(pos, buildContext))
-                .forEach(type -> {
-                    if (!seen.add(type.getName())) {
-                        throw new TypeMappingException("Duplicate possible type " + type.getName() + " for union " + name);
-                    }
+        possibleJavaTypes.forEach(possibleJavaType -> {
+            GraphQLOutputType possibleType = operationMapper.toGraphQLType(possibleJavaType, buildContext);
+            if (!seen.add(possibleType.getName())) {
+                throw new TypeMappingException("Duplicate possible type " + possibleType.getName() + " for union " + name);
+            }
 
-                    if (type instanceof GraphQLObjectType) {
-                        builder.possibleType((GraphQLObjectType) type);
-                    } else if (type instanceof GraphQLTypeReference) {
-                        builder.possibleType((GraphQLTypeReference) type);
-                    } else {
-                        throw new TypeMappingException(type.getClass().getSimpleName() +
-                                " is not a valid GraphQL union member. Only object types can be unionized.");
-                    }
-                });
+            if (possibleType instanceof GraphQLObjectType) {
+                builder.possibleType((GraphQLObjectType) possibleType);
+            } else if (possibleType instanceof GraphQLTypeReference) {
+                builder.possibleType((GraphQLTypeReference) possibleType);
+            } else {
+                throw new TypeMappingException(possibleType.getClass().getSimpleName() +
+                        " is not a valid GraphQL union member. Only object types can be unionized.");
+            }
+
+            buildContext.typeRegistry.registerCovariantType(name, possibleJavaType, possibleType);
+        });
 
         builder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildUnionTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 builder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
 
-        GraphQLUnionType union = builder.build();
-        for (int i = 0; i < possibleJavaTypes.size(); i++) {
-            buildContext.typeRegistry.registerCovariantType(union.getName(), possibleJavaTypes.get(i), union.getTypes().get(i));
-        }
-        return union;
+        return builder.build();
     }
 
     @Override

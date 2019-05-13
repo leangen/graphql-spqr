@@ -158,13 +158,13 @@ public class UnionTest {
         }
     }
 
-    @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypes = {C1.class, C2.class})
+    @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypes = {C2.class, C1.class})
     public static class UC {}
 
     public static class C1 extends UC {}
     public static class C2 extends UC {}
 
-    @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypes = {I1.class, I2.class})
+    @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypes = {I2.class, I1.class})
     public interface UI {}
 
     @GraphQLUnion(name = "Strong_union", description = "This union is strong!")
