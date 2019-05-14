@@ -87,14 +87,13 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         if (meta == null) return null;
         try {
             return defaultValueProvider(meta.defaultValueProvider(), environment)
-                    .getDefaultValue(parameter, parameterType, ReservedStrings.decode(environment.messageBundle.interpolate(meta.defaultValue())));
+                    .getDefaultValue(parameter, environment.getMappableInputType(parameterType), ReservedStrings.decode(environment.messageBundle.interpolate(meta.defaultValue())));
         } catch (ReflectiveOperationException e) {
             throw new IllegalArgumentException(
                     meta.defaultValueProvider().getName() + " must expose a public default constructor, or a constructor accepting " + GlobalEnvironment.class.getName(), e);
         }
     }
 
-    @SuppressWarnings("WeakerAccess")
     protected <T extends DefaultValueProvider> T defaultValueProvider(Class<T> type, GlobalEnvironment environment) throws ReflectiveOperationException {
         try {
             return type.getConstructor(GlobalEnvironment.class).newInstance(environment);
