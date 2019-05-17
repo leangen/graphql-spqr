@@ -341,7 +341,7 @@ public class ClassUtils {
      */
     @Deprecated
     public static List<AnnotatedType> findImplementations(AnnotatedType superType, String... packages) {
-        return new ClassFinder().findImplementations(superType, info -> true, packages);
+        return new ClassFinder().findImplementations(superType, info -> true, false, packages);
     }
 
     /**

@@ -13,6 +13,7 @@ import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
+import io.leangen.graphql.generator.mapping.strategy.DefaultImplementationDiscoveryStrategy;
 import io.leangen.graphql.util.GraphQLUtils;
 import org.junit.Test;
 
@@ -90,7 +91,8 @@ public class UnionTest {
 
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(unionService)
-                .withAdditionalImplementations(I1.class, I2.class)
+                .withImplementationDiscoveryStrategy(new DefaultImplementationDiscoveryStrategy()
+                        .withAdditionalImplementations(I1.class, I2.class))
                 .generate();
 
         GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();

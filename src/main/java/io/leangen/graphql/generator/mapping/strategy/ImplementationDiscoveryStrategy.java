@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface ImplementationDiscoveryStrategy {
 
-    List<AnnotatedType> findImplementations(AnnotatedType type, String[] scanPackages, BuildContext buildContext);
+    List<AnnotatedType> findImplementations(AnnotatedType type, boolean autoDiscover, String[] scanPackages, BuildContext buildContext);
 }

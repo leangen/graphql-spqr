@@ -4,7 +4,6 @@ import graphql.relay.Relay;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
-import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.generator.mapping.SchemaTransformerRegistry;
@@ -12,7 +11,6 @@ import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
 import io.leangen.graphql.generator.mapping.strategy.AbstractInputHandler;
 import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStrategy;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
-import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.query.DirectiveBuilder;
@@ -66,7 +64,6 @@ public class BuildContext {
     public final RelayMappingConfig relayMappingConfig;
     public final ClassFinder classFinder;
     public final List<Consumer<BuildContext>> postBuildHooks;
-    public final List<Class<?>> additionalTypes;
     public final List<AnnotatedType> additionalDirectives;
 
     final Validator validator;
@@ -94,9 +91,9 @@ public class BuildContext {
                         TypeMapperRegistry typeMappers, SchemaTransformerRegistry transformers, ValueMapperFactory valueMapperFactory,
                         TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
-                        InputFieldBuilderRegistry inputFieldBuilders, ResolverInterceptorFactory interceptorFactory, DirectiveBuilder directiveBuilder,
-                        InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig, Collection<GraphQLType> knownTypes,
-                        List<Class<?>> additionalTypes, List<AnnotatedType> additionalDirectives,
+                        InputFieldBuilderRegistry inputFieldBuilders, ResolverInterceptorFactory interceptorFactory,
+                        DirectiveBuilder directiveBuilder, InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig,
+                        Collection<GraphQLType> knownTypes, List<AnnotatedType> additionalDirectives,
                         Comparator<AnnotatedType> typeComparator, ImplementationDiscoveryStrategy implementationStrategy) {
         this.operationRegistry = operationRegistry;
         this.typeRegistry = environment.typeRegistry;
@@ -104,7 +101,6 @@ public class BuildContext {
         this.interceptorFactory = interceptorFactory;
         this.directiveBuilder = directiveBuilder;
         this.typeCache = new TypeCache(knownTypes);
-        this.additionalTypes = additionalTypes;
         this.additionalDirectives = additionalDirectives;
         this.typeMappers = typeMappers;
         this.typeInfoGenerator = typeInfoGenerator;
@@ -158,18 +154,5 @@ public class BuildContext {
                 .withEnvironment(globalEnvironment)
                 .withInputFieldBuilders(inputFieldBuilders)
                 .build();
-    }
-
-    public List<AnnotatedType> additionalImplementationsOf(AnnotatedType type) {
-        return additionalTypes.stream()
-                .filter(impl -> ClassUtils.isSuperClass(type, impl))
-                .map(impl -> {
-                    AnnotatedType implType = GenericTypeReflector.getExactSubType(type, impl);
-                    if (ClassUtils.isMissingTypeParameters(implType.getType())) {
-                        throw new TypeMappingException(String.format("%s could not be resolved as a subtype of %s", impl.getName(), type.getType().getTypeName()));
-                    }
-                    return implType;
-                })
-                .collect(Collectors.toList());
     }
 }

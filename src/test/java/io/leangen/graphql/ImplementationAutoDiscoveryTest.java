@@ -4,10 +4,12 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
+import io.leangen.graphql.generator.mapping.strategy.DefaultImplementationDiscoveryStrategy;
 import org.junit.Test;
 
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
@@ -27,8 +29,10 @@ public class ImplementationAutoDiscoveryTest {
     public void explicitAdditionalTypesTest() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new ContainerService())
-                .withAdditionalImplementations(MultiContainer.class)
+                .withImplementationDiscoveryStrategy(new DefaultImplementationDiscoveryStrategy()
+                        .withAdditionalImplementations(MultiContainer.class))
                 .generate();
+        assertEquals(1, schema.getAdditionalTypes().size());
         assertNotNull(schema.getType("MultiContainer_String"));
     }
 
@@ -45,23 +49,23 @@ public class ImplementationAutoDiscoveryTest {
         assertNotNull(schema.getType("One"));
         assertNotNull(schema.getType("Two"));
     }
-    
+
     @Test
     public void discoveredExplicitTypesTest() {
         GraphQLSchema schema = schemaFor(new AutoExplicitService());
         assertNotNull(schema.getType("One"));
         assertNotNull(schema.getType("Two"));
     }
-    
+
     private GraphQLSchema schemaFor(Object service) {
         return new TestSchemaGenerator()
                 .withOperationsFromSingleton(service)
                 .generate();
     }
-    
+
     @GraphQLInterface(name = "Manual")
     interface Manual {}
-    
+
     @GraphQLInterface(name = "Auto", implementationAutoDiscovery = true)
     interface Auto {}
 
@@ -89,7 +93,7 @@ public class ImplementationAutoDiscoveryTest {
         public One findOne() {
             return new One();
         }
-        
+
         @GraphQLQuery(name = "two")
         public Two findTwo() {
             return new Two();

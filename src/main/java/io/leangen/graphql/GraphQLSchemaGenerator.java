@@ -196,7 +196,6 @@ public class GraphQLSchemaGenerator {
     private final Map<String, GraphQLDirective> additionalDirectives = new HashMap<>();
     private final List<AnnotatedType> additionalDirectiveTypes = new ArrayList<>();
     private final Map<String, GraphQLType> additionalTypes = new HashMap<>();
-    private final List<Class<?>> additionalJavaTypes = new ArrayList<>();
     private final Set<Comparator<AnnotatedType>> typeComparators = new HashSet<>();
 
     private final String queryRoot;
@@ -733,11 +732,6 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withAdditionalImplementations(Class<?>... additionalTypes) {
-        Collections.addAll(additionalJavaTypes, additionalTypes);
-        return this;
-    }
-
     public GraphQLSchemaGenerator withAdditionalDirectives(Type... additionalDirectives) {
         return withAdditionalDirectives(
                 Arrays.stream(additionalDirectives).map(GenericTypeReflector::annotate).toArray(AnnotatedType[]::new));
@@ -984,7 +978,7 @@ public class GraphQLSchemaGenerator {
                 new SchemaTransformerRegistry(transformers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy,
                 scalarStrategy, typeTransformer, abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders),
                 interceptorFactory, directiveBuilder, inclusionStrategy, relayMappingConfig, additionalTypes(),
-                additionalJavaTypes, additionalDirectiveTypes, typeComparator, implDiscoveryStrategy);
+                additionalDirectiveTypes, typeComparator, implDiscoveryStrategy);
         OperationMapper operationMapper = new OperationMapper(buildContext);
 
         GraphQLSchema.Builder builder = GraphQLSchema.newSchema();

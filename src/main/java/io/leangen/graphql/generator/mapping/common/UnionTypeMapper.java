@@ -51,20 +51,12 @@ public class UnionTypeMapper extends UnionMapper {
                         " must have a public default constructor", e);
             }
         }
-        if (possibleTypes.isEmpty() && annotation.possibleTypeAutoDiscovery()) {
-            possibleTypes = buildContext.implDiscoveryStrategy.findImplementations(javaType, annotation.scanPackages(), buildContext);
-        }
         if (possibleTypes.isEmpty()) {
-            possibleTypes = getAdditionalImplementations(javaType, buildContext);
+            possibleTypes = buildContext.implDiscoveryStrategy.findImplementations(javaType, annotation.possibleTypeAutoDiscovery(), annotation.scanPackages(), buildContext);
         }
         if (possibleTypes.isEmpty()) {
             throw new TypeMappingException("No possible types found for union type " + javaType.getType().getTypeName());
         }
         return possibleTypes;
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected List<AnnotatedType> getAdditionalImplementations(AnnotatedType type, BuildContext buildContext) {
-        return buildContext.additionalImplementationsOf(type);
     }
 }

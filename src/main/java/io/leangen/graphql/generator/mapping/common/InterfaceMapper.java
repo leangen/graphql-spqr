@@ -61,15 +61,9 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
     }
 
     private void registerImplementations(AnnotatedType javaType, GraphQLInterfaceType type, OperationMapper operationMapper, BuildContext buildContext) {
-        if (isImplementationAutoDiscoveryEnabled(javaType)) {
-            buildContext.implDiscoveryStrategy.findImplementations(javaType, getScanPackages(javaType), buildContext)
-                    .forEach(impl -> getImplementingType(impl, operationMapper, buildContext)
-                            .ifPresent(implType -> buildContext.typeRegistry.registerDiscoveredCovariantType(type.getName(), impl, implType)));
-        } else {
-            getAdditionalImplementations(javaType, buildContext)
-                    .forEach(impl -> getImplementingType(impl, operationMapper, buildContext)
-                            .ifPresent(implType -> buildContext.typeRegistry.registerDiscoveredCovariantType(type.getName(), impl, implType)));
-        }
+        buildContext.implDiscoveryStrategy.findImplementations(javaType, isImplementationAutoDiscoveryEnabled(javaType), getScanPackages(javaType), buildContext)
+                .forEach(impl -> getImplementingType(impl, operationMapper, buildContext)
+                        .ifPresent(implType -> buildContext.typeRegistry.registerDiscoveredCovariantType(type.getName(), impl, implType)));
     }
 
     @SuppressWarnings("WeakerAccess")
@@ -80,11 +74,6 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
     @SuppressWarnings("WeakerAccess")
     protected String[] getScanPackages(AnnotatedType javaType) {
         return javaType.isAnnotationPresent(GraphQLInterface.class) ? javaType.getAnnotation(GraphQLInterface.class).scanPackages() : Utils.emptyArray();
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected List<AnnotatedType> getAdditionalImplementations(AnnotatedType type, BuildContext buildContext) {
-        return buildContext.additionalImplementationsOf(type);
     }
 
     private Optional<GraphQLObjectType> getImplementingType(AnnotatedType implType, OperationMapper operationMapper, BuildContext buildContext) {
