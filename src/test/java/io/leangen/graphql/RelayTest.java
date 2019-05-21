@@ -2,8 +2,10 @@ package io.leangen.graphql;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.GraphQLContext;
 import graphql.Scalars;
 import graphql.relay.ConnectionCursor;
 import graphql.relay.DefaultEdge;
@@ -119,10 +121,21 @@ public class RelayTest {
                 .withRelayCompliantMutations()
                 .generate();
 
-        GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
+        GraphQL exe = GraphQL.newGraphQL(schema).build();
 
-        ExecutionResult result = exe.execute(relayMapInputMutation);
+        //Check with the default context
+        ExecutionResult result = exe.execute(ExecutionInput.newExecutionInput()
+                .query(relayMapInputMutation)
+                .context(GraphQLContext.newContext().build()) //Needed because of a bug in graphql-java v12
+                .build());
         assertNoErrors(result);
+        assertValueAtPathEquals("123", result, "upMe." + GraphQLUtils.CLIENT_MUTATION_ID);
+
+        //Check with the wrapped context
+        exe = GraphQLRuntime.newGraphQL(schema).build();
+        result = exe.execute(relayMapInputMutation);
+        assertNoErrors(result);
+        assertValueAtPathEquals("123", result, "upMe." + GraphQLUtils.CLIENT_MUTATION_ID);
     }
 
     @Test

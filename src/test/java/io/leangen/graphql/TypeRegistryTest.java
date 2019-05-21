@@ -2,13 +2,19 @@ package io.leangen.graphql;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.GraphQLFieldsContainer;
+import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
+import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.annotations.GraphQLEnvironment;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLUnion;
+import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
 import io.leangen.graphql.execution.ResolutionEnvironment;
@@ -19,7 +25,11 @@ import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
 import org.junit.Test;
 
+import java.util.Collections;
+
+import static graphql.schema.GraphQLObjectType.newObject;
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
+import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -38,26 +48,55 @@ public class TypeRegistryTest {
     }
 
     @Test
-    public void additionalTypesTest() {
+    public void additionalTypesFullCopyTest() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
                 .generate();
 
         GraphQLSchema schema2 = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
-                .withAdditionalTypes(schema.getAllTypesAsList())
+                .withAdditionalTypes(schema.getAllTypesAsList(), schema.getCodeRegistry())
                 .generate();
 
-        schema.getTypeMap().entrySet().stream()
-                .filter(entry -> !GraphQLUtils.isIntrospectionType(entry.getValue()) && entry.getValue() != schema.getQueryType())
-                .forEach(entry -> {
-                    assertTrue(schema2.getTypeMap().containsKey(entry.getKey()));
-                    assertSame(entry.getValue(), schema2.getTypeMap().get(entry.getKey()));
+        schema.getTypeMap().values().stream()
+                .filter(type -> !GraphQLUtils.isIntrospectionType(type) && type != schema.getQueryType())
+                .forEach(type -> {
+                    assertTrue(schema2.getTypeMap().containsKey(type.getName()));
+                    GraphQLType type2 = schema2.getTypeMap().get(type.getName());
+                    assertSameType(type, type2, schema.getCodeRegistry(), schema2.getCodeRegistry());
                 });
 
         GraphQL exe = GraphQL.newGraphQL(schema2).build();
         ExecutionResult result = exe.execute("{mix(id: \"1\") {... on Street {name}}}");
-        assertEquals(0, result.getErrors().size());
+        assertNoErrors(result);
+    }
+
+    @Test
+    public void additionalTypesPartialCopyTest() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new PersonService())
+                .withAdditionalDirectives(Directive.class)
+                .generate();
+        GraphQLSchema schema2 = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new Service())
+                .withAdditionalTypes(Collections.singleton(schema.getType("Person")), schema.getCodeRegistry())
+                .withAdditionalDirectives(schema.getDirective("directive"))
+                .generate();
+
+        assertSameType(schema.getType("Address"), schema2.getType("Address"),
+                schema.getCodeRegistry(), schema2.getCodeRegistry());
+    }
+
+    @Test(expected = ConfigurationException.class)
+    public void additionalTypesCollisionTest() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new PersonService())
+                .generate();
+        new TestSchemaGenerator()
+                .withOperationsFromSingleton(new Service())
+                .withAdditionalTypes(Collections.singleton(schema.getType("Person")), schema.getCodeRegistry())
+                .withAdditionalTypes(Collections.singleton(newObject().name("Street").build()), schema.getCodeRegistry())
+                .generate();
     }
 
     @Test
@@ -72,6 +111,23 @@ public class TypeRegistryTest {
         }
     }
 
+    private void assertSameType(GraphQLType t1, GraphQLType t2, GraphQLCodeRegistry code1, GraphQLCodeRegistry code2) {
+        assertSame(t1, t2);
+        if (t1 instanceof GraphQLInterfaceType) {
+            GraphQLInterfaceType i = (GraphQLInterfaceType) t1;
+            assertSame(code1.getTypeResolver(i), code2.getTypeResolver(i));
+        }
+        if (t1 instanceof GraphQLUnionType) {
+            GraphQLUnionType u = (GraphQLUnionType) t1;
+            assertSame(code1.getTypeResolver(u), code2.getTypeResolver(u));
+        }
+        if (t1 instanceof GraphQLFieldsContainer) {
+            GraphQLFieldsContainer c = (GraphQLFieldsContainer) t1;
+            c.getFieldDefinitions().forEach(fieldDef ->
+                    assertSame(code1.getDataFetcher(c, fieldDef), code2.getDataFetcher(c, fieldDef)));
+        }
+    }
+
     public static class Service {
 
         @GraphQLQuery(name = "street")
@@ -80,10 +136,55 @@ public class TypeRegistryTest {
         }
 
         @GraphQLQuery
+        public Company company(Company in) {
+            return new Company();
+        }
+
+        @GraphQLQuery
         public @GraphQLUnion(name = "mix") Union2<Street, Education> mix(@GraphQLEnvironment ResolutionEnvironment env, @GraphQLId(relayId = true) int id) {
             GraphQLOutputType mixType = env.globalEnvironment.typeRegistry.getOutputTypes("mix").get(0).graphQLType;
             assertTrue(mixType instanceof GraphQLObjectType);
             return null;
+        }
+    }
+
+    @GraphQLInterface(name = "Addressable")
+    public interface Addressable {
+        Address getAddress();
+    }
+
+    public static class Company implements Addressable {
+
+        private Address address;
+
+        @Override
+        public Address getAddress() {
+            return address;
+        }
+
+        public void setAddress(Address address) {
+            this.address = address;
+        }
+    }
+
+    public static class Address {
+        public Street street;
+        public int block;
+    }
+
+    public static class Person {
+        public Address address;
+        public Person spouse;
+    }
+
+    public static class Directive {
+        public Company company;
+    }
+
+    public static class PersonService {
+        @GraphQLQuery
+        public Person person(Person in) {
+            return new Person();
         }
     }
 

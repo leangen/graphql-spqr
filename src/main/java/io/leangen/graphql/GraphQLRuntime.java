@@ -1,18 +1,19 @@
 package io.leangen.graphql;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.GraphQLContext;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.execution.ContextWrapper;
 import io.leangen.graphql.execution.complexity.ComplexityAnalysisInstrumentation;
 import io.leangen.graphql.execution.complexity.JavaScriptEvaluator;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Wrapper around GraphQL that allows instrumentation chaining and limiting query complexity
@@ -29,7 +30,13 @@ public class GraphQLRuntime extends GraphQL {
 
     @Override
     public CompletableFuture<ExecutionResult> executeAsync(ExecutionInput executionInput) {
-        return delegate.executeAsync(executionInput.transform(builder -> builder.context(new ContextWrapper(executionInput.getContext()))));
+        return delegate.executeAsync(wrapContext(executionInput));
+    }
+
+    private ExecutionInput wrapContext(ExecutionInput executionInput) {
+        return executionInput.getContext() instanceof GraphQLContext
+                    ? executionInput //The default context is good enough, no need to wrap it
+                    : executionInput.transform(builder -> builder.context(new ContextWrapper(executionInput.getContext())));
     }
 
     public static Builder newGraphQL(GraphQLSchema graphQLSchema) {

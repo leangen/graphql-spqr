@@ -19,6 +19,4 @@ public @interface GraphQLInterface {
     boolean implementationAutoDiscovery() default false;
 
     String[] scanPackages() default {};
-
-    String[] fieldOrder() default {};
 }

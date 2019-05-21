@@ -1,5 +1,6 @@
 package io.leangen.graphql.execution;
 
+import graphql.GraphQLContext;
 import graphql.GraphQLException;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
@@ -44,16 +45,20 @@ public class OperationExecutor {
     }
 
     public Object execute(DataFetchingEnvironment env) throws Exception {
-        Resolver resolver;
         if (env.getContext() instanceof ContextWrapper) {
             ContextWrapper context = env.getContext();
             if (env.getArgument(CLIENT_MUTATION_ID) != null) {
                 context.setClientMutationId(env.getArgument(CLIENT_MUTATION_ID));
             }
+        } else if (env.getContext() instanceof GraphQLContext) {
+            GraphQLContext context = env.getContext();
+            if (env.getArgument(CLIENT_MUTATION_ID) != null) {
+                context.put(CLIENT_MUTATION_ID, env.getArgument(CLIENT_MUTATION_ID));
+            }
         }
 
         Map<String, Object> arguments = env.getArguments();
-        resolver = this.operation.getApplicableResolver(arguments.keySet());
+        Resolver resolver = this.operation.getApplicableResolver(arguments.keySet());
         if (resolver == null) {
             throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
                     + arguments.keySet() + " not implemented");

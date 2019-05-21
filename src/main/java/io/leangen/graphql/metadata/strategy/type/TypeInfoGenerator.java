@@ -17,8 +17,6 @@ public interface TypeInfoGenerator {
 
     String generateTypeDescription(AnnotatedType type, MessageBundle messageBundle);
 
-    String[] getFieldOrder(AnnotatedType type, MessageBundle messageBundle);
-
     default String generateInputTypeName(AnnotatedType type, MessageBundle messageBundle) {
         return generateTypeName(type, messageBundle) + INPUT_SUFFIX;
     }

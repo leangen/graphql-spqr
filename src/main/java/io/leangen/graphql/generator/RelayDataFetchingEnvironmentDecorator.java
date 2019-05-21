@@ -1,10 +1,13 @@
 package io.leangen.graphql.generator;
 
-import graphql.execution.ExecutionContext;
+import graphql.cachecontrol.CacheControl;
 import graphql.execution.ExecutionId;
 import graphql.execution.ExecutionStepInfo;
+import graphql.execution.MergedField;
+import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
+import graphql.language.OperationDefinition;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.DataFetchingFieldSelectionSet;
 import graphql.schema.GraphQLFieldDefinition;
@@ -54,6 +57,11 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     }
 
     @Override
+    public <T> T getLocalContext() {
+        return delegate.getLocalContext();
+    }
+
+    @Override
     public <T> T getRoot() {
         return delegate.getRoot();
     }
@@ -64,8 +72,14 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     }
 
     @Override
+    @Deprecated
     public List<Field> getFields() {
         return delegate.getFields();
+    }
+
+    @Override
+    public MergedField getMergedField() {
+        return delegate.getMergedField();
     }
 
     @Override
@@ -109,12 +123,27 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return delegate.getExecutionContext();
+    public <K, V> DataLoader<K, V> getDataLoader(String dataLoaderName) {
+        return delegate.getDataLoader(dataLoaderName);
     }
 
     @Override
-    public <K, V> DataLoader<K, V> getDataLoader(String dataLoaderName) {
-        return delegate.getDataLoader(dataLoaderName);
+    public CacheControl getCacheControl() {
+        return delegate.getCacheControl();
+    }
+
+    @Override
+    public OperationDefinition getOperationDefinition() {
+        return delegate.getOperationDefinition();
+    }
+
+    @Override
+    public Document getDocument() {
+        return delegate.getDocument();
+    }
+
+    @Override
+    public Map<String, Object> getVariables() {
+        return delegate.getVariables();
     }
 }

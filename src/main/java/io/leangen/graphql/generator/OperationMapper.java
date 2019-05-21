@@ -1,5 +1,6 @@
 package io.leangen.graphql.generator;
 
+import graphql.GraphQLContext;
 import graphql.execution.batched.BatchedDataFetcher;
 import graphql.relay.Relay;
 import graphql.schema.DataFetcher;
@@ -20,9 +21,7 @@ import graphql.schema.PropertyDataFetcher;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.ContextWrapper;
-import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.OperationExecutor;
-import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.metadata.Directive;
 import io.leangen.graphql.metadata.DirectiveArgument;
@@ -52,6 +51,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static graphql.Scalars.GraphQLString;
+import static graphql.schema.FieldCoordinates.coordinates;
 import static graphql.schema.GraphQLArgument.newArgument;
 import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
@@ -79,10 +79,10 @@ public class OperationMapper {
      *
      * @param buildContext The shared context containing all the global information needed for mapping
      */
-    public OperationMapper(BuildContext buildContext) {
-        this.queries = generateQueries(buildContext);
-        this.mutations = generateMutations(buildContext);
-        this.subscriptions = generateSubscriptions(buildContext);
+    public OperationMapper(String queryRoot, String mutationRoot, String subscriptionRoot, BuildContext buildContext) {
+        this.queries = generateQueries(queryRoot, buildContext);
+        this.mutations = generateMutations(mutationRoot, buildContext);
+        this.subscriptions = generateSubscriptions(subscriptionRoot, buildContext);
         this.directives = generateDirectives(buildContext);
         buildContext.resolveTypeReferences();
     }
@@ -95,10 +95,10 @@ public class OperationMapper {
      *
      * @return A list of {@link GraphQLFieldDefinition}s representing all top-level queries
      */
-    private List<GraphQLFieldDefinition> generateQueries(BuildContext buildContext) {
+    private List<GraphQLFieldDefinition> generateQueries(String queryRoot, BuildContext buildContext) {
         List<Operation> rootQueries = new ArrayList<>(buildContext.operationRegistry.getRootQueries());
         List<GraphQLFieldDefinition> queries = rootQueries.stream()
-                .map(query -> toGraphQLField(query, buildContext))
+                .map(query -> toGraphQLField(queryRoot, query, buildContext))
                 .collect(Collectors.toList());
 
         buildContext.resolveTypeReferences();
@@ -121,17 +121,17 @@ public class OperationMapper {
      *
      * @return A list of {@link GraphQLFieldDefinition}s representing all mutations
      */
-    private List<GraphQLFieldDefinition> generateMutations(BuildContext buildContext) {
+    private List<GraphQLFieldDefinition> generateMutations(String mutationRoot, BuildContext buildContext) {
         return buildContext.operationRegistry.getMutations().stream()
                 .map(mutation -> buildContext.relayMappingConfig.relayCompliantMutations
-                        ? toRelayMutation(toGraphQLField(mutation, buildContext), buildContext.relayMappingConfig)
-                        : toGraphQLField(mutation, buildContext))
+                        ? toRelayMutation(mutationRoot, toGraphQLField(mutation, buildContext), createResolver(mutation, buildContext), buildContext)
+                        : toGraphQLField(mutationRoot, mutation, buildContext))
                 .collect(Collectors.toList());
     }
 
-    private List<GraphQLFieldDefinition> generateSubscriptions(BuildContext buildContext) {
+    private List<GraphQLFieldDefinition> generateSubscriptions(String subscriptionRoot, BuildContext buildContext) {
         return buildContext.operationRegistry.getSubscriptions().stream()
-                .map(subscription -> toGraphQLField(subscription, buildContext))
+                .map(subscription -> toGraphQLField(subscriptionRoot, subscription, buildContext))
                 .collect(Collectors.toList());
     }
 
@@ -142,15 +142,7 @@ public class OperationMapper {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Maps a single operation to a GraphQL output field (as queries in GraphQL are nothing but fields of the root operation type).
-     *
-     * @param operation The operation to map to a GraphQL output field
-     * @param buildContext The shared context containing all the global information needed for mapping
-     *
-     * @return GraphQL output field representing the given operation
-     */
-    public GraphQLFieldDefinition toGraphQLField(Operation operation, BuildContext buildContext) {
+    private GraphQLFieldDefinition toGraphQLField(Operation operation, BuildContext buildContext) {
         GraphQLOutputType type = toGraphQLType(operation.getJavaType(), buildContext);
         GraphQLFieldDefinition.Builder fieldBuilder = newFieldDefinition()
                 .name(operation.getName())
@@ -164,18 +156,27 @@ public class OperationMapper {
                 .filter(OperationArgument::isMappable)
                 .map(argument -> toGraphQLArgument(argument, buildContext))
                 .collect(Collectors.toList());
-        fieldBuilder.argument(arguments);
+        fieldBuilder.arguments(arguments);
         if (GraphQLUtils.isRelayConnectionType(type) && buildContext.relayMappingConfig.strictConnectionSpec) {
             validateConnectionSpecCompliance(operation.getName(), arguments, buildContext.relay);
         }
 
-        Stream<AnnotatedType> inputTypes = operation.getArguments().stream()
-                .filter(OperationArgument::isMappable)
-                .map(OperationArgument::getJavaType);
-        ValueMapper valueMapper = buildContext.createValueMapper(inputTypes);
-        fieldBuilder.dataFetcher(createResolver(operation, valueMapper, buildContext.globalEnvironment, buildContext.interceptorFactory));
-
         return buildContext.transformers.transform(fieldBuilder.build(), operation, this, buildContext);
+    }
+
+    /**
+     * Maps a single operation to a GraphQL output field (as queries in GraphQL are nothing but fields of the root operation type).
+     *
+     * @param operation The operation to map to a GraphQL output field
+     * @param buildContext The shared context containing all the global information needed for mapping
+     *
+     * @return GraphQL output field representing the given operation
+     */
+    public GraphQLFieldDefinition toGraphQLField(String parentType, Operation operation, BuildContext buildContext) {
+        GraphQLFieldDefinition field = toGraphQLField(operation, buildContext);
+        DataFetcher<?> resolver = createResolver(operation, buildContext);
+        buildContext.codeRegistry.dataFetcher(coordinates(parentType, field.getName()), resolver);
+        return field;
     }
 
     public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
@@ -277,28 +278,31 @@ public class OperationMapper {
         return buildContext.transformers.transform(argument, directiveArgument, this, buildContext);
     }
 
-    private GraphQLFieldDefinition toRelayMutation(GraphQLFieldDefinition mutation, RelayMappingConfig relayMappingConfig) {
+    private GraphQLFieldDefinition toRelayMutation(String parentType, GraphQLFieldDefinition mutation, DataFetcher<?> resolver, BuildContext buildContext) {
 
+        String payloadTypeName = mutation.getName() + "Payload";
         List<GraphQLFieldDefinition> outputFields;
         if (mutation.getType() instanceof GraphQLObjectType) {
             outputFields = ((GraphQLObjectType) mutation.getType()).getFieldDefinitions();
         } else {
             outputFields = new ArrayList<>();
             outputFields.add(GraphQLFieldDefinition.newFieldDefinition()
-                    .name(relayMappingConfig.wrapperFieldName)
-                    .description(relayMappingConfig.wrapperFieldDescription)
+                    .name(buildContext.relayMappingConfig.wrapperFieldName)
+                    .description(buildContext.relayMappingConfig.wrapperFieldDescription)
                     .type(mutation.getType())
-                    .dataFetcher(DataFetchingEnvironment::getSource)
                     .build());
+            DataFetcher<?> wrapperFieldResolver = DataFetchingEnvironment::getSource;
+            buildContext.codeRegistry.dataFetcher(coordinates(payloadTypeName, buildContext.relayMappingConfig.wrapperFieldName), wrapperFieldResolver);
         }
         List<GraphQLInputObjectField> inputFields = mutation.getArguments().stream()
-                .map(arg -> GraphQLInputObjectField.newInputObjectField()
+                .map(arg -> newInputObjectField()
                         .name(arg.getName())
                         .description(arg.getDescription())
                         .type(arg.getType())
                         .defaultValue(arg.getDefaultValue())
                         .build())
                 .collect(Collectors.toList());
+
         GraphQLInputObjectType inputObjectType = newInputObject()
                 .name(mutation.getName() + "Input")
                 .field(newInputObjectField()
@@ -306,32 +310,49 @@ public class OperationMapper {
                         .type(new GraphQLNonNull(GraphQLString)))
                 .fields(inputFields)
                 .build();
+
         GraphQLObjectType outputType = newObject()
-                .name(mutation.getName() + "Payload")
+                .name(payloadTypeName)
                 .field(newFieldDefinition()
                         .name(CLIENT_MUTATION_ID)
-                        .type(new GraphQLNonNull(GraphQLString))
-                        .dataFetcher(env -> env.getContext() instanceof ContextWrapper
-                                ? ((ContextWrapper) env.getContext()).getClientMutationId()
-                                : new PropertyDataFetcher(CLIENT_MUTATION_ID)))
+                        .type(new GraphQLNonNull(GraphQLString)))
                 .fields(outputFields)
                 .build();
 
-        return newFieldDefinition()
+        DataFetcher<String> simpleResolver = new PropertyDataFetcher<>(CLIENT_MUTATION_ID);
+        DataFetcher<String> clientMutationIdResolver = env -> {
+            if (env.getContext() instanceof ContextWrapper) {
+                return ((ContextWrapper) env.getContext()).getClientMutationId();
+            } else if (env.getContext() instanceof GraphQLContext) {
+                return ((GraphQLContext) env.getContext()).get(CLIENT_MUTATION_ID);
+            } else {
+                return simpleResolver.get(env);
+            }
+        };
+        buildContext.codeRegistry.dataFetcher(coordinates(payloadTypeName, CLIENT_MUTATION_ID), clientMutationIdResolver);
+
+        final GraphQLFieldDefinition relayMutation = newFieldDefinition()
                 .name(mutation.getName())
                 .type(outputType)
                 .argument(newArgument()
                         .name("input")
                         .type(new GraphQLNonNull(inputObjectType)))
-                .dataFetcher(env -> {
-                    DataFetchingEnvironment innerEnv = new RelayDataFetchingEnvironmentDecorator(env);
-                    if (env.getContext() instanceof ContextWrapper) {
-                        ContextWrapper context = env.getContext();
-                        context.setClientMutationId(innerEnv.getArgument(CLIENT_MUTATION_ID));
-                    }
-                    return mutation.getDataFetcher().get(innerEnv);
-                })
                 .build();
+
+        DataFetcher<?> wrappedResolver = env -> {
+            DataFetchingEnvironment innerEnv = new RelayDataFetchingEnvironmentDecorator(env);
+            if (env.getContext() instanceof ContextWrapper) {
+                ContextWrapper context = env.getContext();
+                context.setClientMutationId(innerEnv.getArgument(CLIENT_MUTATION_ID));
+            } else if (env.getContext() instanceof GraphQLContext) {
+                GraphQLContext context = env.getContext();
+                context.put(CLIENT_MUTATION_ID, innerEnv.getArgument(CLIENT_MUTATION_ID));
+            }
+            return resolver.get(innerEnv);
+        };
+        buildContext.codeRegistry.dataFetcher(coordinates(parentType, relayMutation.getName()), wrappedResolver);
+
+        return relayMutation;
     }
 
     /**
@@ -339,17 +360,20 @@ public class OperationMapper {
      * @implSpec This resolver simply invokes {@link OperationExecutor#execute(DataFetchingEnvironment)}
      *
      * @param operation The operation for which the resolver is being created
-     * @param valueMapper Mapper to be used to deserialize raw argument values
-     * @param globalEnvironment The shared context containing all the global information needed for operation resolution
-     * @param interceptorFactory A factory producing interceptors applicable to the given {@code operation}'s resolvers
+     * @param buildContext The shared context containing all the global information needed for mapping
      *
      * @return The resolver for the given operation
      */
-    private DataFetcher createResolver(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment, ResolverInterceptorFactory interceptorFactory) {
+    private DataFetcher createResolver(Operation operation, BuildContext buildContext) {
+        Stream<AnnotatedType> inputTypes = operation.getArguments().stream()
+                .filter(OperationArgument::isMappable)
+                .map(OperationArgument::getJavaType);
+        ValueMapper valueMapper = buildContext.createValueMapper(inputTypes);
+
         if (operation.isBatched()) {
-            return (BatchedDataFetcher) environment -> new OperationExecutor(operation, valueMapper, globalEnvironment, interceptorFactory).execute(environment);
+            return (BatchedDataFetcher) environment -> new OperationExecutor(operation, valueMapper, buildContext.globalEnvironment, buildContext.interceptorFactory).execute(environment);
         }
-        return new OperationExecutor(operation, valueMapper, globalEnvironment, interceptorFactory)::execute;
+        return new OperationExecutor(operation, valueMapper, buildContext.globalEnvironment, buildContext.interceptorFactory)::execute;
     }
 
     /**
@@ -374,7 +398,10 @@ public class OperationMapper {
             if (!nodeQueriesByType.containsKey(typeName)) {
                 throw new IllegalArgumentException(typeName + " is not a Relay node type or no registered query can fetch it by ID");
             }
-            return env.getGraphQLSchema().getQueryType().getFieldDefinition(nodeQueriesByType.get(typeName)).getDataFetcher().get(env);
+            final GraphQLObjectType queryRoot = env.getGraphQLSchema().getQueryType();
+            final GraphQLFieldDefinition nodeQueryForType = queryRoot.getFieldDefinition(nodeQueriesByType.get(typeName));
+
+            return env.getGraphQLSchema().getCodeRegistry().getDataFetcher(queryRoot, nodeQueryForType).get(env);
         };
     }
 

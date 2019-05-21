@@ -48,16 +48,6 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
     }
 
     @Override
-    public String[] getFieldOrder(AnnotatedType type, MessageBundle messageBundle) {
-        return Utils.or(
-                Optional.ofNullable(type.getAnnotation(GraphQLInterface.class))
-                        .map(GraphQLInterface::fieldOrder),
-                Optional.ofNullable(type.getAnnotation(GraphQLType.class))
-                        .map(GraphQLType::fieldOrder))
-                .orElse(Utils.emptyArray());
-    }
-
-    @Override
     public String generateDirectiveTypeName(AnnotatedType type, MessageBundle messageBundle) {
         return messageBundle.interpolate(
                 Optional.ofNullable(type.getAnnotation(GraphQLDirective.class))

@@ -1,6 +1,7 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import graphql.relay.Edge;
+import graphql.relay.Relay;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLObjectType;
@@ -34,13 +35,14 @@ public class PageMapper extends ObjectTypeMapper {
         }
         buildContext.typeCache.register(connectionName);
         GraphQLOutputType type = operationMapper.toGraphQLType(nodeType, buildContext);
-        List<GraphQLFieldDefinition> edgeFields = getFields(edgeType, buildContext, operationMapper).stream()
+        List<GraphQLFieldDefinition> edgeFields = getFields(type.getName() + "Edge", edgeType, buildContext, operationMapper).stream()
                 .filter(field -> !GraphQLUtils.isRelayEdgeField(field))
                 .collect(Collectors.toList());
         GraphQLObjectType edge = buildContext.relay.edgeType(type.getName(), type, null, edgeFields);
-        List<GraphQLFieldDefinition> connectionFields = getFields(javaType, buildContext, operationMapper).stream()
+        List<GraphQLFieldDefinition> connectionFields = getFields(type.getName() + "Connection", javaType, buildContext, operationMapper).stream()
                 .filter(field -> !GraphQLUtils.isRelayConnectionField(field))
                 .collect(Collectors.toList());
+        buildContext.typeRegistry.getDiscoveredTypes().add(Relay.pageInfoType);
         return buildContext.relay.connectionType(type.getName(), edge, connectionFields);
     }
 

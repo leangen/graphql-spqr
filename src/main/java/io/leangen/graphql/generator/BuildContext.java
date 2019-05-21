@@ -1,6 +1,7 @@
 package io.leangen.graphql.generator;
 
 import graphql.relay.Relay;
+import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
@@ -65,6 +66,7 @@ public class BuildContext {
     public final ClassFinder classFinder;
     public final List<Consumer<BuildContext>> postBuildHooks;
     public final List<AnnotatedType> additionalDirectives;
+    public final GraphQLCodeRegistry.Builder codeRegistry;
 
     final Validator validator;
 
@@ -93,8 +95,8 @@ public class BuildContext {
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldBuilderRegistry inputFieldBuilders, ResolverInterceptorFactory interceptorFactory,
                         DirectiveBuilder directiveBuilder, InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig,
-                        Collection<GraphQLType> knownTypes, List<AnnotatedType> additionalDirectives,
-                        Comparator<AnnotatedType> typeComparator, ImplementationDiscoveryStrategy implementationStrategy) {
+                        Collection<GraphQLType> knownTypes, List<AnnotatedType> additionalDirectives, Comparator<AnnotatedType> typeComparator,
+                        ImplementationDiscoveryStrategy implementationStrategy, GraphQLCodeRegistry.Builder codeRegistry) {
         this.operationRegistry = operationRegistry;
         this.typeRegistry = environment.typeRegistry;
         this.transformers = transformers;
@@ -124,6 +126,7 @@ public class BuildContext {
         this.relayMappingConfig = relayMappingConfig;
         this.classFinder = new ClassFinder();
         this.validator = new Validator(environment, typeMappers, knownTypes, typeComparator);
+        this.codeRegistry = codeRegistry;
         this.postBuildHooks = new ArrayList<>(Collections.singletonList(context -> classFinder.close()));
     }
 

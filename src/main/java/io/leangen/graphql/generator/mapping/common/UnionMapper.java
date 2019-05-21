@@ -33,8 +33,7 @@ public abstract class UnionMapper implements TypeMapper {
         buildContext.typeCache.register(name);
         GraphQLUnionType.Builder builder = newUnionType()
                 .name(name)
-                .description(description)
-                .typeResolver(buildContext.typeResolver);
+                .description(description);
 
         Set<String> seen = new HashSet<>(possibleJavaTypes.size());
 
@@ -60,7 +59,9 @@ public abstract class UnionMapper implements TypeMapper {
         buildContext.directiveBuilder.buildUnionTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 builder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
 
-        return builder.build();
+        GraphQLUnionType union = builder.build();
+        buildContext.codeRegistry.typeResolver(union, buildContext.typeResolver);
+        return union;
     }
 
     @Override

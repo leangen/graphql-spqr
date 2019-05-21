@@ -15,6 +15,4 @@ public @interface GraphQLType {
     String name() default "";
 
     String description() default "";
-
-    String[] fieldOrder() default {};
 }
