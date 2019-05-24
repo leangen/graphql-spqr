@@ -97,14 +97,16 @@ public class ClassUtils {
     }
 
     public static Set<Property> getProperties(final Class<?> type) {
-        Set<Property> properties = new HashSet<>();
-        stream(type.getDeclaredFields())
-                .filter(field -> !Modifier.isPublic(field.getModifiers()))
-                .forEach(field -> findGetter(type, field.getName())
-                        .filter(getter -> getter.getDeclaringClass().equals(type))
-                        .filter(getter -> !Modifier.isAbstract(getter.getModifiers()))
-                        .ifPresent(getter -> properties.add(new Property(field, getter))));
-        return properties;
+        return stream(type.getMethods())
+                .filter(ClassUtils::isGetter)
+                .map(getter -> findFieldByGetter(getter)
+                        .map(field -> new Property(field, getter))
+                        .filter(prop -> prop.getField().getType().equals(prop.getGetter().getReturnType()))
+                        .filter(prop -> !Modifier.isPublic(prop.getField().getModifiers()))
+                        .filter(prop -> !Modifier.isAbstract(prop.getGetter().getModifiers())))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toSet());
     }
 
     private static void collectPublicAbstractMethods(Class type, Set<Method> methods) {
@@ -308,25 +310,6 @@ public class ClassUtils {
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException("Failed to extract the value of field " + fieldName + " from the given instance of " + source.getClass(), e);
         }
-    }
-
-    public static <T extends Annotation> T getAnnotation(Method method, Class<T> annotation) {
-        if (method.isAnnotationPresent(annotation)) {
-            return method.getAnnotation(annotation);
-        }
-        if (isGetter(method)) {
-            return findFieldByGetter(method)
-                    .filter(f -> Modifier.isPrivate(f.getModifiers()))
-                    .map(f -> f.getAnnotation(annotation))
-                    .orElse(null);
-        }
-        if (isSetter(method)) {
-            return findFieldBySetter(method)
-                    .filter(f -> Modifier.isPrivate(f.getModifiers()))
-                    .map(f -> f.getAnnotation(annotation))
-                    .orElse(null);
-        }
-        return null;
     }
 
     /**
