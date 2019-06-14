@@ -4,6 +4,7 @@ import graphql.cachecontrol.CacheControl;
 import graphql.execution.ExecutionId;
 import graphql.execution.ExecutionStepInfo;
 import graphql.execution.MergedField;
+import graphql.execution.directives.QueryDirectives;
 import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
@@ -145,5 +146,10 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     @Override
     public Map<String, Object> getVariables() {
         return delegate.getVariables();
+    }
+
+    @Override
+    public QueryDirectives getQueryDirectives() {
+        return delegate.getQueryDirectives();
     }
 }

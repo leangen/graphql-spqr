@@ -1,6 +1,6 @@
 package io.leangen.graphql.execution;
 
-import graphql.analysis.QueryTraversal;
+import graphql.analysis.QueryTraverser;
 import graphql.analysis.QueryVisitorFragmentSpreadEnvironment;
 import graphql.analysis.QueryVisitorInlineFragmentEnvironment;
 import graphql.analysis.QueryVisitorStub;
@@ -123,7 +123,7 @@ public class Directives {
                 rootStep = rootStep.getParent();
                 rootParentType = GraphQLUtils.unwrapNonNull(rootStep.getType());
             }
-            QueryTraversal traversal = QueryTraversal.newQueryTraversal()
+            QueryTraverser traversal = QueryTraverser.newQueryTraverser()
                     .fragmentsByName(env.getFragmentsByName())
                     .schema(env.getGraphQLSchema())
                     .variables(env.getVariables())
