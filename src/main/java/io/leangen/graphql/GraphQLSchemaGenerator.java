@@ -419,62 +419,6 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
-     * Register a type to be scanned for exposed methods, using the globally registered builders.
-     * This is not normally required as domain types will be discovered dynamically and globally registered builders
-     * will be used anyway. Only needed when no exposed method refers to this domain type directly
-     * (relying exclusively on interfaces or super-types instead) and the type should still be mapped and listed in the resulting schema.
-     *
-     * @param types The domain types that are to be scanned for query/mutation methods
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withNestedOperationsFromTypes(Type... types) {
-        Arrays.stream(types).forEach(this::withNestedResolverBuildersForType);
-        return this;
-    }
-
-    /**
-     * The same as {@link #withNestedOperationsFromTypes(Type...)} except that an {@link AnnotatedType} is used,
-     * so any extra annotations on the type (not only those directly on the class) are kept.
-     *
-     * @param types The domain types that are to be scanned for query/mutation methods
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withNestedOperationsFromTypes(AnnotatedType... types) {
-        Arrays.stream(types).forEach(this::withNestedResolverBuildersForType);
-        return this;
-    }
-
-    /**
-     * Register {@code querySourceType} type to be scanned for exposed methods, using the provided {@link ResolverBuilder}s.
-     * Domain types are discovered dynamically, when referred to by an exposed method (either as its parameter type or return type).
-     * This method gives a way to customize how the discovered domain type will be analyzed.
-     *
-     * @param querySourceType The domain type that is to be scanned for query/mutation methods
-     * @param resolverBuilders Custom resolverBuilders to use when analyzing {@code querySourceType} type
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withNestedResolverBuildersForType(Type querySourceType, ResolverBuilder... resolverBuilders) {
-        return withNestedResolverBuildersForType(GenericTypeReflector.annotate(querySourceType), resolverBuilders);
-    }
-
-    /**
-     * Same as {@link #withNestedResolverBuildersForType(Type, ResolverBuilder...)} except that an {@link AnnotatedType} is used
-     * so any extra annotations on the type (not only those directly on the class) are kept.
-     *
-     * @param querySourceType The annotated domain type that is to be scanned for query/mutation methods
-     * @param resolverBuilders Custom resolverBuilders to use when analyzing {@code querySourceType} type
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withNestedResolverBuildersForType(AnnotatedType querySourceType, ResolverBuilder... resolverBuilders) {
-        this.operationSourceRegistry.registerNestedOperationSource(querySourceType, Arrays.asList(resolverBuilders));
-        return this;
-    }
-
-    /**
      * Globally registers {@link ResolverBuilder}s to be used for sources that don't have explicitly assigned builders.
      *
      * @param resolverBuilders builders to be globally registered

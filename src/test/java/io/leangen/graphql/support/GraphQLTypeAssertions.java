@@ -2,6 +2,7 @@ package io.leangen.graphql.support;
 
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
@@ -91,5 +92,12 @@ public class GraphQLTypeAssertions {
     public static void assertArgumentsPresent(GraphQLFieldDefinition field, String... argumentNames) {
         Set<String> argNames = field.getArguments().stream().map(GraphQLArgument::getName).collect(Collectors.toSet());
         Arrays.stream(argumentNames).forEach(argName -> assertTrue(argNames.contains(argName)));
+    }
+
+    public static void assertFieldNamesEqual(GraphQLFieldsContainer fieldsContainer, String... fieldNames) {
+        Set<String> discoveredNames = fieldsContainer.getFieldDefinitions().stream()
+                .map(GraphQLFieldDefinition::getName).collect(Collectors.toSet());
+        assertEquals(fieldNames.length, discoveredNames.size());
+        Arrays.stream(fieldNames).forEach(fldName -> assertTrue(discoveredNames.contains(fldName)));
     }
 }

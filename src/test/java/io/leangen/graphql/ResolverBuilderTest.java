@@ -21,18 +21,21 @@ import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 import io.leangen.graphql.metadata.strategy.query.ResolverBuilderParams;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import io.leangen.graphql.util.ClassUtils;
 import lombok.Getter;
 import org.junit.Test;
 
 import java.io.Serializable;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static io.leangen.graphql.support.GraphQLTypeAssertions.assertFieldNamesEqual;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -122,10 +125,20 @@ public class ResolverBuilderTest {
                 new PublicResolverBuilder(BASE_PACKAGES), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder()};
         for(Collection<Resolver> resolvers : resolvers(new Concrete(), allBuilders)) {
             assertEquals(3, resolvers.size());
-            Stream.of("abstractField", "concreteField", "thing").forEach(field -> {
-                assertTrue(resolvers.stream().anyMatch(res -> res.getOperationName().equals(field)));
-            });
+            Stream.of("abstractField", "concreteField", "thing").forEach(field ->
+                assertTrue(resolvers.stream().anyMatch(res -> res.getOperationName().equals(field)))
+            );
         }
+    }
+
+    @Test
+    public void typeSpecificResolverBuilderTest() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withResolverBuilders((config, current) -> current.prepend(new RelaxedBeanResolverBuilder()))
+                .withOperationsFromSingletons(new StrangelyNamedProperties(), new StrangelyNamedProperties2())
+                .generate();
+
+        assertFieldNamesEqual(schema.getQueryType(), "name", "hasName", "title");
     }
 
     private Collection<Collection<Resolver>> resolvers(Object bean, ResolverBuilder... builders) {
@@ -228,5 +241,41 @@ public class ResolverBuilderTest {
         private Object thing;
         @GraphQLQuery(name = "concreteField")
         private String c1;
+    }
+
+    private static class RelaxedBeanResolverBuilder extends BeanResolverBuilder {
+
+        @Override
+        protected boolean isQuery(Method method, ResolverBuilderParams params) {
+            return (method.getReturnType() == Boolean.TYPE && method.getName().startsWith("has")) || super.isQuery(method, params);
+        }
+
+        @Override
+        public boolean supports(AnnotatedType type) {
+            return ClassUtils.isSuperClass(StrangelyNamedProperties.class, type);
+        }
+    }
+
+    private static class StrangelyNamedProperties {
+
+        public String getName() {
+            return "xyz";
+        }
+
+        public boolean hasName() {
+            return true;
+        }
+    }
+
+    private static class StrangelyNamedProperties2 {
+
+        @GraphQLQuery
+        public String getTitle() {
+            return "xyz";
+        }
+
+        public boolean hasTitle() {
+            return true;
+        }
     }
 }

@@ -5,6 +5,7 @@ import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Created by bojan.tomic on 7/10/16.
@@ -34,6 +35,6 @@ public class OperationSource {
     }
 
     Collection<ResolverBuilder> getResolverBuilders() {
-        return resolverBuilders;
+        return resolverBuilders.stream().filter(builder -> builder.supports(javaType)).collect(Collectors.toList());
     }
 }
