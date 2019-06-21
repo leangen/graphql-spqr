@@ -51,6 +51,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         typeBuilder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildObjectTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 typeBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
+        typeBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
 
         GraphQLObjectType type = typeBuilder.build();
         interfaces.forEach(inter -> buildContext.typeRegistry.registerCovariantType(inter.getName(), javaType, type));
@@ -75,6 +76,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         typeBuilder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildInputObjectTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 typeBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
+        typeBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
 
         return typeBuilder.build();
     }

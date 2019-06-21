@@ -4,6 +4,7 @@ import graphql.relay.Relay;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLType;
+import graphql.schema.GraphqlTypeComparatorRegistry;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolverInterceptorFactory;
@@ -144,12 +145,8 @@ public class BuildContext {
         return valueMapperFactory.getValueMapper(concreteSubTypes, globalEnvironment);
     }
 
-    void resolveTypeReferences() {
-        typeCache.resolveTypeReferences(typeRegistry);
-    }
-
-    public void executePostBuildHooks() {
-        postBuildHooks.forEach(hook -> hook.accept(this));
+    public GraphqlTypeComparatorRegistry comparatorRegistry(AnnotatedType type) {
+        return typeInfoGenerator.generateComparatorRegistry(type, messageBundle);
     }
 
     public DirectiveBuilderParams directiveBuilderParams() {
@@ -157,5 +154,13 @@ public class BuildContext {
                 .withEnvironment(globalEnvironment)
                 .withInputFieldBuilders(inputFieldBuilders)
                 .build();
+    }
+
+    void resolveTypeReferences() {
+        typeCache.resolveTypeReferences(typeRegistry);
+    }
+
+    public void executePostBuildHooks() {
+        postBuildHooks.forEach(hook -> hook.accept(this));
     }
 }

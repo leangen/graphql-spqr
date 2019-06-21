@@ -35,6 +35,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
         buildContext.directiveBuilder.buildEnumTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 enumBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
         addOptions(enumBuilder, javaType, operationMapper, buildContext);
+        enumBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
         return enumBuilder.build();
     }
 

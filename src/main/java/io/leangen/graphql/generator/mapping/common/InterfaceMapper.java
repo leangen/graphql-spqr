@@ -43,6 +43,7 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
         typeBuilder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildInterfaceTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 typeBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
+        typeBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
         GraphQLInterfaceType type = typeBuilder.build();
         buildContext.codeRegistry.typeResolver(type, buildContext.typeResolver);
 

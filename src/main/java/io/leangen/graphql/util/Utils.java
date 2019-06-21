@@ -69,6 +69,16 @@ public class Utils {
         return array != null && Array.getLength(array) != 0;
     }
 
+    public static int indexOf(String[] strings, String element, int missingIndex) {
+        requireNonEmpty(element);
+        for (int i = 0; i < strings.length; i++) {
+            if (strings[i].equals(element)) {
+                return i;
+            }
+        }
+        return missingIndex;
+    }
+
     @SafeVarargs
     public static <T> Stream<T> concat(Stream<T>... streams) {
         return Arrays.stream(streams).reduce(Stream::concat).orElse(Stream.empty());
