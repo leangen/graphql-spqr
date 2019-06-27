@@ -18,5 +18,7 @@ public @interface GraphQLMutation {
 
     String description() default "";
 
+    boolean useMethodName() default true;
+
     String deprecationReason() default ReservedStrings.NULL;
 }

@@ -1,5 +1,6 @@
 package io.leangen.graphql.metadata.strategy.query;
 
+import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
@@ -15,7 +16,7 @@ public class PropertyOperationInfoGenerator extends AnnotatedOperationInfoGenera
     public String name(OperationInfoGeneratorParams params) {
         List<? extends AnnotatedElement> elements = params.getElement().getElements();
         Optional<String> field = Utils.extractInstances(elements, Field.class).findFirst().map(Field::getName);
-        Optional<String> getter = Utils.extractInstances(elements, Method.class).findFirst().map(ClassUtils::getFieldNameFromGetter);
+        Optional<String> getter = Utils.extractInstances(elements, Method.class).findFirst().filter(e-> !e.getAnnotation(GraphQLQuery.class).useMethodName()).map(ClassUtils::getFieldNameFromGetter);
 
         return Utils.coalesce(super.name(params), Utils.or(field, getter).orElse(null));
     }
