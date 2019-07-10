@@ -29,7 +29,7 @@ public class ClassFinder {
     public final static Predicate<ClassInfo> CONCRETE = info -> !info.isAbstract() && !info.isInterface();
 
     public final static Predicate<ClassInfo> NON_IGNORED = info ->
-            info.getAnnotations().stream().noneMatch(ann -> ann.getName().equals(GraphQLIgnore.class.getName()));
+            info.getAnnotations().directOnly().stream().noneMatch(ann -> ann.getName().equals(GraphQLIgnore.class.getName()));
 
     public final static Predicate<ClassInfo> PUBLIC = ClassInfo::isPublic;
 
