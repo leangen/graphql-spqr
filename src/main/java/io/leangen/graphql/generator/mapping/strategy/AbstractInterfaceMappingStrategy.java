@@ -1,13 +1,13 @@
 package io.leangen.graphql.generator.mapping.strategy;
 
+import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.util.ClassUtils;
+
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
-import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.util.ClassUtils;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -29,20 +29,27 @@ public abstract class AbstractInterfaceMappingStrategy implements InterfaceMappi
 
     @Override
     public Collection<AnnotatedType> getInterfaces(AnnotatedType type) {
+        Map<Class<?>, AnnotatedType> interfaces = new HashMap<>();
+        collectInterfaces(type, interfaces);
+        return interfaces.values();
+    }
+
+    private void collectInterfaces(AnnotatedType type, Map<Class<?>, AnnotatedType> interfaces) {
         Class clazz = ClassUtils.getRawType(type.getType());
-        Set<AnnotatedType> interfaces = new HashSet<>();
-        do {
-            if (mapClasses) {
-                AnnotatedType currentType = GenericTypeReflector.getExactSuperType(type, clazz);
-                if (supports(currentType)) {
-                    interfaces.add(currentType);
-                }
+        if (interfaces.containsKey(clazz)) {
+            return;
+        }
+        if (clazz.isInterface() || mapClasses) {
+            if (supports(type)) {
+                interfaces.put(clazz, type);
             }
-            Arrays.stream(clazz.getInterfaces())
-                    .map(inter -> GenericTypeReflector.getExactSuperType(type, inter))
-                    .filter(this::supports)
-                    .forEach(interfaces::add);
-        } while ((clazz = clazz.getSuperclass()) != Object.class && clazz != null);
-        return interfaces;
+        }
+        Arrays.stream(clazz.getInterfaces())
+                .map(inter -> GenericTypeReflector.getExactSuperType(type, inter))
+                .forEach(inter -> collectInterfaces(inter, interfaces));
+        Class superClass = clazz.getSuperclass();
+        if (superClass != Object.class && superClass != null) {
+            collectInterfaces(GenericTypeReflector.getExactSuperType(type, superClass), interfaces);
+        }
     }
 }
