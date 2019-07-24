@@ -83,6 +83,7 @@ public class AnnotatedDirectiveBuilder implements DirectiveBuilder {
         InputFieldBuilderParams fieldBuilderParams = InputFieldBuilderParams.builder()
                 .withType(directiveType)
                 .withEnvironment(params.getEnvironment())
+                .withConcreteSubTypes(params.getConcreteSubTypes())
                 .build();
         List<DirectiveArgument> arguments = params.getInputFieldBuilders().getInputFields(fieldBuilderParams).stream()
                 .map(inputField -> new DirectiveArgument(

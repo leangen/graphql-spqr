@@ -1,5 +1,6 @@
 package io.leangen.graphql.metadata.strategy.value.gson;
 
+import com.google.gson.FieldNamingStrategy;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
@@ -10,6 +11,7 @@ import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
+import io.leangen.graphql.metadata.strategy.InputFieldInclusionParams;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
@@ -23,8 +25,14 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -85,13 +93,21 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
     @Override
     @SuppressWarnings("JavadocReference")
     public Set<InputField> getInputFields(InputFieldBuilderParams params) {
-        Set<InputField> inputFields = new HashSet<>();
+        Map<String, InputField> explicit = fromFields(params);
+        Map<String, InputField> implicit = fromGetters(params);
+        Map<String, InputField> merged = new HashMap<>(explicit);
+        implicit.forEach(merged::putIfAbsent);
+        return new HashSet<>(merged.values());
+    }
+
+    private Map<String, InputField> fromFields(InputFieldBuilderParams params) {
         AnnotatedType type = params.getType();
         Class<?> raw = ClassUtils.getRawType(type.getType());
         if (raw.isInterface() || raw.isPrimitive()) {
-            return inputFields;
+            return Collections.emptyMap();
         }
 
+        Map<String, InputField> inputFields = new HashMap<>();
         while (raw != Object.class) {
             Field[] fields = raw.getDeclaredFields();
             for (Field field : fields) {
@@ -99,20 +115,67 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
                         || gson.excluder().excludeField(field, false)) {
                     continue;
                 }
-                TypedElement element = reduce(type, field, params.getEnvironment().typeTransformer);
-                if (!params.getEnvironment().inclusionStrategy.includeInputField(field.getDeclaringClass(), element, element.getJavaType())) {
+                List<AnnotatedElement> propertyMembers = ClassUtils.getPropertyMembers(field);
+                String fieldName = gson.fieldNamingStrategy().translateName(field);
+                InputFieldInclusionParams inclusionParams = InputFieldInclusionParams.builder()
+                        .withType(params.getType())
+                        .withElementDeclaringClass(field.getDeclaringClass())
+                        .withElements(propertyMembers)
+                        .withDeserializationInfo(true, isDeserializableInSubType(fieldName, gson.fieldNamingStrategy(), params.getConcreteSubTypes()))
+                        .build();
+                if (!params.getEnvironment().inclusionStrategy.includeInputField(inclusionParams)) {
                     continue;
                 }
+                TypedElement element = reduce(type, field, params.getEnvironment().typeTransformer);
                 field.setAccessible(true);
-                String fieldName = gson.fieldNamingStrategy().translateName(field);
-                InputField inputField = new InputField(fieldName, getDescription(field, params.getEnvironment().messageBundle),
-                        element, null, defaultValue(field, element.getJavaType(), params.getEnvironment()));
-                if (!inputFields.add(inputField)) {
+                InputField inputField = new InputField(fieldName, getDescription(propertyMembers, params.getEnvironment().messageBundle),
+                        element, null, defaultValue(propertyMembers, element.getJavaType(), params.getEnvironment()));
+                if (inputFields.containsKey(fieldName)) {
                     throw new IllegalArgumentException(raw + " declares multiple input fields named " + fieldName);
                 }
+                inputFields.put(fieldName, inputField);
             }
             raw = raw.getSuperclass();
             type = GenericTypeReflector.getExactSuperType(type, raw);
+        }
+        return inputFields;
+    }
+
+    private Map<String, InputField> fromGetters(InputFieldBuilderParams params) {
+        AnnotatedType type = params.getType();
+        Class<?> raw = ClassUtils.getRawType(type.getType());
+
+        GsonFieldNamingStrategy namingStrategy = new GsonFieldNamingStrategy(params.getEnvironment().messageBundle);
+        List<Method> getters = Arrays.stream(raw.getMethods())
+                .filter(ClassUtils::isGetter)
+                .collect(Collectors.toList());
+        Map<String, InputField> inputFields = new HashMap<>();
+        for (Method getter : getters) {
+            if (gson.excluder().excludeClass(getter.getReturnType(), false)) {
+                continue;
+            }
+            List<AnnotatedElement> propertyMembers = ClassUtils.getPropertyMembers(getter);
+            if (propertyMembers.stream().anyMatch(element -> element instanceof Field)) {
+                continue;
+            }
+            String fieldName = namingStrategy.getPropertyName(propertyMembers)
+                    .orElse(ClassUtils.getFieldNameFromGetter(getter));
+            InputFieldInclusionParams inclusionParams = InputFieldInclusionParams.builder()
+                    .withType(params.getType())
+                    .withElementDeclaringClass(getter.getDeclaringClass())
+                    .withElements(propertyMembers)
+                    .withDeserializationInfo(false, isDeserializableInSubType(fieldName, gson.fieldNamingStrategy(), params.getConcreteSubTypes()))
+                    .build();
+            if (!params.getEnvironment().inclusionStrategy.includeInputField(inclusionParams)) {
+                continue;
+            }
+            TypedElement element = reduce(type, getter, params.getEnvironment().typeTransformer);
+            InputField inputField = new InputField(fieldName, getDescription(propertyMembers, params.getEnvironment().messageBundle),
+                    element, null, defaultValue(propertyMembers, element.getJavaType(), params.getEnvironment()));
+            if (inputFields.containsKey(fieldName)) {
+                throw new IllegalArgumentException(raw + " declares multiple input fields named " + fieldName);
+            }
+            inputFields.put(fieldName, inputField);
         }
         return inputFields;
     }
@@ -128,12 +191,22 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
         return new TypedElement(Utils.flatten(getter, setter, fld).collect(Collectors.toList()));
     }
 
-    protected String getDescription(Field field, MessageBundle messageBundle) {
-        return inputInfoGen.getDescription(ClassUtils.getPropertyMembers(field), messageBundle).orElse(null);
+    @SuppressWarnings("WeakerAccess")
+    protected TypedElement reduce(AnnotatedType declaringType, Method getter, TypeTransformer transformer) {
+        Optional<TypedElement> setter = ClassUtils.findSetter(getter.getDeclaringClass(), ClassUtils.getFieldNameFromGetter(getter), getter.getReturnType())
+                .map(mutator -> element(ClassUtils.getParameterTypes(mutator, declaringType)[0], mutator, declaringType, transformer));
+        Optional<TypedElement> gtr = Optional.of(getter)
+                .map(accessor -> element(ClassUtils.getReturnType(accessor, declaringType), accessor, declaringType, transformer));
+        List<TypedElement> elements = Utils.flatten(gtr, setter).collect(Collectors.toList());
+        return new TypedElement(elements);
     }
 
-    protected Object defaultValue(Field field, AnnotatedType fieldType, GlobalEnvironment environment) {
-        return inputInfoGen.defaultValue(ClassUtils.getPropertyMembers(field), fieldType, environment).orElse(null);
+    protected String getDescription(List<AnnotatedElement> members, MessageBundle messageBundle) {
+        return inputInfoGen.getDescription(members, messageBundle).orElse(null);
+    }
+
+    protected Object defaultValue(List<AnnotatedElement> members, AnnotatedType fieldType, GlobalEnvironment environment) {
+        return inputInfoGen.defaultValue(members, fieldType, environment).orElse(null);
     }
 
     private <T extends Member & AnnotatedElement> TypedElement element(AnnotatedType type, T annotatedMember, AnnotatedType declaringType, TypeTransformer transformer) {
@@ -142,6 +215,10 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
         } catch (TypeMappingException e) {
             throw new TypeMappingException(annotatedMember, declaringType, e);
         }
+    }
+
+    private boolean isDeserializableInSubType(String fieldName, FieldNamingStrategy namingStrategy, List<Class<?>> concreteSubTypes) {
+        return concreteSubTypes.stream().anyMatch(impl -> ClassUtils.findField(impl, field -> namingStrategy.translateName(field).equals(fieldName)).isPresent());
     }
 
     @Override

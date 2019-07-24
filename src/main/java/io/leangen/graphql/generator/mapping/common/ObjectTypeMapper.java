@@ -67,6 +67,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         InputFieldBuilderParams params = InputFieldBuilderParams.builder()
                 .withType(javaType)
                 .withEnvironment(buildContext.globalEnvironment)
+                .withConcreteSubTypes(buildContext.abstractInputHandler.findConcreteSubTypes(ClassUtils.getRawType(javaType.getType()), buildContext))
                 .build();
         buildContext.inputFieldBuilders.getInputFields(params).forEach(field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));
         if (ClassUtils.isAbstract(javaType)) {

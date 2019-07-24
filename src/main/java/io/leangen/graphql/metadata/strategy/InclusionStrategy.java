@@ -10,5 +10,5 @@ public interface InclusionStrategy {
 
     boolean includeArgument(Parameter parameter, AnnotatedType type);
 
-    boolean includeInputField(Class<?> declaringClass, AnnotatedElement element, AnnotatedType elementType);
+    boolean includeInputField(InputFieldInclusionParams params);
 }

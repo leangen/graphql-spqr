@@ -28,7 +28,7 @@ public class Utils {
     }
 
     @SafeVarargs
-    public static <T> Stream<T> flatten(Optional<T>... optionals) {
+    public static <T> Stream<T> flatten(Optional<? extends T>... optionals) {
         return Arrays.stream(optionals).filter(Optional::isPresent).map(Optional::get);
     }
 

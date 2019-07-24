@@ -843,6 +843,15 @@ public class GraphQLSchemaGenerator {
      */
     private void init() {
         GeneratorConfiguration configuration = new GeneratorConfiguration(interfaceStrategy, scalarStrategy, typeTransformer, basePackages, javaDeprecationConfig);
+
+        //Modules must go first to get a chance to change other settings
+        List<Module> modules = Defaults.modules();
+        for (ExtensionProvider<GeneratorConfiguration, Module> provider : moduleProviders) {
+            modules = provider.getExtensions(configuration, new ExtensionList<>(modules));
+        }
+        checkForDuplicates("modules", modules);
+        modules.forEach(module -> module.setUp(() -> this));
+
         if (operationSourceRegistry.isEmpty()) {
             throw new IllegalStateException("At least one top-level operation source must be registered");
         }
@@ -860,13 +869,6 @@ public class GraphQLSchemaGenerator {
                 scalarStrategy = (ScalarDeserializationStrategy) Defaults.valueMapperFactory(typeInfoGenerator);
             }
         }
-
-        List<Module> modules = Defaults.modules();
-        for (ExtensionProvider<GeneratorConfiguration, Module> provider : moduleProviders) {
-            modules = provider.getExtensions(configuration, new ExtensionList<>(modules));
-        }
-        checkForDuplicates("modules", modules);
-        modules.forEach(module -> module.setUp(() -> this));
 
         List<ResolverBuilder> resolverBuilders = Collections.singletonList(new AnnotatedResolverBuilder());
         for (ExtensionProvider<GeneratorConfiguration, ResolverBuilder> provider : resolverBuilderProviders) {

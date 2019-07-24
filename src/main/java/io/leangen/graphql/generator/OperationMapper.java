@@ -32,6 +32,7 @@ import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.strategy.query.DirectiveBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -137,7 +139,12 @@ public class OperationMapper {
 
     private List<GraphQLDirective> generateDirectives(BuildContext buildContext) {
         return buildContext.additionalDirectives.stream()
-                .map(directiveType -> buildContext.directiveBuilder.buildClientDirective(directiveType, buildContext.directiveBuilderParams()))
+                .map(directiveType -> {
+                    List<Class<?>> concreteSubTypes = ClassUtils.isAbstract(directiveType)
+                            ? buildContext.abstractInputHandler.findConcreteSubTypes(ClassUtils.getRawType(directiveType.getType()), buildContext)
+                            : Collections.emptyList();
+                    return buildContext.directiveBuilder.buildClientDirective(directiveType, buildContext.directiveBuilderParams(concreteSubTypes));
+                })
                 .map(directive -> toGraphQLDirective(directive, buildContext))
                 .collect(Collectors.toList());
     }

@@ -64,6 +64,13 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     }
 
     @Override
+    public PropertyName findNameForSerialization(Annotated annotated) {
+        return inputInfoGen.getName(getAnnotatedCandidates(annotated), messageBundle)
+                .map(PropertyName::new)
+                .orElse(super.findNameForSerialization(annotated));
+    }
+
+    @Override
     public String findPropertyDescription(Annotated annotated) {
         return inputInfoGen.getDescription(getAnnotatedCandidates(annotated), messageBundle)
                 .orElse(super.findPropertyDescription(annotated));
@@ -134,7 +141,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
                 log.warn("Introspection of {} failed. GraphQL input fields might be incorrectly mapped.",
                         setter.getDeclaringClass());
             }
-            if (propertyElements.isEmpty() && ClassUtils.isGetter(setter)) {
+            if (propertyElements.isEmpty()) {
                 propertyElements.add(setter);
             }
         }

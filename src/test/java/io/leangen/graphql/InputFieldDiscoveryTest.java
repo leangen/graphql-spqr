@@ -19,9 +19,11 @@ import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapper;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import org.junit.Test;
 
+import java.beans.ConstructorProperties;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -142,7 +144,7 @@ public class InputFieldDiscoveryTest {
     }
 
     @Test
-    public void jacksonMergedTypesTest() {
+    public void mergedTypesTest() {
         Set<InputField> jFields = getInputFields(jackson, MergedTypes.class);
         Set<InputField> gFields = getInputFields(gson, MergedTypes.class);
 
@@ -150,6 +152,16 @@ public class InputFieldDiscoveryTest {
         assertTypesMerged(gFields);
 
         assertAllFieldsEqual(jFields, gFields);
+    }
+
+    @Test
+    public void abstractInputTest() {
+        assertFieldNamesEqual(Abstract.class, expectedDefaultFields);
+    }
+
+    @Test
+    public void jacksonDelegatedConstructorTest() {
+        assertFieldNamesEqual(jackson, Delegator.class, expectedDefaultFields);
     }
 
     private void assertFieldNamesEqual(Class typeToScan, InputField... expectedFields) {
@@ -191,6 +203,7 @@ public class InputFieldDiscoveryTest {
                 InputFieldBuilderParams.builder()
                         .withType(GenericTypeReflector.annotate(typeToScan))
                         .withEnvironment(ENVIRONMENT)
+                        .withConcreteSubTypes(Arrays.asList(Concrete.class, Concrete2.class))
                         .build());
     }
 
@@ -593,6 +606,128 @@ public class InputFieldDiscoveryTest {
         // Only Gson will pick this up. In Jackson, the constructor parameter shadows the unannotated setter.
         public void setField3(List<RelayTest.@GraphQLScalar Book> field3) {
             this.field3 = field3;
+        }
+    }
+
+    private interface Abstract {
+        @GraphQLInputField(name = "field1")
+        String getFieldX();
+        int getField2();
+        String getField3();
+        String getField4();
+    }
+
+    private static class Concrete implements Abstract {
+
+        private String fieldX;
+        private int field2;
+
+        @JsonCreator
+        @ConstructorProperties({"fieldX", "field2"})
+        public Concrete(String model, int price) {
+            this.fieldX = model;
+            this.field2 = price;
+        }
+
+        @Override
+        @GraphQLInputField(name = "field1")
+        public String getFieldX() {
+            return fieldX;
+        }
+
+        @Override
+        public int getField2() {
+            return field2;
+        }
+
+        @Override
+        public String getField3() {
+            return null;
+        }
+
+        @Override
+        public String getField4() {
+            return null;
+        }
+    }
+
+    private static class Concrete2 implements Abstract {
+
+        private String field3;
+        private String field5;
+
+        @Override
+        public String getFieldX() {
+            return null;
+        }
+
+        @Override
+        public int getField2() {
+            return 0;
+        }
+
+        @Override
+        public String getField3() {
+            return field3;
+        }
+
+        public void setField3(String field3) {
+            this.field3 = field3;
+        }
+
+        @Override
+        public String getField4() {
+            return null;
+        }
+
+        public void setField5(String field5) {
+            this.field5 = field5;
+        }
+    }
+
+    private static class Delegate {
+
+        private final String field1;
+        private final int field2;
+        private final Object field3;
+
+        @JsonCreator
+        public Delegate(String field1, int field2, Object field3) {
+            this.field1 = field1;
+            this.field2 = field2;
+            this.field3 = field3;
+        }
+
+        public String getField1() {
+            return field1;
+        }
+
+        public int getField2() {
+            return field2;
+        }
+
+        public Object getField3() {
+            return field3;
+        }
+    }
+
+    private static class Delegator {
+
+        private final String field4;
+        private final String field5;
+
+        @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+        public Delegator(Delegate delegate) {
+            this.field4 = delegate.field1;
+            this.field5 = delegate.field2 + delegate.field3.toString();
+        }
+
+        public String getField4() {
+            return field4;
+        }
+
+        public String getField5() {
+            return field5;
         }
     }
 }

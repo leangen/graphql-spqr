@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 @SuppressWarnings("WeakerAccess")
 public class ExtensionList<E> extends ArrayList<E> {
@@ -91,26 +93,30 @@ public class ExtensionList<E> extends ArrayList<E> {
         return this;
     }
 
-    public ExtensionList<E> replace(int index, E replacement) {
-        super.set(index, replacement);
+    public ExtensionList<E> replace(int index, UnaryOperator<E> replacer) {
+        super.set(index, replacer.apply(get(index)));
         return this;
     }
 
-    public ExtensionList<E> replace(Class<? extends E> extensionType, E replacement) {
-        return replace(firstIndexOfTypeStrict(extensionType), replacement);
+    @SuppressWarnings("unchecked")
+    public <T extends E> ExtensionList<E> replace(Class<T> extensionType, Function<T, E> replacer) {
+        int index = firstIndexOfTypeStrict(extensionType);
+        super.set(index, replacer.apply((T) get(index)));
+        return this;
     }
 
     public ExtensionList<E> replaceOrAppend(Class<? extends E> extensionType, E replacement) {
         int firstIndexOfType = firstIndexOfType(extensionType);
         if (firstIndexOfType >= 0) {
-            return replace(firstIndexOfType, replacement);
+            return replace(firstIndexOfType, e -> replacement);
         } else {
             return append(replacement);
         }
     }
 
-    public ExtensionList<E> modify(Class<? extends E> extensionType, Consumer<E> modifier) {
-        modifier.accept(get(firstIndexOfTypeStrict(extensionType)));
+    @SuppressWarnings("unchecked")
+    public <T extends E> ExtensionList<E> modify(Class<T> extensionType, Consumer<T> modifier) {
+        modifier.accept((T) get(firstIndexOfTypeStrict(extensionType)));
         return this;
     }
 
@@ -124,7 +130,7 @@ public class ExtensionList<E> extends ArrayList<E> {
 
     private int firstIndexOfType(Class<? extends E> extensionType) {
         for (int i = 0; i < size(); i++) {
-            if (extensionType.isInstance(get(i))) {
+            if (extensionType.equals(get(i).getClass())) {
                 return i;
             }
         }

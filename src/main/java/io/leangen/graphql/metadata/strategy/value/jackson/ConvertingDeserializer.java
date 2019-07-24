@@ -27,13 +27,15 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
     private final InputConverter inputConverter;
     private final GlobalEnvironment environment;
     private final ValueMapper valueMapper;
+    private final ObjectMapper objectMapper;
 
-    public ConvertingDeserializer(InputConverter inputConverter, GlobalEnvironment environment) {
+    public ConvertingDeserializer(InputConverter inputConverter, GlobalEnvironment environment, ObjectMapper objectMapper) {
         this.detectedType = null;
         this.substituteType = null;
         this.inputConverter = inputConverter;
         this.environment = environment;
         this.valueMapper = null;
+        this.objectMapper = objectMapper;
     }
 
     private ConvertingDeserializer(AnnotatedType detectedType, JavaType substituteType, InputConverter inputConverter, GlobalEnvironment environment, ObjectMapper objectMapper) {
@@ -42,6 +44,7 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
         this.inputConverter = inputConverter;
         this.environment = environment;
         this.valueMapper = new JacksonValueMapper(objectMapper);
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -51,7 +54,7 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
         AnnotatedType detectedType = environment.typeTransformer.transform(ClassUtils.addAnnotations(TypeUtils.toJavaType(javaType), annotations));
         JavaType substituteType = deserializationContext.getTypeFactory().constructType(environment.getMappableInputType(detectedType).getType());
         if (inputConverter.supports(detectedType)) {
-            return new ConvertingDeserializer(detectedType, substituteType, inputConverter, environment, (ObjectMapper) deserializationContext.getParser().getCodec());
+            return new ConvertingDeserializer(detectedType, substituteType, inputConverter, environment, objectMapper);
         } else {
             return new DefaultDeserializer(javaType);
         }

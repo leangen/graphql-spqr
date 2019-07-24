@@ -125,7 +125,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
 
                 @Override
                 public void setupModule(SetupContext setupContext) {
-                    setupContext.addDeserializers(new ConvertingDeserializers(environment));
+                    setupContext.addDeserializers(new ConvertingDeserializers(environment, mapper));
                 }
             };
         }

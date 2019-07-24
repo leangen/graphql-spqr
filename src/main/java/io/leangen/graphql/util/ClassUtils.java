@@ -21,6 +21,7 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
@@ -39,6 +40,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -219,7 +221,7 @@ public class ClassUtils {
      * @see ClassUtils#isSetter(Method)
      */
     public static boolean isGetter(Method getter) {
-        return getter.getParameterCount() == 0 && getter.getReturnType() != void.class
+        return isReal(getter) && getter.getParameterCount() == 0 && getter.getReturnType() != void.class
                 && getter.getReturnType() != Void.class && getter.getName().startsWith("get") ||
                 ((getter.getReturnType() == Boolean.class || getter.getReturnType() == boolean.class)
                         && getter.getName().startsWith("is"));
@@ -233,7 +235,11 @@ public class ClassUtils {
      * @see ClassUtils#isGetter(Method)
      */
     public static boolean isSetter(Method setter) {
-        return setter.getName().startsWith("set") && setter.getParameterCount() == 1;
+        return isReal(setter) && setter.getName().startsWith("set") && setter.getParameterCount() == 1;
+    }
+
+    public static boolean isReal(Method method) {
+        return !method.isBridge() && !method.isSynthetic();
     }
 
     public static String getFieldNameFromGetter(Method getter) {
@@ -250,11 +256,25 @@ public class ClassUtils {
         return Introspector.decapitalize(setter.getName().replaceAll("^set", ""));
     }
 
-    public static List<AnnotatedElement> getPropertyMembers(Field field) {
+    public static <T extends Member & AnnotatedElement> List<AnnotatedElement> getPropertyMembers(T member) {
         List<AnnotatedElement> propertyElements = new ArrayList<>(3);
-        ClassUtils.findSetter(field.getDeclaringClass(), field.getName(), field.getType()).ifPresent(propertyElements::add);
-        ClassUtils.findGetter(field.getDeclaringClass(), field.getName()).ifPresent(propertyElements::add);
-        propertyElements.add(field);
+        if (member instanceof Field) {
+            findSetter(member.getDeclaringClass(), member.getName(), ((Field) member).getType()).ifPresent(propertyElements::add);
+            findGetter(member.getDeclaringClass(), member.getName()).ifPresent(propertyElements::add);
+            propertyElements.add(member);
+        }
+        if (member instanceof Method && isGetter((Method) member)) {
+            Method getter = (Method) member;
+            findSetter(getter.getDeclaringClass(), getFieldNameFromGetter(getter), getter.getReturnType()).ifPresent(propertyElements::add);
+            propertyElements.add(getter);
+            findFieldByGetter(getter).ifPresent(propertyElements::add);
+        }
+        if (member instanceof Method && isSetter((Method) member)) {
+            Method setter = (Method) member;
+            propertyElements.add(setter);
+            findGetter(setter.getDeclaringClass(), getFieldNameFromSetter(setter)).ifPresent(propertyElements::add);
+            findFieldBySetter(setter).ifPresent(propertyElements::add);
+        }
         return propertyElements;
     }
 
@@ -277,15 +297,19 @@ public class ClassUtils {
     }
 
     public static Optional<Field> findField(Class<?> type, String fieldName) {
+        return findField(type, field -> field.getName().equals(fieldName));
+    }
+
+    public static Optional<Field> findField(Class<?> type, Predicate<Field> condition) {
         if (type.isInterface()) {
             return Optional.empty();
         }
         while (!type.equals(Object.class)) {
-            try {
-                return Optional.of(type.getDeclaredField(fieldName));
-            } catch (NoSuchFieldException e) {
-                type = type.getSuperclass();
+            Optional<Field> match = stream(type.getDeclaredFields()).filter(condition).findFirst();
+            if (match.isPresent()) {
+                return match;
             }
+            type = type.getSuperclass();
         }
         return Optional.empty();
     }

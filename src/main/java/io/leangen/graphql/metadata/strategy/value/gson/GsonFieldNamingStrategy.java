@@ -34,7 +34,7 @@ public class GsonFieldNamingStrategy implements FieldNamingStrategy {
                 .orElse(fallback.translateName(field));
     }
 
-    private Optional<String> getPropertyName(List<AnnotatedElement> candidates) {
+    Optional<String> getPropertyName(List<AnnotatedElement> candidates) {
         Optional<String> spqrName = inputInfoGen.getName(candidates, messageBundle);
         Optional<String> gsonName = candidates.stream()
                 .filter(element -> element.isAnnotationPresent(SerializedName.class))

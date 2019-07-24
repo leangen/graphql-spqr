@@ -150,9 +150,14 @@ public class BuildContext {
     }
 
     public DirectiveBuilderParams directiveBuilderParams() {
+        return directiveBuilderParams(Collections.emptyList());
+    }
+
+    public DirectiveBuilderParams directiveBuilderParams(List<Class<?>> concreteSubTypes) {
         return DirectiveBuilderParams.builder()
                 .withEnvironment(globalEnvironment)
                 .withInputFieldBuilders(inputFieldBuilders)
+                .withConcreteSubTypes(concreteSubTypes)
                 .build();
     }
 

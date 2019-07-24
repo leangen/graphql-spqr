@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.KeyDeserializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.type.ArrayType;
@@ -27,9 +28,9 @@ class ConvertingDeserializers extends Deserializers.Base {
 
     private final Map<InputConverter, JsonDeserializer> deserializers;
 
-    ConvertingDeserializers(GlobalEnvironment environment) {
+    ConvertingDeserializers(GlobalEnvironment environment, ObjectMapper mapper) {
         this.deserializers = environment.getInputConverters().stream()
-                .collect(Collectors.toMap(Function.identity(), converter -> new ConvertingDeserializer(converter, environment)));
+                .collect(Collectors.toMap(Function.identity(), converter -> new ConvertingDeserializer(converter, environment, mapper)));
     }
 
     @Override
