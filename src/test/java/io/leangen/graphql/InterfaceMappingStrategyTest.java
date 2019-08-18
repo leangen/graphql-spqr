@@ -10,28 +10,43 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class InterfaceMappingStrategyTest {
 
     @Test
     public void testInterfaceSelection() {
-        Collection<Class<?>> interfaces = new AnnotatedInterfaceStrategy(true)
+        Collection<Class<?>> interfaces = new AnnotatedInterfaceStrategy()
                 .getInterfaces(GenericTypeReflector.annotate(Child.class)).stream()
                 .map(inter -> ClassUtils.getRawType(inter.getType()))
                 .collect(Collectors.toList());
 
+        assertEquals(6, interfaces.size());
         assertTrue(interfaces.containsAll(Arrays.asList(Zero.class, One.class, Two.class, Three.class, Four.class, Parent.class)));
     }
 
     @Test
+    public void testClassMapping() {
+        Collection<Class<?>> interfaces = new AnnotatedInterfaceStrategy()
+                .withClassMapping(false)
+                .getInterfaces(GenericTypeReflector.annotate(Child.class)).stream()
+                .map(inter -> ClassUtils.getRawType(inter.getType()))
+                .collect(Collectors.toList());
+
+        assertEquals(5, interfaces.size());
+        assertTrue(interfaces.containsAll(Arrays.asList(Zero.class, One.class, Two.class, Three.class, Four.class)));
+    }
+
+    @Test
     public void testInterfaceFiltering() {
-        Collection<Class<?>> interfaces = new AnnotatedInterfaceStrategy(true)
+        Collection<Class<?>> interfaces = new AnnotatedInterfaceStrategy()
                 .withFilters(inter -> inter != One.class)
                 .getInterfaces(GenericTypeReflector.annotate(Three.class)).stream()
                 .map(inter -> ClassUtils.getRawType(inter.getType()))
                 .collect(Collectors.toList());
 
+        assertEquals(3, interfaces.size());
         assertTrue(interfaces.containsAll(Arrays.asList(Zero.class, Two.class, Three.class)));
     }
 

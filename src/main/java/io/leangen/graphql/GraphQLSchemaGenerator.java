@@ -168,7 +168,7 @@ import static java.util.Collections.addAll;
 @SuppressWarnings("WeakerAccess")
 public class GraphQLSchemaGenerator {
 
-    private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy(true);
+    private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
     private ScalarDeserializationStrategy scalarStrategy;
     private AbstractInputHandler abstractInputHandler = new NoOpAbstractInputHandler();
     private OperationBuilder operationBuilder = new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.NONE);

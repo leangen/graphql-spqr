@@ -9,15 +9,14 @@ import java.lang.reflect.AnnotatedType;
  */
 public class PackageBasedInterfaceStrategy extends AbstractInterfaceMappingStrategy {
 
-    private String packageName;
+    private final String packageName;
 
-    public PackageBasedInterfaceStrategy(String packageName, boolean mapClasses) {
-        super(mapClasses);
+    public PackageBasedInterfaceStrategy(String packageName) {
         this.packageName = packageName;
     }
 
     @Override
-    public boolean supportsInterface(AnnotatedType interfase) {
-        return ClassUtils.isSubPackage(ClassUtils.getRawType(interfase.getType()).getPackage(), packageName);
+    public boolean supportsInterface(AnnotatedType inter) {
+        return ClassUtils.isSubPackage(ClassUtils.getRawType(inter.getType()).getPackage(), packageName);
     }
 }

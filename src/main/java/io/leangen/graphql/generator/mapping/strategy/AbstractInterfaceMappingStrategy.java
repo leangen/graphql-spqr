@@ -8,12 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -23,16 +20,21 @@ import java.util.function.Predicate;
  */
 public abstract class AbstractInterfaceMappingStrategy implements InterfaceMappingStrategy {
 
-    private final boolean mapClasses;
-    private final List<Predicate<Class>> filters;
+    private boolean mapClasses;
     private boolean ignoreUnresolvable;
+    private Predicate<Class> filter;
 
     private static final Logger log = LoggerFactory.getLogger(AbstractInterfaceMappingStrategy.class);
 
-    protected AbstractInterfaceMappingStrategy(boolean mapClasses) {
-        this.mapClasses = mapClasses;
-        this.filters = new ArrayList<>();
+    protected AbstractInterfaceMappingStrategy() {
+        this.mapClasses = true;
         this.ignoreUnresolvable = false;
+        this.filter = Utils.acceptAll();
+    }
+
+    public AbstractInterfaceMappingStrategy withClassMapping(boolean mapClasses) {
+        this.mapClasses = mapClasses;
+        return this;
     }
 
     public AbstractInterfaceMappingStrategy withUnresolvableInterfacesIgnored() {
@@ -42,7 +44,7 @@ public abstract class AbstractInterfaceMappingStrategy implements InterfaceMappi
 
     @SafeVarargs
     public final AbstractInterfaceMappingStrategy withFilters(Predicate<Class>... filters) {
-        Collections.addAll(this.filters, filters);
+        this.filter = this.filter.and(Arrays.stream(filters).reduce(Predicate::and).orElseGet(Utils::acceptAll));
         return this;
     }
 
@@ -71,7 +73,7 @@ public abstract class AbstractInterfaceMappingStrategy implements InterfaceMappi
             }
         }
         Arrays.stream(clazz.getInterfaces())
-                .filter(filters.stream().reduce(Predicate::and).orElseGet(Utils::acceptAll))
+                .filter(filter)
                 .map(inter -> getExactSuperType(type, inter))
                 .filter(Objects::nonNull)
                 .forEach(inter -> collectInterfaces(inter, interfaces));
