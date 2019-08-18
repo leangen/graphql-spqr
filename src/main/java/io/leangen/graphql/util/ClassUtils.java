@@ -54,10 +54,10 @@ import static java.util.Arrays.stream;
 public class ClassUtils {
 
     private static final Class<?> javassistProxyClass;
-    private static final String CGLIB_CLASS_SEPARATOR = "$$";
-    private static final Set<Class> ROOT_TYPES = Collections.unmodifiableSet( new HashSet<>(Arrays.asList(
+    private static final List<String> KNOWN_PROXY_CLASS_SEPARATORS = Arrays.asList("$$", "$ByteBuddy$", "$HibernateProxy$");
+    private static final List<Class> ROOT_TYPES = Arrays.asList(
             Object.class, Annotation.class, Cloneable.class, Comparable.class, Externalizable .class, Serializable.class,
-            Closeable.class, AutoCloseable.class)));
+            Closeable.class, AutoCloseable.class);
 
     static {
         Class<?> proxy;
@@ -711,7 +711,7 @@ public class ClassUtils {
     public static boolean isProxy(Class<?> clazz) {
         return Proxy.isProxyClass(clazz)
                 || (javassistProxyClass != null && javassistProxyClass.isAssignableFrom(clazz))
-                || clazz.getName().contains(CGLIB_CLASS_SEPARATOR); //cglib
+                || KNOWN_PROXY_CLASS_SEPARATORS.stream().anyMatch(separator -> clazz.getName().contains(separator));
     }
 
     public static Class<?> forName(String className) throws ClassNotFoundException {
