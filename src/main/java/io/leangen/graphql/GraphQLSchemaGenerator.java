@@ -1047,7 +1047,7 @@ public class GraphQLSchemaGenerator {
 
     private void checkType(Type type) {
         if (type == null) {
-            throw new TypeMappingException();
+            throw TypeMappingException.unknownType();
         }
         Class<?> clazz = ClassUtils.getRawType(type);
         if (ClassUtils.isProxy(clazz)) {
@@ -1065,7 +1065,7 @@ public class GraphQLSchemaGenerator {
 
     private void checkType(AnnotatedType type) {
         if (type == null) {
-            throw new TypeMappingException();
+            throw TypeMappingException.unknownType();
         }
         checkType(type.getType());
     }

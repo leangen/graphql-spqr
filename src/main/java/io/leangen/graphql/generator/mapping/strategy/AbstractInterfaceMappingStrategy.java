@@ -1,13 +1,22 @@
 package io.leangen.graphql.generator.mapping.strategy;
 
 import io.leangen.geantyref.GenericTypeReflector;
+import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -15,9 +24,26 @@ import java.util.Map;
 public abstract class AbstractInterfaceMappingStrategy implements InterfaceMappingStrategy {
 
     private final boolean mapClasses;
+    private final List<Predicate<Class>> filters;
+    private boolean ignoreUnresolvable;
+
+    private static final Logger log = LoggerFactory.getLogger(AbstractInterfaceMappingStrategy.class);
 
     protected AbstractInterfaceMappingStrategy(boolean mapClasses) {
         this.mapClasses = mapClasses;
+        this.filters = new ArrayList<>();
+        this.ignoreUnresolvable = false;
+    }
+
+    public AbstractInterfaceMappingStrategy withUnresolvableInterfacesIgnored() {
+        this.ignoreUnresolvable = true;
+        return this;
+    }
+
+    @SafeVarargs
+    public final AbstractInterfaceMappingStrategy withFilters(Predicate<Class>... filters) {
+        Collections.addAll(this.filters, filters);
+        return this;
     }
 
     @Override
@@ -45,11 +71,25 @@ public abstract class AbstractInterfaceMappingStrategy implements InterfaceMappi
             }
         }
         Arrays.stream(clazz.getInterfaces())
-                .map(inter -> GenericTypeReflector.getExactSuperType(type, inter))
+                .filter(filters.stream().reduce(Predicate::and).orElseGet(Utils::acceptAll))
+                .map(inter -> getExactSuperType(type, inter))
+                .filter(Objects::nonNull)
                 .forEach(inter -> collectInterfaces(inter, interfaces));
         Class superClass = clazz.getSuperclass();
         if (superClass != Object.class && superClass != null) {
             collectInterfaces(GenericTypeReflector.getExactSuperType(type, superClass), interfaces);
         }
+    }
+
+    private AnnotatedType getExactSuperType(AnnotatedType type, Class inter) {
+        AnnotatedType resolved = GenericTypeReflector.getExactSuperType(type, inter);
+        if (resolved == null) {
+            if (!ignoreUnresolvable) {
+                throw TypeMappingException.unresolvableSuperType(inter, type.getType());
+            }
+            log.warn("Interface {} can not be resolved as a super type of {} so it will be ignored",
+                    inter.getName(), type.getType().getTypeName());
+        }
+        return resolved;
     }
 }

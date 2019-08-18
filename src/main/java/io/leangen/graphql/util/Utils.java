@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -109,5 +110,9 @@ public class Utils {
 
     public static <T> List<T> asList(T[] elements) {
         return elements == null || elements.length == 0 ? Collections.emptyList() : Arrays.asList(elements);
+    }
+
+    public static <T> Predicate<T> acceptAll() {
+        return x -> true;
     }
 }

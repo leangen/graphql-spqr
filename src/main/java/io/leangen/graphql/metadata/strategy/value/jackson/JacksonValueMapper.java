@@ -271,7 +271,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
             try {
                 return transformer.transform(type);
             } catch (TypeMappingException e) {
-                throw new TypeMappingException(member, declaringType, e);
+                throw TypeMappingException.ambiguousMemberType(member, declaringType, e);
             }
         }
 
@@ -279,7 +279,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
             try {
                 return transformer.transform(type);
             } catch (TypeMappingException e) {
-                throw new TypeMappingException(parameter.getDeclaringExecutable(), parameter, e);
+                throw TypeMappingException.ambiguousParameterType(parameter.getDeclaringExecutable(), parameter, e);
             }
         }
 

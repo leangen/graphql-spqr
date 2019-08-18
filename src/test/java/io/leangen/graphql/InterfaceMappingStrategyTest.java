@@ -24,6 +24,17 @@ public class InterfaceMappingStrategyTest {
         assertTrue(interfaces.containsAll(Arrays.asList(Zero.class, One.class, Two.class, Three.class, Four.class, Parent.class)));
     }
 
+    @Test
+    public void testInterfaceFiltering() {
+        Collection<Class<?>> interfaces = new AnnotatedInterfaceStrategy(true)
+                .withFilters(inter -> inter != One.class)
+                .getInterfaces(GenericTypeReflector.annotate(Three.class)).stream()
+                .map(inter -> ClassUtils.getRawType(inter.getType()))
+                .collect(Collectors.toList());
+
+        assertTrue(interfaces.containsAll(Arrays.asList(Zero.class, Two.class, Three.class)));
+    }
+
     @GraphQLInterface(name = "Zero")
     private interface Zero {}
 

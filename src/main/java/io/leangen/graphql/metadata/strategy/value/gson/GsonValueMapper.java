@@ -180,7 +180,6 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
         return inputFields;
     }
 
-    @SuppressWarnings("WeakerAccess")
     protected TypedElement reduce(AnnotatedType declaringType, Field field, TypeTransformer transformer) {
         Optional<TypedElement> fld = Optional.of(element(ClassUtils.getFieldType(field, declaringType), field, declaringType, transformer));
         Optional<TypedElement> setter = ClassUtils.findSetter(field.getDeclaringClass(), field.getName(), field.getType())
@@ -191,7 +190,6 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
         return new TypedElement(Utils.flatten(getter, setter, fld).collect(Collectors.toList()));
     }
 
-    @SuppressWarnings("WeakerAccess")
     protected TypedElement reduce(AnnotatedType declaringType, Method getter, TypeTransformer transformer) {
         Optional<TypedElement> setter = ClassUtils.findSetter(getter.getDeclaringClass(), ClassUtils.getFieldNameFromGetter(getter), getter.getReturnType())
                 .map(mutator -> element(ClassUtils.getParameterTypes(mutator, declaringType)[0], mutator, declaringType, transformer));
@@ -213,7 +211,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
         try {
             return new TypedElement(transformer.transform(type), annotatedMember);
         } catch (TypeMappingException e) {
-            throw new TypeMappingException(annotatedMember, declaringType, e);
+            throw TypeMappingException.ambiguousMemberType(annotatedMember, declaringType, e);
         }
     }
 

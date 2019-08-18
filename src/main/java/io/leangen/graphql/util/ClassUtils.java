@@ -496,7 +496,7 @@ public class ClassUtils {
                 if (replacement != null) {
                     bound = replacement;
                 } else {
-                    throw new TypeMappingException(type.getType());
+                    throw TypeMappingException.ambiguousType(type.getType());
                 }
             }
             return GenericTypeReflector.updateAnnotations(bound, type.getAnnotations());
@@ -507,7 +507,7 @@ public class ClassUtils {
                 if (replacement != null) {
                     bound = replacement;
                 } else {
-                    throw new TypeMappingException(type.getType());
+                    throw TypeMappingException.ambiguousType(type.getType());
                 }
             }
             return GenericTypeReflector.updateAnnotations(bound, type.getAnnotations());
@@ -533,12 +533,10 @@ public class ClassUtils {
             } else {
                 if (isMissingTypeParameters(clazz)) {
                     if (replacement == null) {
-                        throw new TypeMappingException(clazz);
+                        throw TypeMappingException.ambiguousType(clazz);
                     }
                     AnnotatedType[] parameters = new AnnotatedType[clazz.getTypeParameters().length];
-                    for (int i = 0; i < parameters.length; i++) {
-                        parameters[i] = replacement;
-                    }
+                    Arrays.fill(parameters, replacement);
                     return TypeFactory.parameterizedAnnotatedClass(clazz, type.getAnnotations(), parameters);
                 }
             }

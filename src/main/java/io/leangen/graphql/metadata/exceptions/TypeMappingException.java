@@ -14,36 +14,36 @@ import java.lang.reflect.Type;
  */
 public class TypeMappingException extends MappingException {
 
-    public TypeMappingException() {
-        super("The provided object is of an unknown type. Provide the type explicitly when registering the bean.");
-    }
-
     public TypeMappingException(String s) {
         super(s);
     }
-    
+
     public TypeMappingException(String s, Exception cause) {
         super(s, cause);
     }
 
-    public TypeMappingException(Type type) {
-        super("Type " + type.getTypeName() + " is unbounded or missing generic type parameters");
+    public static TypeMappingException unknownType() {
+        return new TypeMappingException("The provided object is of an unknown type. Provide the type explicitly when registering the bean.");
     }
-    
-    public TypeMappingException(Member fieldOrMethod, AnnotatedType declaringType, Exception cause) {
-        super("The type of member \"" + fieldOrMethod.getName() + "\" belonging to " + declaringType.getType().getTypeName() +
+
+    public static TypeMappingException ambiguousType(Type type) {
+        return new TypeMappingException("Type " + type.getTypeName() + " is unbounded or missing generic type parameters");
+    }
+
+    public static TypeMappingException ambiguousMemberType(Member fieldOrMethod, AnnotatedType declaringType, Exception cause) {
+        return new TypeMappingException("The type of member \"" + fieldOrMethod.getName() + "\" belonging to " + declaringType.getType().getTypeName() +
                 " is missing generic type parameters and can not be mapped." +
                 " For details and possible solutions see " + Urls.Errors.AMBIGUOUS_MEMBER_TYPE, cause);
     }
 
-    public TypeMappingException(Executable executable, Parameter parameter, Exception cause) {
-        super("Parameter \"" + parameter.getName() + "\" of method \"" + executable.getName() +
+    public static TypeMappingException ambiguousParameterType(Executable executable, Parameter parameter, Exception cause) {
+        return new TypeMappingException("Parameter \"" + parameter.getName() + "\" of method \"" + executable.getName() +
                 "\" is missing generic type parameters and can not be mapped." +
                 " For details and possible solutions see " + Urls.Errors.AMBIGUOUS_PARAMETER_TYPE, cause);
     }
 
-    public TypeMappingException(Type superType, Type subType) {
-        super(String.format("Auto discovered type %s can not be uniquely resolved as a subtype of %s",
-                superType.getTypeName(), subType.getTypeName()));
+    public static TypeMappingException unresolvableSuperType(Type superType, Type subType) {
+        return new TypeMappingException(String.format("Type %s can not be resolved as a super type of %s." +
+                " For details and possible solutions see " + Urls.Errors.UNRESOLVABLE_SUPER_TYPE, superType, subType));
     }
 }

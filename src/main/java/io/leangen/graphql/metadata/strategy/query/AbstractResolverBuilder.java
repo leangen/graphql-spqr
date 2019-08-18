@@ -65,7 +65,7 @@ public abstract class AbstractResolverBuilder implements ResolverBuilder {
         try {
             return params.getTypeTransformer().transform(ClassUtils.getFieldType(field, params.getBeanType()));
         } catch (TypeMappingException e) {
-            throw new TypeMappingException(field, params.getBeanType(), e);
+            throw TypeMappingException.ambiguousMemberType(field, params.getBeanType(), e);
         }
     }
 
@@ -73,7 +73,7 @@ public abstract class AbstractResolverBuilder implements ResolverBuilder {
         try {
             return params.getTypeTransformer().transform(ClassUtils.getReturnType(method, params.getBeanType()));
         } catch (TypeMappingException e) {
-            throw new TypeMappingException(method, params.getBeanType(), e);
+            throw TypeMappingException.ambiguousMemberType(method, params.getBeanType(), e);
         }
     }
 }

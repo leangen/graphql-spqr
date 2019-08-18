@@ -39,7 +39,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
             try {
                 parameterType = params.getTypeTransformer().transform(parameterTypes[i]);
             } catch (TypeMappingException e) {
-                throw new TypeMappingException(resolverMethod, parameter, e);
+                throw TypeMappingException.ambiguousParameterType(resolverMethod, parameter, e);
             }
             operationArguments.add(buildResolverArgument(parameter, parameterType, params.getInclusionStrategy(), params.getEnvironment()));
         }

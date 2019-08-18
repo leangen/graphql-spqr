@@ -61,7 +61,7 @@ public class AutoScanAbstractInputHandler implements AbstractInputHandler {
             return findConstituentAbstractTypes(((AnnotatedArrayType) javaType).getAnnotatedGenericComponentType(), buildContext);
         }
         if (javaType instanceof AnnotatedWildcardType || javaType instanceof AnnotatedTypeVariable) {
-            throw new TypeMappingException(javaType.getType());
+            throw TypeMappingException.ambiguousType(javaType.getType());
         }
         return findAbstract(javaType, buildContext);
     }
