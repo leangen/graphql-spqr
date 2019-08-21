@@ -1,6 +1,10 @@
 package io.leangen.graphql.execution;
 
+import graphql.ErrorType;
+import graphql.GraphQLError;
 import graphql.GraphQLException;
+import graphql.execution.DataFetcherResult;
+import graphql.language.SourceLocation;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
@@ -8,6 +12,9 @@ import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -59,7 +66,19 @@ public class OperationExecutor {
             Object result = execute(resolver, resolutionEnvironment, arguments);
             return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
         } catch (ReflectiveOperationException e) {
-            sneakyThrow(unwrap(e));
+            Throwable cause = unwrap(e);
+            if (cause instanceof org.eclipse.microprofile.graphql.GraphQLException) {
+                org.eclipse.microprofile.graphql.GraphQLException graphQLEx = (org.eclipse.microprofile.graphql.GraphQLException) cause;
+                Object partialResults = graphQLEx.getPartialResults();
+                if (partialResults != null) {
+                    GraphQLError error = createNewGraphQLError(graphQLEx.getMessage(), Collections.emptyList(),
+                            graphQLEx.getExceptionType());
+                    DataFetcherResult<?> result = new DataFetcherResult<>(partialResults, Collections.singletonList(error));
+                    return result;
+                }
+
+            }
+            sneakyThrow(cause);
         }
         return null; //never happens, needed because of sneakyThrow
     }
@@ -116,5 +135,47 @@ public class OperationExecutor {
     @SuppressWarnings("unchecked")
     private static <T extends Throwable> void sneakyThrow(Throwable t) throws T {
         throw (T) t;
+    }
+
+    private static GraphQLError createNewGraphQLError(String message, List<SourceLocation> locations,
+            org.eclipse.microprofile.graphql.GraphQLException.ExceptionType exType) {
+        return new GraphQLError() {
+
+            @Override
+            public String getMessage() {
+                return message;
+            }
+
+            @Override
+            public List<SourceLocation> getLocations() {
+                return locations;
+            }
+
+            @Override
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            public ErrorType getErrorType() {
+                return fromExceptionType(exType);
+            }
+
+            @Override
+            @JsonIgnore
+            public Map<String, Object> getExtensions() {
+                return null;
+            }
+        };
+    }
+
+    private static ErrorType fromExceptionType(org.eclipse.microprofile.graphql.GraphQLException.ExceptionType exType) {
+        if (exType != null) {
+            switch (exType) {
+            case DataFetchingException:
+                return ErrorType.DataFetchingException;
+            case OperationNotSupported:
+                return ErrorType.OperationNotSupported;
+            case ExecutionAborted:
+                return ErrorType.ExecutionAborted;
+            }
+        }
+        return null;
     }
 }
