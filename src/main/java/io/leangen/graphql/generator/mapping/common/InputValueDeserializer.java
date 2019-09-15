@@ -24,10 +24,7 @@ public class InputValueDeserializer implements ArgumentInjector {
     @Override
     public Object getArgumentValue(ArgumentInjectorParams params) {
         if (params.getInput() == null) {
-            if (params.isPresent()) {
-                return EMPTY_VALUES.getOrDefault(ClassUtils.getRawType(params.getType().getType()), null);
-            }
-            return null;
+            return EMPTY_VALUES.getOrDefault(ClassUtils.getRawType(params.getType().getType()), null);
         }
         return params.getResolutionEnvironment().valueMapper.fromInput(params.getInput(), params.getType());
     }
