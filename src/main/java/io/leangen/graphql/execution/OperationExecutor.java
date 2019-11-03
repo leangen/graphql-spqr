@@ -64,13 +64,8 @@ public class OperationExecutor {
                     + arguments.keySet() + " not implemented");
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(resolver, env, this.valueMapper, this.globalEnvironment, this.converterRegistry, this.derivedTypes);
-        try {
-            Object result = execute(resolver, resolutionEnvironment, arguments);
-            return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
-        } catch (ReflectiveOperationException e) {
-            sneakyThrow(unwrap(e));
-        }
-        return null; //never happens, needed because of sneakyThrow
+        Object result = execute(resolver, resolutionEnvironment, arguments);
+        return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
     }
 
     /**
@@ -99,7 +94,14 @@ public class OperationExecutor {
         }
         InvocationContext invocationContext = new InvocationContext(operation, resolver, resolutionEnvironment, args);
         Queue<ResolverInterceptor> interceptors = new LinkedList<>(this.interceptors.get(resolver));
-        interceptors.add((ctx, cont) -> resolver.resolve(ctx.getResolutionEnvironment().context, ctx.getArguments()));
+        interceptors.add((ctx, cont) -> {
+            try {
+                return resolver.resolve(ctx.getResolutionEnvironment().context, ctx.getArguments());
+            } catch (ReflectiveOperationException e) {
+                sneakyThrow(unwrap(e));
+            }
+            return null; //never happens, needed because of sneakyThrow
+        });
         return execute(invocationContext, interceptors);
     }
 
