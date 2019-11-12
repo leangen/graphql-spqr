@@ -36,6 +36,17 @@ public class ResolvedField {
         this.resolver = findResolver(fieldDefinition, arguments);
     }
 
+    public ResolvedField(Map<String, ResolvedField> children) {
+        this.name = null;
+        this.field = null;
+        this.fieldDefinition = null;
+        this.fieldType = null;
+        this.arguments = null;
+        this.children = children;
+        this.resolver = null;
+        this.complexityScore = children.values().stream().mapToInt(ResolvedField::getComplexityScore).sum();
+    }
+
     private Resolver findResolver(GraphQLFieldDefinition fieldDefinition, Map<String, Object> arguments) {
         return Directives.getMappedOperation(fieldDefinition)
                 .map(operation -> operation.getApplicableResolver(arguments.keySet()))

@@ -80,6 +80,21 @@ public class ComplexityTest {
             "  }" +
             "}";
 
+    private static final String multiRootQuery = "query CatDog {" +
+            "  cat: pet(cat: true) {" +
+            "    sound" +
+            "    owner {" +
+            "       name" +
+            "    }" +
+            "  }" +
+            "  dog: pet(cat: false) {" +
+            "    sound" +
+            "    owner {" +
+            "       name" +
+            "    }" +
+            "  }" +
+            "}";
+
     private static final String pagedQuery = "{pets(first:10, after:\"20\") {" +
             "   pageInfo {" +
             "       hasNextPage" +
@@ -121,6 +136,11 @@ public class ComplexityTest {
     @Test
     public void branchingComplexityTest() {
         testComplexity(new PetService(), branchingQuery, 5, 6);
+    }
+
+    @Test
+    public void multiRootComplexityTest() {
+        testComplexity(new PetService(), multiRootQuery, 7, 8);
     }
 
     @Test

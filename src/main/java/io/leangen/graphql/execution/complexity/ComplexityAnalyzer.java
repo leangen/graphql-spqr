@@ -19,6 +19,7 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,17 +62,28 @@ class ComplexityAnalyzer {
         List<Field> fields = context.getOperationDefinition().getSelectionSet().getSelections().stream()
                 .map(selection -> (Field) selection)
                 .collect(Collectors.toList());
-        Field field = fields.get(0);
-        GraphQLFieldDefinition fieldDefinition;
-        if (GraphQLUtils.isIntrospectionField(field)) {
-            fieldDefinition = Introspection.SchemaMetaFieldDef;
-        } else {
-            fieldDefinition = Objects.requireNonNull(
-                    getRootType(context.getGraphQLSchema(), context.getOperationDefinition())
-                            .getFieldDefinition(field.getName()));
+
+        Map<String, ResolvedField> roots = fields.stream()
+                .map(field -> {
+                    GraphQLFieldDefinition fieldDefinition;
+                    if (GraphQLUtils.isIntrospectionField(field)) {
+                        fieldDefinition = Introspection.SchemaMetaFieldDef;
+                    } else {
+                        fieldDefinition = Objects.requireNonNull(
+                                getRootType(context.getGraphQLSchema(), context.getOperationDefinition())
+                                        .getFieldDefinition(field.getName()));
+                    }
+
+                    Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), context.getVariables());
+                    return collectFields(parameters, Collections.singletonList(new ResolvedField(field, fieldDefinition, argumentValues)));
+                })
+                .collect(Collectors.toMap(ResolvedField::getName, Function.identity()));
+
+        ResolvedField root = new ResolvedField(roots);
+        if (root.getComplexityScore() > maximumComplexity) {
+            throw new ComplexityLimitExceededException(root.getComplexityScore(), maximumComplexity);
         }
-        Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), context.getVariables());
-        return collectFields(parameters, fields.stream().map(f -> new ResolvedField(f, fieldDefinition, argumentValues)).collect(Collectors.toList()));
+        return root;
     }
 
     /**
