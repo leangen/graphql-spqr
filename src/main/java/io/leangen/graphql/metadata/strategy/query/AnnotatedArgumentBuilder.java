@@ -7,7 +7,6 @@ import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
-import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.value.DefaultValueProvider;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
@@ -34,40 +33,41 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         AnnotatedType[] parameterTypes = ClassUtils.getParameterTypes(resolverMethod, params.getDeclaringType());
         for (int i = 0; i < resolverMethod.getParameterCount(); i++) {
             Parameter parameter = resolverMethod.getParameters()[i];
-            if (parameter.isSynthetic() || parameter.isImplicit()) continue;
+            if (!params.getInclusionStrategy().includeArgument(parameter, params.getDeclaringType())) {
+                continue;
+            }
             AnnotatedType parameterType;
             try {
                 parameterType = params.getTypeTransformer().transform(parameterTypes[i]);
             } catch (TypeMappingException e) {
                 throw TypeMappingException.ambiguousParameterType(resolverMethod, parameter, e);
             }
-            operationArguments.add(buildResolverArgument(parameter, parameterType, params.getInclusionStrategy(), params.getEnvironment()));
+            operationArguments.add(buildResolverArgument(parameter, parameterType, params));
         }
         return operationArguments;
     }
 
-    protected OperationArgument buildResolverArgument(Parameter parameter, AnnotatedType parameterType,
-                                                      InclusionStrategy inclusionStrategy, GlobalEnvironment environment) {
+    protected OperationArgument buildResolverArgument(Parameter parameter, AnnotatedType parameterType, ArgumentBuilderParams builderParams) {
         return new OperationArgument(
                 parameterType,
-                getArgumentName(parameter, parameterType, inclusionStrategy, environment.messageBundle),
-                getArgumentDescription(parameter, parameterType, environment.messageBundle),
-                defaultValue(parameter, parameterType, environment),
+                getArgumentName(parameter, parameterType, builderParams),
+                getArgumentDescription(parameter, parameterType, builderParams.getEnvironment().messageBundle),
+                defaultValue(parameter, parameterType, builderParams.getEnvironment()),
                 parameter,
                 parameter.isAnnotationPresent(GraphQLContext.class),
-                inclusionStrategy.includeArgument(parameter, parameterType)
+                builderParams.getInclusionStrategy().includeArgumentForMapping(parameter, parameterType, builderParams.getDeclaringType())
         );
     }
 
-    protected String getArgumentName(Parameter parameter, AnnotatedType parameterType, InclusionStrategy inclusionStrategy, MessageBundle messageBundle) {
+    protected String getArgumentName(Parameter parameter, AnnotatedType parameterType, ArgumentBuilderParams builderParams) {
         if (Optional.ofNullable(parameterType.getAnnotation(GraphQLId.class)).filter(GraphQLId::relayId).isPresent()) {
             return GraphQLId.RELAY_ID_FIELD_NAME;
         }
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
         if (meta != null && !meta.name().isEmpty()) {
-            return messageBundle.interpolate(meta.name());
+            return builderParams.getEnvironment().messageBundle.interpolate(meta.name());
         } else {
-            if (!parameter.isNamePresent() && inclusionStrategy.includeArgument(parameter, parameterType)) {
+            if (!parameter.isNamePresent() && builderParams.getInclusionStrategy().includeArgumentForMapping(parameter, parameterType, builderParams.getDeclaringType())) {
                 log.warn("No explicit argument name given and the parameter name lost in compilation: "
                         + parameter.getDeclaringExecutable().toGenericString() + "#" + parameter.toString()
                         + ". For details and possible solutions see " + Urls.Errors.MISSING_ARGUMENT_NAME);

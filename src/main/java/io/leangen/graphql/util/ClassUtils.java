@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -240,6 +241,36 @@ public class ClassUtils {
 
     public static boolean isReal(Method method) {
         return !method.isBridge() && !method.isSynthetic();
+    }
+
+    public static boolean isReal(Field field) {
+        return !field.isSynthetic();
+    }
+
+    public static boolean isReal(Parameter parameter) {
+        return !parameter.isImplicit() && !parameter.isSynthetic();
+    }
+
+    public static boolean isReal(Member member) {
+        Objects.requireNonNull(member, "Member must not be null");
+        if (member instanceof Method) {
+            return isReal((Method) member);
+        }
+        if (member instanceof Field) {
+            return isReal(((Field) member));
+        }
+        return member.isSynthetic();
+    }
+
+    public static boolean isReal(AnnotatedElement element) {
+        Objects.requireNonNull(element, "Element must not be null");
+        if (element instanceof Member) {
+            return isReal(((Member) element));
+        }
+        if (element instanceof Parameter) {
+            return isReal(((Parameter) element));
+        }
+        throw new IllegalArgumentException("Can not determine if an element of type " + element.getClass().getName() + " is real");
     }
 
     public static String getFieldNameFromGetter(Method getter) {

@@ -20,7 +20,6 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -108,7 +107,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
 
         return Arrays.stream(rawType.getMethods())
                 .filter(method -> filter.test(method, params))
-                .filter(method -> params.getInclusionStrategy().includeOperation(method, getReturnType(method, params)))
+                .filter(method -> params.getInclusionStrategy().includeOperation(Collections.singletonList(method), beanType))
                 .filter(getFilters().stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
                 .map(method -> {
                     TypedElement element = new TypedElement(getReturnType(method, params), method);
@@ -136,20 +135,18 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
         return properties
                 .filter(prop -> isQuery(prop, params))
                 .filter(prop -> mergedFilters.test(prop.getField()) && mergedFilters.test(prop.getGetter()))
-                .map(prop -> new AbstractMap.SimpleEntry<>(prop.getGetter(), propertyElementReducer.apply(new TypedElement(getFieldType(prop.getField(), params), prop.getField()), new TypedElement(getReturnType(prop.getGetter(), params), prop.getGetter()))))
-                .filter(pair -> params.getInclusionStrategy().includeOperation(pair.getValue(), pair.getValue().getJavaType()))
-                .map(pair -> {
-                    Method getter = pair.getKey();
-                    TypedElement element = pair.getValue();
+                .filter(prop -> params.getInclusionStrategy().includeOperation(Arrays.asList(prop.getField(), prop.getGetter()), beanType))
+                .map(prop -> {
+                    TypedElement element = propertyElementReducer.apply(new TypedElement(getFieldType(prop.getField(), params), prop.getField()), new TypedElement(getReturnType(prop.getGetter(), params), prop.getGetter()));
                     OperationInfoGeneratorParams infoParams = new OperationInfoGeneratorParams(element, beanType, params.getQuerySourceBeanSupplier(), messageBundle, OperationDefinition.Operation.QUERY);
                     return new Resolver(
                             messageBundle.interpolate(operationInfoGenerator.name(infoParams)),
                             messageBundle.interpolate(operationInfoGenerator.description(infoParams)),
                             messageBundle.interpolate(ReservedStrings.decode(operationInfoGenerator.deprecationReason(infoParams))),
                             element.isAnnotationPresent(Batched.class),
-                            params.getQuerySourceBeanSupplier() == null ? new MethodInvoker(getter, beanType) : new FixedMethodInvoker(params.getQuerySourceBeanSupplier(), getter, beanType),
+                            params.getQuerySourceBeanSupplier() == null ? new MethodInvoker(prop.getGetter(), beanType) : new FixedMethodInvoker(params.getQuerySourceBeanSupplier(), prop.getGetter(), beanType),
                             element,
-                            argumentBuilder.buildResolverArguments(new ArgumentBuilderParams(getter, beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment())),
+                            argumentBuilder.buildResolverArguments(new ArgumentBuilderParams(prop.getGetter(), beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment())),
                             element.isAnnotationPresent(GraphQLComplexity.class) ? element.getAnnotation(GraphQLComplexity.class).value() : null
                     );
                 })
@@ -163,7 +160,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
         return Arrays.stream(ClassUtils.getRawType(beanType.getType()).getFields())
                 .filter(field -> isQuery(field, params))
                 .filter(getFilters().stream().reduce(Predicate::and).orElse(ACCEPT_ALL))
-                .filter(field -> params.getInclusionStrategy().includeOperation(field, getFieldType(field, params)))
+                .filter(field -> params.getInclusionStrategy().includeOperation(Collections.singletonList(field), beanType))
                 .map(field -> {
                     TypedElement element = new TypedElement(getFieldType(field, params), field);
                     OperationInfoGeneratorParams infoParams = new OperationInfoGeneratorParams(element, beanType, params.getQuerySourceBeanSupplier(), messageBundle, OperationDefinition.Operation.QUERY);

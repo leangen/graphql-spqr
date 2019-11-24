@@ -85,7 +85,7 @@ public class Utils {
         return Arrays.stream(streams).reduce(Stream::concat).orElse(Stream.empty());
     }
 
-    public static <T> Stream<T> extractInstances(Collection<?> collection, Class<T> clazz) {
+    public static <T> Stream<T> extractInstances(Collection<? super T> collection, Class<T> clazz) {
         return collection.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 

@@ -8,6 +8,7 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
+import java.util.List;
 
 public class DefaultInclusionStrategy implements InclusionStrategy {
 
@@ -18,12 +19,17 @@ public class DefaultInclusionStrategy implements InclusionStrategy {
     }
 
     @Override
-    public boolean includeOperation(AnnotatedElement element, AnnotatedType type) {
-        return !ClassUtils.hasAnnotation(element, GraphQLIgnore.class);
+    public boolean includeOperation(List<AnnotatedElement> elements, AnnotatedType declaringType) {
+        return elements.stream().allMatch(element -> ClassUtils.isReal(element) && !ClassUtils.hasAnnotation(element, GraphQLIgnore.class));
     }
 
     @Override
-    public boolean includeArgument(Parameter parameter, AnnotatedType type) {
+    public boolean includeArgument(Parameter parameter, AnnotatedType declaringType) {
+        return ClassUtils.isReal(parameter) && !parameter.isAnnotationPresent(GraphQLIgnore.class);
+    }
+
+    @Override
+    public boolean includeArgumentForMapping(Parameter parameter, AnnotatedType parameterType, AnnotatedType declaringType) {
         return !ClassUtils.hasAnnotation(parameter, GraphQLIgnore.class);
     }
 
@@ -31,9 +37,10 @@ public class DefaultInclusionStrategy implements InclusionStrategy {
     public boolean includeInputField(InputFieldInclusionParams params) {
         return params.getElements().stream().noneMatch(element -> ClassUtils.hasAnnotation(element, GraphQLIgnore.class))
                 && (params.isDirectlyDeserializable() || params.isDeserializableInSubType()) //is ever deserializable
-                && isPackageAcceptable(params.getType(), params.getElementDeclaringClass());
+                && isPackageAcceptable(params.getDeclaringType(), params.getElementDeclaringClass());
     }
 
+    @SuppressWarnings("WeakerAccess")
     protected boolean isPackageAcceptable(AnnotatedType type, Class<?> elementDeclaringClass) {
         Class<?> rawType = ClassUtils.getRawType(type.getType());
         String[] packages = new String[0];

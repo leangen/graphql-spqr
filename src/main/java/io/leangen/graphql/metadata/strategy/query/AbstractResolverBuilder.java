@@ -48,7 +48,7 @@ public abstract class AbstractResolverBuilder implements ResolverBuilder {
     }
 
     public AbstractResolverBuilder withDefaultFilters() {
-        return withFilters(REAL_ONLY);
+        return withFilters(ClassUtils::isReal);
     }
 
     public static TypedElement mergePropertyElements(TypedElement field, TypedElement getter) {
