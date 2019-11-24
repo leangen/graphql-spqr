@@ -1,5 +1,6 @@
 package io.leangen.graphql.execution;
 
+import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
 import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
@@ -31,6 +32,7 @@ public class ResolutionEnvironment {
     public final Resolver resolver;
     public final ValueMapper valueMapper;
     public final GlobalEnvironment globalEnvironment;
+    @Deprecated
     public final List<Field> fields;
     public final GraphQLOutputType fieldType;
     public final GraphQLType parentType;
@@ -64,6 +66,26 @@ public class ResolutionEnvironment {
         if (output == null) {
             return null;
         }
+
+        // Transparently handle unexpected wrapped results. This enables elegant exception handling, partial results etc.
+        if (DataFetcherResult.class.equals(output.getClass()) && !DataFetcherResult.class.equals(resolver.getRawReturnType())) {
+            DataFetcherResult result = (DataFetcherResult) output;
+            if (result.getData() != null) {
+                Object convertedData = convert(result.getData(), type);
+                return (S) DataFetcherResult.newResult()
+                        .data(convertedData)
+                        .errors(result.getErrors())
+                        .localContext(result.getLocalContext())
+                        .mapRelativeErrors(result.isMapRelativeErrors())
+                        .build();
+            }
+        }
+
+        return convert(output, type);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T, S> S convert(T output, AnnotatedType type) {
         OutputConverter<T, S> outputConverter = converters.getOutputConverter(type);
         return outputConverter == null ? (S) output : outputConverter.convertOutput(output, type, this);
     }

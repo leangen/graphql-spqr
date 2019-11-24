@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Reintroduce `fieldOrder` and add `inputFieldOrder` [#279](https://github.com/leangen/graphql-spqr/issues/279)
 - Make it easier to apply a `ResolverBuilder` to specific types only [#277](https://github.com/leangen/graphql-spqr/issues/277)
 - Make it easy to filter interfaces in `InterfaceMappingStrategy` [#299](https://github.com/leangen/graphql-spqr/issues/299)
+- Support `DataFetcherResult` even when not declared [#318](https://github.com/leangen/graphql-spqr/issues/318)
 
 ### Fixed
 - [Breaking] Filtering of fields/methods/parameters now happens _before_ type resolution [#298](https://github.com/leangen/graphql-spqr/issues/298)

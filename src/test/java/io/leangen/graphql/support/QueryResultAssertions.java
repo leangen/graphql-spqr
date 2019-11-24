@@ -23,6 +23,13 @@ public class QueryResultAssertions {
         assertTrue("Query result contains unexpected errors: " + result.getErrors(), result.getErrors().isEmpty());
     }
 
+    public static void assertErrorsEqual(ExecutionResult result, String... messages) {
+        assertEquals(messages.length, result.getErrors().size());
+        for (int i = 0; i < messages.length; i++) {
+            assertEquals(messages[i], result.getErrors().get(i).getMessage());
+        }
+    }
+
     public static void assertValueAtPathEquals(Object expected, ExecutionResult result, String path) {
         Object actual = get(path, result);
         if (expected instanceof Number) {

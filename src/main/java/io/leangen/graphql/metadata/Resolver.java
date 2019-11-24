@@ -3,6 +3,7 @@ package io.leangen.graphql.metadata;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.execution.Executable;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
@@ -21,6 +22,7 @@ import java.util.stream.Stream;
  *
  * @author bojan.tomic (kaqqao)
  */
+@SuppressWarnings("WeakerAccess")
 public class Resolver {
 
     private final String operationName;
@@ -28,6 +30,7 @@ public class Resolver {
     private final String operationDeprecationReason;
     private final List<OperationArgument> arguments;
     private final TypedElement typedElement;
+    private final Class<?> rawReturnType;
     private final Set<OperationArgument> contextArguments;
     private final String complexityExpression;
     private final Executable executable;
@@ -47,6 +50,7 @@ public class Resolver {
         this.operationDeprecationReason = operationDeprecationReason;
         this.arguments = arguments;
         this.typedElement = typedElement;
+        this.rawReturnType = ClassUtils.getRawType(typedElement.getJavaType().getType());
         this.contextArguments = contextArguments;
         this.complexityExpression = complexityExpression;
         this.executable = executable;
@@ -151,6 +155,10 @@ public class Resolver {
 
     public AnnotatedType getReturnType() {
         return typedElement.getJavaType();
+    }
+
+    public Class<?> getRawReturnType() {
+        return rawReturnType;
     }
 
     public String getComplexityExpression() {

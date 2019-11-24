@@ -1,12 +1,17 @@
 package io.leangen.graphql;
 
+import graphql.ErrorType;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.GraphqlErrorBuilder;
+import graphql.execution.DataFetcherResult;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.execution.InvocationContext;
+import io.leangen.graphql.execution.ResolverInterceptor;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
@@ -29,9 +34,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
+import static io.leangen.graphql.support.QueryResultAssertions.assertErrorsEqual;
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertEquals;
@@ -106,6 +113,22 @@ public class ConversionTest {
         assertValueAtPathEquals("xyz", result, "echo.future");
     }
 
+    @Test
+    public void testImplicitDataFetcherResultConversion() {
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withValueMapperFactory(valueMapperFactory)
+                .withOperationsFromSingleton(new ImplicitlyWrappedService())
+                .withResolverInterceptors(new ErrorAppendingInterceptor())
+                .generate();
+
+        GraphQL api = GraphQL.newGraphQL(schema).build();
+
+        ExecutionResult result = api.execute("{test}");
+        assertErrorsEqual(result, "Test error");
+        assertValueAtPathEquals(11, result, "test.0");
+        assertValueAtPathEquals(22, result, "test.1");
+    }
+
     /**
      * Due to the lack of support for {@code AnnotatedType} in <i>all</i> JSON libraries for Java,
      * {@link ElementType#TYPE_USE} annotations on input field types or nested operation argument types are lost.
@@ -118,12 +141,12 @@ public class ConversionTest {
                 .withOperationsFromSingleton(new IdService())
                 .generate();
 
-        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        GraphQL api = GraphQL.newGraphQL(schema).build();
 
-        ExecutionResult result = exe.execute("{echo(id: \"{\\\"key\\\": {\\\"some\\\": \\\"value\\\"}}\") {key}}");
+        ExecutionResult result = api.execute("{echo(id: \"{\\\"key\\\": {\\\"some\\\": \\\"value\\\"}}\") {key}}");
         assertNoErrors(result);
 
-        result = exe.execute("{other(id: \"{\\\"value\\\": \\\"something\\\"}\")}");
+        result = api.execute("{other(id: \"{\\\"value\\\": \\\"something\\\"}\")}");
         assertNoErrors(result);
     }
 
@@ -281,8 +304,30 @@ public class ConversionTest {
         }
 
         @Override
+        @SuppressWarnings("NullableProblems")
         public Iterator<T> iterator() {
             return source.iterator();
+        }
+    }
+
+    public static class ImplicitlyWrappedService {
+        @GraphQLQuery
+        public List<OptionalInt> test() {
+            return Arrays.asList(OptionalInt.of(11), OptionalInt.of(22));
+        }
+    }
+
+    public static class ErrorAppendingInterceptor implements ResolverInterceptor {
+
+        @Override
+        public Object aroundInvoke(InvocationContext context, ResolverInterceptor.Continuation continuation) throws Exception {
+            return DataFetcherResult.newResult()
+                    .data(continuation.proceed(context))
+                    .error(GraphqlErrorBuilder.newError(context.getResolutionEnvironment().dataFetchingEnvironment)
+                            .message("Test error")
+                            .errorType(ErrorType.DataFetchingException)
+                            .build())
+                    .build();
         }
     }
 }
