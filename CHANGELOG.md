@@ -10,9 +10,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Make it easier to apply a `ResolverBuilder` to specific types only [#277](https://github.com/leangen/graphql-spqr/issues/277)
 - Make it easy to filter interfaces in `InterfaceMappingStrategy` [#299](https://github.com/leangen/graphql-spqr/issues/299)
 - Support `DataFetcherResult` even when not declared [#318](https://github.com/leangen/graphql-spqr/issues/318)
+- Add `reason` field to `@GraphQLIgnore` annotation
 
+### Changed
+- Relax the mapping rules for abstract inputs (makes it easy to use e.g. Immutables and AutoValue) [#293](https://github.com/leangen/graphql-spqr/issues/293) [#245](https://github.com/leangen/graphql-spqr/issues/245)
+- Collect transitive interfaces for object types [#282](https://github.com/leangen/graphql-spqr/issues/282)
+  
 ### Fixed
 - [Breaking] Filtering of fields/methods/parameters now happens _before_ type resolution [#298](https://github.com/leangen/graphql-spqr/issues/298)
+- Complexity calculation for multi-root queries [#313](https://github.com/leangen/graphql-spqr/issues/313)
+- `ResolverInterceptor`s must see real underlying exceptions [#314](https://github.com/leangen/graphql-spqr/issues/314)
+- `@GraphQLIgnore` should affect auto discovery only if applied directly [#288](https://github.com/leangen/graphql-spqr/issues/288)
 
 ## [0.10.0] - 2019-05-24
 ### Added
