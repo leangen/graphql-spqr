@@ -4,7 +4,6 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLScalar;
 import org.junit.Test;
 
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
@@ -50,21 +49,21 @@ public class GraphQLArgumentTest {
 
     public static class DefaultArgumentNameService {
         @GraphQLQuery
-        public @GraphQLScalar String echo(String text) {
+        public String echo(String text) {
             return text;
         }
     }
 
     public static class AnnotatedDefaultArgumentNameService {
         @GraphQLQuery
-        public @GraphQLScalar String echo(@GraphQLArgument(description = "dummy") String text) {
+        public String echo(@GraphQLArgument(description = "dummy") String text) {
             return text;
         }
     }
 
     public static class AnnotatedOverrideArgumentNameService {
         @GraphQLQuery
-        public @GraphQLScalar String echo(@GraphQLArgument(name = "override", description = "dummy") String text) {
+        public String echo(@GraphQLArgument(name = "override", description = "dummy") String text) {
             return text;
         }
     }
