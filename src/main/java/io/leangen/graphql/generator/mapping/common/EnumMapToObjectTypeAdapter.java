@@ -1,5 +1,7 @@
 package io.leangen.graphql.generator.mapping.common;
 
+import graphql.schema.DataFetcher;
+import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
@@ -36,13 +38,16 @@ public class EnumMapToObjectTypeAdapter<E extends Enum<E>, V> extends CachingMap
                 .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType, buildContext.messageBundle));
 
         Enum<E>[] keys = ClassUtils.<E>getRawType(getElementType(javaType, 0).getType()).getEnumConstants();
-        Arrays.stream(keys).forEach(enumValue -> builder.field(GraphQLFieldDefinition.newFieldDefinition()
-                .name(enumMapper.getValueName(enumValue, buildContext.messageBundle))
-                .description(enumMapper.getValueDescription(enumValue, buildContext.messageBundle))
-                .deprecate(enumMapper.getValueDeprecationReason(enumValue, buildContext.messageBundle))
-                .type(operationMapper.toGraphQLType(getElementType(javaType, 1), buildContext))
-                .dataFetcher(env -> ((Map)env.getSource()).get(enumValue))
-                .build()));
+        Arrays.stream(keys).forEach(enumValue -> {
+            String fieldName = enumMapper.getValueName(enumValue, buildContext.messageBundle);
+            buildContext.codeRegistry.dataFetcher(FieldCoordinates.coordinates(typeName, fieldName), (DataFetcher) env -> ((Map)env.getSource()).get(enumValue));
+            builder.field(GraphQLFieldDefinition.newFieldDefinition()
+                    .name(fieldName)
+                    .description(enumMapper.getValueDescription(enumValue, buildContext.messageBundle))
+                    .deprecate(enumMapper.getValueDeprecationReason(enumValue, buildContext.messageBundle))
+                    .type(operationMapper.toGraphQLType(getElementType(javaType, 1), buildContext))
+                    .build());
+        });
         return builder.build();
     }
 
