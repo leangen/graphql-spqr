@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,7 +32,7 @@ import java.util.Set;
  * @author Bojan Tomic (kaqqao)
  */
 @GraphQLIgnore
-public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, SchemaTransformer {
+public class NonNullMapper implements TypeMapper, SchemaTransformer {
 
     private final Set<Class<? extends Annotation>> nonNullAnnotations;
 
@@ -127,11 +126,6 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
     @Override
     public boolean supports(AnnotatedType type) {
         return nonNullAnnotations.stream().anyMatch(type::isAnnotationPresent) || ClassUtils.getRawType(type.getType()).isPrimitive();
-    }
-
-    @Override
-    public int compare(AnnotatedType o1, AnnotatedType o2) {
-        return ClassUtils.removeAnnotations(o1, nonNullAnnotations).equals(ClassUtils.removeAnnotations(o2, nonNullAnnotations)) ? 0 : -1;
     }
 
     private boolean shouldWrap(GraphQLType type, TypedElement typedElement) {

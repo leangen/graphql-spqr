@@ -15,7 +15,6 @@ import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import graphql.schema.TypeResolver;
-import io.leangen.geantyref.AnnotatedTypeSet;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLNonNull;
@@ -35,8 +34,8 @@ import io.leangen.graphql.generator.TypeRegistry;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRegistry;
-import io.leangen.graphql.generator.mapping.BaseTypeSynonymComparator;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
+import io.leangen.graphql.generator.mapping.IgnoredAnnotationsTypeComparator;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
@@ -198,13 +197,13 @@ public class GraphQLSchemaGenerator {
     private final List<ExtensionProvider<GeneratorConfiguration, ResolverBuilder>> nestedResolverBuilderProviders = new ArrayList<>();
     private final List<ExtensionProvider<GeneratorConfiguration, Module>> moduleProviders = new ArrayList<>();
     private final List<ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory>> interceptorFactoryProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, Comparator<AnnotatedType>>> typeComparatorProviders = new ArrayList<>();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Map<String, GraphQLDirective> additionalDirectives = new HashMap<>();
     private final List<AnnotatedType> additionalDirectiveTypes = new ArrayList<>();
     private final GraphQLCodeRegistry.Builder codeRegistry = GraphQLCodeRegistry.newCodeRegistry();
     private final Map<String, GraphQLType> additionalTypes = new HashMap<>();
-    private final Set<Comparator<AnnotatedType>> typeComparators = new HashSet<>();
 
     private final String queryRoot;
     private final String mutationRoot;
@@ -752,20 +751,13 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withTypeSynonymGroup(Type... synonyms) {
-        this.typeComparators.add(new BaseTypeSynonymComparator(synonyms));
-        return this;
+    @SafeVarargs
+    public final GraphQLSchemaGenerator withTypeComparators(Comparator<AnnotatedType>... comparators) {
+        return withTypeComparators((config, current) -> current.append(comparators));
     }
 
-    public GraphQLSchemaGenerator withTypeSynonymGroup(AnnotatedType... synonyms) {
-        Set<AnnotatedType> synonymGroup = new AnnotatedTypeSet<>();
-        Collections.addAll(synonymGroup, synonyms);
-        this.typeComparators.add((t1, t2) -> synonymGroup.contains(t1) && synonymGroup.contains(t2) ? 0 : -1);
-        return this;
-    }
-
-    public GraphQLSchemaGenerator withTypeComparator(Comparator<AnnotatedType> comparator) {
-        this.typeComparators.add(comparator);
+    public GraphQLSchemaGenerator withTypeComparators(ExtensionProvider<GeneratorConfiguration, Comparator<AnnotatedType>> provider) {
+        this.typeComparatorProviders.add(provider);
         return this;
     }
 
@@ -956,12 +948,21 @@ public class GraphQLSchemaGenerator {
         }
         checkForEmptyOrDuplicates("input field builders", inputFieldBuilders);
 
+        List<Comparator<AnnotatedType>> typeComparators = new ArrayList<>();
+        //Only consider leangen annotations except @GraphQLNonNull
+        typeComparators.add(new IgnoredAnnotationsTypeComparator().include("io.leangen").exclude(GraphQLNonNull.class));
         Type annotatedTypeComparator = TypeFactory.parameterizedClass(Comparator.class, AnnotatedType.class);
-        //noinspection unchecked
-        typeMappers.stream()
-                .filter(mapper -> GenericTypeReflector.isSuperType(annotatedTypeComparator, mapper.getClass()))
-                .forEach(mapper -> typeComparators.add((Comparator<AnnotatedType>) mapper));
-        typeComparator = (t1, t2) -> typeComparators.stream().anyMatch(comparator -> comparator.compare(t1, t2) == 0) ? 0 : -1;
+        for (TypeMapper mapper : typeMappers) {
+            if (GenericTypeReflector.isSuperType(annotatedTypeComparator, mapper.getClass())) {
+                //noinspection unchecked
+                typeComparators.add((Comparator<AnnotatedType>) mapper);
+            }
+        }
+        for (ExtensionProvider<GeneratorConfiguration, Comparator<AnnotatedType>> provider : this.typeComparatorProviders) {
+            typeComparators = provider.getExtensions(configuration, new ExtensionList<>(typeComparators));
+        }
+        List<Comparator<AnnotatedType>> finalTypeComparators = typeComparators;
+        typeComparator = (t1, t2) -> finalTypeComparators.stream().anyMatch(comparator -> comparator.compare(t1, t2) == 0) ? 0 : -1;
     }
 
     /**
