@@ -33,14 +33,18 @@ import static io.leangen.graphql.util.ClassFinder.PUBLIC;
 
 public class AutoScanAbstractInputHandler implements AbstractInputHandler {
 
-    private final Map<Type, Set<Type>> abstractComponents = new HashMap<>();
-    private final List<Predicate<ClassInfo>> filters;
+    private final Map<Type, Set<Type>> abstractComponents;
+    private final List<Predicate<ClassInfo>> candidateFilters;
+    private Predicate<Class<?>> scanCondition;
 
+    private static final Predicate<Class<?>> ABSTRACT_ONLY = ClassUtils::isAbstract;
     private static final Logger log = LoggerFactory.getLogger(AutoScanAbstractInputHandler.class);
 
     public AutoScanAbstractInputHandler() {
-        this.filters = new ArrayList<>();
-        this.filters.add(PUBLIC);
+        this.abstractComponents = new HashMap<>();
+        this.candidateFilters = new ArrayList<>();
+        this.candidateFilters.add(PUBLIC);
+        this.scanCondition = ABSTRACT_ONLY;
     }
 
     @Override
@@ -67,8 +71,11 @@ public class AutoScanAbstractInputHandler implements AbstractInputHandler {
     }
 
     @Override
-    public List<Class<?>> findConcreteSubTypes(Class abstractType, BuildContext buildContext) {
-        Predicate<ClassInfo> filter = CONCRETE.and(NON_IGNORED).and(filters.stream().reduce(Predicate::and).orElse(ALL));
+    public List<Class<?>> findConcreteSubTypes(Class<?> abstractType, BuildContext buildContext) {
+        if (!scanCondition.test(abstractType)) {
+            return Collections.emptyList();
+        }
+        Predicate<ClassInfo> filter = CONCRETE.and(NON_IGNORED).and(candidateFilters.stream().reduce(Predicate::and).orElse(ALL));
         List<Class<?>> subTypes = buildContext.classFinder.findImplementations(abstractType, filter, buildContext.basePackages);
         if (subTypes.isEmpty()) {
             log.warn("No concrete subtypes of " + abstractType.getName() + " found");
@@ -77,13 +84,18 @@ public class AutoScanAbstractInputHandler implements AbstractInputHandler {
     }
 
     public AutoScanAbstractInputHandler withNonPublicClasses() {
-        this.filters.remove(PUBLIC);
+        this.candidateFilters.remove(PUBLIC);
         return this;
     }
 
     @SafeVarargs
-    public final AutoScanAbstractInputHandler withFilters(Predicate<ClassInfo>... filters) {
-        Collections.addAll(this.filters, filters);
+    public final AutoScanAbstractInputHandler withCandidateFilters(Predicate<ClassInfo>... candidateFilters) {
+        Collections.addAll(this.candidateFilters, candidateFilters);
+        return this;
+    }
+
+    public final AutoScanAbstractInputHandler withScanCondition(Predicate<Class<?>> scanCondition) {
+        this.scanCondition = scanCondition;
         return this;
     }
 

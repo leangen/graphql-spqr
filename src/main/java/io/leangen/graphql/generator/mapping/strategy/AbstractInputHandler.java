@@ -11,5 +11,5 @@ public interface AbstractInputHandler {
 
     Set<Type> findConstituentAbstractTypes(AnnotatedType javaType, BuildContext buildContext);
 
-    List<Class<?>> findConcreteSubTypes(Class abstractType, BuildContext buildContext);
+    List<Class<?>> findConcreteSubTypes(Class<?> abstractType, BuildContext buildContext);
 }

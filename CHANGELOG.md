@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 - Relax the mapping rules for abstract inputs (makes it easy to use e.g. Immutables and AutoValue) [#293](https://github.com/leangen/graphql-spqr/issues/293) [#245](https://github.com/leangen/graphql-spqr/issues/245)
+- Don't scan for implementations of concrete input types by default [#332](https://github.com/leangen/graphql-spqr/issues/332)
 - Collect transitive interfaces for object types [#282](https://github.com/leangen/graphql-spqr/issues/282)
   
 ### Fixed

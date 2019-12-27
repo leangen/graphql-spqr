@@ -16,7 +16,7 @@ public class NoOpAbstractInputHandler implements AbstractInputHandler {
     }
 
     @Override
-    public List<Class<?>> findConcreteSubTypes(Class abstractType, BuildContext buildContext) {
+    public List<Class<?>> findConcreteSubTypes(Class<?> abstractType, BuildContext buildContext) {
         return Collections.emptyList();
     }
 }
