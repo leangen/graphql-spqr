@@ -23,7 +23,9 @@ import java.util.Set;
 import static io.leangen.graphql.util.Scalars.RelayId;
 
 /**
- * Maps, converts and injects GraphQL IDs
+ * Maps, converts and injects GraphQL IDs.
+ * Despite implementing {@link InputConverter} it can't actually be used as such due to the lack of support for
+ * {@code AnnotatedType} in any JSON library currently available
  */
 public class IdAdapter implements TypeMapper, ArgumentInjector, OutputConverter<@GraphQLId Object, String>, InputConverter<@GraphQLId Object, String> {
 
@@ -39,10 +41,11 @@ public class IdAdapter implements TypeMapper, ArgumentInjector, OutputConverter<
 
     @Override
     public String convertOutput(Object original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+        final String id = resolutionEnvironment.valueMapper.toString(original, type);
         if (type.getAnnotation(GraphQLId.class).relayId()) {
-            return resolutionEnvironment.globalEnvironment.relay.toGlobalId(resolutionEnvironment.parentType.getName(), resolutionEnvironment.valueMapper.toString(original, type));
+            return resolutionEnvironment.globalEnvironment.relay.toGlobalId(resolutionEnvironment.parentType.getName(), id);
         }
-        return resolutionEnvironment.valueMapper.toString(original, type);
+        return id;
     }
 
     @Override

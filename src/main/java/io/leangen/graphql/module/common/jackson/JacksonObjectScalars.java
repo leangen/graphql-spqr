@@ -33,52 +33,58 @@ public class JacksonObjectScalars {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public static final GraphQLScalarType JsonObjectNode = new GraphQLScalarType("JsonObject", "JSON object", new Coercing<Object, Object>() {
+    public static final GraphQLScalarType JsonObjectNode = GraphQLScalarType.newScalar()
+            .name("JsonObject")
+            .description("JSON object")
+            .coercing(new Coercing<Object, Object>() {
 
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            return dataFetcherResult;
-        }
+                @Override
+                public Object serialize(Object dataFetcherResult) {
+                    return dataFetcherResult;
+                }
 
-        @Override
-        public Object parseValue(Object input) {
-            return input;
-        }
+                @Override
+                public Object parseValue(Object input) {
+                    return input;
+                }
 
-        @Override
-        public Object parseLiteral(Object input) throws CoercingParseLiteralException {
-            return parseLiteral(input, Collections.emptyMap());
-        }
+                @Override
+                public Object parseLiteral(Object input) throws CoercingParseLiteralException {
+                    return parseLiteral(input, Collections.emptyMap());
+                }
 
-        @Override
-        public Object parseLiteral(Object input, Map<String, Object> variables) {
-            return parseJsonValue(literalOrException(input, ObjectValue.class), variables);
-        }
-    });
+                @Override
+                public Object parseLiteral(Object input, Map<String, Object> variables) {
+                    return parseJsonValue(literalOrException(input, ObjectValue.class), variables);
+                }
+            }).build();
 
-    public static final GraphQLScalarType JsonAnyNode = new GraphQLScalarType("Json", "Any JSON value", new Coercing<Object, Object>() {
+    public static final GraphQLScalarType JsonAnyNode = GraphQLScalarType.newScalar()
+            .name("Json")
+            .description("Any JSON value")
+            .coercing(new Coercing<Object, Object>() {
 
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            GraphQLScalarType scalar = JacksonScalars.toGraphQLScalarType(dataFetcherResult.getClass());
-            return scalar != null ? scalar.getCoercing().serialize(dataFetcherResult) : dataFetcherResult;
-        }
+                @Override
+                public Object serialize(Object dataFetcherResult) {
+                    GraphQLScalarType scalar = JacksonScalars.toGraphQLScalarType(dataFetcherResult.getClass());
+                    return scalar != null ? scalar.getCoercing().serialize(dataFetcherResult) : dataFetcherResult;
+                }
 
-        @Override
-        public Object parseValue(Object input) {
-            return input;
-        }
+                @Override
+                public Object parseValue(Object input) {
+                    return input;
+                }
 
-        @Override
-        public Object parseLiteral(Object input) throws CoercingParseLiteralException {
-            return parseLiteral(input, Collections.emptyMap());
-        }
+                @Override
+                public Object parseLiteral(Object input) throws CoercingParseLiteralException {
+                    return parseLiteral(input, Collections.emptyMap());
+                }
 
-        @Override
-        public Object parseLiteral(Object input, Map<String, Object> variables) {
-            return parseJsonValue(((Value) input), variables);
-        }
-    });
+                @Override
+                public Object parseLiteral(Object input, Map<String, Object> variables) {
+                    return parseJsonValue(((Value) input), variables);
+                }
+            }).build();
 
     private static JsonNode parseJsonValue(Value value, Map<String, Object> variables) {
         if (value instanceof BooleanValue) {

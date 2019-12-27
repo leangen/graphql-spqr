@@ -18,7 +18,9 @@ import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLScalarType;
+import io.leangen.geantyref.GenericTypeReflector;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -66,194 +68,212 @@ public class Scalars {
 
     public static final GraphQLNonNull RelayId = new GraphQLNonNull(graphql.Scalars.GraphQLID);
 
-    public static final GraphQLScalarType GraphQLUuid = new GraphQLScalarType("UUID", "UUID String", new Coercing() {
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            if (dataFetcherResult instanceof String) {
-                return dataFetcherResult;
-            } if (dataFetcherResult instanceof UUID) {
-                return dataFetcherResult.toString();
-            } else {
-                throw serializationException(dataFetcherResult, String.class, UUID.class);
-            }
-        }
-
-        @Override
-        public Object parseValue(Object input) {
-            if (input instanceof String) {
-                return UUID.fromString((String) input);
-            }
-            if (input instanceof UUID) {
-                return input;
-            }
-            throw valueParsingException(input, String.class, UUID.class);
-        }
-
-        @Override
-        public Object parseLiteral(Object input) {
-            StringValue string = literalOrException(input, StringValue.class);
-            return UUID.fromString(string.getValue());
-        }
-    });
-
-    public static final GraphQLScalarType GraphQLUri = new GraphQLScalarType("URI", "URI String", new Coercing() {
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            if (dataFetcherResult instanceof URI) {
-                return dataFetcherResult.toString();
-            } else if (dataFetcherResult instanceof String) {
-                return dataFetcherResult;
-            } else {
-                throw serializationException(dataFetcherResult, String.class, URI.class);
-            }
-        }
-
-        @Override
-        public Object parseValue(Object input) {
-            if (input instanceof String) {
-                return URI.create((String) input);
-            }
-            if (input instanceof URI) {
-                return input;
-            }
-            throw valueParsingException(input, String.class, URI.class);
-        }
-
-        @Override
-        public Object parseLiteral(Object input) {
-            StringValue string = literalOrException(input, StringValue.class);
-            return URI.create(string.getValue());
-        }
-    });
-
-    public static final GraphQLScalarType GraphQLUrl = new GraphQLScalarType("URL", "URL String", new Coercing() {
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            if (dataFetcherResult instanceof URL) {
-                return dataFetcherResult.toString();
-            } else if (dataFetcherResult instanceof String) {
-                return dataFetcherResult;
-            } else {
-                throw serializationException(dataFetcherResult, String.class, URL.class);
-            }
-        }
-
-        @Override
-        public Object parseValue(Object input) {
-            if (input instanceof String) {
-                try {
-                    return new URL((String) input);
-                } catch (MalformedURLException e) {
-                    throw new CoercingParseValueException("Input string \"" + input + "\" could not be parsed into a URL", e);
+    public static final GraphQLScalarType GraphQLUuid = GraphQLScalarType.newScalar()
+            .name("UUID")
+            .description("UUID String")
+            .coercing(new Coercing<UUID, String>() {
+                @Override
+                public String serialize(Object dataFetcherResult) {
+                    if (dataFetcherResult instanceof UUID) {
+                        return dataFetcherResult.toString();
+                    }
+                    if (dataFetcherResult instanceof String) {
+                        return (String) dataFetcherResult;
+                    }
+                    throw serializationException(dataFetcherResult, UUID.class, String.class);
                 }
-            }
-            if (input instanceof URL) {
-                return input;
-            }
-            throw valueParsingException(input, String.class, URL.class);
-        }
 
-        @Override
-        public Object parseLiteral(Object input) {
-            StringValue string = literalOrException(input, StringValue.class);
-            try {
-                return new URL(string.getValue());
-            } catch (MalformedURLException e) {
-                throw new CoercingParseLiteralException("Input string \"" + input + "\" could not be parsed into a URL", e);
-            }
-        }
-    });
-
-    public static final GraphQLScalarType GraphQLBase64String = new GraphQLScalarType("Base64String", "Base64-encoded binary", new Coercing() {
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            if (dataFetcherResult instanceof byte[]) {
-                return Base64.getEncoder().encodeToString((byte[]) dataFetcherResult);
-            } else if (dataFetcherResult instanceof String) {
-                return dataFetcherResult;
-            } else {
-                throw serializationException(dataFetcherResult, String.class, byte[].class);
-            }
-        }
-
-        @Override
-        public Object parseValue(Object input) {
-            if (input instanceof String) {
-                try {
-                    return Base64.getDecoder().decode((String) input);
-                } catch (IllegalArgumentException e) {
-                    throw new CoercingParseValueException("Input string \"" + input + "\" is not a valid Base64 value", e);
+                @Override
+                public UUID parseValue(Object input) {
+                    if (input instanceof String) {
+                        return UUID.fromString((String) input);
+                    }
+                    if (input instanceof UUID) {
+                        return (UUID) input;
+                    }
+                    throw valueParsingException(input, String.class, UUID.class);
                 }
-            }
-            if (input instanceof byte[]) {
-                return input;
-            }
-            throw valueParsingException(input, String.class, byte[].class);
-        }
 
-        @Override
-        public Object parseLiteral(Object input) {
-            StringValue string = literalOrException(input, StringValue.class);
-            try {
-                return Base64.getDecoder().decode(string.getValue());
-            } catch (IllegalArgumentException e) {
-                throw new CoercingParseLiteralException("Input string \"" + input + "\" is not a valid Base64 value", e);
-            }
-        }
-    });
+                @Override
+                public UUID parseLiteral(Object input) {
+                    StringValue string = literalOrException(input, StringValue.class);
+                    return UUID.fromString(string.getValue());
+                }
+            }).build();
 
-    public static final GraphQLScalarType GraphQLClass = new GraphQLScalarType("Class", "A fully qualified class name", new Coercing() {
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            if (dataFetcherResult instanceof Class) {
-                return ((Class) dataFetcherResult).getName();
-            } else if (dataFetcherResult instanceof String) {
-                return dataFetcherResult;
-            } else {
-                throw serializationException(dataFetcherResult, String.class, Class.class);
-            }
-        }
+    public static final GraphQLScalarType GraphQLUri = GraphQLScalarType.newScalar()
+            .name("URI")
+            .description("URI String")
+            .coercing(new Coercing<URI, String>() {
+                @Override
+                public String  serialize(Object dataFetcherResult) {
+                    if (dataFetcherResult instanceof URI) {
+                        return dataFetcherResult.toString();
+                    } else if (dataFetcherResult instanceof String) {
+                        return (String) dataFetcherResult;
+                    } else {
+                        throw serializationException(dataFetcherResult, String.class, URI.class);
+                    }
+                }
 
-        @Override
-        public Object parseValue(Object input) {
-            throw new CoercingParseValueException("Class can not be used as input");
-        }
+                @Override
+                public URI parseValue(Object input) {
+                    if (input instanceof String) {
+                        return URI.create((String) input);
+                    }
+                    if (input instanceof URI) {
+                        return (URI) input;
+                    }
+                    throw valueParsingException(input, String.class, URI.class);
+                }
 
-        @Override
-        public Object parseLiteral(Object input) {
-            throw new CoercingParseLiteralException("Class can not be used as input");
-        }
-    });
+                @Override
+                public URI parseLiteral(Object input) {
+                    StringValue string = literalOrException(input, StringValue.class);
+                    return URI.create(string.getValue());
+                }
+            }).build();
 
-    public static final GraphQLScalarType GraphQLLocale = new GraphQLScalarType("Locale", "Built-in Locale", new Coercing() {
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            if (dataFetcherResult instanceof Locale) {
-                return ((Locale) dataFetcherResult).toLanguageTag();
-            } else if (dataFetcherResult instanceof String) {
-                return dataFetcherResult;
-            } else {
-                throw serializationException(dataFetcherResult, String.class, Locale.class);
-            }
-        }
+    public static final GraphQLScalarType GraphQLUrl = GraphQLScalarType.newScalar()
+            .name("URL")
+            .description("URL String")
+            .coercing(new Coercing<URL, String>() {
+                @Override
+                public String serialize(Object dataFetcherResult) {
+                    if (dataFetcherResult instanceof URL) {
+                        return dataFetcherResult.toString();
+                    } else if (dataFetcherResult instanceof String) {
+                        return (String) dataFetcherResult;
+                    } else {
+                        throw serializationException(dataFetcherResult, String.class, URL.class);
+                    }
+                }
 
-        @Override
-        public Object parseValue(Object input) {
-            if (input instanceof String) {
-                return Locale.forLanguageTag((String) input);
-            }
-            if (input instanceof Locale) {
-                return input;
-            }
-            throw valueParsingException(input, String.class, Locale.class);
-        }
+                @Override
+                public URL parseValue(Object input) {
+                    if (input instanceof String) {
+                        try {
+                            return new URL((String) input);
+                        } catch (MalformedURLException e) {
+                            throw new CoercingParseValueException("Input string \"" + input + "\" could not be parsed into a URL", e);
+                        }
+                    }
+                    if (input instanceof URL) {
+                        return (URL) input;
+                    }
+                    throw valueParsingException(input, String.class, URL.class);
+                }
 
-        @Override
-        public Object parseLiteral(Object input) {
-            StringValue string = literalOrException(input, StringValue.class);
-            return Locale.forLanguageTag(string.getValue());
-        }
-    });
+                @Override
+                public URL parseLiteral(Object input) {
+                    StringValue string = literalOrException(input, StringValue.class);
+                    try {
+                        return new URL(string.getValue());
+                    } catch (MalformedURLException e) {
+                        throw new CoercingParseLiteralException("Input string \"" + input + "\" could not be parsed into a URL", e);
+                    }
+                }
+            }).build();
+
+    public static final GraphQLScalarType GraphQLBase64String = GraphQLScalarType.newScalar()
+            .name("Base64String")
+            .description("Base64-encoded binary")
+            .coercing(new Coercing<byte[], String>() {
+                @Override
+                public String serialize(Object dataFetcherResult) {
+                    if (dataFetcherResult instanceof byte[]) {
+                        return Base64.getEncoder().encodeToString((byte[]) dataFetcherResult);
+                    } else if (dataFetcherResult instanceof String) {
+                        return (String) dataFetcherResult;
+                    } else {
+                        throw serializationException(dataFetcherResult, String.class, byte[].class);
+                    }
+                }
+
+                @Override
+                public byte[] parseValue(Object input) {
+                    if (input instanceof String) {
+                        try {
+                            return Base64.getDecoder().decode((String) input);
+                        } catch (IllegalArgumentException e) {
+                            throw new CoercingParseValueException("Input string \"" + input + "\" is not a valid Base64 value", e);
+                        }
+                    }
+                    if (input instanceof byte[]) {
+                        return (byte[]) input;
+                    }
+                    throw valueParsingException(input, String.class, byte[].class);
+                }
+
+                @Override
+                public byte[] parseLiteral(Object input) {
+                    StringValue string = literalOrException(input, StringValue.class);
+                    try {
+                        return Base64.getDecoder().decode(string.getValue());
+                    } catch (IllegalArgumentException e) {
+                        throw new CoercingParseLiteralException("Input string \"" + input + "\" is not a valid Base64 value", e);
+                    }
+                }
+            }).build();
+
+    public static final GraphQLScalarType GraphQLClass = GraphQLScalarType.newScalar()
+            .name("Class")
+            .description("A fully qualified class name")
+            .coercing(new Coercing<Object, String>() {
+                @Override
+                public String serialize(Object dataFetcherResult) {
+                    if (dataFetcherResult instanceof Class) {
+                        return ((Class) dataFetcherResult).getName();
+                    } else if (dataFetcherResult instanceof String) {
+                        return (String) dataFetcherResult;
+                    } else {
+                        throw serializationException(dataFetcherResult, String.class, Class.class);
+                    }
+                }
+
+                @Override
+                public Object parseValue(Object input) {
+                    throw new CoercingParseValueException("Class can not be used as input");
+                }
+
+                @Override
+                public Object parseLiteral(Object input) {
+                    throw new CoercingParseLiteralException("Class can not be used as input");
+                }
+            }).build();
+
+    public static final GraphQLScalarType GraphQLLocale = GraphQLScalarType.newScalar()
+            .name("Locale")
+            .description("Built-in Locale")
+            .coercing(new Coercing<Locale, String>() {
+                @Override
+                public String serialize(Object dataFetcherResult) {
+                    if (dataFetcherResult instanceof Locale) {
+                        return ((Locale) dataFetcherResult).toLanguageTag();
+                    } else if (dataFetcherResult instanceof String) {
+                        return (String) dataFetcherResult;
+                    } else {
+                        throw serializationException(dataFetcherResult, String.class, Locale.class);
+                    }
+                }
+
+                @Override
+                public Locale parseValue(Object input) {
+                    if (input instanceof String) {
+                        return Locale.forLanguageTag((String) input);
+                    }
+                    if (input instanceof Locale) {
+                        return (Locale) input;
+                    }
+                    throw valueParsingException(input, String.class, Locale.class);
+                }
+
+                @Override
+                public Locale parseLiteral(Object input) {
+                    StringValue string = literalOrException(input, StringValue.class);
+                    return Locale.forLanguageTag(string.getValue());
+                }
+            }).build();
 
     public static final GraphQLScalarType GraphQLDate = temporalScalar(Date.class,"Date", "an instant in time",
             s -> new Date(Instant.parse(s).toEpochMilli()), i -> new Date(i.toEpochMilli()), Scalars::dateToString);
@@ -307,7 +327,7 @@ public class Scalars {
         }
     }
 
-    private static Coercing MAP_SCALAR_COERCION = new Coercing<Object, Object>() {
+    private static Coercing<Object, Object> MAP_SCALAR_COERCION = new Coercing<Object, Object>() {
         @Override
         public Object serialize(Object dataFetcherResult) {
             return dataFetcherResult;
@@ -341,7 +361,7 @@ public class Scalars {
                 .build();
     }
 
-    private static Coercing OBJECT_SCALAR_COERCION = new Coercing<Object, Object>() {
+    private static Coercing<Object, Object> OBJECT_SCALAR_COERCION = new Coercing<Object, Object>() {
         @Override
         public Object serialize(Object dataFetcherResult) {
             GraphQLScalarType scalar = toGraphQLScalarType(dataFetcherResult.getClass());
@@ -415,54 +435,57 @@ public class Scalars {
     }
 
     public static <T> GraphQLScalarType temporalScalar(Class<T> type, String name, String description, ThrowingFunction<String, T> fromString, ThrowingFunction<Instant, T> fromDate, ThrowingFunction<T, String> toString) {
-        return new GraphQLScalarType(name, "Built-in scalar representing " + description, new Coercing() {
+        return GraphQLScalarType.newScalar()
+                .name(name)
+                .description("Built-in scalar representing " + description)
+                .coercing(new Coercing<T, String>() {
 
-            @Override
-            @SuppressWarnings("unchecked")
-            public String serialize(Object dataFetcherResult) {
-                if (type.isInstance(dataFetcherResult)) {
-                    try {
-                        return toString.apply((T) dataFetcherResult);
-                    } catch (Exception e) {
-                        throw new CoercingSerializeException("Value " + dataFetcherResult + " could not be serialized");
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public String serialize(Object dataFetcherResult) {
+                        if (type.isInstance(dataFetcherResult)) {
+                            try {
+                                return toString.apply((T) dataFetcherResult);
+                            } catch (Exception e) {
+                                throw new CoercingSerializeException("Value " + dataFetcherResult + " could not be serialized");
+                            }
+                        }
+                        throw serializationException(dataFetcherResult, type);
                     }
-                }
-                throw serializationException(dataFetcherResult, type);
-            }
 
-            @Override
-            public Object parseValue(Object input) {
-                try {
-                    if (input instanceof String) {
-                        return fromString.apply((String) input);
+                    @Override
+                    public T parseValue(Object input) {
+                        try {
+                            if (input instanceof String) {
+                                return fromString.apply((String) input);
+                            }
+                            if (input instanceof Long) {
+                                return fromDate.apply(Instant.ofEpochMilli((Long) input));
+                            }
+                            if (type.isInstance(input)) {
+                                return type.cast(input);
+                            }
+                            throw valueParsingException(input, String.class, Long.class);
+                        } catch (Exception e) {
+                            throw new CoercingParseValueException("Value " + input + " could not be parsed into a " + name);
+                        }
                     }
-                    if (input instanceof Long) {
-                        return fromDate.apply(Instant.ofEpochMilli((Long) input));
-                    }
-                    if (type.isInstance(input)) {
-                        return input;
-                    }
-                    throw valueParsingException(input, String.class, Long.class);
-                } catch (Exception e) {
-                    throw new CoercingParseValueException("Value " + input + " could not be parsed into a " + name);
-                }
-            }
 
-            @Override
-            public T parseLiteral(Object input) {
-                try {
-                    if (input instanceof StringValue) {
-                        return fromString.apply(((StringValue) input).getValue());
-                    } else if (input instanceof IntValue) {
-                        return fromDate.apply(Instant.ofEpochMilli(((IntValue) input).getValue().longValue()));
-                    } else {
-                        throw literalParsingException(input, StringValue.class, IntValue.class);
+                    @Override
+                    public T parseLiteral(Object input) {
+                        try {
+                            if (input instanceof StringValue) {
+                                return fromString.apply(((StringValue) input).getValue());
+                            } else if (input instanceof IntValue) {
+                                return fromDate.apply(Instant.ofEpochMilli(((IntValue) input).getValue().longValue()));
+                            } else {
+                                throw literalParsingException(input, StringValue.class, IntValue.class);
+                            }
+                        } catch (Exception e) {
+                            throw new CoercingParseLiteralException("Value " + input + " could not be parsed into a " + name);
+                        }
                     }
-                } catch (Exception e) {
-                    throw new CoercingParseLiteralException("Value " + input + " could not be parsed into a " + name);
-                }
-            }
-        });
+                }).build();
     }
 
     public static <T extends Value> T literalOrException(Object input, Class<T> valueType) {
@@ -495,11 +518,14 @@ public class Scalars {
     private static final Map<Type, GraphQLScalarType> SCALAR_MAPPING = getScalarMapping();
 
     public static boolean isScalar(Type javaType) {
-        return SCALAR_MAPPING.containsKey(javaType);
+        return SCALAR_MAPPING.containsKey(javaType)
+                //Class<> needs to be dealt with separately because it's the only generic type
+                //If more generic types are added, find a better solution
+                || (javaType instanceof ParameterizedType && ((ParameterizedType) javaType).getRawType().equals(Class.class));
     }
 
     public static GraphQLScalarType toGraphQLScalarType(Type javaType) {
-        return SCALAR_MAPPING.get(javaType);
+        return SCALAR_MAPPING.get(GenericTypeReflector.erase(javaType));
     }
 
     private static Map<Type, GraphQLScalarType> getScalarMapping() {
