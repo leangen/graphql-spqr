@@ -542,6 +542,11 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withTypeMappersPrepended(ExtensionProvider<GeneratorConfiguration, TypeMapper> provider) {
+        this.typeMapperProviders.add(0, provider);
+        return this;
+    }
+
     /**
      * Registers custom {@link TypeMapper}s to be used for mapping Java type to GraphQL types.
      * <p><b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type

@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Easy hierarchical names for nested types: `DefaultTypeInfoGenerator#withHierarchicalNames` [#310](https://github.com/leangen/graphql-spqr/issues/310)
 - Reintroduce `fieldOrder` and add `inputFieldOrder` [#279](https://github.com/leangen/graphql-spqr/issues/279)
 - Make it easier to apply a `ResolverBuilder` to specific types only [#277](https://github.com/leangen/graphql-spqr/issues/277)
 - Make it easy to filter interfaces in `InterfaceMappingStrategy` [#299](https://github.com/leangen/graphql-spqr/issues/299)
@@ -16,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Relax the mapping rules for abstract inputs (makes it easy to use e.g. Immutables and AutoValue) [#293](https://github.com/leangen/graphql-spqr/issues/293) [#245](https://github.com/leangen/graphql-spqr/issues/245)
 - Don't scan for implementations of concrete input types by default [#332](https://github.com/leangen/graphql-spqr/issues/332)
 - Collect transitive interfaces for object types [#282](https://github.com/leangen/graphql-spqr/issues/282)
+- Relax name collision detection: only consider `io.leangen` annotations [#232](https://github.com/leangen/graphql-spqr/issues/232)
+- Upgraded to graphql-java v13
   
 ### Fixed
 - [Breaking] Filtering of fields/methods/parameters now happens _before_ type resolution [#298](https://github.com/leangen/graphql-spqr/issues/298)

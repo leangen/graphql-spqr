@@ -58,7 +58,7 @@ public abstract class CachingMapper<O extends GraphQLOutputType, I extends Graph
             return typeInfoGenerator.generateScalarTypeName(javaType, messageBundle);
         }
         if (ClassUtils.isSuperClass(GraphQLEnumType.class, graphQLType)) {
-            return typeInfoGenerator.generateTypeName(javaType, messageBundle);
+            return typeInfoGenerator.generateEnumTypeName(javaType, messageBundle);
         }
         if (ClassUtils.isSuperClass(GraphQLInputType.class, graphQLType)) {
             return typeInfoGenerator.generateInputTypeName(javaType, messageBundle);

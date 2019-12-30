@@ -26,6 +26,14 @@ public interface TypeInfoGenerator {
         return generateTypeDescription(type, messageBundle);
     }
 
+    default String generateEnumTypeName(AnnotatedType type, MessageBundle messageBundle) {
+        return generateTypeName(type, messageBundle);
+    }
+
+    default String generateEnumTypeDescription(AnnotatedType type, MessageBundle messageBundle) {
+        return generateTypeDescription(type, messageBundle);
+    }
+
     default String generateScalarTypeName(AnnotatedType type, MessageBundle messageBundle) {
         return generateTypeName(type, messageBundle) + SCALAR_SUFFIX;
     }

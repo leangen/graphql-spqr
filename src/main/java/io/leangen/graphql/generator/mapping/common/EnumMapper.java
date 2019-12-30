@@ -21,7 +21,7 @@ import static graphql.schema.GraphQLEnumType.newEnum;
  */
 public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> {
 
-    private final JavaDeprecationMappingConfig javaDeprecationConfig;
+    protected final JavaDeprecationMappingConfig javaDeprecationConfig;
 
     public EnumMapper(JavaDeprecationMappingConfig javaDeprecationConfig) {
         this.javaDeprecationConfig = javaDeprecationConfig;
@@ -31,7 +31,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
     public GraphQLEnumType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
         GraphQLEnumType.Builder enumBuilder = newEnum()
                 .name(typeName)
-                .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType, buildContext.messageBundle));
+                .description(buildContext.typeInfoGenerator.generateEnumTypeDescription(javaType, buildContext.messageBundle));
         buildContext.directiveBuilder.buildEnumTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 enumBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
         addOptions(enumBuilder, javaType, operationMapper, buildContext);

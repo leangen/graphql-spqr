@@ -106,7 +106,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
                 .map(argName -> new OperationArgument(
                         resolveJavaType(argumentsByName.get(argName).stream().map(OperationArgument::getJavaType).collect(Collectors.toList()), String.format(errorPrefixTemplate, argName)),
                         argName,
-                        argumentsByName.get(argName).stream().map(OperationArgument::getDescription).filter(Objects::nonNull).findFirst().orElse(""),
+                        argumentsByName.get(argName).stream().map(OperationArgument::getDescription).filter(Objects::nonNull).findFirst().orElse(null),
 //						argumentsByName.get(argName).size() == resolvers.size() || argumentsByName.get(argName).stream().anyMatch(OperationArgument::isRequired),
                         argumentsByName.get(argName).stream().map(OperationArgument::getDefaultValue).filter(Objects::nonNull).findFirst().orElse(null),
                         argumentsByName.get(argName).stream().map(OperationArgument::getParameter).filter(Objects::nonNull).collect(Collectors.toList()),

@@ -449,6 +449,22 @@ public class ClassUtils {
                 .anyMatch(ann -> ann.annotationType().isAnnotationPresent(annotation));
     }
 
+    public static <T extends Annotation> Optional<T> findApplicableAnnotation(AnnotatedElement element, Class<T> annotation) {
+        if (element.isAnnotationPresent(annotation)) {
+            return Optional.of(element.getAnnotation(annotation));
+        }
+        if (element instanceof Member) {
+            Class<?> declaringClass = ((Member) element).getDeclaringClass();
+            if (declaringClass.isAnnotationPresent(annotation)){
+                return Optional.of(declaringClass.getAnnotation(annotation));
+            }
+            if (declaringClass.getPackage() != null && declaringClass.getPackage().isAnnotationPresent(annotation)) {
+                return Optional.of(declaringClass.getPackage().getAnnotation(annotation));
+            }
+        }
+        return Optional.empty();
+    }
+
     public static List<Method> getAnnotationFields(Class<? extends Annotation> annotation) {
         return Arrays.stream(annotation.getMethods())
                 .filter(method -> annotation.equals(method.getDeclaringClass()))
