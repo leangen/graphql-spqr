@@ -5,6 +5,7 @@ import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
 import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,13 +33,13 @@ public class CollectionOutputConverter implements DelegatingOutputConverter<Coll
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return ClassUtils.isSuperClass(Collection.class, type);
     }
 
-    private List<?> processCollection(Collection<?> collection, AnnotatedType elementType, ResolutionEnvironment resolutionEnvironment) {
+    private List<?> processCollection(Collection<?> collection, AnnotatedType elementType, ResolutionEnvironment env) {
         return collection.stream()
-                .map(e -> resolutionEnvironment.convertOutput(e, elementType))
+                .map(e -> env.convertOutput(e, env.resolver.getTypedElement(), elementType))
                 .collect(Collectors.toList());
     }
 

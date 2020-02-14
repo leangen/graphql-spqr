@@ -4,11 +4,12 @@ import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLScalarType;
 import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Scalars;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
 import java.util.Comparator;
@@ -21,9 +22,11 @@ import java.util.Set;
 public class ObjectScalarMapper extends CachingMapper<GraphQLScalarType, GraphQLScalarType> implements Comparator<AnnotatedType> {
 
     @Override
-    public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLScalarType toGraphQLType(String typeName, AnnotatedType javaType, TypeMappingEnvironment env) {
+        BuildContext buildContext = env.buildContext;
+
         GraphQLDirective[] directives = buildContext.directiveBuilder.buildScalarTypeDirectives(javaType, buildContext.directiveBuilderParams()).stream()
-                .map(directive -> operationMapper.toGraphQLDirective(directive, buildContext))
+                .map(directive -> env.operationMapper.toGraphQLDirective(directive, buildContext))
                 .toArray(GraphQLDirective[]::new);
         return ClassUtils.isSuperClass(Map.class, javaType)
                 ? Scalars.graphQLMapScalar(typeName, directives)
@@ -31,12 +34,12 @@ public class ObjectScalarMapper extends CachingMapper<GraphQLScalarType, GraphQL
     }
 
     @Override
-    public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        return toGraphQLType(typeName, javaType, operationMapper, buildContext);
+    public GraphQLScalarType toGraphQLInputType(String typeName, AnnotatedType javaType, TypeMappingEnvironment env) {
+        return toGraphQLType(typeName, javaType, env);
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return type.isAnnotationPresent(GraphQLScalar.class)
                 || Object.class.equals(type.getType())
                 || ClassUtils.isSuperClass(Map.class, type);

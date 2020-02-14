@@ -24,7 +24,7 @@ class ConvertingAdapterFactory implements TypeAdapterFactory {
         AnnotatedType detectedType = environment.typeTransformer.transform(GenericTypeReflector.annotate(type.getType()));
         return environment.getInputConverters().stream()
                 .filter(converter -> converter.supports(detectedType)).findFirst()
-                .map(converter ->  new ConvertingDeserializer(detectedType, environment.getMappableInputType(detectedType).getType(), converter, environment, gson))
+                .map(converter -> new ConvertingDeserializer(detectedType, environment.getMappableInputType(detectedType).getType(), converter, environment, gson))
                 .map(deserializer -> new TreeTypeAdapter(null, deserializer, gson, type, this))
                 .orElse(null);
     }

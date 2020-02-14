@@ -2,9 +2,8 @@ package io.leangen.graphql.generator.mapping;
 
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
-import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.OperationMapper;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Set;
 
@@ -15,8 +14,8 @@ import java.util.Set;
  */
 public interface TypeMapper {
 
-    GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext);
-    GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext);
+    GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env);
+    GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env);
 
-    boolean supports(AnnotatedType type);
+    boolean supports(AnnotatedElement element, AnnotatedType type);
 }

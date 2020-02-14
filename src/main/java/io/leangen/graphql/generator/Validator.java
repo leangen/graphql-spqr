@@ -12,6 +12,7 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.Urls;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collection;
 import java.util.Comparator;
@@ -35,15 +36,15 @@ class Validator {
                 .collect(Collectors.toMap(GraphQLType::getName, type -> ClassUtils.normalize(Directives.getMappedType(type))));
     }
 
-    ValidationResult checkUniqueness(GraphQLOutputType graphQLType, AnnotatedType javaType) {
-        return checkUniqueness(graphQLType, () -> mappers.getMappableType(javaType));
+    ValidationResult checkUniqueness(GraphQLOutputType graphQLType, AnnotatedElement element, AnnotatedType javaType) {
+        return checkUniqueness(graphQLType, () -> mappers.getMappableType(element, javaType));
     }
 
-    ValidationResult checkUniqueness(GraphQLInputType graphQLType, AnnotatedType javaType) {
+    ValidationResult checkUniqueness(GraphQLInputType graphQLType, AnnotatedElement element, AnnotatedType javaType) {
         return checkUniqueness(graphQLType, () -> {
             AnnotatedType inputType = environment.getMappableInputType(javaType);
             if (GenericTypeReflector.equals(javaType, inputType)) {
-                return mappers.getMappableType(javaType);
+                return mappers.getMappableType(element, javaType);
             }
             return inputType;
         });

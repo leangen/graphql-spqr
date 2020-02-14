@@ -12,6 +12,7 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.metadata.DirectiveArgument;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,7 +44,8 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
             "javax.annotation.Nonnull",
             "javax.validation.constraints.NotNull",
             "javax.validation.constraints.NotEmpty",
-            "javax.validation.constraints.NotBlank"
+            "javax.validation.constraints.NotBlank",
+            "org.eclipse.microprofile.graphql.NonNull"
     };
 
     @SuppressWarnings("unchecked")
@@ -60,16 +63,16 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
     }
 
     @Override
-    public GraphQLNonNull toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
+    public GraphQLNonNull toGraphQLType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
         mappersToSkip.add(this.getClass());
-        GraphQLOutputType inner = operationMapper.toGraphQLType(javaType, mappersToSkip, buildContext);
+        GraphQLOutputType inner = env.operationMapper.toGraphQLType(javaType, mappersToSkip, env);
         return inner instanceof GraphQLNonNull ? (GraphQLNonNull) inner : new GraphQLNonNull(inner);
     }
 
     @Override
-    public GraphQLNonNull toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
+    public GraphQLNonNull toGraphQLInputType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
         mappersToSkip.add(this.getClass());
-        GraphQLInputType inner = operationMapper.toGraphQLInputType(javaType, mappersToSkip, buildContext);
+        GraphQLInputType inner = env.operationMapper.toGraphQLInputType(javaType, mappersToSkip, env);
         return inner instanceof GraphQLNonNull ? (GraphQLNonNull) inner : new GraphQLNonNull(inner);
     }
 
@@ -124,7 +127,7 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return nonNullAnnotations.stream().anyMatch(type::isAnnotationPresent) || ClassUtils.getRawType(type.getType()).isPrimitive();
     }
 

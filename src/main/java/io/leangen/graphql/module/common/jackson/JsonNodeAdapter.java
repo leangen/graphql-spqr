@@ -17,14 +17,14 @@ import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolutionEnvironment;
-import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -55,13 +55,13 @@ public class JsonNodeAdapter implements TypeMapper, InputConverter<JsonNode, Obj
     }
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
-        return operationMapper.toGraphQLType(getSubstituteType(javaType), buildContext);
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
+        return env.operationMapper.toGraphQLType(getSubstituteType(javaType), env);
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
-        return operationMapper.toGraphQLInputType(getSubstituteType(javaType), buildContext);
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
+        return env.operationMapper.toGraphQLInputType(getSubstituteType(javaType), env);
     }
 
     @Override
@@ -69,6 +69,12 @@ public class JsonNodeAdapter implements TypeMapper, InputConverter<JsonNode, Obj
         return mappings.containsKey(ClassUtils.getRawType(type.getType()));
     }
 
+    @Override
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
+        return supports(type);
+    }
+
+    @SuppressWarnings("rawtypes")
     private static final Map<Class, JsonNodeDescriptor> mappings;
 
     static {

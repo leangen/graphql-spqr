@@ -5,6 +5,7 @@ import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
 import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -32,15 +33,15 @@ public class MapOutputConverter implements DelegatingOutputConverter<Map<?, ?>, 
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return ClassUtils.isSuperClass(Map.class, type);
     }
 
-    private Map<?, ?> processMap(Map<?, ?> map, AnnotatedType keyType, AnnotatedType valueType, ResolutionEnvironment resolutionEnvironment) {
+    private Map<?, ?> processMap(Map<?, ?> map, AnnotatedType keyType, AnnotatedType valueType, ResolutionEnvironment env) {
         Map<?, ?> processed = new LinkedHashMap<>();
         map.forEach((k, v) -> processed.put(
-                resolutionEnvironment.convertOutput(k, keyType),
-                resolutionEnvironment.convertOutput(v, valueType)));
+                env.convertOutput(k, env.resolver.getTypedElement(), keyType),
+                env.convertOutput(v, env.resolver.getTypedElement(), valueType)));
         return processed;
     }
 

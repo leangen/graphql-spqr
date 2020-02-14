@@ -20,7 +20,7 @@ public class OptionalAdapter extends AbstractSimpleTypeAdapter<Optional<?>, Obje
 
     @Override
     public Object convertOutput(Optional<?> original, AnnotatedType type, ResolutionEnvironment env) {
-        return original.map(inner -> env.convertOutput(inner, env.getDerived(type, 0))).orElse(null);
+        return original.map(inner -> env.convertOutput(inner, env.resolver.getTypedElement(), env.getDerived(type, 0))).orElse(null);
     }
 
     @Override

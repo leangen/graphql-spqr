@@ -5,6 +5,7 @@ import io.leangen.graphql.execution.ResolverInterceptor;
 import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.execution.ResolverInterceptorFactoryParams;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +18,7 @@ public class VoidToBooleanTypeAdapter extends AbstractTypeSubstitutingMapper<Boo
     private static final ReturnTrue returnTrue = new ReturnTrue();
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return isVoid(type);
     }
 

@@ -75,4 +75,9 @@ public class TypedElement implements AnnotatedElement {
         }
         throw new IllegalStateException("Multiple mappable elements found when a single was expected");
     }
+
+    @Override
+    public String toString() {
+        return javaType.getType().getTypeName() + " [" + (elements != null ? elements.toString() : "") + "]";
+    }
 }

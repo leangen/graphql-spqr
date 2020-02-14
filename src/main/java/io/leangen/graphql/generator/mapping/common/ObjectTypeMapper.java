@@ -11,13 +11,14 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.GraphQLUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,15 +32,17 @@ import static graphql.schema.GraphQLObjectType.newObject;
 public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLInputObjectType> {
 
     @Override
-    public GraphQLObjectType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLObjectType toGraphQLType(String typeName, AnnotatedType javaType, TypeMappingEnvironment env) {
+        BuildContext buildContext = env.buildContext;
+
         GraphQLObjectType.Builder typeBuilder = newObject()
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType, buildContext.messageBundle));
 
-        List<GraphQLFieldDefinition> fields = getFields(typeName, javaType, buildContext, operationMapper);
+        List<GraphQLFieldDefinition> fields = getFields(typeName, javaType, env);
         fields.forEach(typeBuilder::field);
 
-        List<GraphQLOutputType> interfaces = getInterfaces(javaType, fields, buildContext, operationMapper);
+        List<GraphQLOutputType> interfaces = getInterfaces(javaType, fields, env);
         interfaces.forEach(inter -> {
             if (inter instanceof GraphQLInterfaceType) {
                 typeBuilder.withInterface((GraphQLInterfaceType) inter);
@@ -50,7 +53,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
 
         typeBuilder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildObjectTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
-                typeBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
+                typeBuilder.withDirective(env.operationMapper.toGraphQLDirective(directive, buildContext)));
         typeBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
 
         GraphQLObjectType type = typeBuilder.build();
@@ -59,7 +62,9 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     }
 
     @Override
-    public GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, TypeMappingEnvironment env) {
+        BuildContext buildContext = env.buildContext;
+
         GraphQLInputObjectType.Builder typeBuilder = newInputObject()
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateInputTypeDescription(javaType, buildContext.messageBundle));
@@ -69,41 +74,41 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 .withEnvironment(buildContext.globalEnvironment)
                 .withConcreteSubTypes(buildContext.abstractInputHandler.findConcreteSubTypes(ClassUtils.getRawType(javaType.getType()), buildContext))
                 .build();
-        buildContext.inputFieldBuilders.getInputFields(params).forEach(field -> typeBuilder.field(operationMapper.toGraphQLInputField(field, buildContext)));
+        buildContext.inputFieldBuilders.getInputFields(params).forEach(field -> typeBuilder.field(env.operationMapper.toGraphQLInputField(field, buildContext)));
         if (ClassUtils.isAbstract(javaType)) {
             createInputDisambiguatorField(javaType, buildContext).ifPresent(typeBuilder::field);
         }
 
         typeBuilder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildInputObjectTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
-                typeBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
+                typeBuilder.withDirective(env.operationMapper.toGraphQLDirective(directive, buildContext)));
         typeBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
 
         return typeBuilder.build();
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return true;
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected List<GraphQLFieldDefinition> getFields(String typeName, AnnotatedType javaType, BuildContext buildContext, OperationMapper operationMapper) {
-        return buildContext.operationRegistry.getChildQueries(javaType).stream()
-                .map(childQuery -> operationMapper.toGraphQLField(typeName, childQuery, buildContext))
+    protected List<GraphQLFieldDefinition> getFields(String typeName, AnnotatedType javaType, TypeMappingEnvironment env) {
+        return env.buildContext.operationRegistry.getChildQueries(javaType).stream()
+                .map(childQuery -> env.operationMapper.toGraphQLField(typeName, childQuery, env.buildContext))
                 .collect(Collectors.toList());
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected List<GraphQLOutputType> getInterfaces(AnnotatedType javaType,
-                                                    List<GraphQLFieldDefinition> fields, BuildContext buildContext, OperationMapper operationMapper) {
+    protected List<GraphQLOutputType> getInterfaces(AnnotatedType javaType, List<GraphQLFieldDefinition> fields, TypeMappingEnvironment env) {
+        BuildContext buildContext = env.buildContext;
 
         List<GraphQLOutputType> interfaces = new ArrayList<>();
         if (buildContext.relayMappingConfig.inferNodeInterface && fields.stream().anyMatch(GraphQLUtils::isRelayId)) {
             interfaces.add(buildContext.node);
         }
         buildContext.interfaceStrategy.getInterfaces(javaType).forEach(
-                inter -> interfaces.add(operationMapper.toGraphQLType(inter, buildContext)));
+                inter -> interfaces.add(env.operationMapper.toGraphQLType(inter, env)));
 
         return interfaces;
     }

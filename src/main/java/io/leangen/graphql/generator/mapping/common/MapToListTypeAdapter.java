@@ -13,10 +13,10 @@ import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
@@ -74,19 +74,21 @@ public class MapToListTypeAdapter extends AbstractTypeAdapter<Map<?, ?>, List<Ma
     }
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
         return new GraphQLList(new GraphQLNonNull(
                 mapEntry(
-                        operationMapper.toGraphQLType(getElementType(javaType, 0), buildContext),
-                        operationMapper.toGraphQLType(getElementType(javaType, 1), buildContext), buildContext)));
+                        //MapEntry fields are artificial - no Java element is backing them
+                        env.forElement(null).toGraphQLType(getElementType(javaType, 0)),
+                        env.forElement(null).toGraphQLType(getElementType(javaType, 1)), env.buildContext)));
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
         return new GraphQLList(new GraphQLNonNull(
                 mapEntry(
-                        operationMapper.toGraphQLInputType(getElementType(javaType, 0), buildContext),
-                        operationMapper.toGraphQLInputType(getElementType(javaType, 1), buildContext), buildContext)));
+                        //MapEntry fields are artificial - no Java element is backing them
+                        env.forElement(null).toGraphQLInputType(getElementType(javaType, 0)),
+                        env.forElement(null).toGraphQLInputType(getElementType(javaType, 1)), env.buildContext)));
     }
 
     @Override

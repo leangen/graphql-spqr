@@ -9,6 +9,7 @@ import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMappe
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +31,7 @@ public class CompletableFutureAdapter<T> extends AbstractTypeSubstitutingMapper
 
     @Override
     public CompletableFuture<?> convertOutput(CompletableFuture<T> original, AnnotatedType type, ResolutionEnvironment env) {
-        return original.thenApply(res -> env.convertOutput(res, env.getDerived(type, 0)));
+        return original.thenApply(res -> env.convertOutput(res, env.resolver.getTypedElement(), env.getDerived(type, 0)));
     }
 
     @Override
@@ -46,5 +47,10 @@ public class CompletableFutureAdapter<T> extends AbstractTypeSubstitutingMapper
     @Override
     public boolean supports(AnnotatedType type) {
         return ClassUtils.isSuperClass(CompletableFuture.class, type);
+    }
+
+    @Override
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
+        return supports(type);
     }
 }

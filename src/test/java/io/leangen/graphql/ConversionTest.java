@@ -17,6 +17,7 @@ import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
+import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -48,6 +49,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests whether various input/output converters are doing their job
  */
+@SuppressWarnings("rawtypes")
 @RunWith(Parameterized.class)
 public class ConversionTest {
 
@@ -163,23 +165,23 @@ public class ConversionTest {
         AnnotatedType listOfOptionals = new TypeToken<List<Optional<String>>>(){}.getAnnotatedType();
         AnnotatedType mapOfOptionals = new TypeToken<Map<String, Optional<String>>>(){}.getAnnotatedType();
 
-        List<OutputConverter> optimized = registry.optimize(Collections.singletonList(string)).getOutputConverters();
+        List<OutputConverter> optimized = registry.optimize(Collections.singletonList(new TypedElement(string))).getOutputConverters();
         assertTrue(optimized.isEmpty());
 
-        optimized = registry.optimize(Collections.singletonList(listOfStrings)).getOutputConverters();
+        optimized = registry.optimize(Collections.singletonList(new TypedElement(listOfStrings))).getOutputConverters();
         assertTrue(optimized.isEmpty());
 
-        optimized = registry.optimize(Collections.singletonList(listOfOptionals)).getOutputConverters();
+        optimized = registry.optimize(Collections.singletonList(new TypedElement(listOfOptionals))).getOutputConverters();
         assertEquals(2, optimized.size());
         assertTrue(optimized.contains(collectionConverter));
         assertTrue(optimized.contains(optionalAdapter));
 
-        optimized = registry.optimize(Collections.singletonList(mapOfOptionals)).getOutputConverters();
+        optimized = registry.optimize(Collections.singletonList(new TypedElement(mapOfOptionals))).getOutputConverters();
         assertEquals(2, optimized.size());
         assertTrue(optimized.contains(mapToListAdapter));
         assertTrue(optimized.contains(optionalAdapter));
 
-        ConverterRegistry optimizedRegistry = registry.optimize(Arrays.asList(listOfOptionals, mapOfOptionals));
+        ConverterRegistry optimizedRegistry = registry.optimize(Arrays.asList(new TypedElement(listOfOptionals), new TypedElement(mapOfOptionals)));
         assertSame(registry, optimizedRegistry);
     }
 

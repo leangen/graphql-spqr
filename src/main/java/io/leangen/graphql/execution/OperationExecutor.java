@@ -65,7 +65,7 @@ public class OperationExecutor {
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(resolver, env, this.valueMapper, this.globalEnvironment, this.converterRegistry, this.derivedTypes);
         Object result = execute(resolver, resolutionEnvironment, arguments);
-        return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
+        return resolutionEnvironment.convertOutput(result, resolver.getTypedElement(), resolver.getReturnType());
     }
 
     /**
@@ -110,12 +110,12 @@ public class OperationExecutor {
     }
 
     private ConverterRegistry optimizeConverters(Collection<Resolver> resolvers, ConverterRegistry converters) {
-        return converters.optimize(resolvers.stream().map(Resolver::getReturnType).collect(Collectors.toList()));
+        return converters.optimize(resolvers.stream().map(Resolver::getTypedElement).collect(Collectors.toList()));
     }
 
     private DerivedTypeRegistry deriveTypes(Collection<Resolver> resolvers, ConverterRegistry converterRegistry) {
         return new DerivedTypeRegistry(
-                resolvers.stream().map(Resolver::getReturnType).collect(Collectors.toList()),
+                resolvers.stream().map(Resolver::getTypedElement).collect(Collectors.toList()),
                 Utils.extractInstances(converterRegistry.getOutputConverters(), DelegatingOutputConverter.class)
                         .collect(Collectors.toList()));
     }

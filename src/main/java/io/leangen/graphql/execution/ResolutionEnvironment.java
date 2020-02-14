@@ -2,7 +2,6 @@ package io.leangen.graphql.execution;
 
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
-import graphql.language.Field;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
@@ -16,6 +15,7 @@ import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.Urls;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.HashMap;
 import java.util.List;
@@ -32,8 +32,6 @@ public class ResolutionEnvironment {
     public final Resolver resolver;
     public final ValueMapper valueMapper;
     public final GlobalEnvironment globalEnvironment;
-    @Deprecated
-    public final List<Field> fields;
     public final GraphQLOutputType fieldType;
     public final GraphQLType parentType;
     public final GraphQLSchema graphQLSchema;
@@ -52,7 +50,6 @@ public class ResolutionEnvironment {
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
         this.converters = converters;
-        this.fields = env.getFields();
         this.fieldType = env.getFieldType();
         this.parentType = env.getParentType();
         this.graphQLSchema = env.getGraphQLSchema();
@@ -62,16 +59,16 @@ public class ResolutionEnvironment {
     }
 
     @SuppressWarnings("unchecked")
-    public <T, S> S convertOutput(T output, AnnotatedType type) {
+    public <T, S> S convertOutput(T output, AnnotatedElement element, AnnotatedType type) {
         if (output == null) {
             return null;
         }
 
         // Transparently handle unexpected wrapped results. This enables elegant exception handling, partial results etc.
         if (DataFetcherResult.class.equals(output.getClass()) && !DataFetcherResult.class.equals(resolver.getRawReturnType())) {
-            DataFetcherResult result = (DataFetcherResult) output;
+            DataFetcherResult<?> result = (DataFetcherResult<?>) output;
             if (result.getData() != null) {
-                Object convertedData = convert(result.getData(), type);
+                Object convertedData = convert(result.getData(), element, type);
                 return (S) DataFetcherResult.newResult()
                         .data(convertedData)
                         .errors(result.getErrors())
@@ -81,12 +78,12 @@ public class ResolutionEnvironment {
             }
         }
 
-        return convert(output, type);
+        return convert(output, element, type);
     }
 
     @SuppressWarnings("unchecked")
-    private <T, S> S convert(T output, AnnotatedType type) {
-        OutputConverter<T, S> outputConverter = converters.getOutputConverter(type);
+    private <T, S> S convert(T output, AnnotatedElement element, AnnotatedType type) {
+        OutputConverter<T, S> outputConverter = converters.getOutputConverter(element, type);
         return outputConverter == null ? (S) output : outputConverter.convertOutput(output, type, this);
     }
 

@@ -4,11 +4,12 @@ import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,15 +23,15 @@ import java.util.stream.Collectors;
 public class UnionTypeMapper extends UnionMapper {
 
     @Override
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
         GraphQLUnion annotation = javaType.getAnnotation(GraphQLUnion.class);
-        List<AnnotatedType> possibleJavaTypes = getPossibleJavaTypes(javaType, buildContext);
-        final String name = buildContext.typeInfoGenerator.generateTypeName(javaType, buildContext.messageBundle);
-        return toGraphQLUnion(name, annotation.description(), javaType, possibleJavaTypes, operationMapper, buildContext);
+        List<AnnotatedType> possibleJavaTypes = getPossibleJavaTypes(javaType, env.buildContext);
+        final String name = env.buildContext.typeInfoGenerator.generateTypeName(javaType, env.buildContext.messageBundle);
+        return toGraphQLUnion(name, annotation.description(), javaType, possibleJavaTypes, env);
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return type.isAnnotationPresent(GraphQLUnion.class)
                 || ClassUtils.getRawType(type.getType()).isAnnotationPresent(GraphQLUnion.class);
     }

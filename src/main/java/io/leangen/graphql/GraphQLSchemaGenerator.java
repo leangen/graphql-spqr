@@ -164,7 +164,7 @@ import static java.util.Collections.addAll;
  *  }
  * </pre>
  */
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "rawtypes"})
 public class GraphQLSchemaGenerator {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
@@ -527,7 +527,7 @@ public class GraphQLSchemaGenerator {
      * Registers custom {@link TypeMapper}s to be used for mapping Java type to GraphQL types.
      * <p><b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type
      * will be used for mapping it.</b></p>
-     * <p>See {@link TypeMapper#supports(AnnotatedType)}</p>
+     * <p>See {@link TypeMapper#supports(java.lang.reflect.AnnotatedElement, AnnotatedType)}</p>
      *
      * @param typeMappers Custom type mappers to register with the builder
      *
@@ -551,7 +551,7 @@ public class GraphQLSchemaGenerator {
      * Registers custom {@link TypeMapper}s to be used for mapping Java type to GraphQL types.
      * <p><b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type
      * will be used for mapping it.</b></p>
-     * <p>See {@link TypeMapper#supports(AnnotatedType)}</p>
+     * <p>See {@link TypeMapper#supports(java.lang.reflect.AnnotatedElement, AnnotatedType)}</p>
      *
      * @param provider Provides the customized list of TypeMappers to use
      *
@@ -605,7 +605,7 @@ public class GraphQLSchemaGenerator {
      * is normally done because GraphQL type system has no direct support for maps.
      * <p><b>Ordering of converters is strictly important as the first {@link OutputConverter} that supports the given Java type
      * will be used for converting it.</b></p>
-     * <p>See {@link OutputConverter#supports(AnnotatedType)}</p>
+     * <p>See {@link OutputConverter#supports(java.lang.reflect.AnnotatedElement, AnnotatedType)}</p>
      *
      * @param outputConverters Custom output converters to register with the builder
      *
@@ -890,7 +890,7 @@ public class GraphQLSchemaGenerator {
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureAdapter<>(),
                 publisherAdapter, new AnnotationMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
-                new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
+                new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper<>(), new VoidToBooleanTypeAdapter(),
                 new ListMapper(), new IterableAdapter<>(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
                 new ObjectScalarMapper(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         for (ExtensionProvider<GeneratorConfiguration, TypeMapper> provider : typeMapperProviders) {

@@ -23,6 +23,7 @@ import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.ContextWrapper;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.metadata.Directive;
 import io.leangen.graphql.metadata.DirectiveArgument;
 import io.leangen.graphql.metadata.InputField;
@@ -150,7 +151,7 @@ public class OperationMapper {
     }
 
     private GraphQLFieldDefinition toGraphQLField(Operation operation, BuildContext buildContext) {
-        GraphQLOutputType type = toGraphQLType(operation.getJavaType(), buildContext);
+        GraphQLOutputType type = toGraphQLType(operation.getJavaType(), new TypeMappingEnvironment(operation.getTypedElement(), this, buildContext));
         GraphQLFieldDefinition.Builder fieldBuilder = newFieldDefinition()
                 .name(operation.getName())
                 .description(operation.getDescription())
@@ -186,24 +187,25 @@ public class OperationMapper {
         return field;
     }
 
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, BuildContext buildContext) {
-        return toGraphQLType(javaType, new HashSet<>(), buildContext);
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, TypeMappingEnvironment env) {
+        return toGraphQLType(javaType, new HashSet<>(), env);
     }
 
     /**
      * Maps a Java type to a GraphQL output type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link TypeMapper#toGraphQLType(AnnotatedType, OperationMapper, java.util.Set, BuildContext)}</p>
+     * <p>See {@link TypeMapper#toGraphQLType(AnnotatedType, java.util.Set, TypeMappingEnvironment)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL output type
-     * @param buildContext The shared context containing all the global information needed for mapping
+     * @param env Contextual information about the current mapping
      *
      * @return GraphQL output type corresponding to the given Java type
      */
-    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
-        GraphQLOutputType type = buildContext.typeMappers.getTypeMapper(javaType, mappersToSkip).toGraphQLType(javaType, this, mappersToSkip, buildContext);
-        log(buildContext.validator.checkUniqueness(type, javaType));
-        buildContext.typeCache.completeType(type);
+    public GraphQLOutputType toGraphQLType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
+        env.addType(javaType);
+        GraphQLOutputType type = env.buildContext.typeMappers.getTypeMapper(env.rootElement, javaType, mappersToSkip).toGraphQLType(javaType, mappersToSkip, env);
+        log(env.buildContext.validator.checkUniqueness(type, env.rootElement, javaType));
+        env.buildContext.typeCache.completeType(type);
         return type;
     }
 
@@ -219,30 +221,31 @@ public class OperationMapper {
         GraphQLInputObjectField.Builder builder = newInputObjectField()
                 .name(inputField.getName())
                 .description(inputField.getDescription())
-                .type(toGraphQLInputType(inputField.getJavaType(), buildContext))
+                .type(toGraphQLInputType(inputField.getJavaType(), new TypeMappingEnvironment(inputField.getTypedElement(), this, buildContext)))
                 .withDirective(Directives.mappedInputField(inputField))
                 .withDirectives(toGraphQLDirectives(inputField.getTypedElement(), buildContext.directiveBuilder::buildInputFieldDefinitionDirectives, buildContext))
                 .defaultValue(inputField.getDefaultValue());
         return buildContext.transformers.transform(builder.build(), inputField, this, buildContext);
     }
 
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, BuildContext buildContext) {
-        return toGraphQLInputType(javaType, new HashSet<>(), buildContext);
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, TypeMappingEnvironment env) {
+        return toGraphQLInputType(javaType, new HashSet<>(), env);
     }
 
     /**
      * Maps a Java type to a GraphQL input type. Delegates most of the work to applicable
      * {@link io.leangen.graphql.generator.mapping.TypeMapper}s.
-     * <p>See {@link TypeMapper#toGraphQLInputType(AnnotatedType, OperationMapper, java.util.Set, BuildContext)}</p>
+     * <p>See {@link TypeMapper#toGraphQLInputType(AnnotatedType, java.util.Set, TypeMappingEnvironment)}</p>
      *
      * @param javaType The Java type that is to be mapped to a GraphQL input type
-     * @param buildContext The shared context containing all the global information needed for mapping
+     * @param env Contextual information about the current mapping
      *
      * @return GraphQL input type corresponding to the given Java type
      */
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
-        GraphQLInputType type = buildContext.typeMappers.getTypeMapper(javaType, mappersToSkip).toGraphQLInputType(javaType, this, mappersToSkip, buildContext);
-        log(buildContext.validator.checkUniqueness(type, javaType));
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
+        env.addType(javaType);
+        GraphQLInputType type = env.buildContext.typeMappers.getTypeMapper(env.rootElement, javaType, mappersToSkip).toGraphQLInputType(javaType, mappersToSkip, env);
+        log(env.buildContext.validator.checkUniqueness(type, env.rootElement, javaType));
         return type;
     }
 
@@ -250,7 +253,7 @@ public class OperationMapper {
         GraphQLArgument argument = newArgument()
                 .name(operationArgument.getName())
                 .description(operationArgument.getDescription())
-                .type(toGraphQLInputType(operationArgument.getJavaType(), buildContext))
+                .type(toGraphQLInputType(operationArgument.getJavaType(), new TypeMappingEnvironment(operationArgument.getTypedElement(), this, buildContext)))
                 .defaultValue(operationArgument.getDefaultValue())
                 .withDirectives(toGraphQLDirectives(operationArgument.getTypedElement(), buildContext.directiveBuilder::buildArgumentDefinitionDirectives, buildContext))
                 .build();
@@ -277,7 +280,7 @@ public class OperationMapper {
         GraphQLArgument argument = newArgument()
                 .name(directiveArgument.getName())
                 .description(directiveArgument.getDescription())
-                .type(toGraphQLInputType(directiveArgument.getJavaType(), buildContext))
+                .type(toGraphQLInputType(directiveArgument.getJavaType(), new TypeMappingEnvironment(directiveArgument.getTypedElement(), this, buildContext)))
                 .value(directiveArgument.getValue())
                 .defaultValue(directiveArgument.getDefaultValue())
                 .withDirectives(toGraphQLDirectives(directiveArgument.getTypedElement(), buildContext.directiveBuilder::buildArgumentDefinitionDirectives, buildContext))
@@ -371,7 +374,8 @@ public class OperationMapper {
      *
      * @return The resolver for the given operation
      */
-    private DataFetcher createResolver(Operation operation, BuildContext buildContext) {
+    @SuppressWarnings("deprecation")
+    private DataFetcher<?> createResolver(Operation operation, BuildContext buildContext) {
         Stream<AnnotatedType> inputTypes = operation.getArguments().stream()
                 .filter(OperationArgument::isMappable)
                 .map(OperationArgument::getJavaType);
@@ -394,7 +398,7 @@ public class OperationMapper {
      *
      * @return The node query resolver
      */
-    private DataFetcher createNodeResolver(Map<String, String> nodeQueriesByType, Relay relay) {
+    private DataFetcher<?> createNodeResolver(Map<String, String> nodeQueriesByType, Relay relay) {
         return env -> {
             String typeName;
             try {
