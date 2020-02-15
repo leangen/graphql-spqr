@@ -1,8 +1,9 @@
 package io.leangen.graphql.generator;
 
+import graphql.schema.GraphQLNamedOutputType;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.util.Directives;
@@ -30,7 +31,7 @@ public class TypeRegistry {
 
     private static final Logger log = LoggerFactory.getLogger(TypeRegistry.class);
 
-    public TypeRegistry(Collection<GraphQLType> knownTypes) {
+    public TypeRegistry(Collection<GraphQLNamedType> knownTypes) {
         //extract known interface implementations
         knownTypes.stream()
                 .filter(type -> type instanceof GraphQLObjectType && Directives.isMappedType(type))
@@ -53,7 +54,7 @@ public class TypeRegistry {
         registerCovariantType(compositeTypeName, javaSubType, subType);
     }
     
-    public void registerCovariantType(String compositeTypeName, AnnotatedType javaSubType, GraphQLOutputType subType) {
+    public void registerCovariantType(String compositeTypeName, AnnotatedType javaSubType, GraphQLNamedOutputType subType) {
         this.covariantOutputTypes.putIfAbsent(compositeTypeName, new ConcurrentHashMap<>());
         Map<String, MappedType> covariantTypes = this.covariantOutputTypes.get(compositeTypeName);
         //never overwrite an exact type with a reference
@@ -63,7 +64,7 @@ public class TypeRegistry {
     }
 
     @SuppressWarnings("WeakerAccess")
-    public List<MappedType> getOutputTypes(String compositeTypeName, Class objectType) {
+    public List<MappedType> getOutputTypes(String compositeTypeName, Class<?> objectType) {
         Map<String, MappedType> mappedTypes = this.covariantOutputTypes.get(compositeTypeName);
         if (mappedTypes == null) return Collections.emptyList();
         if (objectType == null) return new ArrayList<>(mappedTypes.values());
@@ -80,12 +81,12 @@ public class TypeRegistry {
         return discoveredTypes;
     }
     
-    void resolveTypeReferences(Map<String, GraphQLType> resolvedTypes) {
+    void resolveTypeReferences(Map<String, GraphQLNamedType> resolvedTypes) {
         for (Map<String, MappedType> covariantTypes : this.covariantOutputTypes.values()) {
             Set<String> toRemove = new HashSet<>();
             for (Map.Entry<String, MappedType> entry : covariantTypes.entrySet()) {
                 if (entry.getValue().graphQLType instanceof GraphQLTypeReference) {
-                    GraphQLOutputType resolvedType = (GraphQLOutputType) resolvedTypes.get(entry.getKey());
+                    GraphQLOutputType resolvedType = (GraphQLNamedOutputType) resolvedTypes.get(entry.getKey());
                     if (resolvedType != null) {
                         entry.setValue(new MappedType(entry.getValue().javaType, resolvedType));
                     } else {

@@ -4,6 +4,7 @@ import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLEnumValueDefinition;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
+import graphql.schema.GraphQLSchemaElement;
 import graphql.schema.GraphqlTypeComparatorEnvironment;
 import graphql.schema.GraphqlTypeComparatorRegistry;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -13,6 +14,7 @@ import io.leangen.graphql.annotations.types.GraphQLType;
 import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Utils;
 
 import java.beans.Introspector;
@@ -27,6 +29,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static io.leangen.graphql.util.GraphQLUtils.name;
+
 /**
  * @author Bojan Tomic (kaqqao)
  */
@@ -40,7 +44,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
 
     public static final GraphqlTypeComparatorRegistry DEFAULT_REGISTRY = new GraphqlTypeComparatorRegistry() {
         @Override
-        public <T extends graphql.schema.GraphQLType> Comparator<? super T> getComparator(GraphqlTypeComparatorEnvironment env) {
+        public <T extends GraphQLSchemaElement> Comparator<? super T> getComparator(GraphqlTypeComparatorEnvironment env) {
             //Leave the arguments in the declared order
             if (env.getElementType().equals(GraphQLArgument.class)) {
                 return GraphqlTypeComparatorRegistry.AS_IS_REGISTRY.getComparator(env);
@@ -109,7 +113,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
         }
         return new GraphqlTypeComparatorRegistry() {
             @Override
-            public <T extends graphql.schema.GraphQLType> Comparator<? super T> getComparator(GraphqlTypeComparatorEnvironment env) {
+            public <T extends GraphQLSchemaElement> Comparator<? super T> getComparator(GraphqlTypeComparatorEnvironment env) {
                 if (env.getElementType().equals(GraphQLFieldDefinition.class)) {
                     return comparator(getFieldOrder(type, messageBundle), env);
                 }
@@ -197,10 +201,10 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
                 .anyMatch(opt -> opt.filter(Utils::isArrayNotEmpty).isPresent());
     }
 
-    private <T extends graphql.schema.GraphQLType> Comparator<? super T> comparator(String[] givenOrder, GraphqlTypeComparatorEnvironment env) {
+    private <T extends GraphQLSchemaElement> Comparator<? super T> comparator(String[] givenOrder, GraphqlTypeComparatorEnvironment env) {
         if (givenOrder.length > 0) {
-            return Comparator.comparingInt((T t) -> Utils.indexOf(givenOrder, t.getName(), Integer.MAX_VALUE))
-                    .thenComparing(graphql.schema.GraphQLType::getName);
+            return Comparator.comparingInt((T t) -> Utils.indexOf(givenOrder, name(t), Integer.MAX_VALUE))
+                    .thenComparing(GraphQLUtils::name);
         }
         return DEFAULT_REGISTRY.getComparator(env);
     }

@@ -18,6 +18,8 @@ import io.leangen.graphql.metadata.Operation;
 import java.lang.reflect.AnnotatedType;
 import java.util.Optional;
 
+import static io.leangen.graphql.util.GraphQLUtils.name;
+
 public class Directives {
 
     private static final String MAPPED_TYPE = "_mappedType";
@@ -76,7 +78,7 @@ public class Directives {
     public static AnnotatedType getMappedType(GraphQLType type) {
         return DirectivesUtil.directiveWithArg(((GraphQLDirectiveContainer) type).getDirectives(), MAPPED_TYPE, TYPE)
                 .map(arg -> (AnnotatedType) arg.getValue())
-                .orElseThrow(() -> new IllegalArgumentException("GraphQL type " + type.getName() + " does not have a mapped Java type"));
+                .orElseThrow(() -> new IllegalArgumentException("GraphQL type " + name(type) + " does not have a mapped Java type"));
     }
 
     public static Optional<Operation> getMappedOperation(GraphQLFieldDefinition field) {
@@ -89,22 +91,26 @@ public class Directives {
                 .map(arg -> (InputField) arg.getValue());
     }
 
-    private static final GraphQLScalarType UNREPRESENTABLE = new GraphQLScalarType("UNREPRESENTABLE", "Unrepresentable type", new Coercing() {
-        private static final String ERROR = "Type not intended for use";
+    private static final GraphQLScalarType UNREPRESENTABLE = GraphQLScalarType.newScalar()
+            .name("UNREPRESENTABLE")
+            .description("Use SPQR's SchemaPrinter to remove this from SDL")
+            .coercing(new Coercing<Object, String>() {
+                private static final String ERROR = "Type not intended for use";
 
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            return "__internal__";
-        }
+                @Override
+                public String serialize(Object dataFetcherResult) {
+                    return "__internal__";
+                }
 
-        @Override
-        public Object parseValue(Object input) {
-            throw new CoercingParseValueException(ERROR);
-        }
+                @Override
+                public Object parseValue(Object input) {
+                    throw new CoercingParseValueException(ERROR);
+                }
 
-        @Override
-        public Object parseLiteral(Object input) {
-            throw new CoercingParseLiteralException(ERROR);
-        }
-    });
+                @Override
+                public Object parseLiteral(Object input) {
+                    throw new CoercingParseLiteralException(ERROR);
+                }
+            })
+            .build();
 }

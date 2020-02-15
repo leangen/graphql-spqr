@@ -16,9 +16,11 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderRegistry;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
@@ -50,6 +52,11 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     @SuppressWarnings("unchecked")
     public <T> T getArgument(String name) {
         return (T) arguments.get(name);
+    }
+
+    @Override
+    public <T> T getArgumentOrDefault(String name, T defaultValue) {
+        return delegate.getArgumentOrDefault(name, defaultValue);
     }
 
     @Override
@@ -134,8 +141,18 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     }
 
     @Override
+    public DataLoaderRegistry getDataLoaderRegistry() {
+        return delegate.getDataLoaderRegistry();
+    }
+
+    @Override
     public CacheControl getCacheControl() {
         return delegate.getCacheControl();
+    }
+
+    @Override
+    public Locale getLocale() {
+        return delegate.getLocale();
     }
 
     @Override

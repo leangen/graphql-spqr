@@ -1,6 +1,7 @@
 package io.leangen.graphql;
 
 import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLNamedOutputType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
@@ -48,10 +49,10 @@ public class UnionTest {
         GraphQLType map = ((GraphQLList) list).getWrappedType();
         assertMapOf(map, GraphQLUnionType.class, GraphQLUnionType.class);
         GraphQLObjectType entry = (GraphQLObjectType) GraphQLUtils.unwrap(map);
-        GraphQLOutputType key = entry.getFieldDefinition("key").getType();
-        GraphQLOutputType value = entry.getFieldDefinition("value").getType();
+        GraphQLUnionType key = (GraphQLUnionType) entry.getFieldDefinition("key").getType();
+        GraphQLNamedOutputType value = (GraphQLNamedOutputType) entry.getFieldDefinition("value").getType();
         assertEquals("Simple_One_Two", key.getName());
-        assertEquals("nice", ((GraphQLUnionType) key).getDescription());
+        assertEquals("nice", key.getDescription());
         assertEquals(value.getName(), "Education_Street");
         assertUnionOf(key, schema.getType("SimpleOne"), schema.getType("SimpleTwo"));
         assertUnionOf(value, schema.getType("Education"), schema.getType("Street"));
@@ -65,10 +66,10 @@ public class UnionTest {
                 .withOperationsFromSingleton(unionService)
                 .generate();
 
-        GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
+        GraphQLUnionType union = (GraphQLUnionType) schema.getQueryType().getFieldDefinition("union").getType();
         assertUnionOf(union, schema.getType("C1"), schema.getType("C2"));
         assertEquals("Strong_union", union.getName());
-        assertEquals("This union is strong!", ((GraphQLUnionType) union).getDescription());
+        assertEquals("This union is strong!", union.getDescription());
     }
 
     @Test
@@ -79,10 +80,10 @@ public class UnionTest {
                 .withOperationsFromSingleton(unionService)
                 .generate();
 
-        GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
+        GraphQLUnionType union = (GraphQLUnionType) schema.getQueryType().getFieldDefinition("union").getType();
         assertUnionOf(union, schema.getType("I1"), schema.getType("I2"));
         assertEquals("Strong_union", union.getName());
-        assertEquals("This union is strong!", ((GraphQLUnionType) union).getDescription());
+        assertEquals("This union is strong!", union.getDescription());
     }
 
     @Test
@@ -95,10 +96,10 @@ public class UnionTest {
                         .withAdditionalImplementations(I1.class, I2.class))
                 .generate();
 
-        GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
+        GraphQLUnionType union = (GraphQLUnionType) schema.getQueryType().getFieldDefinition("union").getType();
         assertUnionOf(union, schema.getType("I1"), schema.getType("I2"));
         assertEquals("Strong_union", union.getName());
-        assertEquals("This union is strong!", ((GraphQLUnionType) union).getDescription());
+        assertEquals("This union is strong!", union.getDescription());
     }
 
     @Test
@@ -109,10 +110,10 @@ public class UnionTest {
                 .withOperationsFromSingleton(unionService)
                 .generate();
 
-        GraphQLOutputType union = schema.getQueryType().getFieldDefinition("union").getType();
+        GraphQLUnionType union = (GraphQLUnionType) schema.getQueryType().getFieldDefinition("union").getType();
         assertUnionOf(union, schema.getType("A1"), schema.getType("A2"));
         assertEquals("Strong_union", union.getName());
-        assertEquals("This union is strong!", ((GraphQLUnionType) union).getDescription());
+        assertEquals("This union is strong!", union.getDescription());
     }
 
     private class InlineUnionService {

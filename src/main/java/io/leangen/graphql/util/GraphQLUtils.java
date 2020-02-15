@@ -6,8 +6,11 @@ import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLModifiedType;
+import graphql.schema.GraphQLNamedSchemaElement;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLSchemaElement;
 import graphql.schema.GraphQLType;
 import io.leangen.graphql.annotations.GraphQLId;
 
@@ -35,18 +38,23 @@ public class GraphQLUtils {
     }
 
     public static boolean isRelayNodeInterface(GraphQLType node) {
-        return node instanceof GraphQLInterfaceType
-                && node.getName().equals(Relay.NODE)
-                && ((GraphQLInterfaceType) node).getFieldDefinitions().size() == 1
-                && ((GraphQLInterfaceType) node).getFieldDefinition(GraphQLId.RELAY_ID_FIELD_NAME) != null
-                && isRelayId(((GraphQLInterfaceType) node).getFieldDefinition(GraphQLId.RELAY_ID_FIELD_NAME));
+        if (!(node instanceof GraphQLInterfaceType)) {
+            return false;
+        }
+        GraphQLInterfaceType interfaceType = (GraphQLInterfaceType) node;
+        return interfaceType.getName().equals(Relay.NODE)
+                && interfaceType.getFieldDefinitions().size() == 1
+                && interfaceType.getFieldDefinition(GraphQLId.RELAY_ID_FIELD_NAME) != null
+                && isRelayId(interfaceType.getFieldDefinition(GraphQLId.RELAY_ID_FIELD_NAME));
     }
 
     public static boolean isRelayConnectionType(GraphQLType type) {
-        return type instanceof GraphQLObjectType
-                && !type.getName().equals(CONNECTION) && type.getName().endsWith(CONNECTION)
-                && ((GraphQLObjectType) type).getFieldDefinition(EDGES) != null
-                && ((GraphQLObjectType) type).getFieldDefinition(PAGE_INFO) != null;
+        if (!(type instanceof GraphQLObjectType)) {
+            return false;
+        }
+        GraphQLObjectType objectType = (GraphQLObjectType) type;
+        return !objectType.getName().equals(CONNECTION) && objectType.getName().endsWith(CONNECTION)
+                && objectType.getFieldDefinition(EDGES) != null && objectType.getFieldDefinition(PAGE_INFO) != null;
     }
 
     public static boolean isRelayConnectionField(GraphQLFieldDefinition fieldDefinition) {
@@ -59,7 +67,7 @@ public class GraphQLUtils {
     }
 
     public static boolean isIntrospectionType(GraphQLType type) {
-        return isIntrospection(type.getName());
+        return type instanceof GraphQLNamedType && isIntrospection(name(type));
     }
 
     public static boolean isIntrospectionField(Field field) {
@@ -73,11 +81,15 @@ public class GraphQLUtils {
         return type;
     }
 
-    public static GraphQLType unwrap(GraphQLType type) {
+    public static GraphQLNamedType unwrap(GraphQLType type) {
         while (type instanceof GraphQLModifiedType) {
             type = ((GraphQLModifiedType) type).getWrappedType();
         }
-        return type;
+        return (GraphQLNamedType) type;
+    }
+
+    public static String name(GraphQLSchemaElement element) {
+        return ((GraphQLNamedSchemaElement) element).getName();
     }
 
     private static boolean isIntrospection(String name) {

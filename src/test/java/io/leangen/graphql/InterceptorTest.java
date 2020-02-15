@@ -47,7 +47,7 @@ public class InterceptorTest {
         assertNoErrors(result);
 
         input = input.transform(builder -> builder.query("{admin}"));
-        try(TestLog log = new TestLog(SimpleDataFetcherExceptionHandler.class)) {
+        try(TestLog log = TestLog.unsafe(SimpleDataFetcherExceptionHandler.class)) {
             result = graphQL.execute(input);
         }
         assertEquals(1, result.getErrors().size());

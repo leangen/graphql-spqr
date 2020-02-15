@@ -3,7 +3,7 @@ package io.leangen.graphql.generator;
 import graphql.relay.Relay;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphqlTypeComparatorRegistry;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.execution.GlobalEnvironment;
@@ -96,7 +96,7 @@ public class BuildContext {
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldBuilderRegistry inputFieldBuilders, ResolverInterceptorFactory interceptorFactory,
                         DirectiveBuilder directiveBuilder, InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig,
-                        Collection<GraphQLType> knownTypes, List<AnnotatedType> additionalDirectives, Comparator<AnnotatedType> typeComparator,
+                        Collection<GraphQLNamedType> knownTypes, List<AnnotatedType> additionalDirectives, Comparator<AnnotatedType> typeComparator,
                         ImplementationDiscoveryStrategy implementationStrategy, GraphQLCodeRegistry.Builder codeRegistry) {
         this.operationRegistry = operationRegistry;
         this.typeRegistry = environment.typeRegistry;
@@ -135,6 +135,7 @@ public class BuildContext {
         return messageBundle.interpolate(template);
     }
 
+    @SuppressWarnings("rawtypes")
     ValueMapper createValueMapper(Stream<AnnotatedType> inputTypes) {
         List<Class> abstractTypes = inputTypes
                 .flatMap(input -> abstractInputHandler.findConstituentAbstractTypes(input, this).stream().map(ClassUtils::getRawType))

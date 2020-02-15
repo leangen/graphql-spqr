@@ -4,6 +4,8 @@ import graphql.relay.Edge;
 import graphql.relay.Relay;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLTypeReference;
@@ -38,15 +40,17 @@ public class PageMapper extends ObjectTypeMapper {
         }
         buildContext.typeCache.register(connectionName);
         GraphQLOutputType type = env.operationMapper.toGraphQLType(nodeType, env);
-        List<GraphQLFieldDefinition> edgeFields = getFields(type.getName() + "Edge", edgeType, env).stream()
+        GraphQLNamedType unwrapped = GraphQLUtils.unwrap(type);
+        String baseName = type instanceof GraphQLList ? unwrapped.getName() + "List" : unwrapped.getName();
+        List<GraphQLFieldDefinition> edgeFields = getFields(baseName + "Edge", edgeType, env).stream()
                 .filter(field -> !GraphQLUtils.isRelayEdgeField(field))
                 .collect(Collectors.toList());
-        GraphQLObjectType edge = buildContext.relay.edgeType(type.getName(), type, null, edgeFields);
-        List<GraphQLFieldDefinition> connectionFields = getFields(type.getName() + "Connection", javaType, env).stream()
+        GraphQLObjectType edge = buildContext.relay.edgeType(baseName, type, null, edgeFields);
+        List<GraphQLFieldDefinition> connectionFields = getFields(baseName + "Connection", javaType, env).stream()
                 .filter(field -> !GraphQLUtils.isRelayConnectionField(field))
                 .collect(Collectors.toList());
         buildContext.typeRegistry.getDiscoveredTypes().add(Relay.pageInfoType);
-        return buildContext.relay.connectionType(type.getName(), edge, connectionFields);
+        return buildContext.relay.connectionType(baseName, edge, connectionFields);
     }
 
     @Override

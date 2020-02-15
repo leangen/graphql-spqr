@@ -34,6 +34,7 @@ import static graphql.schema.GraphQLFieldDefinition.newFieldDefinition;
 import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
 import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
+import static io.leangen.graphql.util.GraphQLUtils.name;
 
 /**
  * As maps are dynamic structures with no equivalent in GraphQL, they require special treatment.
@@ -162,9 +163,9 @@ public class MapToListTypeAdapter extends AbstractTypeAdapter<Map<?, ?>, List<Ma
                 }
                 type = ((GraphQLModifiedType) type).getWrappedType();
             }
-            return name.append(type.getName()).toString();
+            return name.append(name(type)).toString();
         } else {
-            return type.getName();
+            return name(type);
         }
     }
 

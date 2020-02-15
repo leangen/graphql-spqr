@@ -1,6 +1,7 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLNamedOutputType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLTypeReference;
@@ -42,7 +43,7 @@ public abstract class UnionMapper implements TypeMapper {
         Set<String> seen = new HashSet<>(possibleJavaTypes.size());
 
         possibleJavaTypes.forEach(possibleJavaType -> {
-            GraphQLOutputType possibleType = operationMapper.toGraphQLType(possibleJavaType, env);
+            GraphQLNamedOutputType possibleType = (GraphQLNamedOutputType) operationMapper.toGraphQLType(possibleJavaType, env);
             if (!seen.add(possibleType.getName())) {
                 throw new TypeMappingException("Duplicate possible type " + possibleType.getName() + " for union " + name);
             }

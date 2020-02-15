@@ -19,6 +19,7 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
+import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLUnion;
 import io.leangen.graphql.domain.Cat;
@@ -146,6 +147,11 @@ public class RelayTest {
     @Test
     public void testEmptyPagedQuery() {
         testPagedQuery("empty");
+    }
+
+    @Test
+    public void testPagedListQuery() {
+        testPagedQuery("bookLists");
     }
 
     @Test
@@ -394,14 +400,17 @@ public class RelayTest {
     public static class BookService {
         @GraphQLQuery(name = "books")
         public Page<Book> getBooks(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
-            List<Book> books = new ArrayList<>();
-            books.add(new Book("Tesseract", "x123"));
-            return PageFactory.createOffsetBasedPage(books, 100, 10);
+            return PageFactory.createOffsetBasedPage(Collections.singletonList(new Book("Tesseract", "x123")), 100, 10);
         }
 
         @GraphQLQuery(name = "empty")
         public Page<Book> getEmpty(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             return PageFactory.createOffsetBasedPage(Collections.emptyList(), 100, 10);
+        }
+
+        @GraphQLQuery
+        public Page<List<@GraphQLNonNull Book>> getBookLists(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+            return PageFactory.createOffsetBasedPage(Collections.singletonList(Collections.singletonList(new Book("Tesseract", "x123"))), 5, 0);
         }
 
         @GraphQLQuery
@@ -564,7 +573,7 @@ public class RelayTest {
         }
     }
 
-    public static class ExtendedConnection<E extends Edge> implements Connection<E> {
+    public static class ExtendedConnection<E extends Edge<?>> implements Connection<E> {
 
         private final List<E> edges;
         private final PageInfo pageInfo;

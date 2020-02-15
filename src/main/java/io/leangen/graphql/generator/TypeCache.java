@@ -1,5 +1,6 @@
 package io.leangen.graphql.generator;
 
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
@@ -12,11 +13,11 @@ import java.util.stream.Collectors;
 
 public class TypeCache {
 
-    private final Map<String, GraphQLType> knownTypes;
+    private final Map<String, GraphQLNamedType> knownTypes;
 
 
-    TypeCache(Collection<GraphQLType> knownTypes) {
-        this.knownTypes = knownTypes.stream().collect(Collectors.toMap(GraphQLType::getName, Function.identity()));
+    TypeCache(Collection<GraphQLNamedType> knownTypes) {
+        this.knownTypes = knownTypes.stream().collect(Collectors.toMap(GraphQLNamedType::getName, Function.identity()));
     }
 
     public void register(String typeName) {
@@ -36,9 +37,9 @@ public class TypeCache {
     }
 
     void completeType(GraphQLOutputType type) {
-        type = (GraphQLOutputType) GraphQLUtils.unwrap(type);
-        if (!(type instanceof GraphQLTypeReference)) {
-            knownTypes.put(type.getName(), type);
+        GraphQLNamedType namedType = GraphQLUtils.unwrap(type);
+        if (!(namedType instanceof GraphQLTypeReference)) {
+            knownTypes.put(namedType.getName(), namedType);
         }
     }
 

@@ -1,7 +1,7 @@
 package io.leangen.graphql.generator;
 
 import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLModifiedType;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -27,13 +27,13 @@ class Validator {
     private final Comparator<AnnotatedType> typeComparator;
     private final Map<String, AnnotatedType> mappedTypes;
 
-    Validator(GlobalEnvironment environment, TypeMapperRegistry mappers, Collection<GraphQLType> knownTypes, Comparator<AnnotatedType> typeComparator) {
+    Validator(GlobalEnvironment environment, TypeMapperRegistry mappers, Collection<GraphQLNamedType> knownTypes, Comparator<AnnotatedType> typeComparator) {
         this.environment = environment;
         this.mappers = mappers;
         this.typeComparator = typeComparator;
         this.mappedTypes = knownTypes.stream()
                 .filter(Directives::isMappedType)
-                .collect(Collectors.toMap(GraphQLType::getName, type -> ClassUtils.normalize(Directives.getMappedType(type))));
+                .collect(Collectors.toMap(GraphQLNamedType::getName, type -> ClassUtils.normalize(Directives.getMappedType(type))));
     }
 
     ValidationResult checkUniqueness(GraphQLOutputType graphQLType, AnnotatedElement element, AnnotatedType javaType) {
@@ -51,18 +51,20 @@ class Validator {
     }
 
     private ValidationResult checkUniqueness(GraphQLType graphQLType, Supplier<AnnotatedType> javaType) {
-        if (graphQLType instanceof GraphQLModifiedType) {
+        if (!(graphQLType instanceof GraphQLNamedType)) {
             return ValidationResult.valid();
         }
+        GraphQLNamedType namedType = ((GraphQLNamedType) graphQLType);
+
         AnnotatedType resolvedType;
         try {
             resolvedType = resolveType(graphQLType, javaType);
         } catch (Exception e) {
             return ValidationResult.invalid(
-                    String.format("Exception while checking the name uniqueness for %s: %s", graphQLType.getName(), e.getMessage()));
+                    String.format("Exception while checking the name uniqueness for %s: %s", namedType.getName(), e.getMessage()));
         }
-        mappedTypes.putIfAbsent(graphQLType.getName(), resolvedType);
-        AnnotatedType knownType = mappedTypes.get(graphQLType.getName());
+        mappedTypes.putIfAbsent(namedType.getName(), resolvedType);
+        AnnotatedType knownType = mappedTypes.get(namedType.getName());
         if (isMappingAllowed(resolvedType, knownType)) {
             return ValidationResult.valid();
         }
@@ -70,7 +72,7 @@ class Validator {
                         " %s (loaded by %s) and %s (loaded by %s)." +
                         " Assign unique names using the appropriate annotations or override the %s." +
                         " For details and solutions see %s." +
-                        " If this warning is a false positive, please report it: %s.", graphQLType.getName(),
+                        " If this warning is a false positive, please report it: %s.", namedType.getName(),
                 knownType, getLoaderName(knownType), resolvedType, getLoaderName(resolvedType),
                 TypeInfoGenerator.class.getSimpleName(), Urls.Errors.NON_UNIQUE_TYPE_NAME, Urls.ISSUES));
     }

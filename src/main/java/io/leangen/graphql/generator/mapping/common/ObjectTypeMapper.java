@@ -6,8 +6,8 @@ import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLNamedOutputType;
 import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
@@ -42,7 +42,7 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
         List<GraphQLFieldDefinition> fields = getFields(typeName, javaType, env);
         fields.forEach(typeBuilder::field);
 
-        List<GraphQLOutputType> interfaces = getInterfaces(javaType, fields, env);
+        List<GraphQLNamedOutputType> interfaces = getInterfaces(javaType, fields, env);
         interfaces.forEach(inter -> {
             if (inter instanceof GraphQLInterfaceType) {
                 typeBuilder.withInterface((GraphQLInterfaceType) inter);
@@ -100,15 +100,15 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected List<GraphQLOutputType> getInterfaces(AnnotatedType javaType, List<GraphQLFieldDefinition> fields, TypeMappingEnvironment env) {
+    protected List<GraphQLNamedOutputType> getInterfaces(AnnotatedType javaType, List<GraphQLFieldDefinition> fields, TypeMappingEnvironment env) {
         BuildContext buildContext = env.buildContext;
 
-        List<GraphQLOutputType> interfaces = new ArrayList<>();
+        List<GraphQLNamedOutputType> interfaces = new ArrayList<>();
         if (buildContext.relayMappingConfig.inferNodeInterface && fields.stream().anyMatch(GraphQLUtils::isRelayId)) {
             interfaces.add(buildContext.node);
         }
         buildContext.interfaceStrategy.getInterfaces(javaType).forEach(
-                inter -> interfaces.add(env.operationMapper.toGraphQLType(inter, env)));
+                inter -> interfaces.add((GraphQLNamedOutputType) env.operationMapper.toGraphQLType(inter, env)));
 
         return interfaces;
     }

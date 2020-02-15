@@ -12,6 +12,8 @@ import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLNamedOutputType;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
@@ -61,6 +63,7 @@ import static graphql.schema.GraphQLInputObjectField.newInputObjectField;
 import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
+import static io.leangen.graphql.util.GraphQLUtils.name;
 
 /**
  * <p>Drives the work of mapping Java structures into their GraphQL representations.</p>
@@ -417,38 +420,41 @@ public class OperationMapper {
     }
 
     private Map<String, String> getNodeQueriesByType(List<Operation> queries,
-                                                     List<GraphQLFieldDefinition> graphQlQueries,
+                                                     List<GraphQLFieldDefinition> graphQLQueries,
                                                      TypeRegistry typeRegistry, GraphQLInterfaceType node, BuildContext buildContext) {
 
         Map<String, String> nodeQueriesByType = new HashMap<>();
 
         for (int i = 0; i < queries.size(); i++) {
             Operation query = queries.get(i);
-            GraphQLFieldDefinition graphQlQuery = graphQlQueries.get(i);
+            GraphQLFieldDefinition graphQLQuery = graphQLQueries.get(i);
 
-            if (graphQlQuery.getArgument(GraphQLId.RELAY_ID_FIELD_NAME) != null
-                    && GraphQLUtils.isRelayId(graphQlQuery.getArgument(GraphQLId.RELAY_ID_FIELD_NAME))
+            if (graphQLQuery.getArgument(GraphQLId.RELAY_ID_FIELD_NAME) != null
+                    && GraphQLUtils.isRelayId(graphQLQuery.getArgument(GraphQLId.RELAY_ID_FIELD_NAME))
                     && query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME) != null) {
 
-                GraphQLType unwrappedQueryType = GraphQLUtils.unwrapNonNull(graphQlQuery.getType());
-                unwrappedQueryType = buildContext.typeCache.resolveType(unwrappedQueryType.getName());
-                if (unwrappedQueryType instanceof GraphQLObjectType
-                        && ((GraphQLObjectType) unwrappedQueryType).getInterfaces().contains(node)) {
-                    nodeQueriesByType.put(unwrappedQueryType.getName(), query.getName());
-                } else if (unwrappedQueryType instanceof GraphQLInterfaceType) {
-                    typeRegistry.getOutputTypes(unwrappedQueryType.getName()).stream()
-                            .map(MappedType::getAsObjectType)
-                            .filter(implementation -> implementation.getInterfaces().contains(node))
-                            .forEach(nodeType -> nodeQueriesByType.putIfAbsent(nodeType.getName(), query.getName()));  //never override more precise resolvers
-                } else if (unwrappedQueryType instanceof GraphQLUnionType) {
-                    typeRegistry.getOutputTypes(unwrappedQueryType.getName()).stream()
-                            .map(MappedType::getAsObjectType)
-                            .filter(implementation -> implementation.getInterfaces().contains(node))
-                            .filter(Directives::isMappedType)
-                            // only register the possible types that can actually be returned from the primary resolver
-                            // for interface-unions it is all the possible types but, for inline unions, only one (right?) possible type can match
-                            .filter(implementation -> GenericTypeReflector.isSuperType(query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME).getReturnType().getType(), Directives.getMappedType(implementation).getType()))
-                            .forEach(nodeType -> nodeQueriesByType.putIfAbsent(nodeType.getName(), query.getName())); //never override more precise resolvers
+                GraphQLType unwrappedQueryType = GraphQLUtils.unwrapNonNull(graphQLQuery.getType());
+                if (unwrappedQueryType instanceof GraphQLNamedType) {
+                    GraphQLNamedType unwrappedOutput = (GraphQLNamedOutputType) unwrappedQueryType;
+                    unwrappedQueryType = buildContext.typeCache.resolveType(unwrappedOutput.getName());
+                    if (unwrappedQueryType instanceof GraphQLObjectType
+                            && ((GraphQLObjectType) unwrappedQueryType).getInterfaces().contains(node)) {
+                        nodeQueriesByType.put(unwrappedOutput.getName(), query.getName());
+                    } else if (unwrappedQueryType instanceof GraphQLInterfaceType) {
+                        typeRegistry.getOutputTypes(unwrappedOutput.getName()).stream()
+                                .map(MappedType::getAsObjectType)
+                                .filter(implementation -> implementation.getInterfaces().contains(node))
+                                .forEach(nodeType -> nodeQueriesByType.putIfAbsent(nodeType.getName(), query.getName()));  //never override more precise resolvers
+                    } else if (unwrappedQueryType instanceof GraphQLUnionType) {
+                        typeRegistry.getOutputTypes(unwrappedOutput.getName()).stream()
+                                .map(MappedType::getAsObjectType)
+                                .filter(implementation -> implementation.getInterfaces().contains(node))
+                                .filter(Directives::isMappedType)
+                                // only register the possible types that can actually be returned from the primary resolver
+                                // for interface-unions it is all the possible types but, for inline unions, only one (right?) possible type can match
+                                .filter(implementation -> GenericTypeReflector.isSuperType(query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME).getReturnType().getType(), Directives.getMappedType(implementation).getType()))
+                                .forEach(nodeType -> nodeQueriesByType.putIfAbsent(nodeType.getName(), query.getName())); //never override more precise resolvers
+                    }
                 }
             }
         }
@@ -477,7 +483,7 @@ public class OperationMapper {
 
         if (relay.getConnectionFieldArguments().stream().anyMatch(specArg -> arguments.stream().anyMatch(
                 arg -> arg.getName().equals(specArg.getName())
-                        && !GraphQLUtils.unwrap(arg.getType()).getName().equals(specArg.getType().getName())))) {
+                        && !GraphQLUtils.unwrap(arg.getType()).getName().equals(name(specArg.getType()))))) {
             throw new MappingException(String.format(errorMessageTemplate, "argument type mismatch"));
         }
     }

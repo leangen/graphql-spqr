@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertFieldNamesEqual;
+import static io.leangen.graphql.util.GraphQLUtils.name;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -67,7 +68,7 @@ public class ResolverBuilderTest {
 
     @Test
     public void fieldIgnoreTest() {
-        for(Collection<Resolver> resolvers : resolvers(new IgnoredFields(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
+        for(Collection<Resolver> resolvers : resolvers(new IgnoredFields<>(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
             assertEquals(1, resolvers.size());
             assertEquals("notIgnored", resolvers.iterator().next().getOperationName());
         }
@@ -106,9 +107,9 @@ public class ResolverBuilderTest {
                 .generate();
         assertEquals(2, schema.getQueryType().getFieldDefinitions().size());
         assertEquals("One_findOne", schema.getQueryType().getFieldDefinitions().get(0).getName());
-        assertEquals("Person", schema.getQueryType().getFieldDefinitions().get(0).getType().getName());
+        assertEquals("Person", name(schema.getQueryType().getFieldDefinitions().get(0).getType()));
         assertEquals("Two_findOne", schema.getQueryType().getFieldDefinitions().get(1).getName());
-        assertEquals("BigDecimal", schema.getQueryType().getFieldDefinitions().get(1).getType().getName());
+        assertEquals("BigDecimal", name(schema.getQueryType().getFieldDefinitions().get(1).getType()));
     }
 
     @Test

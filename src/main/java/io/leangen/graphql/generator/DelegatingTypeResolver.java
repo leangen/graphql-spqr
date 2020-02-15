@@ -1,6 +1,7 @@
 package io.leangen.graphql.generator;
 
 import graphql.TypeResolutionEnvironment;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLType;
 import graphql.schema.TypeResolver;
@@ -40,7 +41,8 @@ public class DelegatingTypeResolver implements TypeResolver {
         Object result = env.getObject();
         Class<?> resultType = result.getClass();
         String resultTypeName = typeInfoGenerator.generateTypeName(GenericTypeReflector.annotate(resultType), messageBundle);
-        String abstractTypeName = this.abstractTypeName != null ? this.abstractTypeName : env.getFieldType().getName();
+        GraphQLNamedType fieldType = (GraphQLNamedType) env.getFieldType();
+        String abstractTypeName = this.abstractTypeName != null ? this.abstractTypeName : fieldType.getName();
 
         //Check if the type is already unambiguous
         List<MappedType> mappedTypes = typeRegistry.getOutputTypes(abstractTypeName, resultType);
@@ -51,7 +53,7 @@ public class DelegatingTypeResolver implements TypeResolver {
             return mappedTypes.get(0).getAsObjectType();
         }
 
-        AnnotatedType returnType = Directives.getMappedType(env.getFieldType());
+        AnnotatedType returnType = Directives.getMappedType(fieldType);
         //Try to find an explicit resolver
         Optional<GraphQLObjectType> resolvedType = Utils.or(
                 Optional.ofNullable(returnType != null ? returnType.getAnnotation(GraphQLTypeResolver.class) : null),
@@ -67,14 +69,14 @@ public class DelegatingTypeResolver implements TypeResolver {
             if (resolvedJavaType != null && !ClassUtils.isMissingTypeParameters(resolvedJavaType.getType())) {
                 GraphQLType resolved = env.getSchema().getType(typeInfoGenerator.generateTypeName(resolvedJavaType, messageBundle));
                 if (resolved == null) {
-                    throw new UnresolvableTypeException(env.getFieldType().getName(), result);
+                    throw new UnresolvableTypeException(fieldType.getName(), result);
                 }
                 return (GraphQLObjectType) resolved;
             }
         }
         
         //Give up
-        throw new UnresolvableTypeException(env.getFieldType().getName(), result);
+        throw new UnresolvableTypeException(fieldType.getName(), result);
     }
 
     private GraphQLObjectType resolveType(TypeResolutionEnvironment env, GraphQLTypeResolver descriptor) {

@@ -3,9 +3,9 @@ package io.leangen.graphql.execution;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLType;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
@@ -33,7 +33,7 @@ public class ResolutionEnvironment {
     public final ValueMapper valueMapper;
     public final GlobalEnvironment globalEnvironment;
     public final GraphQLOutputType fieldType;
-    public final GraphQLType parentType;
+    public final GraphQLNamedType parentType;
     public final GraphQLSchema graphQLSchema;
     public final DataFetchingEnvironment dataFetchingEnvironment;
     public final Map<String, Object> arguments;
@@ -51,7 +51,7 @@ public class ResolutionEnvironment {
         this.globalEnvironment = globalEnvironment;
         this.converters = converters;
         this.fieldType = env.getFieldType();
-        this.parentType = env.getParentType();
+        this.parentType = (GraphQLNamedType) env.getParentType();
         this.graphQLSchema = env.getGraphQLSchema();
         this.dataFetchingEnvironment = env;
         this.derivedTypes = derivedTypes;
