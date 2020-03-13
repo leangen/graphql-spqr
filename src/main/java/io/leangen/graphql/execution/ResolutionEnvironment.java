@@ -1,5 +1,6 @@
 package io.leangen.graphql.execution;
 
+import graphql.GraphQLError;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
 import graphql.schema.DataFetchingEnvironment;
@@ -17,6 +18,7 @@ import io.leangen.graphql.util.Urls;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,7 @@ public class ResolutionEnvironment {
     public final GraphQLSchema graphQLSchema;
     public final DataFetchingEnvironment dataFetchingEnvironment;
     public final Map<String, Object> arguments;
+    public final List<GraphQLError> errors;
 
     private final ConverterRegistry converters;
     private final DerivedTypeRegistry derivedTypes;
@@ -49,36 +52,41 @@ public class ResolutionEnvironment {
         this.resolver = resolver;
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
-        this.converters = converters;
         this.fieldType = env.getFieldType();
         this.parentType = (GraphQLNamedType) env.getParentType();
         this.graphQLSchema = env.getGraphQLSchema();
         this.dataFetchingEnvironment = env;
-        this.derivedTypes = derivedTypes;
         this.arguments = new HashMap<>();
+        this.errors = new ArrayList<>();
+        this.converters = converters;
+        this.derivedTypes = derivedTypes;
     }
 
-    @SuppressWarnings("unchecked")
     public <T, S> S convertOutput(T output, AnnotatedElement element, AnnotatedType type) {
         if (output == null) {
             return null;
         }
 
-        // Transparently handle unexpected wrapped results. This enables elegant exception handling, partial results etc.
-        if (DataFetcherResult.class.equals(output.getClass()) && !DataFetcherResult.class.equals(resolver.getRawReturnType())) {
-            DataFetcherResult<?> result = (DataFetcherResult<?>) output;
-            if (result.getData() != null) {
-                Object convertedData = convert(result.getData(), element, type);
-                return (S) DataFetcherResult.newResult()
-                        .data(convertedData)
-                        .errors(result.getErrors())
-                        .localContext(result.getLocalContext())
-                        .mapRelativeErrors(result.isMapRelativeErrors())
-                        .build();
-            }
+        return convert(output, element, type);
+    }
+
+    Object adaptOutput(Object output, AnnotatedElement element, AnnotatedType type) {
+        if (output == null) {
+            return null;
         }
 
-        return convert(output, element, type);
+        // Transparently handle unexpected wrapped results. This enables elegant exception handling, partial results etc.
+        if (DataFetcherResult.class.equals(output.getClass()) /*&& !DataFetcherResult.class.equals(resolver.getRawReturnType())*/) {
+            DataFetcherResult<?> result = (DataFetcherResult<?>) output;
+            if (result.getData() == null) {
+                return result;
+            }
+            return result.transform(res -> res
+                    .data(convert(result.getData(), element, type))
+                    .errors(errors));
+        }
+        Object converted = convert(output, element, type);
+        return errors.isEmpty() ? converted : DataFetcherResult.newResult().data(converted).errors(errors).build();
     }
 
     @SuppressWarnings("unchecked")
@@ -104,7 +112,7 @@ public class ResolutionEnvironment {
 
     public Object getInputValue(Object input, OperationArgument argument) {
         boolean argValuePresent = dataFetchingEnvironment.containsArgument(argument.getName());
-        ArgumentInjectorParams params = new ArgumentInjectorParams(input, argValuePresent, argument.getJavaType(), argument.getBaseType(), argument.getParameter(), this);
+        ArgumentInjectorParams params = new ArgumentInjectorParams(input, argValuePresent, argument, this);
         Object value = this.globalEnvironment.injectors.getInjector(argument.getJavaType(), argument.getParameter()).getArgumentValue(params);
         if (argValuePresent) {
             arguments.put(argument.getName(), value);

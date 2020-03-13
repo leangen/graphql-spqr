@@ -2,6 +2,7 @@ package io.leangen.graphql.execution;
 
 import graphql.GraphQLContext;
 import graphql.GraphQLException;
+import graphql.execution.DataFetcherResult;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
@@ -65,7 +66,7 @@ public class OperationExecutor {
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(resolver, env, this.valueMapper, this.globalEnvironment, this.converterRegistry, this.derivedTypes);
         Object result = execute(resolver, resolutionEnvironment, arguments);
-        return resolutionEnvironment.convertOutput(result, resolver.getTypedElement(), resolver.getReturnType());
+        return resolutionEnvironment.adaptOutput(result, resolver.getTypedElement(), resolver.getReturnType());
     }
 
     /**
@@ -91,6 +92,9 @@ public class OperationExecutor {
             Object rawArgValue = rawArguments.get(argDescriptor.getName());
 
             args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor);
+        }
+        if (!resolutionEnvironment.errors.isEmpty()) {
+            return DataFetcherResult.newResult().errors(resolutionEnvironment.errors).build();
         }
         InvocationContext invocationContext = new InvocationContext(operation, resolver, resolutionEnvironment, args);
         Queue<ResolverInterceptor> interceptors = new LinkedList<>(this.interceptors.get(resolver));
