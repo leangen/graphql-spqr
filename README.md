@@ -36,8 +36,15 @@ GraphQL SPQR aims to make it dead simple to add a GraphQL API to _any_ Java proj
 
 ### Kotlin
 
-Due to a 3 year old [bug](https://youtrack.jetbrains.com/oauth?state=%2Fissue%2FKT-13228), Kotlin properties produce incorrect `AnnotatedType`s on which most of SPQR is based. The most obvious implication is that `@GraphQLNonNull` (and other `TYPE_USE` annotations) won't work when used on Kotlin properties.
-There's nothing that can be done about this from our side so, for the time being, **Kotlin support is a non-goal of this project** but we will try to be compatible where possible.
+In Kotlin there [was a bug](https://youtrack.jetbrains.com/issue/KT-13228) that caused incorrect type annotations ending
+up in the resulting byte code. The most obvious implication was that `@GraphQLNonNull` (and other TYPE_USE annotations)
+didn't work when used on Kotlin properties.
+
+**This problem had been fixed in Kotlin version 1.3.70**. Now the Kotlin compiler can be instructed to produce correct
+type annotations by adding the flag `-Xemit-jvm-type-annotations` during compilation. Please refer to the ticket 
+mentioned above for more details.
+ 
+**Kotlin support is a non-goal of this project** but we will try to be compatible where possible.
 
 ### OpenJDK
 
