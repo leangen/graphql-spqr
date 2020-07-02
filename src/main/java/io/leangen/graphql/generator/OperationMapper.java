@@ -376,7 +376,7 @@ public class OperationMapper {
                 .name(mutation.getName() + "Input")
                 .field(newInputObjectField()
                         .name(CLIENT_MUTATION_ID)
-                        .type(new GraphQLNonNull(GraphQLString)))
+                        .type(GraphQLString))
                 .fields(inputFields)
                 .build();
 
@@ -384,7 +384,7 @@ public class OperationMapper {
                 .name(payloadTypeName)
                 .field(newFieldDefinition()
                         .name(CLIENT_MUTATION_ID)
-                        .type(new GraphQLNonNull(GraphQLString)))
+                        .type(GraphQLString))
                 .fields(outputFields)
                 .build();
 
