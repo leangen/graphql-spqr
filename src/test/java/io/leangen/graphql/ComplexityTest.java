@@ -153,7 +153,7 @@ public class ComplexityTest {
 
     @Test
     public void fragmentComplexityTest() {
-        testComplexity(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType(), fragmentQuery, 11, 32);
+        testComplexity(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType(), fragmentQuery, 11, 17);
     }
 
     @Test
