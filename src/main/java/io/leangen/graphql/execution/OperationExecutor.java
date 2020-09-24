@@ -12,11 +12,7 @@ import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.Utils;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -58,6 +54,10 @@ public class OperationExecutor {
         }
 
         Map<String, Object> arguments = env.getArguments();
+        arguments = arguments.entrySet().stream()
+                .filter(e -> Objects.nonNull(e.getValue()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
         Resolver resolver = this.operation.getApplicableResolver(arguments.keySet());
         if (resolver == null) {
             throw new GraphQLException("Resolver for operation " + operation.getName() + " accepting arguments: "
