@@ -11,7 +11,7 @@
 [![Semver](http://img.shields.io/SemVer/2.0.0.png)](http://semver.org/spec/v2.0.0.html)
 
 ## NOTICE
-Project has been on a temporary hiatus. I hope to resume it shortly. In doing so, I must first assess the current state. I have removed access to issues for the time being to get a chance to clean them up and prevent people from abusing the issues to ask for new releases. I'll re-enable the issues ASAP. Sorry for the inconvenience, and thanks for your patience.
+This project is on a temporary hiatus. I hope to resume it shortly. In doing so, I must first assess the current state. I have removed the access to issues for the time being to get a chance to clean them up and prevent people from abusing the issues to ask for new releases. I'll restore the access as soon as I can. Sorry for the inconvenience, and thanks for your patience.
 
    * [Intro](#intro)
    * [Known issues](#known-issues)
