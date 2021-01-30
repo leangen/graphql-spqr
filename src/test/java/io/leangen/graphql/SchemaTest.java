@@ -12,6 +12,8 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import io.leangen.graphql.services.UserService;
+import io.leangen.graphql.util.Directives;
+import io.leangen.graphql.util.GraphQLUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class SchemaTest {
@@ -115,6 +118,13 @@ public class SchemaTest {
                 .withTypeAdapters(new MapToListTypeAdapter())
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
                 .generate();
+
+        schema.getQueryType().getFieldDefinitions().forEach(fieldDef -> {
+            if (!GraphQLUtils.isRelayNodeInterface(fieldDef.getType())) {
+                //All operations must have the underlying Java element mapped
+                assertTrue(Directives.getMappedOperation(fieldDef).isPresent());
+            }
+        });
 
         List<String> context = Arrays.asList("xxx", "zzz", "yyy");
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();

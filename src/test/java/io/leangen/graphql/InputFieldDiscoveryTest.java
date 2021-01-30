@@ -9,6 +9,7 @@ import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
@@ -30,6 +31,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static io.leangen.graphql.metadata.DefaultValue.EMPTY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -42,20 +44,20 @@ public class InputFieldDiscoveryTest {
     private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
 
     private static final InputField[] expectedDefaultFields = new InputField[] {
-            new InputField("field1", null, IGNORED_TYPE, null, null),
-            new InputField("field2", null, IGNORED_TYPE, null, null),
-            new InputField("field3", null, IGNORED_TYPE, null, null)
+            new InputField("field1", null, IGNORED_TYPE, null, EMPTY),
+            new InputField("field2", null, IGNORED_TYPE, null, EMPTY),
+            new InputField("field3", null, IGNORED_TYPE, null, EMPTY)
     };
     private static final InputField[] expectedFilteredDefaultFields = new InputField[] {expectedDefaultFields[0], expectedDefaultFields[2]};
     private static final InputField[] expectedExplicitFields = new InputField[] {
-            new InputField("aaa", "AAA", IGNORED_TYPE, null, "AAAA"),
-            new InputField("bbb", "BBB", IGNORED_TYPE, null, 2222),
-            new InputField("ccc", "CCC", IGNORED_TYPE, null, 3333)
+            new InputField("aaa", "AAA", IGNORED_TYPE, null, new DefaultValue("AAAA")),
+            new InputField("bbb", "BBB", IGNORED_TYPE, null, new DefaultValue(2222)),
+            new InputField("ccc", "CCC", IGNORED_TYPE, null, new DefaultValue(3333))
     };
     private static final InputField[] expectedQueryFields = new InputField[] {
-            new InputField("aaa", null, IGNORED_TYPE, null, null),
-            new InputField("bbb", null, IGNORED_TYPE, null, null),
-            new InputField("ccc", null, IGNORED_TYPE, null, null)
+            new InputField("aaa", null, IGNORED_TYPE, null, EMPTY),
+            new InputField("bbb", null, IGNORED_TYPE, null, EMPTY),
+            new InputField("ccc", null, IGNORED_TYPE, null, EMPTY)
     };
     
     @Test

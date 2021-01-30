@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
@@ -119,7 +120,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
 
     private InputField toInputField(TypedElement element, BeanPropertyDefinition prop, ObjectMapper objectMapper, GlobalEnvironment environment) {
         AnnotatedType deserializableType = resolveDeserializableType(prop.getPrimaryMember(), element.getJavaType(), prop.getPrimaryType(), objectMapper);
-        Object defaultValue = inputInfoGen.defaultValue(element.getElements(), element.getJavaType(), environment).orElse(null);
+        DefaultValue defaultValue = inputInfoGen.defaultValue(element.getElements(), element.getJavaType(), environment);
         return new InputField(prop.getName(), prop.getMetadata().getDescription(), element, deserializableType, defaultValue);
     }
 
@@ -145,17 +146,6 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
                     + " due to an exception", e);
         }
         return realType;
-    }
-
-    protected Object defaultValue(AnnotatedType declaringType, BeanPropertyDefinition prop, AnnotatedType fieldType, TypeTransformer typeTransformer, GlobalEnvironment environment) {
-        ElementFactory elementFactory = new ElementFactory(declaringType, typeTransformer);
-        List<TypedElement> annotatedCandidates = Utils.flatten(
-                Optional.ofNullable(prop.getConstructorParameter()).map(elementFactory::fromConstructorParameter),
-                Optional.ofNullable(prop.getSetter()).map(elementFactory::fromSetter),
-                Optional.ofNullable(prop.getGetter()).map(elementFactory::fromGetter),
-                Optional.ofNullable(prop.getField()).map(elementFactory::fromField)
-        ).collect(Collectors.toList());
-        return inputInfoGen.defaultValue(annotatedCandidates, fieldType, environment).orElse(null);
     }
 
     private boolean isIncluded(AnnotatedType declaringType, BeanPropertyDefinition prop, boolean deserializableInSubType, InclusionStrategy inclusionStrategy) {

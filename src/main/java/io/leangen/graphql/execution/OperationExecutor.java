@@ -1,6 +1,5 @@
 package io.leangen.graphql.execution;
 
-import graphql.GraphQLContext;
 import graphql.GraphQLException;
 import graphql.execution.DataFetcherResult;
 import graphql.schema.DataFetchingEnvironment;
@@ -11,6 +10,7 @@ import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.util.ContextUtils;
 import io.leangen.graphql.util.Utils;
 
 import java.util.Collection;
@@ -46,17 +46,7 @@ public class OperationExecutor {
     }
 
     public Object execute(DataFetchingEnvironment env) throws Exception {
-        if (env.getContext() instanceof ContextWrapper) {
-            ContextWrapper context = env.getContext();
-            if (env.getArgument(CLIENT_MUTATION_ID) != null) {
-                context.setClientMutationId(env.getArgument(CLIENT_MUTATION_ID));
-            }
-        } else if (env.getContext() instanceof GraphQLContext) {
-            GraphQLContext context = env.getContext();
-            if (env.getArgument(CLIENT_MUTATION_ID) != null) {
-                context.put(CLIENT_MUTATION_ID, env.getArgument(CLIENT_MUTATION_ID));
-            }
-        }
+        ContextUtils.setClientMutationId(env.getContext(), env.getArgument(CLIENT_MUTATION_ID));
 
         Map<String, Object> arguments = env.getArguments();
         Resolver resolver = this.operation.getApplicableResolver(arguments.keySet());

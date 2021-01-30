@@ -25,6 +25,7 @@ import static graphql.introspection.Introspection.DirectiveLocation.QUERY;
 import static graphql.introspection.Introspection.DirectiveLocation.SCALAR;
 import static graphql.introspection.Introspection.DirectiveLocation.SCHEMA;
 import static graphql.introspection.Introspection.DirectiveLocation.UNION;
+import static graphql.introspection.Introspection.DirectiveLocation.VARIABLE_DEFINITION;
 
 @GraphQLIgnore
 @Retention(RetentionPolicy.RUNTIME)
@@ -36,7 +37,7 @@ public @interface GraphQLDirective {
             INTERFACE, UNION, ENUM, ENUM_VALUE, INPUT_OBJECT, INPUT_FIELD_DEFINITION};
 
     Introspection.DirectiveLocation[] ALL_CLIENT = new Introspection.DirectiveLocation[] {
-            QUERY, MUTATION, FIELD, FRAGMENT_DEFINITION, FRAGMENT_SPREAD, INLINE_FRAGMENT};
+            QUERY, MUTATION, FIELD, FRAGMENT_DEFINITION, FRAGMENT_SPREAD, INLINE_FRAGMENT, VARIABLE_DEFINITION};
 
     String name() default "";
     String description() default "";

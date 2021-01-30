@@ -1,5 +1,6 @@
 package io.leangen.graphql.util;
 
+import graphql.Scalars;
 import graphql.language.Field;
 import graphql.relay.Relay;
 import graphql.schema.GraphQLArgument;
@@ -34,7 +35,7 @@ public class GraphQLUtils {
     }
 
     public static boolean isRelayId(GraphQLType type) {
-        return type.equals(Scalars.RelayId);
+        return type instanceof GraphQLNonNull && ((GraphQLNonNull) type).getWrappedType().equals(Scalars.GraphQLID);
     }
 
     public static boolean isRelayNodeInterface(GraphQLType node) {

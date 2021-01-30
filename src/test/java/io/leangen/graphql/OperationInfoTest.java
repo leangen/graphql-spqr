@@ -148,7 +148,7 @@ public class OperationInfoTest {
     }
 
     @GraphQLType(name = "TheBlob", description = "Blip Bloop")
-    static class Blob {}
+    static class Blob {public String makeSchemaValidationPass;}
 
     @SuppressWarnings("unused")
     public static class BunnyService {

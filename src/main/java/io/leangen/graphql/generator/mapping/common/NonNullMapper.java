@@ -89,7 +89,7 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
         if (field.getDefaultValue() == null && shouldWrap(field.getType(), inputField.getTypedElement())) {
             return field.transform(builder -> builder.type(new GraphQLNonNull(field.getType())));
         }
-        if (shouldUnwrap(field.getDefaultValue(), field.getType())) {
+        if (shouldUnwrap(field)) {
             //do not warn on primitives as their non-nullness is implicit
             if (!ClassUtils.getRawType(inputField.getJavaType().getType()).isPrimitive()) {
                 log.warn("Non-null input field with a default value will be treated as nullable: " + inputField);
@@ -113,10 +113,10 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
     }
 
     private GraphQLArgument transformArgument(GraphQLArgument argument, TypedElement element, String description, OperationMapper operationMapper, BuildContext buildContext) {
-        if (argument.getDefaultValue() == null && shouldWrap(argument.getType(), element)) {
+        if (!argument.hasSetDefaultValue() && shouldWrap(argument.getType(), element)) {
             return argument.transform(builder -> builder.type(new GraphQLNonNull(argument.getType())));
         }
-        if (shouldUnwrap(argument.getDefaultValue(), argument.getType())) {
+        if (shouldUnwrap(argument)) {
             //do not warn on primitives as their non-nullness is implicit
             if (!ClassUtils.getRawType(element.getJavaType().getType()).isPrimitive()) {
                 log.warn("Non-null argument with a default value will be treated as nullable: " + description);
@@ -135,7 +135,12 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
         return !(type instanceof GraphQLNonNull) && nonNullAnnotations.stream().anyMatch(typedElement::isAnnotationPresent);
     }
 
-    private boolean shouldUnwrap(Object defaultValue, GraphQLType type) {
-        return defaultValue != null && type instanceof GraphQLNonNull;
+    //TODO Make this use hasSetDefaultValue once https://github.com/graphql-java/graphql-java/issues/1958 is fixed
+    private boolean shouldUnwrap(GraphQLInputObjectField field) {
+        return field.getDefaultValue() != null && field.getType() instanceof GraphQLNonNull;
+    }
+
+    private boolean shouldUnwrap(GraphQLArgument argument) {
+        return argument.hasSetDefaultValue() && argument.getType() instanceof GraphQLNonNull;
     }
 }

@@ -7,6 +7,7 @@ import com.google.gson.JsonSyntaxException;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
@@ -203,8 +204,8 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
         return inputInfoGen.getDescription(members, messageBundle).orElse(null);
     }
 
-    protected Object defaultValue(List<AnnotatedElement> members, AnnotatedType fieldType, GlobalEnvironment environment) {
-        return inputInfoGen.defaultValue(members, fieldType, environment).orElse(null);
+    protected DefaultValue defaultValue(List<AnnotatedElement> members, AnnotatedType fieldType, GlobalEnvironment environment) {
+        return inputInfoGen.defaultValue(members, fieldType, environment);
     }
 
     private <T extends Member & AnnotatedElement> TypedElement element(AnnotatedType type, T annotatedMember, AnnotatedType declaringType, TypeTransformer transformer) {

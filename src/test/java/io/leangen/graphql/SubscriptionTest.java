@@ -5,6 +5,7 @@ import graphql.GraphQL;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLSubscription;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Observable;
@@ -25,6 +26,7 @@ import static org.junit.Assert.fail;
 public class SubscriptionTest {
 
     @Test
+    @SuppressWarnings("ReactiveStreamsSubscriberImplementation")
     public void subscriptionTest() {
 
         GraphQLSchema schema = new GraphQLSchemaGenerator()
@@ -67,6 +69,9 @@ public class SubscriptionTest {
     }
 
     public static class Ticker {
+
+        @GraphQLQuery
+        public String makeSchemaValidationPass;
 
         @GraphQLSubscription
         public Publisher<Integer> tick() {

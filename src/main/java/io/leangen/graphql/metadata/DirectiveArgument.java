@@ -12,10 +12,10 @@ public class DirectiveArgument {
     private final String description;
     private final TypedElement typedElement;
     private final Object value;
-    private final Object defaultValue;
+    private final DefaultValue defaultValue;
     private final Annotation annotation;
 
-    public DirectiveArgument(String name, String description, TypedElement element, Object value, Object defaultValue, Annotation annotation) {
+    public DirectiveArgument(String name, String description, TypedElement element, Object value, DefaultValue defaultValue, Annotation annotation) {
         this.name = name;
         this.typedElement = element;
         this.description = description;
@@ -40,7 +40,7 @@ public class DirectiveArgument {
         return value;
     }
 
-    public Object getDefaultValue() {
+    public DefaultValue getDefaultValue() {
         return defaultValue;
     }
 

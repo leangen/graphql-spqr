@@ -13,11 +13,13 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 public @interface GraphQLArgument {
 
+    String NULL = ReservedStrings.NULL;
+
     String name();
 
     String description() default "";
 
-    String defaultValue() default ReservedStrings.NULL;
+    String defaultValue() default ReservedStrings.NONE;
     
     Class<? extends DefaultValueProvider> defaultValueProvider() default JsonDefaultValueProvider.class;
 }

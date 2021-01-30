@@ -1,17 +1,14 @@
 package io.leangen.graphql;
 
-import javassist.util.proxy.ProxyFactory;
-
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.FixedValue;
-
-import org.junit.Test;
-
-import java.lang.reflect.Proxy;
-
 import io.leangen.graphql.domain.Person;
 import io.leangen.graphql.domain.User;
 import io.leangen.graphql.util.ClassUtils;
+import javassist.util.proxy.ProxyFactory;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.FixedValue;
+import org.junit.Test;
+
+import java.lang.reflect.Proxy;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,11 +33,11 @@ public class ProxyDetectionTest {
     }
     
     @Test
-    public void testJavassistProxy() throws IllegalAccessException, InstantiationException {
+    public void testJavassistProxy() {
         ProxyFactory f = new ProxyFactory();
         f.setSuperclass(User.class);
         f.setFilter(m -> !m.getName().equals("finalize"));
-        Class proxyClass = f.createClass();
+        Class<?> proxyClass = f.createClass();
         assertTrue(ClassUtils.isProxy(proxyClass));
     }
     

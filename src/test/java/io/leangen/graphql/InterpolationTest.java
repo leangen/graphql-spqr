@@ -11,6 +11,7 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.annotations.GraphQLMutation;
+import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.types.GraphQLType;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.metadata.messages.SimpleMessageBundle;
@@ -90,6 +91,8 @@ public class InterpolationTest {
     }
 
     private static class Quick {
+        @GraphQLQuery
+        public String makeSchemaValidationPass;
 
         @GraphQLMutation(name = "makeIt${mutation.dish.name}", description = "DESCRIPTION: ${mutation.dish.desc}", deprecationReason = "REASON: ${mutation.dish.deprecation}")
         public Dish test(@GraphQLArgument(name = "${mutation.dish.arg.name}", description = "${mutation.dish.arg.desc}", defaultValue = "${mutation.dish.arg.default}") Dish dish) {
@@ -99,6 +102,8 @@ public class InterpolationTest {
 
     @GraphQLType(name = "${type.dish.name}", description = "Description: ${type.dish.desc}")
     private static class Dish {
+
+        public String makeSchemaValidationPass;
 
         private final Temperature temperature;
 

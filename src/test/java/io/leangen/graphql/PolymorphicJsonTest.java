@@ -149,7 +149,6 @@ public class PolymorphicJsonTest {
     }
 
     public static class Service {
-
         @GraphQLQuery
         public String item(Wrapper in) {
             return in.item.getItem();
@@ -163,6 +162,7 @@ public class PolymorphicJsonTest {
 
     public interface Abstract<T> {
         T getItem();
+        void setItem(T t);
     }
 
     public static class Concrete<T> implements Abstract<T> {
@@ -172,5 +172,8 @@ public class PolymorphicJsonTest {
         public T getItem() {
             return (T) getClass().getSimpleName();
         }
+
+        @Override
+        public void setItem(T t) {}
     }
 }

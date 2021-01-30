@@ -133,28 +133,28 @@ public class UnionTest {
         }
     }
 
-    private class ExplicitUnionClassService {
+    private static class ExplicitUnionClassService {
         @GraphQLQuery(name = "union")
         public UC union(@GraphQLArgument(name = "id") int id) {
             return null;
         }
     }
 
-    private class ExplicitUnionInterfaceService {
+    private static class ExplicitUnionInterfaceService {
         @GraphQLQuery(name = "union")
         public UI union(@GraphQLArgument(name = "id") int id) {
             return null;
         }
     }
 
-    private class AdditionalUnionInterfaceService {
+    private static class AdditionalUnionInterfaceService {
         @GraphQLQuery(name = "union")
         public UE union(@GraphQLArgument(name = "id") int id) {
             return null;
         }
     }
 
-    private class AutoDiscoveredUnionService {
+    private static class AutoDiscoveredUnionService {
         @GraphQLQuery(name = "union")
         public UA union(@GraphQLArgument(name = "id") int id) {
             return null;
@@ -164,8 +164,8 @@ public class UnionTest {
     @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypes = {C2.class, C1.class})
     public static class UC {}
 
-    public static class C1 extends UC {}
-    public static class C2 extends UC {}
+    public static class C1 extends UC {public String makeSchemaValidationPass;}
+    public static class C2 extends UC {public String makeSchemaValidationPass;}
 
     @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypes = {I2.class, I1.class})
     public interface UI {}
@@ -173,14 +173,14 @@ public class UnionTest {
     @GraphQLUnion(name = "Strong_union", description = "This union is strong!")
     public interface UE {}
 
-    public static class I1 implements UI, UE {}
-    public static class I2 implements UI, UE {}
+    public static class I1 implements UI, UE {public String makeSchemaValidationPass;}
+    public static class I2 implements UI, UE {public String makeSchemaValidationPass;}
 
     @GraphQLUnion(name = "Strong_union", description = "This union is strong!", possibleTypeAutoDiscovery = true, scanPackages = "io.leangen")
     public interface UA {}
 
-    public static class A1 implements UA {}
-    public static class A2 implements UA {}
+    public static class A1 implements UA {public String makeSchemaValidationPass;}
+    public static class A2 implements UA {public String makeSchemaValidationPass;}
 
     @io.leangen.graphql.annotations.types.GraphQLType(name = "SimpleOne")
     public static class SimpleOne {

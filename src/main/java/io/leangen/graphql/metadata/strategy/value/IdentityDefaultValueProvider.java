@@ -1,5 +1,7 @@
 package io.leangen.graphql.metadata.strategy.value;
 
+import io.leangen.graphql.metadata.DefaultValue;
+
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 
@@ -9,7 +11,7 @@ import java.lang.reflect.AnnotatedType;
 public class IdentityDefaultValueProvider implements DefaultValueProvider {
 
     @Override
-    public Object getDefaultValue(AnnotatedElement targetElement, AnnotatedType type, Object initialValue) {
+    public DefaultValue getDefaultValue(AnnotatedElement targetElement, AnnotatedType type, DefaultValue initialValue) {
         return initialValue;
     }
 }

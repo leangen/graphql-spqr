@@ -3,6 +3,7 @@ package io.leangen.graphql.metadata.strategy.query;
 import graphql.introspection.Introspection;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.types.GraphQLDirective;
+import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.Directive;
 import io.leangen.graphql.metadata.DirectiveArgument;
 import io.leangen.graphql.metadata.TypedElement;
@@ -129,7 +130,7 @@ public class AnnotatedDirectiveBuilder implements DirectiveBuilder {
         try {
             TypedElement element = new TypedElement(GenericTypeReflector.annotate(method.getReturnType()), method);
             return new DirectiveArgument(AnnotationMappingUtils.inputFieldName(method), AnnotationMappingUtils.inputFieldDescription(method),
-                    element, method.invoke(annotation), method.getDefaultValue(), annotation);
+                    element, method.invoke(annotation), DefaultValue.ofNullable(method.getDefaultValue()), annotation);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }

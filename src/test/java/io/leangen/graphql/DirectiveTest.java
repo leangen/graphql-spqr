@@ -5,7 +5,6 @@ import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
-import graphql.introspection.Introspection;
 import graphql.schema.GraphQLDirectiveContainer;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
@@ -34,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static graphql.introspection.Introspection.DirectiveLocation;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -82,11 +82,11 @@ public class DirectiveTest {
                 .withAdditionalDirectives(Field.class, Frags.class, Operation.class)
                 .generate();
 
-        assertClientDirectiveMapping(schema, "field", "enabled", Introspection.DirectiveLocation.FIELD);
-        assertClientDirectiveMapping(schema, "frags", "enabled", Introspection.DirectiveLocation.FRAGMENT_DEFINITION,
-                Introspection.DirectiveLocation.FRAGMENT_SPREAD, Introspection.DirectiveLocation.INLINE_FRAGMENT);
+        assertClientDirectiveMapping(schema, "field", "enabled", DirectiveLocation.FIELD);
+        assertClientDirectiveMapping(schema, "frags", "enabled", DirectiveLocation.FRAGMENT_DEFINITION,
+                DirectiveLocation.FRAGMENT_SPREAD, DirectiveLocation.INLINE_FRAGMENT);
         assertClientDirectiveMapping(schema, "operation", "enabled",
-                Introspection.DirectiveLocation.QUERY, Introspection.DirectiveLocation.MUTATION);
+                DirectiveLocation.QUERY, DirectiveLocation.MUTATION);
     }
 
     @Test
@@ -139,7 +139,7 @@ public class DirectiveTest {
         assertEquals("test", wrapper.value());
     }
 
-    private void assertClientDirectiveMapping(GraphQLSchema schema, String directiveName, String argumentName, Introspection.DirectiveLocation... validLocations) {
+    private void assertClientDirectiveMapping(GraphQLSchema schema, String directiveName, String argumentName, DirectiveLocation... validLocations) {
         graphql.schema.GraphQLDirective directive = schema.getDirective(directiveName);
         assertNotNull(directive);
         assertEquals(validLocations.length, directive.validLocations().size());
@@ -301,17 +301,17 @@ public class DirectiveTest {
         public int after;
     }
 
-    @GraphQLDirective(locations = Introspection.DirectiveLocation.FIELD)
+    @GraphQLDirective(locations = DirectiveLocation.FIELD)
     public static class Field {
         public boolean enabled;
     }
 
-    @GraphQLDirective(locations = {Introspection.DirectiveLocation.FRAGMENT_DEFINITION, Introspection.DirectiveLocation.FRAGMENT_SPREAD, Introspection.DirectiveLocation.INLINE_FRAGMENT})
+    @GraphQLDirective(locations = {DirectiveLocation.FRAGMENT_DEFINITION, DirectiveLocation.FRAGMENT_SPREAD, DirectiveLocation.INLINE_FRAGMENT})
     public static class Frags {
         public boolean enabled;
     }
 
-    @GraphQLDirective(locations = {Introspection.DirectiveLocation.QUERY, Introspection.DirectiveLocation.MUTATION})
+    @GraphQLDirective(locations = {DirectiveLocation.QUERY, DirectiveLocation.MUTATION})
     public static class Operation {
         public boolean enabled;
     }

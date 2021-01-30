@@ -20,12 +20,13 @@ public class EnvironmentInjector implements ArgumentInjector {
     
     @Override
     public Object getArgumentValue(ArgumentInjectorParams params) {
-        Class raw = GenericTypeReflector.erase(params.getType().getType());
+        Class<?> raw = GenericTypeReflector.erase(params.getType().getType());
         if (ResolutionEnvironment.class.isAssignableFrom(raw)) {
             return params.getResolutionEnvironment();
         }
         if (GenericTypeReflector.isSuperType(setOfStrings, params.getType().getType())) {
-            return params.getResolutionEnvironment().dataFetchingEnvironment.getSelectionSet().get().keySet();
+            return params.getResolutionEnvironment().dataFetchingEnvironment.getSelectionSet()
+                    .getFieldsGroupedByResultKey().keySet();
         }
         if (MergedField.class.equals(raw)) {
             return params.getResolutionEnvironment().dataFetchingEnvironment.getMergedField();

@@ -9,14 +9,17 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class OptionalAdapter extends AbstractSimpleTypeAdapter<Optional<?>, Object> implements DelegatingOutputConverter<Optional<?>, Object> {
+public class OptionalAdapter extends AbstractSimpleTypeAdapter<Optional<?>, Object>
+        implements DelegatingOutputConverter<Optional<?>, Object>, Comparator<AnnotatedType> {
 
     @Override
     public Object convertOutput(Optional<?> original, AnnotatedType type, ResolutionEnvironment env) {
@@ -37,5 +40,24 @@ public class OptionalAdapter extends AbstractSimpleTypeAdapter<Optional<?>, Obje
     @Override
     public List<AnnotatedType> getDerivedTypes(AnnotatedType type) {
         return Collections.singletonList(getSubstituteType(type));
+    }
+
+    @Override
+    public int compare(AnnotatedType o1, AnnotatedType o2) {
+        AnnotatedType direct;
+        AnnotatedType unwrapped;
+        if (ClassUtils.getRawType(o1.getType()).equals(Optional.class)) {
+            unwrapped = GenericTypeReflector.getTypeParameter(o1, Optional.class.getTypeParameters()[0]);
+            direct = o2;
+        } else if (ClassUtils.getRawType(o2.getType()).equals(Optional.class)) {
+            unwrapped = GenericTypeReflector.getTypeParameter(o2, Optional.class.getTypeParameters()[0]);
+            direct = o1;
+        } else {
+            return -1;
+        }
+        if (Arrays.stream(direct.getAnnotations()).allMatch(ann -> Arrays.asList(unwrapped.getAnnotations()).contains(ann))) {
+            return 0;
+        }
+        return -1;
     }
 }

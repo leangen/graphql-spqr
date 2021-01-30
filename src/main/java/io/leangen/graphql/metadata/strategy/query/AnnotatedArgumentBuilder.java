@@ -4,6 +4,7 @@ import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
@@ -81,13 +82,13 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         return meta != null ? messageBundle.interpolate(meta.description()) : null;
     }
 
-    protected Object defaultValue(Parameter parameter, AnnotatedType parameterType, GlobalEnvironment environment) {
+    protected DefaultValue defaultValue(Parameter parameter, AnnotatedType parameterType, GlobalEnvironment environment) {
 
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
-        if (meta == null) return null;
+        if (meta == null) return DefaultValue.EMPTY;
         try {
             return defaultValueProvider(meta.defaultValueProvider(), environment)
-                    .getDefaultValue(parameter, environment.getMappableInputType(parameterType), ReservedStrings.decode(environment.messageBundle.interpolate(meta.defaultValue())));
+                    .getDefaultValue(parameter, environment.getMappableInputType(parameterType), ReservedStrings.decodeDefault(environment.messageBundle.interpolate(meta.defaultValue())));
         } catch (ReflectiveOperationException e) {
             throw new IllegalArgumentException(
                     meta.defaultValueProvider().getName() + " must expose a public default constructor, or a constructor accepting " + GlobalEnvironment.class.getName(), e);

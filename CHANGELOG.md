@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- [Breaking] Upgraded to graphql-java v16.1 [#373](https://github.com/leangen/graphql-spqr/issues/373)
+- [Breaking] Distinguish between no default value and null default value [#374](https://github.com/leangen/graphql-spqr/issues/374)
 - Add `GraphQLError`s to the response via `ResolutionEnvironment` [#346](https://github.com/leangen/graphql-spqr/issues/346)
 
 ## [0.10.1] - 2019-12-30

@@ -4,6 +4,7 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.strategy.value.JsonDefaultValueProvider;
 import org.junit.Test;
 
@@ -16,28 +17,28 @@ public class ArgumentValueTest {
 
     @Test
     public void unescapedStringTest() throws NoSuchMethodException {
-        Object defaultValue = constructDefaultValue("Monkey", String.class);
+        Object defaultValue = constructDefaultValue("Monkey", String.class).getValue();
         assertEquals("Monkey", defaultValue);
     }
 
     @Test
     public void escapedStringTest() throws NoSuchMethodException {
-        Object defaultValue = constructDefaultValue("\"Monkey\"", String.class);
+        Object defaultValue = constructDefaultValue("\"Monkey\"", String.class).getValue();
         assertEquals("\"Monkey\"", defaultValue);
     }
 
     @Test
     public void objectTest() throws NoSuchMethodException {
-        Object defaultValue = constructDefaultValue("{\"name\" : \"Loud Ape\"}", NestedQueryTest.Author.class);
+        Object defaultValue = constructDefaultValue("{\"name\" : \"Loud Ape\"}", NestedQueryTest.Author.class).getValue();
         assertTrue(defaultValue instanceof NestedQueryTest.Author);
         assertEquals("Loud Ape", ((NestedQueryTest.Author) defaultValue).getName());
     }
 
-    private Object constructDefaultValue(Object defaultValue, Class type) throws NoSuchMethodException {
+    private DefaultValue constructDefaultValue(Object defaultValue, Class type) throws NoSuchMethodException {
         return new JsonDefaultValueProvider(ENVIRONMENT).getDefaultValue(
                 BookService.class.getDeclaredMethod("findBook", type).getParameters()[0],
                 GenericTypeReflector.annotate(type),
-                defaultValue);
+                new DefaultValue(defaultValue));
     }
 
     private static class BookService {

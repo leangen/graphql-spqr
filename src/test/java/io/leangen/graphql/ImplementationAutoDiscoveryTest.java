@@ -64,10 +64,14 @@ public class ImplementationAutoDiscoveryTest {
     }
 
     @GraphQLInterface(name = "Manual")
-    interface Manual {}
+    interface Manual {
+        @GraphQLQuery String makeSchemaValidationPass = "";
+    }
 
     @GraphQLInterface(name = "Auto", implementationAutoDiscovery = true)
-    interface Auto {}
+    interface Auto {
+        @GraphQLQuery String makeSchemaValidationPass = "";
+    }
 
     public static class One implements Manual, Auto {
         public String getOne() {

@@ -13,14 +13,14 @@ public class InputField {
     private final String description;
     private final TypedElement typedElement;
     private final AnnotatedType deserializableType;
-    private final Object defaultValue;
+    private final DefaultValue defaultValue;
 
-    public InputField(String name, String description, TypedElement element, AnnotatedType deserializableType, Object defaultValue) {
+    public InputField(String name, String description, TypedElement element, AnnotatedType deserializableType, DefaultValue defaultValue) {
         this.name = Utils.requireNonEmpty(name);
         this.description = description;
         this.typedElement = Objects.requireNonNull(element);
         this.deserializableType = deserializableType != null ? deserializableType : element.getJavaType();
-        this.defaultValue = defaultValue;
+        this.defaultValue = Objects.requireNonNull(defaultValue);
     }
 
     public String getName() {
@@ -39,7 +39,7 @@ public class InputField {
         return deserializableType;
     }
 
-    public Object getDefaultValue() {
+    public DefaultValue getDefaultValue() {
         return defaultValue;
     }
 

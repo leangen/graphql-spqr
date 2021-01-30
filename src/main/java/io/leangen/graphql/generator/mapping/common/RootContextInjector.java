@@ -1,11 +1,11 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import io.leangen.graphql.annotations.GraphQLRootContext;
-import io.leangen.graphql.execution.ContextWrapper;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.ContextUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
@@ -20,9 +20,7 @@ public class RootContextInjector implements ArgumentInjector {
     public Object getArgumentValue(ArgumentInjectorParams params) {
         String injectionExpression = params.getParameter().getAnnotation(GraphQLRootContext.class).value();
         ResolutionEnvironment env = params.getResolutionEnvironment();
-        Object rootContext = env.rootContext instanceof ContextWrapper
-                ? ((ContextWrapper) env.rootContext).getContext()
-                : env.rootContext;
+        Object rootContext = ContextUtils.unwrapContext(env.rootContext);
         return injectionExpression.isEmpty() ? rootContext : extract(rootContext, injectionExpression);
     }
 
