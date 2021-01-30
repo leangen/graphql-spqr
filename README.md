@@ -42,10 +42,10 @@ This makes the Kotlin compiler produce type annotations correctly. See [KT-35843
 ### OpenJDK
 
 There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202473) in OpenJDK's annotation parser before version **16 b17** that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious
-```java
+```
 AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull
 ```
-occurring when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`.
+being thrown when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`.
 
 Do note it is only relevant which Java **compiles** the sources, not which Java _runs_ the code. Also note that IntelliJ IDEA comes bundled with OpenJDK, so building the project in IDEA may lead to this error. You should configure your IDE to use the system Java if it is different.
 
@@ -91,7 +91,7 @@ Maven
 <dependency>
     <groupId>io.leangen.graphql</groupId>
     <artifactId>spqr</artifactId>
-    <version>0.10.0</version>
+    <version>0.10.1</version>
 </dependency>
 ```
 
