@@ -36,13 +36,13 @@ GraphQL SPQR aims to make it dead simple to add a GraphQL API to _any_ Java proj
 
 ### Kotlin
 
-Due to a 3 year old [bug](https://youtrack.jetbrains.com/oauth?state=%2Fissue%2FKT-13228), Kotlin properties produce incorrect `AnnotatedType`s on which most of SPQR is based. The most obvious implication is that `@GraphQLNonNull` (and other `TYPE_USE` annotations) won't work when used on Kotlin properties.
-There's nothing that can be done about this from our side so, for the time being, **Kotlin support is a non-goal of this project** but we will try to be compatible where possible.
+For best compatibility, Kotlin 1.3.70+ is needed with the compiler argument `-Xemit-jvm-type-annotations`.
+This makes the Kotlin compiler produce type annotations correctly. See [KT-35843](https://youtrack.jetbrains.com/issue/KT-35843) and [KT-13228](https://youtrack.jetbrains.com/issue/KT-13228) for details.
 
 ### OpenJDK
 
-There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202473) in OpenJDK's annotation parser that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious `AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull` occuring
-when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`. Oracle JDK does not have this bug.
+There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202473) in OpenJDK's annotation parser before version **16 b17** that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious `AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull` occurring
+when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`.
 Do note it is only relevant which Java **compiles** the sources, not which Java _runs_ the code. Also note that IntelliJ IDEA comes bundled with OpenJDK, so building the project in IDEA may lead to this error. You should configure your IDE to use the system Java if it is different.
 
 ## Code-first approach
