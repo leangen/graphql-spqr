@@ -4,11 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.11.0] - 2021-01-31
 ### Added
+- Add `GraphQLError`s to the response via `ResolutionEnvironment` [#346](https://github.com/leangen/graphql-spqr/issues/346)
+### Changed
 - [Breaking] Upgraded to graphql-java v16.1 [#373](https://github.com/leangen/graphql-spqr/issues/373)
 - [Breaking] Distinguish between no default value and null default value [#374](https://github.com/leangen/graphql-spqr/issues/374)
-- Add `GraphQLError`s to the response via `ResolutionEnvironment` [#346](https://github.com/leangen/graphql-spqr/issues/346)
 
 ## [0.10.1] - 2019-12-30
 ### Added
