@@ -36,8 +36,9 @@ GraphQL SPQR aims to make it dead simple to add a GraphQL API to _any_ Java proj
 
 ### Kotlin
 
-For best compatibility, Kotlin 1.3.70+ is needed with the compiler argument `-Xemit-jvm-type-annotations`.
-This makes the Kotlin compiler produce type annotations correctly. See [KT-35843](https://youtrack.jetbrains.com/issue/KT-35843) and [KT-13228](https://youtrack.jetbrains.com/issue/KT-13228) for details.
+For best compatibility, Kotlin 1.3.70 or later is needed with the compiler argument `-Xemit-jvm-type-annotations`.
+This instructs the Kotlin compiler to produce type-use annotations (introduced in JDK8) correctly.
+See [KT-35843](https://youtrack.jetbrains.com/issue/KT-35843) and [KT-13228](https://youtrack.jetbrains.com/issue/KT-13228) for details.
 
 ### OpenJDK
 
