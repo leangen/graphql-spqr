@@ -8,7 +8,6 @@
 [![Javadoc](http://javadoc-badge.appspot.com/io.leangen.graphql/spqr.svg?label=javadoc)](http://www.javadoc.io/doc/io.leangen.graphql/spqr)
 [![Build Status](https://travis-ci.org/leangen/graphql-spqr.svg?branch=master)](https://travis-ci.org/leangen/graphql-spqr)
 [![Hex.pm](https://img.shields.io/hexpm/l/plug.svg?maxAge=2592000)](https://raw.githubusercontent.com/leangen/graphql-spqr/master/LICENSE)
-[![Semver](http://img.shields.io/SemVer/2.0.0.png)](http://semver.org/spec/v2.0.0.html)
 
    * [Intro](#intro)
    * [Known issues](#known-issues)
