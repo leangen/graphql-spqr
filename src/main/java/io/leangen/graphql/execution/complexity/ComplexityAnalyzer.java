@@ -101,12 +101,12 @@ class ComplexityAnalyzer {
 
         fields.stream()
                 .filter(field -> field.getSelectionSet() != null)
-                .forEach(field -> collectFields(parameters, unconditionalSubFields, getUnconditionalSelections(field.getSelectionSet()), visitedFragments, parent));
+                .forEach(field -> collectFields(parameters, unconditionalSubFields, getUnconditionalSelections(field.getSelectionSet(), parameters), visitedFragments, parent));
 
         fields.stream()
                 .filter(field -> field.getSelectionSet() != null)
                 .forEach(field ->
-                        getConditionalSelections(field.getSelectionSet()).forEach((condition, selections) -> {
+                        getConditionalSelections(field.getSelectionSet(), parameters).forEach((condition, selections) -> {
                                     Map<String, List<ResolvedField>> subFields = new LinkedHashMap<>();
                                     collectFields(parameters, subFields, selections, visitedFragments, parent);
                                     conditionalSubFields.put(condition, subFields);
@@ -164,7 +164,7 @@ class ComplexityAnalyzer {
             return;
         }
         visitedFragments.add(fragmentSpread.getName());
-        FragmentDefinition fragmentDefinition = parameters.getFragmentsByName().get(fragmentSpread.getName());
+        FragmentDefinition fragmentDefinition = definition(fragmentSpread, parameters);
 
         if (!conditionalNodes.shouldInclude(parameters.getVariables(), fragmentDefinition.getDirectives())) {
             return;
@@ -225,22 +225,22 @@ class ComplexityAnalyzer {
         return reduced;
     }
 
-    private List<Selection> getUnconditionalSelections(SelectionSet selectionSet) {
+    private List<Selection> getUnconditionalSelections(SelectionSet selectionSet, FieldCollectorParameters parameters) {
         return selectionSet.getSelections().stream()
-                .filter(selection -> !isConditional(selection))
+                .filter(selection -> !isConditional(selection, parameters))
                 .collect(Collectors.toList());
     }
 
-    private Map<String, List<Selection>> getConditionalSelections(SelectionSet selectionSet) {
+    private Map<String, List<Selection>> getConditionalSelections(SelectionSet selectionSet, FieldCollectorParameters parameters) {
         return selectionSet.getSelections().stream()
-                .filter(this::isConditional)
-                .collect(Collectors.groupingBy(s -> s instanceof FragmentDefinition
-                        ? ((FragmentDefinition) s).getTypeCondition().getName()
+                .filter(selection -> isConditional(selection, parameters))
+                .collect(Collectors.groupingBy(s -> s instanceof FragmentSpread
+                        ? definition(s, parameters).getTypeCondition().getName()
                         : ((InlineFragment) s).getTypeCondition().getName()));
     }
 
-    private boolean isConditional(Selection selection) {
-        return (selection instanceof FragmentDefinition && ((FragmentDefinition) selection).getTypeCondition() != null)
+    private boolean isConditional(Selection selection, FieldCollectorParameters parameters) {
+        return (selection instanceof FragmentSpread && definition(selection, parameters).getTypeCondition() != null)
                 || (selection instanceof InlineFragment && ((InlineFragment) selection).getTypeCondition() != null);
     }
 
@@ -254,6 +254,10 @@ class ComplexityAnalyzer {
         } else {
             throw new IllegalStateException("Unknown operation type encountered. Incompatible graphql-java version?");
         }
+    }
+
+    private FragmentDefinition definition(Selection fragmentSpread, FieldCollectorParameters parameters) {
+        return parameters.getFragmentsByName().get(((FragmentSpread) fragmentSpread).getName());
     }
 }
 

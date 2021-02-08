@@ -30,8 +30,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.leangen.graphql.support.Matchers.hasComplexityScore;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ComplexityTest {
@@ -78,6 +78,29 @@ public class ComplexityTest {
             "       }" +
             "    }" +
             "  }" +
+            "}";
+
+    private static final String branchingFragmentQuery = "{" +
+            "  pet(cat: true) {" +
+            "    sound" +
+            "    owner {" +
+            "       name" +
+            "    }" +
+            "    ... catInfo" +
+            "    ... dogInfo" +
+            "  }" +
+            "}" +
+            "" +
+            "fragment catInfo on Cat {" +
+            "  id" +
+            "  clawLength" +
+            "}" +
+            "" +
+            "fragment dogInfo on Dog {" +
+            "   boneCount" +
+            "   owner {" +
+            "       nickName" +
+            "   }" +
             "}";
 
     private static final String multiRootQuery = "query CatDog {" +
@@ -136,6 +159,11 @@ public class ComplexityTest {
     @Test
     public void branchingComplexityTest() {
         testComplexity(new PetService(), branchingQuery, 5, 6);
+    }
+
+    @Test
+    public void branchingFragmentComplexityTest() {
+        testComplexity(new PetService(), branchingFragmentQuery, 6, 7);
     }
 
     @Test
