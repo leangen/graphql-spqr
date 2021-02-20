@@ -192,6 +192,9 @@ public class ComplexityAnalyzer {
             return;
         }
         GraphQLFieldDefinition fieldDefinition = parent.getFieldDefinition(field.getName());
+        if (fieldDefinition == null) {
+            return;
+        }
         Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), parameters.getVariables());
         ResolvedField node = new ResolvedField(field, fieldDefinition, argumentValues);
         fields.putIfAbsent(node.getName(), new ArrayList<>());
