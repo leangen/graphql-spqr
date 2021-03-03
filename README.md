@@ -2,12 +2,12 @@
 
 > GraphQL SPQR (GraphQL Schema Publisher & Query Resolver, pronounced like _speaker_) is a simple-to-use library for rapid development of GraphQL APIs in Java.
 
-[![Join the chat at https://gitter.im/leangen/graphql-spqr](https://badges.gitter.im/leangen/graphql-spqr.svg)](https://gitter.im/leangen/graphql-spqr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![StackOverflow](https://img.shields.io/badge/StackOverflow-graphql--spqr-brightgreen.svg)](https://stackoverflow.com/questions/tagged/graphql-spqr)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.leangen.graphql/spqr/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.leangen.graphql/spqr)
-[![Javadoc](http://javadoc-badge.appspot.com/io.leangen.graphql/spqr.svg?label=javadoc)](http://www.javadoc.io/doc/io.leangen.graphql/spqr)
-[![Build Status](https://travis-ci.org/leangen/graphql-spqr.svg?branch=master)](https://travis-ci.org/leangen/graphql-spqr)
-[![Hex.pm](https://img.shields.io/hexpm/l/plug.svg?maxAge=2592000)](https://raw.githubusercontent.com/leangen/graphql-spqr/master/LICENSE)
+[![Join the chat at https://gitter.im/leangen/graphql-spqr](https://img.shields.io/gitter/room/leangen/graphql-spqr?color=green&logo=gitter&style=for-the-badge)](https://gitter.im/leangen/graphql-spqr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![StackOverflow](https://img.shields.io/static/v1?label=stackoverflow&message=graphql-spqr&color=green&style=for-the-badge)](https://stackoverflow.com/questions/tagged/graphql-spqr)
+[![Maven Central](https://img.shields.io/maven-central/v/io.leangen.graphql/spqr?color=green&style=for-the-badge)](https://maven-badges.herokuapp.com/maven-central/io.leangen.graphql/spqr)
+[![Javadoc](https://img.shields.io/badge/dynamic/json.svg?style=for-the-badge&color=green&label=JAVADOC&query=$.response.docs[0].latestVersion&uri=http%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dg%3A%2522io.leangen.graphql%2522%2BAND%2Ba%3A%2522spqr%2522%26wt%3Djson)](http://www.javadoc.io/doc/io.leangen.graphql/spqr)
+[![Build Status](https://img.shields.io/travis/leangen/graphql-spqr?color=green&style=for-the-badge)](https://travis-ci.org/leangen/graphql-spqr)
+[![License](https://img.shields.io/github/license/leangen/graphql-spqr.svg?style=for-the-badge)](https://raw.githubusercontent.com/leangen/graphql-spqr/master/LICENSE)
 
    * [Intro](#intro)
    * [Known issues](#known-issues)
