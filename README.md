@@ -10,9 +10,6 @@
 [![License](https://img.shields.io/github/license/leangen/graphql-spqr.svg?style=flat-square)](https://raw.githubusercontent.com/leangen/graphql-spqr/master/LICENSE)
 
    * [Intro](#intro)
-   * [Known issues](#known-issues)
-      * [Kotlin](#kotlin)
-      * [OpenJDK](#openjdk)
    * [Code-first approach](#code-first-approach)
       * [Still schema-first](#still-schema-first)
    * [Installation](#installation)
@@ -20,6 +17,9 @@
    * [Spring Boot Starter](#spring-boot-starter)
    * [Full example](#full-example)
    * [Full tutorial](#full-tutorial)
+   * [Known issues](#known-issues)
+      * [Kotlin](#kotlin)
+      * [OpenJDK](#openjdk)
    * [Asking questions](#asking-questions)
 
 ## Intro
