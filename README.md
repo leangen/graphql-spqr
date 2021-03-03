@@ -14,6 +14,7 @@
       * [Kotlin](#kotlin)
       * [OpenJDK](#openjdk)
    * [Code-first approach](#code-first-approach)
+      * [Still schema-first](#still-schema-first)
    * [Installation](#installation)
    * [Hello world](#hello-world)
    * [Spring Boot Starter](#spring-boot-starter)
@@ -30,24 +31,6 @@ GraphQL SPQR aims to make it dead simple to add a GraphQL API to _any_ Java proj
 * Allows rapid prototyping and iteration (no boilerplate)
 * Easily used in legacy projects with no changes to the existing code base
 * Has very few dependencies
-
-## Known issues
-
-### Kotlin
-
-For best compatibility, Kotlin 1.3.70 or later is needed with the compiler argument `-Xemit-jvm-type-annotations`.
-This instructs the Kotlin compiler to produce type-use annotations (introduced in JDK8) correctly.
-See [KT-35843](https://youtrack.jetbrains.com/issue/KT-35843) and [KT-13228](https://youtrack.jetbrains.com/issue/KT-13228) for details.
-
-### OpenJDK
-
-There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202473) in OpenJDK's annotation parser before version **16 b17** that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious
-```
-AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull
-```
-being thrown when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`.
-
-Do note it is only relevant which Java **compiles** the sources, not which Java _runs_ the code. Also note that IntelliJ IDEA comes bundled with OpenJDK, so building the project in IDEA may lead to this error. You should configure your IDE to use the system Java if it is different.
 
 ## Code-first approach
 
@@ -77,9 +60,13 @@ public class Link {
 }
 ```
 
-Both of these blocks contain the exact same information. Worse yet, changing one requires an immediate change to the other. This makes refactoring risky and cumbersome. On the other hand, if you’re trying to introduce a GraphQL API into an existing project, writing the schema practically means re-describing the entire existing model. This is both expensive and error-prone, and still suffers from duplication.
+Both of these blocks contain the exact same information. Worse yet, changing one requires an immediate change to the other. This makes refactoring risky and cumbersome, and the compiler can not help. On the other hand, if you’re trying to introduce a GraphQL API into an existing project, writing the schema practically means re-describing the entire existing model. This is both expensive and error-prone, and still suffers from duplication and lack of tooling.
 
 Instead, GraphQL SPQR takes the code-first approach, by generating the schema from the existing model. This keeps the schema and the model in sync, easing refactoring. It also works well in projects where GraphQL is introduced on top of an existing codebase.
+
+### Still schema-first
+
+Note that developing in the code-first style is still effectively schema-first, the difference is that you develop your schema not in yet another language, but in Java, with your IDE, the compiler and all your tools helping you. Breaking changes to the schema mean the compilation will fail. No need for linters or other fragile hacks.
 
 ## Installation
 
@@ -194,6 +181,24 @@ See more complete examples using Spring Boot at https://github.com/leangen/graph
 ## Full tutorial
 
 _Coming soon_
+
+## Known issues
+
+### Kotlin
+
+For best compatibility, Kotlin 1.3.70 or later is needed with the compiler argument `-Xemit-jvm-type-annotations`.
+This instructs the Kotlin compiler to produce type-use annotations (introduced in JDK8) correctly.
+See [KT-35843](https://youtrack.jetbrains.com/issue/KT-35843) and [KT-13228](https://youtrack.jetbrains.com/issue/KT-13228) for details.
+
+### OpenJDK
+
+There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202473) in OpenJDK's annotation parser before version **16 b17** that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious
+```
+AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull
+```
+being thrown when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`.
+
+Fortunately, very few users seem to experience this problem, even on affected JDKs. Do note it is only relevant which Java **compiles** the sources, not which Java _runs_ the code. Also note that IntelliJ IDEA comes bundled with a JDK of its own, so building the project in IDEA may lead to this error. You should configure your IDE to use the system Java if it is different.
 
 ## Asking questions
 
