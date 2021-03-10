@@ -12,8 +12,8 @@ import java.lang.reflect.Parameter;
  */
 public class MethodInvoker extends Executable<Method> {
 
-    private AnnotatedType enclosingType;
-    private AnnotatedType returnType;
+    private final AnnotatedType enclosingType;
+    private final AnnotatedType returnType;
 
     public MethodInvoker(Method resolverMethod, AnnotatedType enclosingType) {
         this.delegate = resolverMethod;

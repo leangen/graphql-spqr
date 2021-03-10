@@ -53,7 +53,7 @@ public class ResolverBuilderTest {
     public void bridgeMethodTest() {
         Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGES).buildQueryResolvers(new ResolverBuilderParams(
                 BaseServiceImpl::new, new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType(),
-                INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT));
+                BaseServiceImpl.class, INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT));
         assertEquals(1, resolvers.size());
         assertEquals(resolvers.iterator().next().getReturnType().getType(), Number.class);
     }
@@ -157,7 +157,7 @@ public class ResolverBuilderTest {
     public void basePackageTest() {
         PublicResolverBuilder resolverBuilder = new PublicResolverBuilder(BASE_PACKAGES);
         List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
-                UserHandleService::new, GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+                UserHandleService::new, GenericTypeReflector.annotate(UserHandleService.class), UserHandleService.class, INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         assertEquals(2, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("userHandle")));
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("nickname")));
@@ -167,7 +167,7 @@ public class ResolverBuilderTest {
     public void badBasePackageTest() {
         PublicResolverBuilder resolverBuilder = new PublicResolverBuilder("bad.package");
         List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
-                UserHandleService::new, GenericTypeReflector.annotate(UserHandleService.class), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+                UserHandleService::new, GenericTypeReflector.annotate(UserHandleService.class), UserHandleService.class, INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         assertEquals(1, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("userHandle")));
     }
@@ -176,7 +176,7 @@ public class ResolverBuilderTest {
         Collection<Collection<Resolver>> resolvers = new ArrayList<>(builders.length);
         for (ResolverBuilder builder : builders) {
             resolvers.add(builder.buildQueryResolvers(new ResolverBuilderParams(
-                    () -> bean, GenericTypeReflector.annotate(bean.getClass()), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+                    () -> bean, GenericTypeReflector.annotate(bean.getClass()), bean.getClass(), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         }
         return resolvers;
     }

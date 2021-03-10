@@ -7,8 +7,6 @@ import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.execution.FieldAccessor;
-import io.leangen.graphql.metadata.execution.FixedMethodInvoker;
-import io.leangen.graphql.metadata.execution.MethodInvoker;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.value.Property;
 import io.leangen.graphql.util.ClassUtils;
@@ -37,6 +35,7 @@ import java.util.stream.Stream;
 public class PublicResolverBuilder extends AbstractResolverBuilder {
 
     private String[] basePackages;
+    private MethodInvokerFactory methodInvokerFactory;
     private JavaDeprecationMappingConfig javaDeprecationConfig;
 
     public PublicResolverBuilder() {
@@ -48,12 +47,18 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
         this.argumentBuilder = new AnnotatedArgumentBuilder();
         this.propertyElementReducer = AbstractResolverBuilder::mergePropertyElements;
         withBasePackages(basePackages);
+        withMethodInvokerFactory(new DefaultMethodInvokerFactory());
         withJavaDeprecation(new JavaDeprecationMappingConfig(true, "Deprecated"));
         withDefaultFilters();
     }
 
     public PublicResolverBuilder withBasePackages(String... basePackages) {
         this.basePackages = basePackages;
+        return this;
+    }
+
+    public PublicResolverBuilder withMethodInvokerFactory(MethodInvokerFactory methodInvokerFactory) {
+        this.methodInvokerFactory = methodInvokerFactory;
         return this;
     }
 
@@ -98,6 +103,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
         return buildMethodInvokers(params, this::isSubscription, OperationDefinition.Operation.SUBSCRIPTION, false);
     }
 
+    @SuppressWarnings("deprecation")
     private Collection<Resolver> buildMethodInvokers(ResolverBuilderParams params, BiPredicate<Method, ResolverBuilderParams> filter, OperationDefinition.Operation operation, boolean batchable) {
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         AnnotatedType beanType = params.getBeanType();
@@ -117,7 +123,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                             messageBundle.interpolate(operationInfoGenerator.description(infoParams)),
                             messageBundle.interpolate(ReservedStrings.decode(operationInfoGenerator.deprecationReason(infoParams))),
                             batchable && method.isAnnotationPresent(Batched.class),
-                            querySourceBean == null ? new MethodInvoker(method, beanType) : new FixedMethodInvoker(querySourceBean, method, beanType),
+                            methodInvokerFactory.create(querySourceBean, method, beanType, params.getExposedBeanType()),
                             element,
                             argumentBuilder.buildResolverArguments(
                                     new ArgumentBuilderParams(method, beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment())),
@@ -127,6 +133,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                 .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("deprecation")
     private Collection<Resolver> buildPropertyAccessors(Stream<Property> properties, ResolverBuilderParams params) {
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         AnnotatedType beanType = params.getBeanType();
@@ -144,7 +151,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                             messageBundle.interpolate(operationInfoGenerator.description(infoParams)),
                             messageBundle.interpolate(ReservedStrings.decode(operationInfoGenerator.deprecationReason(infoParams))),
                             element.isAnnotationPresent(Batched.class),
-                            params.getQuerySourceBeanSupplier() == null ? new MethodInvoker(prop.getGetter(), beanType) : new FixedMethodInvoker(params.getQuerySourceBeanSupplier(), prop.getGetter(), beanType),
+                            methodInvokerFactory.create(params.getQuerySourceBeanSupplier(), prop.getGetter(), beanType, params.getExposedBeanType()),
                             element,
                             argumentBuilder.buildResolverArguments(new ArgumentBuilderParams(prop.getGetter(), beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment())),
                             element.isAnnotationPresent(GraphQLComplexity.class) ? element.getAnnotation(GraphQLComplexity.class).value() : null

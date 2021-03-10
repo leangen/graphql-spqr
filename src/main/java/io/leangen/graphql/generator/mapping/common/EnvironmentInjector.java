@@ -1,6 +1,7 @@
 package io.leangen.graphql.generator.mapping.common;
 
 import graphql.execution.MergedField;
+import graphql.schema.SelectedField;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLEnvironment;
@@ -13,6 +14,7 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class EnvironmentInjector implements ArgumentInjector {
     
@@ -25,8 +27,8 @@ public class EnvironmentInjector implements ArgumentInjector {
             return params.getResolutionEnvironment();
         }
         if (GenericTypeReflector.isSuperType(setOfStrings, params.getType().getType())) {
-            return params.getResolutionEnvironment().dataFetchingEnvironment.getSelectionSet()
-                    .getFieldsGroupedByResultKey().keySet();
+            return params.getResolutionEnvironment().dataFetchingEnvironment.getSelectionSet().getImmediateFields()
+                    .stream().map(SelectedField::getName).collect(Collectors.toSet());
         }
         if (MergedField.class.equals(raw)) {
             return params.getResolutionEnvironment().dataFetchingEnvironment.getMergedField();

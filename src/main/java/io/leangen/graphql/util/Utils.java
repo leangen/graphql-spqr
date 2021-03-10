@@ -112,6 +112,10 @@ public class Utils {
         return elements == null || elements.length == 0 ? Collections.emptyList() : Arrays.asList(elements);
     }
 
+    public static <C extends Collection<T>, T> C defaultIfEmpty(C collection, C fallback) {
+        return collection == null || collection.isEmpty() ? fallback : collection;
+    }
+
     public static <T> Predicate<T> acceptAll() {
         return x -> true;
     }

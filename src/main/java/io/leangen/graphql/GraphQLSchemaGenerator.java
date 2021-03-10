@@ -247,62 +247,16 @@ public class GraphQLSchemaGenerator {
 
     /**
      * Register {@code serviceSingleton} as a singleton {@link OperationSource},
-     * with its class (obtained via {@link Object#getClass()}) as its runtime type and with the globally registered
-     * {@link ResolverBuilder}s.
+     * with its class (obtained via {@link Object#getClass()}) as its runtime type, using the provided
+     * {@link ResolverBuilder}s to look for methods to be exposed or the globally registered
+     * {@link ResolverBuilder}s if none are provided.
      * All query/mutation methods discovered by analyzing the {@code serviceSingleton}'s type will be later,
      * in query resolution time, invoked on this specific instance (hence the 'singleton' in the method name).
      * Instances of stateless service classes are commonly registered this way.
      *
-     * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
-     *                        those methods will be invoked in query/mutation execution time
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton) {
-        checkType(serviceSingleton.getClass());
-        return withOperationsFromSingleton(serviceSingleton, serviceSingleton.getClass());
-    }
-
-    /**
-     * Register {@code serviceSingleton} as a singleton {@link OperationSource},
-     * with {@code beanType} as its runtime type and with the globally registered {@link ResolverBuilder}s.
-     * <p>See {@link #withOperationsFromSingleton(Object)}</p>
-     *
-     * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
-     *                        those methods will be invoked in query/mutation execution time
-     * @param beanType Runtime type of {@code serviceSingleton}. Should be explicitly provided when it differs from its class
-     *                 (that can be obtained via {@link Object#getClass()}). This is commonly the case when the class is generic
-     *                 or when the instance has been proxied by a framework.
-     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
-     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, Type beanType) {
-        return withOperationsFromSingleton(serviceSingleton, GenericTypeReflector.annotate(beanType));
-    }
-
-    /**
-     * Same as {@link #withOperationsFromSingleton(Object, Type)}, except that an {@link AnnotatedType} is used as
-     * {@code serviceSingleton}'s runtime type. Needed when type annotations such as {@link GraphQLNonNull}
-     * not directly declared on the class should be captured.
-     *
-     * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
-     *                        those methods will be invoked in query/mutation execution time
-     * @param beanType Runtime type of {@code serviceSingleton}. Should be explicitly provided when it differs from its class
-     *                 (that can be obtained via {@link Object#getClass()}) and when annotations on the type should be kept.
-     *                 Use {@link io.leangen.geantyref.TypeToken} to get an {@link AnnotatedType} literal
-     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType) {
-        return withOperationsFromBean(() -> serviceSingleton, beanType);
-    }
-
-    /**
-     * Same as {@link #withOperationsFromSingleton(Object)} except that custom {@link ResolverBuilder}s will be used
-     * to look through {@code beanType} for methods to be exposed.
+     * @implNote Injection containers (like Spring or CDI) will often wrap managed bean instances into proxies,
+     * making it difficult to reliably detect their type. For this reason, it is recommended in such cases to use
+     * a different overload of this method and provide the type explicitly.
      *
      * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -315,8 +269,12 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
-     * Same as {@link #withOperationsFromSingleton(Object, Type)} except that custom {@link ResolverBuilder}s will be used
-     * to look through {@code beanType} for methods to be exposed.
+     * Register {@code serviceSingleton} as a singleton {@link OperationSource}, with {@code beanType}
+     * as its static type, using the provided {@link ResolverBuilder}s to look for methods to be exposed
+     * or the globally registered {@link ResolverBuilder}s if none are provided.
+     * All query/mutation methods discovered by analyzing the {@code beanType} will be later,
+     * in query resolution time, invoked on this specific instance (hence the 'singleton' in the method name).
+     * Instances of stateless service classes are commonly registered this way.
      *
      * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -330,13 +288,13 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, Type beanType, ResolverBuilder... builders) {
-        checkType(beanType);
-        return withOperationsFromSingleton(serviceSingleton, GenericTypeReflector.annotate(beanType), builders);
+        return withOperationsFromSingleton(serviceSingleton, GenericTypeReflector.annotate(checkType(beanType)), builders);
     }
 
     /**
-     * Same as {@link #withOperationsFromSingleton(Object, AnnotatedType)} except that custom {@link ResolverBuilder}s will be used
-     * to look through {@code beanType} for methods to be exposed.
+     * Same as {@link #withOperationsFromSingleton(Object, Type, ResolverBuilder...)}, except that an {@link AnnotatedType} is used as
+     * {@code serviceSingleton}'s static type. Needed when type annotations such as {@link GraphQLNonNull}
+     * not directly declared on the class should be captured.
      *
      * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -349,13 +307,12 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType, ResolverBuilder... builders) {
-        checkType(beanType);
-        this.operationSourceRegistry.registerOperationSource(() -> serviceSingleton, beanType, Arrays.asList(builders));
-        return this;
+        return withOperationsFromBean(() -> serviceSingleton, beanType, null, builders);
     }
 
     /**
-     * Same as {@link #withOperationsFromSingleton(Object)} except that multiple beans can be registered at the same time.
+     * Same as {@link #withOperationsFromSingleton(Object, ResolverBuilder...)} except that multiple beans
+     * can be registered at the same time.
      *
      * @param serviceSingletons Singleton beans whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -367,31 +324,79 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, Type beanType) {
-        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(beanType));
-    }
-
-    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, AnnotatedType beanType) {
-        checkType(beanType);
-        this.operationSourceRegistry.registerOperationSource(serviceSupplier, beanType);
-        return this;
-    }
-
+    /**
+     * Analyzes {@code beanType} using the provided {@link ResolverBuilder}s to look for methods to be exposed
+     * or the globally registered {@link ResolverBuilder}s if none are provided, and uses {@code serviceSupplier}
+     * to obtain an instance on which query/mutation methods are invoked at runtime.
+     * Container managed beans (of any scope) are commonly registered this way..
+     *
+     * @param serviceSupplier The supplier that will be used to obtain an instance on which the exposed methods
+     *                        will be invoked when resolving queries/mutations/subscriptions.
+     * @param beanType Static type of instances provided by {@code serviceSupplier}.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
+     * @param builders Custom strategy to use when analyzing {@code beanType}
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
     public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, Type beanType, ResolverBuilder... builders) {
-        checkType(beanType);
-        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(beanType), builders);
+        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(checkType(beanType)), ClassUtils.getRawType(beanType), builders);
     }
 
+    /**
+     * Same as {@link #withOperationsFromBean(Supplier, Type, ResolverBuilder...)}, except that an {@link AnnotatedType}
+     * is used as the static type of the instances provided by {@code serviceSupplier}.
+     * Needed when type annotations such as {@link GraphQLNonNull} not directly declared on the class should be captured.
+     */
     public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, AnnotatedType beanType, ResolverBuilder... builders) {
+        return withOperationsFromBean(serviceSupplier, beanType, ClassUtils.getRawType(beanType.getType()),  builders);
+    }
+
+    /**
+     * Same as {@link #withOperationsFromBean(Supplier, Type, ResolverBuilder...)}, but the actual runtime type of
+     * the instances provided by {@code serviceSupplier} will be used to choose the method to invoke at runtime.
+     * This is the absolute safest approach to registering beans, and is needed when the instances are proxied
+     * by a container (e.g. Spring, CDI or others) and can _not_ be cast to {@code beanType} at runtime.
+     *
+     * @param serviceSupplier The supplier that will be used to obtain an instance on which the exposed methods
+     *                        will be invoked when resolving queries/mutations/subscriptions.
+     * @param beanType Static type of instances provided by {@code serviceSupplier}.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
+     * @param exposedType Runtime type of the instances provided by {@code serviceSupplier},
+     *                    not necessarily possible to cast to {@code beanType}
+     * @param builders Custom strategy to use when analyzing {@code beanType}
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, Type beanType, Class<?> exposedType, ResolverBuilder... builders) {
+        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(checkType(beanType)), exposedType, builders);
+    }
+
+    /**
+     * Same as {@link #withOperationsFromBean(Supplier, Type, Class, ResolverBuilder...)}, except that an {@link AnnotatedType}
+     * is used as the static type of the instances provided by {@code serviceSupplier}.
+     * Needed when type annotations such as {@link GraphQLNonNull} not directly declared on the class should be captured.
+     */
+    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, AnnotatedType beanType, Class<?> exposedType, ResolverBuilder... builders) {
         checkType(beanType);
-        this.operationSourceRegistry.registerOperationSource(serviceSupplier, beanType, Arrays.asList(builders));
+        this.operationSourceRegistry.registerOperationSource(serviceSupplier, beanType, exposedType, Utils.asList(builders));
         return this;
     }
 
-    public GraphQLSchemaGenerator withOperationsFromType(Type serviceType) {
-        return this.withOperationsFromType(GenericTypeReflector.annotate(serviceType));
-    }
-
+    /**
+     * Analyzes {@code serviceType} using the provided {@link ResolverBuilder}s to look for methods to be exposed
+     * or the globally registered {@link ResolverBuilder}s if none are provided.
+     * An instance of {@code serviceType} on which the exposed methods are invoked at runtime must be explicitly
+     * provided as GraphQL {@code root} for each execution. See {@link graphql.ExecutionInput.Builder#root(Object)}.
+     *
+     * @param serviceType Type to analyze for methods to expose.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
+     * @param builders Custom strategy to use when analyzing {@code serviceType}
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
     public GraphQLSchemaGenerator withOperationsFromType(Type serviceType, ResolverBuilder... builders) {
         return this.withOperationsFromType(GenericTypeReflector.annotate(serviceType), builders);
     }
@@ -401,15 +406,13 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withOperationsFromType(AnnotatedType serviceType) {
-        checkType(serviceType);
-        this.operationSourceRegistry.registerOperationSource(serviceType);
-        return this;
-    }
-
+    /**
+     * Same as {@link #withOperationsFromType(Type, ResolverBuilder...)}, except that an {@link AnnotatedType} is used.
+     * Needed when type annotations such as {@link GraphQLNonNull} not directly declared on the class should be captured.
+     */
     public GraphQLSchemaGenerator withOperationsFromType(AnnotatedType serviceType, ResolverBuilder... builders) {
         checkType(serviceType);
-        this.operationSourceRegistry.registerOperationSource(serviceType, Arrays.asList(builders));
+        this.operationSourceRegistry.registerOperationSource(serviceType, Utils.asList(builders));
         return this;
     }
 
@@ -1052,7 +1055,7 @@ public class GraphQLSchemaGenerator {
                 || type.getName().equals(messageBundle.interpolate(subscriptionRoot)));
     }
 
-    private void checkType(Type type) {
+    private Type checkType(Type type) {
         if (type == null) {
             throw TypeMappingException.unknownType();
         }
@@ -1068,6 +1071,7 @@ public class GraphQLSchemaGenerator {
                     " Provide the full type explicitly when registering the bean." +
                     " For details and solutions see " + Urls.Errors.TOP_LEVEL_GENERICS);
         }
+        return type;
     }
 
     private void checkType(AnnotatedType type) {

@@ -14,16 +14,18 @@ public class OperationSource {
 
     private final Supplier<Object> serviceBeanSupplier;
     private final AnnotatedType javaType;
+    private final Class<?> exposedType;
     private final Collection<ResolverBuilder> resolverBuilders;
 
-    OperationSource(Supplier<Object> serviceBeanSupplier, AnnotatedType javaType, Collection<ResolverBuilder> resolverBuilders) {
+    OperationSource(Supplier<Object> serviceBeanSupplier, AnnotatedType javaType, Class<?> exposedType, Collection<ResolverBuilder> resolverBuilders) {
         this.serviceBeanSupplier = serviceBeanSupplier;
         this.javaType = javaType;
+        this.exposedType = exposedType;
         this.resolverBuilders = resolverBuilders;
     }
 
     OperationSource(AnnotatedType javaType, Collection<ResolverBuilder> resolverBuilders) {
-        this(null, javaType, resolverBuilders);
+        this(null, javaType, null, resolverBuilders);
     }
 
     Supplier<Object> getServiceBeanSupplier() {
@@ -32,6 +34,10 @@ public class OperationSource {
 
     AnnotatedType getJavaType() {
         return javaType;
+    }
+
+    public Class<?> getExposedType() {
+        return exposedType;
     }
 
     Collection<ResolverBuilder> getResolverBuilders() {
