@@ -113,7 +113,7 @@ public class AutoScanAbstractInputHandler implements AbstractInputHandler {
             abstractTypes.add(javaType.getType());
             concreteSubTypes = findConcreteSubTypes(ClassUtils.getRawType(javaType.getType()), buildContext);
         }
-        buildContext.inputFieldBuilders.getInputFields(
+        buildContext.inputFieldBuilder.getInputFields(
                 InputFieldBuilderParams.builder()
                         .withType(javaType)
                         .withEnvironment(buildContext.globalEnvironment)

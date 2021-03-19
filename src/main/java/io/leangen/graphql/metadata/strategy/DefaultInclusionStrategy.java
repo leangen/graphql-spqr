@@ -44,7 +44,7 @@ public class DefaultInclusionStrategy implements InclusionStrategy {
     protected boolean isPackageAcceptable(AnnotatedType type, Class<?> elementDeclaringClass) {
         Class<?> rawType = ClassUtils.getRawType(type.getType());
         String[] packages = new String[0];
-        if (Utils.isArrayNotEmpty(this.basePackages)) {
+        if (Utils.isNotEmpty(this.basePackages)) {
             packages = this.basePackages;
         } else if (rawType.getPackage() != null) {
             packages = new String[] {rawType.getPackage().getName()};

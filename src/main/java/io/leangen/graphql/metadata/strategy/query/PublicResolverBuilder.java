@@ -209,9 +209,9 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
         Class<?> beanType = ClassUtils.getRawType(params.getBeanType().getType());
         String[] defaultPackages = params.getBasePackages();
         String[] basePackages = new String[0];
-        if (Utils.isArrayNotEmpty(this.basePackages)) {
+        if (Utils.isNotEmpty(this.basePackages)) {
             basePackages = this.basePackages;
-        } else if (Utils.isArrayNotEmpty(defaultPackages)) {
+        } else if (Utils.isNotEmpty(defaultPackages)) {
             basePackages = defaultPackages;
         } else if (beanType.getPackage() != null) {
             basePackages = new String[] {beanType.getPackage().getName()};

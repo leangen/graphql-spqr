@@ -173,10 +173,10 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
         String[] fieldOrder = Utils.or(
                 Optional.ofNullable(type.getAnnotation(GraphQLInterface.class))
                         .map(GraphQLInterface::fieldOrder)
-                        .filter(Utils::isArrayNotEmpty),
+                        .filter(Utils::isNotEmpty),
                 Optional.ofNullable(type.getAnnotation(GraphQLType.class))
                         .map(GraphQLType::fieldOrder)
-                        .filter(Utils::isArrayNotEmpty))
+                        .filter(Utils::isNotEmpty))
                 .orElse(Utils.emptyArray());
         return Arrays.stream(fieldOrder).map(messageBundle::interpolate).toArray(String[]::new);
     }
@@ -184,8 +184,8 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
     private String[] getInputFieldOrder(AnnotatedType type, MessageBundle messageBundle) {
         Optional<GraphQLType> annotation = Optional.ofNullable(type.getAnnotation(GraphQLType.class));
         String[] fieldOrder = Utils.or(
-                annotation.map(GraphQLType::inputFieldOrder).filter(Utils::isArrayNotEmpty),
-                annotation.map(GraphQLType::fieldOrder).filter(Utils::isArrayNotEmpty))
+                annotation.map(GraphQLType::inputFieldOrder).filter(Utils::isNotEmpty),
+                annotation.map(GraphQLType::fieldOrder).filter(Utils::isNotEmpty))
                 .orElse(Utils.emptyArray());
         return Arrays.stream(fieldOrder).map(messageBundle::interpolate).toArray(String[]::new);
     }
@@ -198,7 +198,7 @@ public class DefaultTypeInfoGenerator implements TypeInfoGenerator {
                         .map(GraphQLType::fieldOrder),
                 Optional.ofNullable(type.getAnnotation(GraphQLType.class))
                         .map(GraphQLType::inputFieldOrder))
-                .anyMatch(opt -> opt.filter(Utils::isArrayNotEmpty).isPresent());
+                .anyMatch(opt -> opt.filter(Utils::isNotEmpty).isPresent());
     }
 
     private <T extends GraphQLSchemaElement> Comparator<? super T> comparator(String[] givenOrder, GraphqlTypeComparatorEnvironment env) {

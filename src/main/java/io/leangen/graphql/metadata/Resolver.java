@@ -33,11 +33,11 @@ public class Resolver {
     private final Class<?> rawReturnType;
     private final Set<OperationArgument> contextArguments;
     private final String complexityExpression;
-    private final Executable executable;
+    private final Executable<?> executable;
     private final boolean batched;
 
     public Resolver(String operationName, String operationDescription, String operationDeprecationReason, boolean batched,
-                    Executable executable, TypedElement typedElement, List<OperationArgument> arguments, String complexityExpression) {
+                    Executable<?> executable, TypedElement typedElement, List<OperationArgument> arguments, String complexityExpression) {
 
         Set<OperationArgument> contextArguments = resolveContexts(arguments);
         
@@ -57,7 +57,7 @@ public class Resolver {
         this.batched = batched;
     }
 
-    private String validateName(String operationName, Executable executable) {
+    private String validateName(String operationName, Executable<?> executable) {
         if (Utils.isEmpty(operationName)) {
             throw new MappingException("The operation name for executable " + executable.toString() + " could not be determined");
         }
@@ -165,7 +165,7 @@ public class Resolver {
         return complexityExpression;
     }
 
-    public Executable getExecutable() {
+    public Executable<?> getExecutable() {
         return executable;
     }
 

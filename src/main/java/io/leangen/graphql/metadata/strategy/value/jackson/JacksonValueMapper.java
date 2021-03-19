@@ -4,20 +4,27 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.Annotated;
+import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
 import com.fasterxml.jackson.databind.introspect.AnnotatedConstructor;
 import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.AnnotatedParameter;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
+import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.InputField;
+import io.leangen.graphql.metadata.TypeDiscriminatorField;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
@@ -122,6 +129,37 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
         AnnotatedType deserializableType = resolveDeserializableType(prop.getPrimaryMember(), element.getJavaType(), prop.getPrimaryType(), objectMapper);
         DefaultValue defaultValue = inputInfoGen.defaultValue(element.getElements(), element.getJavaType(), environment);
         return new InputField(prop.getName(), prop.getMetadata().getDescription(), element, deserializableType, defaultValue);
+    }
+
+    @Override
+    public TypeDiscriminatorField getTypeDiscriminatorField(InputFieldBuilderParams params) {
+        JavaType javaType = objectMapper.constructType(params.getType().getType());
+        DeserializationConfig deserializationConfig = objectMapper.getDeserializationConfig();
+        AnnotatedClass clazz = AnnotatedClassResolver.resolve(deserializationConfig, javaType, deserializationConfig);
+        AnnotationIntrospector annotationIntrospector = deserializationConfig.getAnnotationIntrospector();
+
+        TypeResolverBuilder<?> typeResolver = annotationIntrospector.findTypeResolver(deserializationConfig, clazz, javaType);
+        String discriminatorFieldName = typeResolver instanceof StdTypeResolverBuilder
+                ? ((StdTypeResolverBuilder) typeResolver).getTypeProperty()
+                : ValueMapper.TYPE_METADATA_FIELD_NAME;
+
+        String[] explicitSubTypes = Utils.stream(objectMapper.getSubtypeResolver().collectAndResolveSubtypesByClass(deserializationConfig, clazz))
+                .map(NamedType::getName)
+                .filter(Utils::isNotEmpty)
+                .toArray(String[]::new);
+        //Explicit subtypes are always mapped
+        if (Utils.isNotEmpty(explicitSubTypes)) {
+            return new TypeDiscriminatorField(discriminatorFieldName, "Input type discriminator", explicitSubTypes);
+        }
+        String[] discoveredSubTypes = params.getConcreteSubTypes().stream()
+                .map(GenericTypeReflector::annotate)
+                .map(impl -> params.getEnvironment().typeInfoGenerator.generateTypeName(impl, params.getEnvironment().messageBundle))
+                .toArray(String[]::new);
+        //Discovered subtypes are only mapped if ambiguous
+        if (discoveredSubTypes.length > 1) {
+            return new TypeDiscriminatorField(discriminatorFieldName, "Input type discriminator", discoveredSubTypes);
+        }
+        return null;
     }
 
     private AnnotatedType resolveDeserializableType(Annotated accessor, AnnotatedType realType, JavaType baseType, ObjectMapper objectMapper) {

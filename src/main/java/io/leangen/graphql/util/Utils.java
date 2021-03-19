@@ -1,6 +1,5 @@
 package io.leangen.graphql.util;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,12 +61,19 @@ public class Utils {
         return String.valueOf(newChars);
     }
 
-    public static boolean isArrayEmpty(Object array) {
-        return !isArrayNotEmpty(array);
+    public static <T> boolean isEmpty(T[] array) {
+        return !isNotEmpty(array);
     }
 
-    public static boolean isArrayNotEmpty(Object array) {
-        return array != null && Array.getLength(array) != 0;
+    public static <T>  boolean isNotEmpty(T[] array) {
+        return array != null && array.length > 0;
+    }
+
+    public static <T> T[] requireNonEmpty(T[] array) {
+        if (isEmpty(array)) {
+            throw new IllegalArgumentException("Empty array is not a valid value");
+        }
+        return array;
     }
 
     public static int indexOf(String[] strings, String element, int missingIndex) {
@@ -83,6 +89,22 @@ public class Utils {
     @SafeVarargs
     public static <T> Stream<T> concat(Stream<T>... streams) {
         return Arrays.stream(streams).reduce(Stream::concat).orElse(Stream.empty());
+    }
+
+    public static <C extends Collection<T>, T> boolean isEmpty(C collection) {
+        return collection == null || collection.isEmpty();
+    }
+
+    public static <C extends Collection<T>, T> boolean isNotEmpty(C collection) {
+        return !isEmpty(collection);
+    }
+
+    public static <C extends Collection<T>, T> C defaultIfEmpty(C collection, C fallback) {
+        return collection == null || collection.isEmpty() ? fallback : collection;
+    }
+
+    public static <T> Stream<T> stream(Collection<T> collection) {
+        return collection == null ? Stream.empty() : collection.stream();
     }
 
     public static <T> Stream<T> extractInstances(Collection<? super T> collection, Class<T> clazz) {
@@ -110,10 +132,6 @@ public class Utils {
 
     public static <T> List<T> asList(T[] elements) {
         return elements == null || elements.length == 0 ? Collections.emptyList() : Arrays.asList(elements);
-    }
-
-    public static <C extends Collection<T>, T> C defaultIfEmpty(C collection, C fallback) {
-        return collection == null || collection.isEmpty() ? fallback : collection;
     }
 
     public static <T> Predicate<T> acceptAll() {

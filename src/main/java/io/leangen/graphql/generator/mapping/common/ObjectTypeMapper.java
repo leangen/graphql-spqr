@@ -12,8 +12,8 @@ import graphql.schema.GraphQLTypeReference;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
+import io.leangen.graphql.metadata.TypeDiscriminatorField;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
-import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.GraphQLUtils;
@@ -21,6 +21,7 @@ import io.leangen.graphql.util.GraphQLUtils;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -74,9 +75,9 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 .withEnvironment(buildContext.globalEnvironment)
                 .withConcreteSubTypes(buildContext.abstractInputHandler.findConcreteSubTypes(ClassUtils.getRawType(javaType.getType()), buildContext))
                 .build();
-        buildContext.inputFieldBuilders.getInputFields(params).forEach(field -> typeBuilder.field(env.operationMapper.toGraphQLInputField(field, buildContext)));
+        buildContext.inputFieldBuilder.getInputFields(params).forEach(field -> typeBuilder.field(env.operationMapper.toGraphQLInputField(field, buildContext)));
         if (ClassUtils.isAbstract(javaType)) {
-            createInputDisambiguatorField(javaType, buildContext).ifPresent(typeBuilder::field);
+            getTypeDiscriminatorField(params, buildContext).ifPresent(typeBuilder::field);
         }
 
         typeBuilder.withDirective(Directives.mappedType(javaType));
@@ -114,30 +115,29 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
     }
 
     @SuppressWarnings("WeakerAccess")
-    protected Optional<GraphQLInputObjectField> createInputDisambiguatorField(AnnotatedType javaType, BuildContext buildContext) {
-        Class<?> raw = ClassUtils.getRawType(javaType.getType());
+    protected Optional<GraphQLInputObjectField> getTypeDiscriminatorField(InputFieldBuilderParams params, BuildContext buildContext) {
+        return Optional.ofNullable(buildContext.inputFieldBuilder.getTypeDiscriminatorField(params))
+                .map(discriminator -> newInputObjectField()
+                        .name(discriminator.getName())
+                        .description(discriminator.getDescription())
+                        .type(getDiscriminatorFieldType(discriminator, params.getType(), buildContext))
+                        .build());
+    }
+
+    private GraphQLInputType getDiscriminatorFieldType(TypeDiscriminatorField discriminator, AnnotatedType type, BuildContext buildContext) {
+        Class<?> raw = ClassUtils.getRawType(type.getType());
+        //Generate the name for the raw type only, as it should stay the same regardless of generics
         String typeName = buildContext.typeInfoGenerator.generateTypeName(GenericTypeReflector.annotate(raw), buildContext.messageBundle) + "TypeDisambiguator";
-        GraphQLInputType fieldType = null;
         if (buildContext.typeCache.contains(typeName)) {
-            fieldType = new GraphQLTypeReference(typeName);
+            return GraphQLTypeReference.typeRef(typeName);
         } else {
-            List<AnnotatedType> impls = buildContext.abstractInputHandler.findConcreteSubTypes(raw, buildContext).stream()
-                    .map(GenericTypeReflector::annotate)
-                    .collect(Collectors.toList());
-            if (impls.size() > 1) {
-                buildContext.typeCache.register(typeName);
-                GraphQLEnumType.Builder builder = GraphQLEnumType.newEnum()
-                        .name(typeName)
-                        .description("Input type discriminator");
-                impls.stream()
-                        .map(t -> buildContext.typeInfoGenerator.generateTypeName(t, buildContext.messageBundle))
-                        .forEach(builder::value);
-                fieldType = builder.build();
-            }
+            buildContext.typeCache.register(typeName);
+            GraphQLEnumType.Builder builder = GraphQLEnumType.newEnum()
+                    .name(typeName)
+                    .description("Input type discriminator");
+            Arrays.stream(discriminator.getValues())
+                    .forEach(builder::value);
+            return builder.build();
         }
-        return Optional.ofNullable(fieldType).map(type -> newInputObjectField()
-                .name(ValueMapper.TYPE_METADATA_FIELD_NAME)
-                .type(type)
-                .build());
     }
 }

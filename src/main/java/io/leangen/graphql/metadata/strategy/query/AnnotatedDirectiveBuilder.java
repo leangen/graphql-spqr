@@ -99,7 +99,7 @@ public class AnnotatedDirectiveBuilder implements DirectiveBuilder {
         TypeInfoGenerator infoGenerator = params.getEnvironment().typeInfoGenerator;
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         GraphQLDirective meta = directiveType.getAnnotation(GraphQLDirective.class);
-        Introspection.DirectiveLocation[] locations = (meta != null && Utils.isArrayNotEmpty(meta.locations())) ? meta.locations() : GraphQLDirective.ALL_CLIENT;
+        Introspection.DirectiveLocation[] locations = (meta != null && Utils.isNotEmpty(meta.locations())) ? meta.locations() : GraphQLDirective.ALL_CLIENT;
         return new Directive(
                 infoGenerator.generateDirectiveTypeName(directiveType, messageBundle),
                 infoGenerator.generateDirectiveTypeDescription(directiveType, messageBundle), locations, arguments);
@@ -117,7 +117,7 @@ public class AnnotatedDirectiveBuilder implements DirectiveBuilder {
         List<DirectiveArgument> arguments = ClassUtils.getAnnotationFields(annotation.annotationType()).stream()
                 .map(method -> buildDirectiveArgument(annotation, method))
                 .collect(Collectors.toList());
-        Introspection.DirectiveLocation[] locations = Utils.isArrayNotEmpty(meta.locations()) ? meta.locations() : GraphQLDirective.ALL_SCHEMA;
+        Introspection.DirectiveLocation[] locations = Utils.isNotEmpty(meta.locations()) ? meta.locations() : GraphQLDirective.ALL_SCHEMA;
         TypeInfoGenerator infoGenerator = params.getEnvironment().typeInfoGenerator;
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         AnnotatedType directiveType = GenericTypeReflector.annotate(annotation.annotationType());

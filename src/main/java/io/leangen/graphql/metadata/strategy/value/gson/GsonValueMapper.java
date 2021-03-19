@@ -9,6 +9,7 @@ import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.InputField;
+import io.leangen.graphql.metadata.TypeDiscriminatorField;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.MessageBundle;
@@ -179,6 +180,19 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
             inputFields.put(fieldName, inputField);
         }
         return inputFields;
+    }
+
+    @Override
+    public TypeDiscriminatorField getTypeDiscriminatorField(InputFieldBuilderParams params) {
+        String[] subTypes = params.getConcreteSubTypes().stream()
+                .map(GenericTypeReflector::annotate)
+                .map(impl -> params.getEnvironment().typeInfoGenerator.generateTypeName(impl, params.getEnvironment().messageBundle))
+                .toArray(String[]::new);
+
+        if (subTypes.length > 1) {
+            return new TypeDiscriminatorField(ValueMapper.TYPE_METADATA_FIELD_NAME, "Input type discriminator", subTypes);
+        }
+        return null;
     }
 
     protected TypedElement reduce(AnnotatedType declaringType, Field field, TypeTransformer transformer) {

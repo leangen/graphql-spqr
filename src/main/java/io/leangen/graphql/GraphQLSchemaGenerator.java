@@ -24,7 +24,7 @@ import io.leangen.graphql.execution.ResolverInterceptor;
 import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.execution.ResolverInterceptorFactoryParams;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.InputFieldBuilderRegistry;
+import io.leangen.graphql.generator.DelegatingInputFieldBuilder;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.OperationRegistry;
@@ -992,7 +992,7 @@ public class GraphQLSchemaGenerator {
                 basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy,
                 typeTransformer, basePackages, environment), new TypeMapperRegistry(typeMappers),
                 new SchemaTransformerRegistry(transformers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy,
-                scalarStrategy, typeTransformer, abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders),
+                scalarStrategy, typeTransformer, abstractInputHandler, new DelegatingInputFieldBuilder(inputFieldBuilders),
                 interceptorFactory, directiveBuilder, inclusionStrategy, relayMappingConfig, additionalTypes.values(),
                 additionalDirectiveTypes, typeComparator, implDiscoveryStrategy, codeRegistry);
         OperationMapper operationMapper = new OperationMapper(queryRootName, mutationRootName, subscriptionRootName, buildContext);

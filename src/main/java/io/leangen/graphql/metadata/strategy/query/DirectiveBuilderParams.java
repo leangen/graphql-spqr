@@ -1,7 +1,7 @@
 package io.leangen.graphql.metadata.strategy.query;
 
 import io.leangen.graphql.execution.GlobalEnvironment;
-import io.leangen.graphql.generator.InputFieldBuilderRegistry;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 
 import java.util.Collections;
 import java.util.List;
@@ -9,10 +9,10 @@ import java.util.List;
 public class DirectiveBuilderParams {
 
     private final GlobalEnvironment environment;
-    private final InputFieldBuilderRegistry inputFieldBuilders;
+    private final InputFieldBuilder inputFieldBuilders;
     private final List<Class<?>> concreteSubTypes;
 
-    private DirectiveBuilderParams(GlobalEnvironment environment, InputFieldBuilderRegistry inputFieldBuilders, List<Class<?>> concreteSubTypes) {
+    private DirectiveBuilderParams(GlobalEnvironment environment, InputFieldBuilder inputFieldBuilders, List<Class<?>> concreteSubTypes) {
         this.environment = environment;
         this.inputFieldBuilders = inputFieldBuilders;
         this.concreteSubTypes = concreteSubTypes;
@@ -22,7 +22,7 @@ public class DirectiveBuilderParams {
         return environment;
     }
 
-    public InputFieldBuilderRegistry getInputFieldBuilders() {
+    public InputFieldBuilder getInputFieldBuilders() {
         return inputFieldBuilders;
     }
 
@@ -36,7 +36,7 @@ public class DirectiveBuilderParams {
 
     public static class Builder {
         private GlobalEnvironment environment;
-        private InputFieldBuilderRegistry inputFieldBuilders;
+        private InputFieldBuilder inputFieldBuilders;
         private List<Class<?>> concreteSubTypes = Collections.emptyList();
 
         public Builder withEnvironment(GlobalEnvironment environment) {
@@ -44,7 +44,7 @@ public class DirectiveBuilderParams {
             return this;
         }
 
-        public Builder withInputFieldBuilders(InputFieldBuilderRegistry inputFieldBuilders) {
+        public Builder withInputFieldBuilder(InputFieldBuilder inputFieldBuilders) {
             this.inputFieldBuilders = inputFieldBuilders;
             return this;
         }

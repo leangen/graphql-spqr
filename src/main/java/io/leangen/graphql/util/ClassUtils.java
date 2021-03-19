@@ -382,21 +382,6 @@ public class ClassUtils {
         return new ClassFinder().findImplementations(superType, info -> true, false, packages);
     }
 
-    /**
-     * Searches for the implementations/subtypes of the given class. Only the matching classes are loaded.
-     *
-     * @param superType The type the implementations/subtypes of which are to be searched for
-     * @param packages The packages to limit the search to
-     *
-     * @return A collection of classes discovered that implementation/extend {@code superType}
-     *
-     * @deprecated Use {@link ClassFinder} directly as that enables caching of the search results
-     */
-    @Deprecated
-    public static List<Class<?>> findImplementations(Class superType, String... packages) {
-        return new ClassFinder().findImplementations(superType, info -> true, packages);
-    }
-
     public static boolean isAbstract(AnnotatedType type) {
         return isAbstract(getRawType(type.getType()));
     }
@@ -444,9 +429,37 @@ public class ClassUtils {
         return element.toString();
     }
 
+    /**
+     * Checks if an annotation is present either directly on the {@code element}, or as a <b>1st level<b/> meta-annotation
+     *
+     * @param element The element to search the annotation on
+     * @param annotation The type of the annotation to search for
+     * @return {@code true} if the annotation of type {@code annotation} is found, {@code false} otherwise
+     */
     public static boolean hasAnnotation(AnnotatedElement element, Class<? extends Annotation> annotation) {
         return element.isAnnotationPresent(annotation) || Arrays.stream(element.getAnnotations())
                 .anyMatch(ann -> ann.annotationType().isAnnotationPresent(annotation));
+    }
+
+    /**
+     * Checks if an annotation is present either directly on the {@code element}, or recursively as a meta-annotation,
+     * at <b>any level<b/>
+     *
+     * @param element The element to search the annotation on
+     * @param annotation The type of the annotation to search for
+     * @return {@code true} if the annotation of type {@code annotation} is found, {@code false} otherwise
+     */
+    public static boolean hasMetaAnnotation(AnnotatedElement element, Class<? extends Annotation> annotation) {
+        return hasMetaAnnotation(element, annotation, new HashSet<>());
+    }
+
+    private static boolean hasMetaAnnotation(AnnotatedElement element, Class<? extends Annotation> annotation, Set<AnnotatedElement> seen) {
+        if (seen.contains(element)) {
+            return false;
+        }
+        seen.add(element);
+        return element.isAnnotationPresent(annotation) || Arrays.stream(element.getAnnotations())
+                .anyMatch(ann -> hasMetaAnnotation(ann.annotationType(), annotation, seen));
     }
 
     public static <T extends Annotation> Optional<T> findApplicableAnnotation(AnnotatedElement element, Class<T> annotation) {
@@ -502,7 +515,7 @@ public class ClassUtils {
                 .toArray(Annotation[]::new);
     }
 
-    public static <T extends AnnotatedType> T addAnnotations(T type, Annotation[] annotations) {
+    public static <T extends AnnotatedType> T addAnnotations(T type, Annotation... annotations) {
         if (type == null || annotations == null || annotations.length == 0) return type;
         return GenericTypeReflector.updateAnnotations(type, merge(type.getAnnotations(), annotations));
     }

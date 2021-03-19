@@ -19,6 +19,7 @@ import io.leangen.graphql.metadata.strategy.query.DirectiveBuilder;
 import io.leangen.graphql.metadata.strategy.query.DirectiveBuilderParams;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
@@ -54,7 +55,7 @@ public class BuildContext {
     public final String[] basePackages;
     public final MessageBundle messageBundle;
     public final ValueMapperFactory valueMapperFactory;
-    public final InputFieldBuilderRegistry inputFieldBuilders;
+    public final InputFieldBuilder inputFieldBuilder;
     public final InclusionStrategy inclusionStrategy;
     public final ScalarDeserializationStrategy scalarStrategy;
     public final TypeTransformer typeTransformer;
@@ -84,7 +85,7 @@ public class BuildContext {
      * @param interfaceStrategy The strategy deciding what Java type gets mapped to a GraphQL interface
      * @param scalarStrategy The strategy deciding how abstract Java types are discovered
      * @param abstractInputHandler The strategy deciding what Java type gets mapped to a GraphQL interface
-     * @param inputFieldBuilders The strategy deciding how GraphQL input fields are discovered from Java types
+     * @param inputFieldBuilder The strategy deciding how GraphQL input fields are discovered from Java types
      * @param interceptorFactory The factory to use to obtain interceptors applicable to a resolver
      * @param directiveBuilder The factory used to create directives where applicable
      * @param relayMappingConfig Relay specific configuration
@@ -94,7 +95,7 @@ public class BuildContext {
                         TypeMapperRegistry typeMappers, SchemaTransformerRegistry transformers, ValueMapperFactory valueMapperFactory,
                         TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
                         ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
-                        InputFieldBuilderRegistry inputFieldBuilders, ResolverInterceptorFactory interceptorFactory,
+                        InputFieldBuilder inputFieldBuilder, ResolverInterceptorFactory interceptorFactory,
                         DirectiveBuilder directiveBuilder, InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig,
                         Collection<GraphQLNamedType> knownTypes, List<AnnotatedType> additionalDirectives, Comparator<AnnotatedType> typeComparator,
                         ImplementationDiscoveryStrategy implementationStrategy, GraphQLCodeRegistry.Builder codeRegistry) {
@@ -117,7 +118,7 @@ public class BuildContext {
         this.interfaceStrategy = interfaceStrategy;
         this.basePackages = basePackages;
         this.valueMapperFactory = valueMapperFactory;
-        this.inputFieldBuilders = inputFieldBuilders;
+        this.inputFieldBuilder = inputFieldBuilder;
         this.inclusionStrategy = inclusionStrategy;
         this.scalarStrategy = scalarStrategy;
         this.typeTransformer = typeTransformer;
@@ -157,7 +158,7 @@ public class BuildContext {
     public DirectiveBuilderParams directiveBuilderParams(List<Class<?>> concreteSubTypes) {
         return DirectiveBuilderParams.builder()
                 .withEnvironment(globalEnvironment)
-                .withInputFieldBuilders(inputFieldBuilders)
+                .withInputFieldBuilder(inputFieldBuilder)
                 .withConcreteSubTypes(concreteSubTypes)
                 .build();
     }

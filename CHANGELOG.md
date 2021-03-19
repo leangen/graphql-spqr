@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Improve GraphQLSchemaGenerator API and JavaDoc [#384](https://github.com/leangen/graphql-spqr/issues/384)
 ### Fixed
+- Support for `@JsonTypeInfo` [#353](https://github.com/leangen/graphql-spqr/issues/353)
 - [Breaking] Bring MapToListTypeAdapter in line with the other adapters [#382](https://github.com/leangen/graphql-spqr/issues/382)
 
 ## [0.11.1] - 2021-02-09
