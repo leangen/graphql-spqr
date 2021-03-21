@@ -25,6 +25,7 @@ public abstract class AbstractResolverBuilder implements ResolverBuilder {
     protected ResolverArgumentBuilder argumentBuilder;
     protected BinaryOperator<TypedElement> propertyElementReducer;
     protected List<Predicate<Member>> filters = new ArrayList<>();
+    protected MethodInvokerFactory methodInvokerFactory;
 
     public AbstractResolverBuilder withOperationInfoGenerator(OperationInfoGenerator operationInfoGenerator) {
         this.operationInfoGenerator = operationInfoGenerator;
@@ -49,6 +50,11 @@ public abstract class AbstractResolverBuilder implements ResolverBuilder {
 
     public AbstractResolverBuilder withDefaultFilters() {
         return withFilters(ClassUtils::isReal);
+    }
+
+    public AbstractResolverBuilder withMethodInvokerFactory(MethodInvokerFactory methodInvokerFactory) {
+        this.methodInvokerFactory = methodInvokerFactory;
+        return this;
     }
 
     public static TypedElement mergePropertyElements(TypedElement field, TypedElement getter) {

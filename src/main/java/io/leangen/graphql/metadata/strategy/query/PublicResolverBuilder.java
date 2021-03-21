@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 public class PublicResolverBuilder extends AbstractResolverBuilder {
 
     private String[] basePackages;
-    private MethodInvokerFactory methodInvokerFactory;
     private JavaDeprecationMappingConfig javaDeprecationConfig;
 
     public PublicResolverBuilder() {
@@ -54,11 +53,6 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
 
     public PublicResolverBuilder withBasePackages(String... basePackages) {
         this.basePackages = basePackages;
-        return this;
-    }
-
-    public PublicResolverBuilder withMethodInvokerFactory(MethodInvokerFactory methodInvokerFactory) {
-        this.methodInvokerFactory = methodInvokerFactory;
         return this;
     }
 
