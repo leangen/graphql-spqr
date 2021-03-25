@@ -76,7 +76,7 @@ public class ExtensionList<E> extends ArrayList<E> {
     @SafeVarargs
     public final ExtensionList<E> insertBeforeOrPrepend(Class<? extends E> extensionType, E... extensions) {
         int firstIndexOfType = firstIndexOfType(extensionType);
-        return insert(firstIndexOfType >= 0 ? firstIndexOfType : 0, extensions);
+        return insert(Math.max(firstIndexOfType, 0), extensions);
     }
 
     public ExtensionList<E> drop(int index) {
@@ -118,6 +118,15 @@ public class ExtensionList<E> extends ArrayList<E> {
     public <T extends E> ExtensionList<E> modify(Class<T> extensionType, Consumer<T> modifier) {
         modifier.accept((T) get(firstIndexOfTypeStrict(extensionType)));
         return this;
+    }
+
+    public ExtensionList<E> modifyAll(Predicate<? super E> test, Consumer<E> modifier) {
+        super.stream().filter(test).forEach(modifier);
+        return this;
+    }
+
+    public ExtensionList<E> modifyAll(Consumer<E> modifier) {
+        return modifyAll(element -> true, modifier);
     }
 
     private int firstIndexOfTypeStrict(Class<? extends E> extensionType) {

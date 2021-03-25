@@ -14,14 +14,15 @@ public class ContextUtils {
                 ctx.of(ContextKey.class, executionInput.getContext())));
     }
 
-    public static Object unwrapContext(Object context) {
+    @SuppressWarnings("unchecked")
+    public static <T> T unwrapContext(Object context) {
         if (isDefault(context)) {
             GraphQLContext ctx = (GraphQLContext) context;
             if (ctx.hasKey(ContextKey.class)) {
                 return ctx.get(ContextKey.class);
             }
         }
-        return context;
+        return (T) context;
     }
 
     public static boolean isDefault(Object context) {

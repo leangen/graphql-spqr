@@ -14,6 +14,7 @@ import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.util.ContextUtils;
 import io.leangen.graphql.util.Urls;
 
 import java.lang.reflect.AnnotatedElement;
@@ -126,5 +127,9 @@ public class ResolutionEnvironment {
 
     public Directives getDirectives() {
         return getDirectives(null);
+    }
+
+    public Object getGlobalContext() {
+        return ContextUtils.unwrapContext(rootContext);
     }
 }

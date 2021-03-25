@@ -36,6 +36,7 @@ import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.InputParsingException;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Scalars;
 import io.leangen.graphql.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +86,9 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
             return (T) json;
         }
         try {
+            if (Scalars.isScalar(type.getType())) {
+                return (T) Scalars.toGraphQLScalarType(type.getType()).getCoercing().parseValue(json);
+            }
             return objectMapper.readValue(json, objectMapper.getTypeFactory().constructType(type.getType()));
         } catch (IOException e) {
             throw new InputParsingException(json, type.getType(), e);
@@ -93,6 +97,9 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
 
     @Override
     public String toString(Object output, AnnotatedType type) {
+        if (output != null && Scalars.isScalar(type.getType())) {
+            output = Scalars.toGraphQLScalarType(type.getType()).getCoercing().serialize(output);
+        }
         if (output == null || output instanceof String) {
             return (String) output;
         }
