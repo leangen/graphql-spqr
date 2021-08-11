@@ -1,5 +1,6 @@
 package io.leangen.graphql.generator.mapping.common;
 
+import graphql.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLRootContext;
 import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
@@ -33,6 +34,11 @@ public class RootContextInjector implements ArgumentInjector {
         if (input instanceof Map) {
             return ((Map) input).get(expression);
         }
+
+        if(input instanceof GraphQLContext) {
+            return ((GraphQLContext) input).get(expression);
+        }
+
         return ClassUtils.getFieldValue(input, expression);
     }
 }
