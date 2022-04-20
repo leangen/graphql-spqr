@@ -34,16 +34,11 @@ public class Resolver {
     private final Set<OperationArgument> contextArguments;
     private final String complexityExpression;
     private final Executable<?> executable;
-    private final boolean batched;
 
-    public Resolver(String operationName, String operationDescription, String operationDeprecationReason, boolean batched,
+    public Resolver(String operationName, String operationDescription, String operationDeprecationReason,
                     Executable<?> executable, TypedElement typedElement, List<OperationArgument> arguments, String complexityExpression) {
 
         Set<OperationArgument> contextArguments = resolveContexts(arguments);
-        
-        if (batched) {
-            validateBatching(executable.toString(), typedElement.getJavaType(), contextArguments);
-        }
         
         this.operationName = validateName(operationName, executable);
         this.operationDescription = operationDescription;
@@ -54,7 +49,6 @@ public class Resolver {
         this.contextArguments = contextArguments;
         this.complexityExpression = complexityExpression;
         this.executable = executable;
-        this.batched = batched;
     }
 
     private String validateName(String operationName, Executable<?> executable) {
@@ -64,14 +58,7 @@ public class Resolver {
         return operationName;
     }
 
-    private void validateBatching(String executableSignature, AnnotatedType returnType, Set<OperationArgument> contextArguments) {
-        if (contextArguments.isEmpty() || !Stream.concat(contextArguments.stream().map(arg -> arg.getJavaType().getType()), Stream.of(returnType.getType()))
-                .allMatch(type -> GenericTypeReflector.isSuperType(List.class, type))) {
-            throw new IllegalArgumentException("Resolver method " + executableSignature
-                    + " is marked as batched but doesn't return a list or its context argument is not a list");
-        }
-    }
-    
+
     /**
      * Finds the argument representing the query context (object returned by the parent query), if it exists.
      * Query context arguments potentially exist only for the resolvers of nestable queries.
@@ -114,10 +101,6 @@ public class Resolver {
 
     public String getOperationName() {
         return operationName;
-    }
-
-    public boolean isBatched() {
-        return batched;
     }
 
     public String getOperationDescription() {

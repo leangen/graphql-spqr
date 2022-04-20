@@ -76,8 +76,7 @@ public class DefaultOperationBuilder implements OperationBuilder {
         String name = resolveName(resolvers);
         AnnotatedType javaType = resolveJavaType(name, resolvers, environment.messageBundle);
         List<OperationArgument> arguments = collectArguments(name, resolvers);
-        boolean batched = isBatched(resolvers);
-        return new Operation(name, javaType, contextType, arguments, resolvers, operationType, batched);
+        return new Operation(name, javaType, contextType, arguments, resolvers, operationType);
     }
 
     protected String resolveName(List<Resolver> resolvers) {
@@ -115,10 +114,6 @@ public class DefaultOperationBuilder implements OperationBuilder {
                         argumentsByName.get(argName).stream().anyMatch(OperationArgument::isMappable)
                 ))
                 .collect(Collectors.toList());
-    }
-
-    protected boolean isBatched(List<Resolver> resolvers) {
-        return resolvers.stream().anyMatch(Resolver::isBatched);
     }
 
     protected AnnotatedType unionize(AnnotatedType[] types, MessageBundle messageBundle) {

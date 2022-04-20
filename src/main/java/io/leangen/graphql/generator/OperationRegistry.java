@@ -138,7 +138,6 @@ public class OperationRegistry {
 
     private Set<Operation> getEmbeddableQueries(Type domainType) {
         return getAllQueries().stream()
-                .map(Operation::unbatch)
                 .filter(query -> query.isEmbeddableForType(domainType))
                 .collect(Collectors.toSet());
     }

@@ -4,9 +4,9 @@
     <groupId>io.leangen.graphql</groupId>
     <artifactId>spqr</artifactId>
     <packaging>jar</packaging>
-    <version>0.11.3-SNAPSHOT</version>
+    <version>0.11.4-SNAPSHOT</version>
 
-    <inceptionYear>2016</inceptionYear>
+    <inceptionYear>2022</inceptionYear>
     <name>GraphQL SPQR</name>
     <url>https://github.com/leangen/GraphQL-SPQR</url>
     <description>Java API for GraphQL services</description>
@@ -98,7 +98,12 @@
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java</artifactId>
-            <version>16.2</version>
+            <version>17.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java-extended-scalars</artifactId>
+            <version>17.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.classgraph</groupId>

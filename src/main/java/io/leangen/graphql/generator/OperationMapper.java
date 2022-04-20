@@ -1,55 +1,23 @@
 package io.leangen.graphql.generator;
 
-import graphql.execution.batched.BatchedDataFetcher;
 import graphql.relay.Relay;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLDirective;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLInputObjectField;
-import graphql.schema.GraphQLInputObjectType;
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLNamedOutputType;
-import graphql.schema.GraphQLNamedType;
-import graphql.schema.GraphQLNonNull;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLType;
-import graphql.schema.GraphQLUnionType;
-import graphql.schema.PropertyDataFetcher;
+import graphql.schema.*;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
-import io.leangen.graphql.metadata.Directive;
-import io.leangen.graphql.metadata.DirectiveArgument;
-import io.leangen.graphql.metadata.InputField;
-import io.leangen.graphql.metadata.Operation;
-import io.leangen.graphql.metadata.OperationArgument;
-import io.leangen.graphql.metadata.TypedElement;
+import io.leangen.graphql.metadata.*;
 import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.strategy.query.DirectiveBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
-import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.ContextUtils;
-import io.leangen.graphql.util.Directives;
-import io.leangen.graphql.util.GraphQLUtils;
-import io.leangen.graphql.util.Urls;
+import io.leangen.graphql.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -327,8 +295,11 @@ public class OperationMapper {
                             .name(arg.getName())
                             .description(arg.getDescription())
                             .type(arg.getType());
-                    if (arg.hasSetDefaultValue()) {
-                        builder.defaultValue(arg.getDefaultValue());
+
+                    InputValueWithState argDefaultValue = arg.getArgumentDefaultValue();
+
+                    if (argDefaultValue.isSet()) {
+                        builder.defaultValue(argDefaultValue.getValue());
                     }
                     return builder.build();
                 })
@@ -393,9 +364,6 @@ public class OperationMapper {
                 .map(OperationArgument::getJavaType);
         ValueMapper valueMapper = buildContext.createValueMapper(inputTypes);
 
-        if (operation.isBatched()) {
-            return (BatchedDataFetcher) environment -> new OperationExecutor(operation, valueMapper, buildContext.globalEnvironment, buildContext.interceptorFactory).execute(environment);
-        }
         return new OperationExecutor(operation, valueMapper, buildContext.globalEnvironment, buildContext.interceptorFactory)::execute;
     }
 

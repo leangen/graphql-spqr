@@ -41,6 +41,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import static graphql.scalars.java.JavaPrimitives.GraphQLBigDecimal;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertArgumentsPresent;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertInputMapOf;
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertListOf;
@@ -166,16 +167,16 @@ public class GenericsTest {
 
         GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("item").getType();
         assertNonNull(itemType, GraphQLList.class);
-        assertListOf(((graphql.schema.GraphQLNonNull) itemType).getWrappedType(), Scalars.GraphQLBigDecimal);
+        assertListOf(((graphql.schema.GraphQLNonNull) itemType).getWrappedType(), GraphQLBigDecimal);
 
         GraphQLOutputType itemCollectionType = schemaWithGenerics.getQueryType().getFieldDefinition("allItems").getType();
         assertListOfNonNull(itemCollectionType, GraphQLList.class);
-        assertListOf(((graphql.schema.GraphQLNonNull) ((GraphQLList) itemCollectionType).getWrappedType()).getWrappedType(), Scalars.GraphQLBigDecimal);
+        assertListOf(((graphql.schema.GraphQLNonNull) ((GraphQLList) itemCollectionType).getWrappedType()).getWrappedType(), GraphQLBigDecimal);
 
         GraphQLFieldDefinition addOneItem = schemaWithGenerics.getMutationType().getFieldDefinition("addItem");
         GraphQLType itemArgType = addOneItem.getArgument("item").getType();
         assertNonNull(itemArgType, GraphQLList.class);
-        assertListOf(((graphql.schema.GraphQLNonNull) itemArgType).getWrappedType(), Scalars.GraphQLBigDecimal);
+        assertListOf(((graphql.schema.GraphQLNonNull) itemArgType).getWrappedType(), GraphQLBigDecimal);
 
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithGenerics).build();
         ExecutionResult result = graphQL.execute("{ allItems }");
@@ -205,7 +206,7 @@ public class GenericsTest {
         GraphQLType inner = ((graphql.schema.GraphQLNonNull) itemType).getWrappedType();
         assertListOf(inner, graphql.schema.GraphQLNonNull.class);
         inner = ((graphql.schema.GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
-        assertListOf(inner, Scalars.GraphQLBigDecimal);
+        assertListOf(inner, GraphQLBigDecimal);
 
         GraphQLFieldDefinition addOneItem = schemaWithGenerics.getMutationType().getFieldDefinition("addItem");
         GraphQLType itemArgType = addOneItem.getArgument("item").getType();
@@ -213,7 +214,7 @@ public class GenericsTest {
         inner = ((graphql.schema.GraphQLNonNull) itemType).getWrappedType();
         assertListOf(inner, graphql.schema.GraphQLNonNull.class);
         inner = ((graphql.schema.GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
-        assertListOf(inner, Scalars.GraphQLBigDecimal);
+        assertListOf(inner, GraphQLBigDecimal);
 
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithGenerics).build();
         ExecutionResult result = graphQL.execute("{ allItems }");
@@ -232,8 +233,8 @@ public class GenericsTest {
                 .generate();
 
         GraphQLFieldDefinition query = schema.getQueryType().getFieldDefinition("echo");
-        assertEquals(Scalars.GraphQLBigDecimal, query.getType());
-        assertEquals(Scalars.GraphQLBigDecimal, query.getArgument("in").getType());
+        assertEquals(GraphQLBigDecimal, query.getType());
+        assertEquals(GraphQLBigDecimal, query.getArgument("in").getType());
 
         GraphQL graphQL = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = graphQL.execute("{ echo (in: 3) }");

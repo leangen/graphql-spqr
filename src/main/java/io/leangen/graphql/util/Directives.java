@@ -77,18 +77,18 @@ public class Directives {
 
     public static AnnotatedType getMappedType(GraphQLType type) {
         return DirectivesUtil.directiveWithArg(((GraphQLDirectiveContainer) type).getDirectives(), MAPPED_TYPE, TYPE)
-                .map(arg -> (AnnotatedType) arg.getValue())
+                .map(arg -> (AnnotatedType) arg.getArgumentValue().getValue())
                 .orElseThrow(() -> new IllegalArgumentException("GraphQL type " + name(type) + " does not have a mapped Java type"));
     }
 
     public static Optional<Operation> getMappedOperation(GraphQLFieldDefinition field) {
         return DirectivesUtil.directiveWithArg(field.getDirectives(), MAPPED_OPERATION, OPERATION)
-                .map(arg -> (Operation) arg.getValue());
+                .map(arg -> (Operation) arg.getArgumentValue().getValue());
     }
 
     public static Optional<InputField> getMappedInputField(GraphQLInputObjectField field) {
         return DirectivesUtil.directiveWithArg(field.getDirectives(), MAPPED_INPUT_FIELD, INPUT_FIELD)
-                .map(arg -> (InputField) arg.getValue());
+                .map(arg -> (InputField) arg.getArgumentValue().getValue());
     }
 
     private static final GraphQLScalarType UNREPRESENTABLE = GraphQLScalarType.newScalar()

@@ -1,6 +1,5 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import graphql.execution.batched.Batched;
 import graphql.language.OperationDefinition;
 import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
@@ -116,7 +115,6 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                             messageBundle.interpolate(operationInfoGenerator.name(infoParams)),
                             messageBundle.interpolate(operationInfoGenerator.description(infoParams)),
                             messageBundle.interpolate(ReservedStrings.decode(operationInfoGenerator.deprecationReason(infoParams))),
-                            batchable && method.isAnnotationPresent(Batched.class),
                             methodInvokerFactory.create(querySourceBean, method, beanType, params.getExposedBeanType()),
                             element,
                             argumentBuilder.buildResolverArguments(
@@ -144,7 +142,6 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                             messageBundle.interpolate(operationInfoGenerator.name(infoParams)),
                             messageBundle.interpolate(operationInfoGenerator.description(infoParams)),
                             messageBundle.interpolate(ReservedStrings.decode(operationInfoGenerator.deprecationReason(infoParams))),
-                            element.isAnnotationPresent(Batched.class),
                             methodInvokerFactory.create(params.getQuerySourceBeanSupplier(), prop.getGetter(), beanType, params.getExposedBeanType()),
                             element,
                             argumentBuilder.buildResolverArguments(new ArgumentBuilderParams(prop.getGetter(), beanType, params.getInclusionStrategy(), params.getTypeTransformer(), params.getEnvironment())),
@@ -169,7 +166,6 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                             messageBundle.interpolate(operationInfoGenerator.name(infoParams)),
                             messageBundle.interpolate(operationInfoGenerator.description(infoParams)),
                             messageBundle.interpolate(ReservedStrings.decode(operationInfoGenerator.deprecationReason(infoParams))),
-                            false,
                             new FieldAccessor(field, beanType),
                             element,
                             Collections.emptyList(),
@@ -208,7 +204,7 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
         } else if (Utils.isNotEmpty(defaultPackages)) {
             basePackages = defaultPackages;
         } else if (beanType.getPackage() != null) {
-            basePackages = new String[] {beanType.getPackage().getName()};
+            basePackages = new String[]{beanType.getPackage().getName()};
         }
         basePackages = Arrays.stream(basePackages).filter(Utils::isNotEmpty).toArray(String[]::new); //remove the default package
         return method.getDeclaringClass().equals(beanType)

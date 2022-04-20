@@ -27,14 +27,9 @@ public class Operation {
     private final Map<String, Resolver> resolversByFingerprint;
     private final List<OperationArgument> arguments;
     private final OperationDefinition.Operation operationType;
-    private final boolean batched;
 
     public Operation(String name, AnnotatedType javaType, Type contextType, List<OperationArgument> arguments,
-                     List<Resolver> resolvers, OperationDefinition.Operation operationType, boolean batched) {
-
-        if (!(resolvers.stream().allMatch(Resolver::isBatched) || resolvers.stream().noneMatch(Resolver::isBatched))) {
-            throw new IllegalArgumentException("Operation \"" + name + "\" mixes regular and batched resolvers");
-        }
+                     List<Resolver> resolvers, OperationDefinition.Operation operationType) {
         
         this.name = name;
         this.description = resolvers.stream().map(Resolver::getOperationDescription).filter(Utils::isNotEmpty).findFirst().orElse(null);
@@ -46,13 +41,8 @@ public class Operation {
         this.resolversByFingerprint = collectResolversByFingerprint(resolvers);
         this.arguments = arguments;
         this.operationType = operationType;
-        this.batched = batched;
     }
-    
-    public Operation unbatch() {
-        return batched ? new UnbatchedOperation(this) : this;
-    }
-    
+
     private Map<String, Resolver> collectResolversByFingerprint(List<Resolver> resolvers) {
         Map<String, Resolver> resolversByFingerprint = new HashMap<>();
         resolvers.forEach(resolver -> resolversByFingerprint.putIfAbsent(resolver.getFingerprint(), resolver));
@@ -113,10 +103,6 @@ public class Operation {
         return operationType;
     }
 
-    public boolean isBatched() {
-        return batched;
-    }
-
     public TypedElement getTypedElement() {
         return typedElement;
     }
@@ -124,26 +110,5 @@ public class Operation {
     @Override
     public String toString() {
         return name + "(" + arguments.stream().map(OperationArgument::getName).collect(Collectors.joining(",")) + ")";
-    }
-    
-    private static class UnbatchedOperation extends Operation {
-        
-        private UnbatchedOperation(Operation operation) {
-            super(operation.name, unbatchJavaType(operation.typedElement.getJavaType()), unbatchContextType(operation.contextType),
-                    operation.arguments, new ArrayList<>(operation.getResolvers()), operation.getOperationType(), true);
-        }
-
-        private static AnnotatedType unbatchJavaType(AnnotatedType javaType) {
-            return GenericTypeReflector.getTypeParameter(javaType, List.class.getTypeParameters()[0]);
-        }
-        
-        private static Type unbatchContextType(Type contextType) {
-            return GenericTypeReflector.getTypeParameter(contextType, List.class.getTypeParameters()[0]);
-        }
-        
-        @Override
-        public Operation unbatch() {
-            return this;
-        }
     }
 }

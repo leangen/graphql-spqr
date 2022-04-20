@@ -86,7 +86,7 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
 
     @Override
     public GraphQLInputObjectField transformInputField(GraphQLInputObjectField field, InputField inputField, OperationMapper operationMapper, BuildContext buildContext) {
-        if (field.getDefaultValue() == null && shouldWrap(field.getType(), inputField.getTypedElement())) {
+        if (field.hasSetDefaultValue() && shouldWrap(field.getType(), inputField.getTypedElement())) {
             return field.transform(builder -> builder.type(new GraphQLNonNull(field.getType())));
         }
         if (shouldUnwrap(field)) {
@@ -137,7 +137,7 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
 
     //TODO Make this use hasSetDefaultValue once https://github.com/graphql-java/graphql-java/issues/1958 is fixed
     private boolean shouldUnwrap(GraphQLInputObjectField field) {
-        return field.getDefaultValue() != null && field.getType() instanceof GraphQLNonNull;
+        return field.hasSetDefaultValue() && field.getType() instanceof GraphQLNonNull;
     }
 
     private boolean shouldUnwrap(GraphQLArgument argument) {
