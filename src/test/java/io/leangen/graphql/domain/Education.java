@@ -7,6 +7,7 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 
 /**
  * Created by bojan.tomic on 5/28/16.
+ * Altered getters to look like record.
  */
 public class Education {
 
@@ -33,17 +34,17 @@ public class Education {
     }
 
 
-    public String getSchoolName() {
+    public String schoolName() {
         return schoolName;
     }
 
 
-    public Integer getStartYear() {
+    public Integer startYear() {
         return startYear;
     }
 
 
-    public Integer getEndYear() {
+    public Integer endYear() {
         return endYear;
     }
 }

@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 
 /**
  * Created by bojan.tomic on 3/21/16.
+ * Altered getters to look like record.
  */
 public class Street {
 
@@ -20,21 +21,13 @@ public class Street {
     }
 
     @GraphQLQuery(name = "name", description = "Street name")
-    public @GraphQLNonNull String getName() {
+    public @GraphQLNonNull String name() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     @GraphQLQuery(name = "number", description = "House number")
-    public Integer getNumber() {
+    public Integer number() {
         return number;
-    }
-
-    public void setNumber(Integer number) {
-        this.number = number;
     }
 
     @GraphQLQuery(name = "uri", description = "A uniform resource identifier")

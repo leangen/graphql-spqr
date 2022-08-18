@@ -215,17 +215,22 @@ public class ClassUtils {
     }
 
     /**
-     * Checks whether the given method is a JavaBean property getter
+     * Checks whether the given method is a JavaBean or java.util.Record property getter
      *
      * @param getter The method to be checked
      * @return Boolean indicating whether the method is a getter
      * @see ClassUtils#isSetter(Method)
      */
     public static boolean isGetter(Method getter) {
-        return isReal(getter) && getter.getParameterCount() == 0 && getter.getReturnType() != void.class
+        try {
+            return isReal(getter) && getter.getParameterCount() == 0 && getter.getReturnType() != void.class
                 && getter.getReturnType() != Void.class && getter.getName().startsWith("get") ||
                 ((getter.getReturnType() == Boolean.class || getter.getReturnType() == boolean.class)
-                        && getter.getName().startsWith("is"));
+                        && getter.getName().startsWith("is"))
+                || getter.getDeclaringClass().getDeclaredField(getter.getName()).getType().equals(getter.getReturnType());
+        } catch (NoSuchFieldException | SecurityException e) {
+          return false;
+        }
     }
 
     /**
@@ -309,10 +314,18 @@ public class ClassUtils {
         return propertyElements;
     }
 
+    /**
+     * Locates a JavaBean or java.util.Record property getter for given fieldName
+     *
+     * @param type java class or record to check
+     * @param fieldName the field name
+     * @return if found a Method is returned
+     */
     public static Optional<Method> findGetter(Class<?> type, String fieldName) {
-        return Utils.or(
+        return Utils.or(Utils.or(
                 findMethod(type, "get" + Utils.capitalize(fieldName)),
-                findMethod(type, "is" + Utils.capitalize(fieldName)));
+                findMethod(type, "is" + Utils.capitalize(fieldName))),
+                findMethod(type, fieldName));
     }
 
     public static Optional<Method> findSetter(Class<?> type, String fieldName, Class<?> fieldType) {
