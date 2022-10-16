@@ -86,7 +86,11 @@ public class Scalars {
                 @Override
                 public UUID parseValue(Object input) {
                     if (input instanceof String) {
-                        return UUID.fromString((String) input);
+                        try {
+                            return UUID.fromString((String) input);
+                        } catch (IllegalArgumentException e) {
+                            throw new CoercingParseValueException("Value \"" + input + "\" could not be parsed into a UUID", e);
+                        }
                     }
                     if (input instanceof UUID) {
                         return (UUID) input;
@@ -97,7 +101,11 @@ public class Scalars {
                 @Override
                 public UUID parseLiteral(Object input) {
                     StringValue string = literalOrException(input, StringValue.class);
-                    return UUID.fromString(string.getValue());
+                    try {
+                        return UUID.fromString(string.getValue());
+                    } catch (IllegalArgumentException e) {
+                        throw new CoercingParseValueException("Value \"" + input + "\" could not be parsed into a UUID", e);
+                    }
                 }
             }).build();
 
@@ -119,7 +127,11 @@ public class Scalars {
                 @Override
                 public URI parseValue(Object input) {
                     if (input instanceof String) {
-                        return URI.create((String) input);
+                        try {
+                            return URI.create((String) input);
+                        } catch (IllegalArgumentException e) {
+                            throw new CoercingParseValueException("Value \"" + input + "\" could not be parsed into a URI", e);
+                        }
                     }
                     if (input instanceof URI) {
                         return (URI) input;
@@ -130,7 +142,11 @@ public class Scalars {
                 @Override
                 public URI parseLiteral(Object input) {
                     StringValue string = literalOrException(input, StringValue.class);
-                    return URI.create(string.getValue());
+                    try {
+                        return URI.create(string.getValue());
+                    } catch (IllegalArgumentException e) {
+                        throw new CoercingParseValueException("Value \"" + input + "\" could not be parsed into a URI", e);
+                    }
                 }
             }).build();
 
