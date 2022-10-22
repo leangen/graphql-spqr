@@ -1,6 +1,6 @@
 package io.leangen.graphql.generator;
 
-import graphql.execution.batched.BatchedDataFetcher;
+import graphql.execution.nextgen.BatchedDataFetcher;
 import graphql.relay.Relay;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -328,7 +328,7 @@ public class OperationMapper {
                             .description(arg.getDescription())
                             .type(arg.getType());
                     if (arg.hasSetDefaultValue()) {
-                        builder.defaultValue(arg.getDefaultValue());
+                        builder.defaultValue(arg.getArgumentDefaultValue());
                     }
                     return builder.build();
                 })

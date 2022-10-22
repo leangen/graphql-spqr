@@ -52,16 +52,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static graphql.Scalars.GraphQLBigDecimal;
-import static graphql.Scalars.GraphQLBigInteger;
 import static graphql.Scalars.GraphQLBoolean;
-import static graphql.Scalars.GraphQLByte;
-import static graphql.Scalars.GraphQLChar;
 import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLInt;
-import static graphql.Scalars.GraphQLLong;
-import static graphql.Scalars.GraphQLShort;
 import static graphql.Scalars.GraphQLString;
+import static graphql.scalars.ExtendedScalars.GraphQLBigDecimal;
+import static graphql.scalars.ExtendedScalars.GraphQLBigInteger;
+import static graphql.scalars.ExtendedScalars.GraphQLByte;
+import static graphql.scalars.ExtendedScalars.GraphQLChar;
+import static graphql.scalars.ExtendedScalars.GraphQLLong;
+import static graphql.scalars.ExtendedScalars.GraphQLShort;
 
 @SuppressWarnings("WeakerAccess")
 public class Scalars {
@@ -106,7 +106,7 @@ public class Scalars {
             .description("URI String")
             .coercing(new Coercing<URI, String>() {
                 @Override
-                public String  serialize(Object dataFetcherResult) {
+                public String serialize(Object dataFetcherResult) {
                     if (dataFetcherResult instanceof URI) {
                         return dataFetcherResult.toString();
                     } else if (dataFetcherResult instanceof String) {
@@ -275,19 +275,19 @@ public class Scalars {
                 }
             }).build();
 
-    public static final GraphQLScalarType GraphQLDate = temporalScalar(Date.class,"Date", "an instant in time",
+    public static final GraphQLScalarType GraphQLDate = temporalScalar(Date.class, "Date", "an instant in time",
             s -> new Date(Instant.parse(s).toEpochMilli()), i -> new Date(i.toEpochMilli()), Scalars::dateToString);
 
-    public static final GraphQLScalarType GraphQLSqlDate = temporalScalar(java.sql.Date.class,"SqlDate", "a SQL compliant local date",
+    public static final GraphQLScalarType GraphQLSqlDate = temporalScalar(java.sql.Date.class, "SqlDate", "a SQL compliant local date",
             s -> java.sql.Date.valueOf(LocalDate.parse(s)), i -> java.sql.Date.valueOf(i.atZone(ZoneOffset.UTC).toLocalDate()), d -> d.toLocalDate().toString());
 
-    public static final GraphQLScalarType GraphQLSqlTime = temporalScalar(Time.class,"SqlTime", "a SQL compliant local time",
+    public static final GraphQLScalarType GraphQLSqlTime = temporalScalar(Time.class, "SqlTime", "a SQL compliant local time",
             s -> Time.valueOf(LocalTime.parse(s)), i -> Time.valueOf(i.atZone(ZoneOffset.UTC).toLocalTime()), t -> t.toLocalTime().toString());
 
-    public static final GraphQLScalarType GraphQLSqlTimestamp = temporalScalar(Timestamp.class,"SqlTimestamp", "a SQL compliant local date-time",
+    public static final GraphQLScalarType GraphQLSqlTimestamp = temporalScalar(Timestamp.class, "SqlTimestamp", "a SQL compliant local date-time",
             s -> Timestamp.from(Instant.parse(s)), Timestamp::from, t -> t.toInstant().toString());
 
-    public static final GraphQLScalarType GraphQLCalendar = temporalScalar(Calendar.class,"Calendar", "a date-time with a time-zone",
+    public static final GraphQLScalarType GraphQLCalendar = temporalScalar(Calendar.class, "Calendar", "a date-time with a time-zone",
             s -> GregorianCalendar.from(ZonedDateTime.parse(s)), i -> GregorianCalendar.from(i.atZone(ZoneOffset.UTC)), c -> c.toInstant().toString());
 
     public static final GraphQLScalarType GraphQLInstant = temporalScalar(Instant.class, "Instant", "an instant in time",
@@ -315,7 +315,9 @@ public class Scalars {
             Duration::parse, instant -> Duration.ofMillis(instant.toEpochMilli()));
 
     public static final GraphQLScalarType GraphQLPeriodScalar = temporalScalar(Period.class, "Period", "a period of time",
-            Period::parse, instant -> { throw new GraphQLException("Period can not be deserialized from a numeric value"); });
+            Period::parse, instant -> {
+                throw new GraphQLException("Period can not be deserialized from a numeric value");
+            });
 
     private static String dateToString(Date date) {
         if (Date.class.equals(date.getClass())) {

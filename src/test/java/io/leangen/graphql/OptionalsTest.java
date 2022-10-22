@@ -14,6 +14,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
+import static graphql.scalars.ExtendedScalars.GraphQLLong;
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertEquals;
@@ -33,8 +34,8 @@ public class OptionalsTest {
         GraphQLFieldDefinition nestedQuery = schema.getQueryType().getFieldDefinition("nested");
         assertEquals(Scalars.GraphQLInt, intQuery.getType());
         assertEquals(Scalars.GraphQLInt, intQuery.getArgument("opt").getType());
-        assertEquals(Scalars.GraphQLLong, longQuery.getType());
-        assertEquals(Scalars.GraphQLLong, longQuery.getArgument("opt").getType());
+        assertEquals(GraphQLLong, longQuery.getType());
+        assertEquals(GraphQLLong, longQuery.getArgument("opt").getType());
         assertEquals(Scalars.GraphQLFloat, doubleQuery.getType());
         assertEquals(Scalars.GraphQLFloat, doubleQuery.getArgument("opt").getType());
         assertEquals(Scalars.GraphQLString, stringQuery.getType());

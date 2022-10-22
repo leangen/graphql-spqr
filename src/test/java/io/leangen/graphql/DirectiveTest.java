@@ -62,7 +62,7 @@ public class DirectiveTest {
         graphql.schema.GraphQLArgument directiveArg = DirectivesUtil.directiveWithArg(inputType.getDirectives(), "inputObjectType", "value").get();
         Optional<graphql.schema.GraphQLArgument> metaArg = DirectivesUtil.directiveWithArg(directiveArg.getDirectives(), "meta", "value");
         assertTrue(metaArg.isPresent());
-        assertEquals("meta", metaArg.get().getValue());
+        assertEquals("meta", metaArg.get().getArgumentValue().getValue());
 
         GraphQLInputObjectField inputField = inputType.getField("value");
         assertDirective(inputField, "inputFieldDef", "inputField");
@@ -134,7 +134,7 @@ public class DirectiveTest {
         assertEquals("WrapperInput", argType.getName());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("name").getType());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("value").getType());
-        Wrapper wrapper = (Wrapper) argument.get().getValue();
+        Wrapper wrapper = (Wrapper) argument.get().getArgumentValue().getValue();
         assertEquals(innerName, wrapper.name());
         assertEquals("test", wrapper.value());
     }
