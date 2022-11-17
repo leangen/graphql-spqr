@@ -77,7 +77,8 @@ public class DefaultOperationBuilder implements OperationBuilder {
         AnnotatedType javaType = resolveJavaType(name, resolvers, environment.messageBundle);
         List<OperationArgument> arguments = collectArguments(name, resolvers);
         boolean batched = isBatched(resolvers);
-        return new Operation(name, javaType, contextType, arguments, resolvers, operationType, batched);
+        boolean async = isAsync(resolvers);
+        return new Operation(name, javaType, contextType, arguments, resolvers, operationType, batched, async);
     }
 
     protected String resolveName(List<Resolver> resolvers) {
@@ -119,6 +120,10 @@ public class DefaultOperationBuilder implements OperationBuilder {
 
     protected boolean isBatched(List<Resolver> resolvers) {
         return resolvers.stream().anyMatch(Resolver::isBatched);
+    }
+
+    protected boolean isAsync(List<Resolver> resolvers) {
+        return resolvers.stream().anyMatch(Resolver::isAsync);
     }
 
     protected AnnotatedType unionize(AnnotatedType[] types, MessageBundle messageBundle) {

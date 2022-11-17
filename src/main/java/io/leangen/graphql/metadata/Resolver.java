@@ -8,11 +8,12 @@ import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Class representing a single method used to resolve a specific query given specific arguments.
@@ -35,6 +36,7 @@ public class Resolver {
     private final String complexityExpression;
     private final Executable<?> executable;
     private final boolean batched;
+    private final boolean async;
 
     public Resolver(String operationName, String operationDescription, String operationDeprecationReason, boolean batched,
                     Executable<?> executable, TypedElement typedElement, List<OperationArgument> arguments, String complexityExpression) {
@@ -55,6 +57,7 @@ public class Resolver {
         this.complexityExpression = complexityExpression;
         this.executable = executable;
         this.batched = batched;
+        this.async = isListPromise(typedElement.getJavaType());
     }
 
     private String validateName(String operationName, Executable<?> executable) {
@@ -65,13 +68,23 @@ public class Resolver {
     }
 
     private void validateBatching(String executableSignature, AnnotatedType returnType, Set<OperationArgument> contextArguments) {
-        if (contextArguments.isEmpty() || !Stream.concat(contextArguments.stream().map(arg -> arg.getJavaType().getType()), Stream.of(returnType.getType()))
-                .allMatch(type -> GenericTypeReflector.isSuperType(List.class, type))) {
+        if (contextArguments.isEmpty()
+                || !contextArguments.stream().map(arg -> arg.getJavaType().getType()).allMatch(type -> GenericTypeReflector.isSuperType(List.class, type))
+                || !(GenericTypeReflector.isSuperType(List.class, returnType.getType()) || isListPromise(returnType))) {
             throw new IllegalArgumentException("Resolver method " + executableSignature
-                    + " is marked as batched but doesn't return a list or its context argument is not a list");
+                    + " is marked as batched but doesn't return a (promise of) list or its context argument is not a list");
         }
     }
-    
+
+    private boolean isListPromise(AnnotatedType type) {
+        if (type.getType() instanceof ParameterizedType) {
+            ParameterizedType pType = (ParameterizedType) type.getType();
+            return GenericTypeReflector.isSuperType(CompletionStage.class, pType)
+                    && GenericTypeReflector.isSuperType(List.class, pType.getActualTypeArguments()[0]);
+        }
+        return false;
+    }
+
     /**
      * Finds the argument representing the query context (object returned by the parent query), if it exists.
      * Query context arguments potentially exist only for the resolvers of nestable queries.
@@ -118,6 +131,10 @@ public class Resolver {
 
     public boolean isBatched() {
         return batched;
+    }
+
+    public boolean isAsync() {
+        return async;
     }
 
     public String getOperationDescription() {

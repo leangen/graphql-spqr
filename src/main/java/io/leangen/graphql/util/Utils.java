@@ -1,10 +1,7 @@
 package io.leangen.graphql.util;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -136,5 +133,11 @@ public class Utils {
 
     public static <T> Predicate<T> acceptAll() {
         return x -> true;
+    }
+
+    public static <T> CompletableFuture<T> failedFuture(Throwable throwable) {
+        CompletableFuture<T> failed = new CompletableFuture<>();
+        failed.completeExceptionally(throwable);
+        return failed;
     }
 }

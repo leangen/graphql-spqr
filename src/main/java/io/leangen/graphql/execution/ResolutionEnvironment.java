@@ -16,6 +16,7 @@ import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ContextUtils;
 import io.leangen.graphql.util.Urls;
+import org.dataloader.BatchLoaderEnvironment;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
@@ -32,6 +33,7 @@ public class ResolutionEnvironment {
 
     public final Object context;
     public final Object rootContext;
+    public final Object batchContext;
     public final Resolver resolver;
     public final ValueMapper valueMapper;
     public final GlobalEnvironment globalEnvironment;
@@ -39,6 +41,7 @@ public class ResolutionEnvironment {
     public final GraphQLNamedType parentType;
     public final GraphQLSchema graphQLSchema;
     public final DataFetchingEnvironment dataFetchingEnvironment;
+    public final BatchLoaderEnvironment batchLoaderEnvironment;
     public final Map<String, Object> arguments;
     public final List<GraphQLError> errors;
 
@@ -50,6 +53,7 @@ public class ResolutionEnvironment {
 
         this.context = env.getSource();
         this.rootContext = env.getContext();
+        this.batchContext = null;
         this.resolver = resolver;
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
@@ -57,6 +61,28 @@ public class ResolutionEnvironment {
         this.parentType = (GraphQLNamedType) env.getParentType();
         this.graphQLSchema = env.getGraphQLSchema();
         this.dataFetchingEnvironment = env;
+        this.batchLoaderEnvironment = null;
+        this.arguments = new HashMap<>();
+        this.errors = new ArrayList<>();
+        this.converters = converters;
+        this.derivedTypes = derivedTypes;
+    }
+
+    public ResolutionEnvironment(Resolver resolver, List<Object> keys, BatchLoaderEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment,
+                                 ConverterRegistry converters, DerivedTypeRegistry derivedTypes) {
+
+        DataFetchingEnvironment inner = firstResolutionEnvironment(env.getKeyContextsList());
+        this.context = keys;
+        this.rootContext = inner.getContext();
+        this.batchContext = env.getContext();
+        this.resolver = resolver;
+        this.valueMapper = valueMapper;
+        this.globalEnvironment = globalEnvironment;
+        this.fieldType = inner.getFieldType();
+        this.parentType = (GraphQLNamedType) inner.getParentType();
+        this.graphQLSchema = inner.getGraphQLSchema();
+        this.dataFetchingEnvironment = null;
+        this.batchLoaderEnvironment = env;
         this.arguments = new HashMap<>();
         this.errors = new ArrayList<>();
         this.converters = converters;
@@ -112,7 +138,7 @@ public class ResolutionEnvironment {
     }
 
     public Object getInputValue(Object input, OperationArgument argument) {
-        boolean argValuePresent = dataFetchingEnvironment.containsArgument(argument.getName());
+        boolean argValuePresent = dataFetchingEnvironment != null && dataFetchingEnvironment.containsArgument(argument.getName());
         ArgumentInjectorParams params = new ArgumentInjectorParams(input, argValuePresent, argument, this);
         Object value = this.globalEnvironment.injectors.getInjector(argument.getJavaType(), argument.getParameter()).getArgumentValue(params);
         if (argValuePresent) {
@@ -131,5 +157,12 @@ public class ResolutionEnvironment {
 
     public Object getGlobalContext() {
         return ContextUtils.unwrapContext(rootContext);
+    }
+
+    private static DataFetchingEnvironment firstResolutionEnvironment(List<Object> keyContexts) {
+        if (keyContexts == null || keyContexts.isEmpty() || !(keyContexts.get(0) instanceof DataFetchingEnvironment)) {
+            return null;
+        }
+        return ((DataFetchingEnvironment) keyContexts.get(0));
     }
 }

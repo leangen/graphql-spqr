@@ -1,7 +1,7 @@
 package io.leangen.graphql.metadata.strategy.query;
 
-import graphql.execution.batched.Batched;
 import graphql.language.OperationDefinition;
+import io.leangen.graphql.annotations.Batched;
 import io.leangen.graphql.annotations.GraphQLComplexity;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.metadata.Resolver;
@@ -97,7 +97,6 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
         return buildMethodInvokers(params, this::isSubscription, OperationDefinition.Operation.SUBSCRIPTION, false);
     }
 
-    @SuppressWarnings("deprecation")
     private Collection<Resolver> buildMethodInvokers(ResolverBuilderParams params, BiPredicate<Method, ResolverBuilderParams> filter, OperationDefinition.Operation operation, boolean batchable) {
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         AnnotatedType beanType = params.getBeanType();
@@ -127,7 +126,6 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
                 .collect(Collectors.toList());
     }
 
-    @SuppressWarnings("deprecation")
     private Collection<Resolver> buildPropertyAccessors(Stream<Property> properties, ResolverBuilderParams params) {
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         AnnotatedType beanType = params.getBeanType();

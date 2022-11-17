@@ -12,12 +12,9 @@ import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ContextUtils;
 import io.leangen.graphql.util.Utils;
+import org.dataloader.BatchLoaderEnvironment;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,6 +53,16 @@ public class OperationExecutor {
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(resolver, env, this.valueMapper, this.globalEnvironment, this.converterRegistry, this.derivedTypes);
         Object result = execute(resolver, resolutionEnvironment, arguments);
+        return resolutionEnvironment.adaptOutput(result, resolver.getTypedElement(), resolver.getReturnType());
+    }
+
+    public Object execute(List<Object> keys, BatchLoaderEnvironment env) throws Exception {
+        Resolver resolver = this.operation.getApplicableResolver(Collections.emptySet());
+        if (resolver == null) {
+            throw new GraphQLException("Batch loader for operation " + operation.getName() + " not implemented");
+        }
+        ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(resolver, keys, env, this.valueMapper, this.globalEnvironment, this.converterRegistry, this.derivedTypes);
+        Object result = execute(resolver, resolutionEnvironment, Collections.emptyMap());
         return resolutionEnvironment.adaptOutput(result, resolver.getTypedElement(), resolver.getReturnType());
     }
 
