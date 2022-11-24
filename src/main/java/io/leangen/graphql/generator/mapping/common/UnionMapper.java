@@ -11,7 +11,6 @@ import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
-import io.leangen.graphql.util.Directives;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.HashSet;
@@ -60,13 +59,13 @@ public abstract class UnionMapper implements TypeMapper {
             buildContext.typeRegistry.registerCovariantType(name, possibleJavaType, possibleType);
         });
 
-        builder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildUnionTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 builder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
         builder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
 
         GraphQLUnionType union = builder.build();
         buildContext.codeRegistry.typeResolver(union, buildContext.typeResolver);
+        buildContext.typeRegistry.registerMapping(union.getName(), javaType);
         return union;
     }
 

@@ -1,5 +1,6 @@
 package io.leangen.graphql.execution.complexity;
 
+import graphql.execution.CoercedVariables;
 import graphql.execution.ConditionalNodes;
 import graphql.execution.ExecutionContext;
 import graphql.execution.FieldCollectorParameters;
@@ -12,10 +13,14 @@ import graphql.language.InlineFragment;
 import graphql.language.OperationDefinition;
 import graphql.language.Selection;
 import graphql.language.SelectionSet;
+import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.generator.TypeRegistry;
+import io.leangen.graphql.metadata.Operation;
+import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.util.ArrayList;
@@ -42,10 +47,10 @@ class ComplexityAnalyzer {
     private final ConditionalNodes conditionalNodes;
     private final ComplexityFunction complexityFunction;
     private final int maximumComplexity;
+    private final TypeRegistry typeRegistry;
 
-    private static final ValuesResolver valuesResolver = new ValuesResolver();
-
-    ComplexityAnalyzer(ComplexityFunction complexityFunction, int maximumComplexity) {
+    ComplexityAnalyzer(ComplexityFunction complexityFunction, int maximumComplexity, TypeRegistry typeRegistry) {
+        this.typeRegistry = typeRegistry;
         this.conditionalNodes = new ConditionalNodes();
         this.complexityFunction = complexityFunction;
         this.maximumComplexity = maximumComplexity;
@@ -66,16 +71,18 @@ class ComplexityAnalyzer {
         Map<String, ResolvedField> roots = fields.stream()
                 .map(field -> {
                     GraphQLFieldDefinition fieldDefinition;
+                    FieldCoordinates fieldCoordinates;
                     if (GraphQLUtils.isIntrospectionField(field)) {
                         fieldDefinition = Introspection.SchemaMetaFieldDef;
+                        fieldCoordinates = FieldCoordinates.systemCoordinates(field.getName());
                     } else {
-                        fieldDefinition = Objects.requireNonNull(
-                                getRootType(context.getGraphQLSchema(), context.getOperationDefinition())
-                                        .getFieldDefinition(field.getName()));
+                        GraphQLObjectType rootType = getRootType(context.getGraphQLSchema(), context.getOperationDefinition());
+                        fieldDefinition = Objects.requireNonNull(rootType.getFieldDefinition(field.getName()));
+                        fieldCoordinates = FieldCoordinates.coordinates(rootType, fieldDefinition);
                     }
 
-                    Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), context.getVariables());
-                    return collectFields(parameters, Collections.singletonList(new ResolvedField(field, fieldDefinition, argumentValues)));
+                    Map<String, Object> argumentValues = ValuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), context.getCoercedVariables());
+                    return collectFields(parameters, Collections.singletonList(new ResolvedField(fieldCoordinates, field, fieldDefinition, argumentValues, findResolver(fieldCoordinates, argumentValues))));
                 })
                 .collect(Collectors.toMap(ResolvedField::getName, Function.identity()));
 
@@ -130,7 +137,8 @@ class ComplexityAnalyzer {
         }
         List<Field> rawFields = fields.stream().map(ResolvedField::getField).collect(Collectors.toList());
         Map<String, ResolvedField> children = collectFields(parameters, rawFields, (GraphQLFieldsContainer) field.getFieldType());
-        ResolvedField node = new ResolvedField(field.getField(), field.getFieldDefinition(), field.getArguments(), children);
+        Resolver resolver = findResolver(field.getCoordinates(), field.getArguments());
+        ResolvedField node = new ResolvedField(field.getCoordinates(), field.getField(), field.getFieldDefinition(), field.getArguments(), children, resolver);
         int childScore = children.values().stream().mapToInt(ResolvedField::getComplexityScore).sum();
         int complexityScore = complexityFunction.getComplexity(node, childScore);
         if (complexityScore > maximumComplexity) {
@@ -192,8 +200,9 @@ class ComplexityAnalyzer {
             return;
         }
         GraphQLFieldDefinition fieldDefinition = parent.getFieldDefinition(field.getName());
-        Map<String, Object> argumentValues = valuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), parameters.getVariables());
-        ResolvedField node = new ResolvedField(field, fieldDefinition, argumentValues);
+        FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parent, fieldDefinition);
+        Map<String, Object> argumentValues = ValuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(), new CoercedVariables(parameters.getVariables()));
+        ResolvedField node = new ResolvedField(fieldCoordinates, field, fieldDefinition, argumentValues, findResolver(fieldCoordinates, argumentValues));
         fields.putIfAbsent(node.getName(), new ArrayList<>());
         fields.get(node.getName()).add(node);
     }
@@ -258,6 +267,11 @@ class ComplexityAnalyzer {
 
     private FragmentDefinition definition(Selection fragmentSpread, FieldCollectorParameters parameters) {
         return parameters.getFragmentsByName().get(((FragmentSpread) fragmentSpread).getName());
+    }
+
+    private Resolver findResolver(FieldCoordinates coordinates, Map<String, Object> arguments) {
+        Operation mappedOperation = typeRegistry.getMappedOperation(coordinates);
+        return mappedOperation != null ? mappedOperation.getApplicableResolver(arguments.keySet()) : null;
     }
 }
 

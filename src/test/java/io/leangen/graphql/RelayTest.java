@@ -6,12 +6,12 @@ import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.GraphQLContext;
-import graphql.Scalars;
 import graphql.relay.ConnectionCursor;
 import graphql.relay.DefaultEdge;
 import graphql.relay.Edge;
 import graphql.relay.PageInfo;
 import graphql.relay.Relay;
+import graphql.scalars.ExtendedScalars;
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
@@ -163,7 +163,7 @@ public class RelayTest {
         GraphQLFieldDefinition totalCount = schema.getObjectType("BookConnection")
                 .getFieldDefinition("totalCount");
         assertNotNull(totalCount);
-        assertNonNull(totalCount.getType(), Scalars.GraphQLLong);
+        assertNonNull(totalCount.getType(), ExtendedScalars.GraphQLLong);
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
 
         ExecutionResult result = exe.execute("{extended(first:10, after:\"20\") {" +
@@ -190,7 +190,7 @@ public class RelayTest {
         assertEquals(3, bookConnection.getFieldDefinitions().size());
         GraphQLFieldDefinition totalCount = bookConnection.getFieldDefinition("totalCount");
         assertNotNull(totalCount);
-        assertNonNull(totalCount.getType(), Scalars.GraphQLLong);
+        assertNonNull(totalCount.getType(), ExtendedScalars.GraphQLLong);
 
         GraphQLObjectType bookEdge = schema.getObjectType("BookEdge");
         assertEquals(3, bookEdge.getFieldDefinitions().size());
@@ -358,8 +358,8 @@ public class RelayTest {
     }
 
     public static class Book {
-        private String title;
-        private String isbn;
+        private final String title;
+        private final String isbn;
 
         @JsonCreator
         Book(@JsonProperty("title") String title, @JsonProperty("id") String isbn) {
@@ -378,8 +378,8 @@ public class RelayTest {
     }
 
     public static class Descriptor {
-        private Book book;
-        private String text;
+        private final Book book;
+        private final String text;
 
         @JsonCreator
         Descriptor(@JsonProperty("id") Book book, @JsonProperty("text") String text) {

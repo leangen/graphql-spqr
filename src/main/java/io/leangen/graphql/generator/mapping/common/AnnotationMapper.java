@@ -1,5 +1,7 @@
 package io.leangen.graphql.generator.mapping.common;
 
+import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLObjectType;
 import io.leangen.graphql.generator.BuildContext;
@@ -31,7 +33,11 @@ public class AnnotationMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
                 .withType(javaType)
                 .withEnvironment(buildContext.globalEnvironment)
                 .build();
-        buildContext.inputFieldBuilder.getInputFields(params).forEach(field -> typeBuilder.field(env.operationMapper.toGraphQLInputField(field, buildContext)));
+        buildContext.inputFieldBuilder.getInputFields(params).forEach(inputField -> {
+            GraphQLInputObjectField field = env.operationMapper.toGraphQLInputField(inputField, buildContext);
+            typeBuilder.field(field);
+            buildContext.typeRegistry.registerMapping(FieldCoordinates.coordinates(typeName, field.getName()), inputField);
+        });
 
         return typeBuilder.build();
     }

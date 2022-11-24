@@ -5,10 +5,10 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class LogAssertions {
 

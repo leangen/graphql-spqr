@@ -9,7 +9,6 @@ import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.Urls;
 
 import java.lang.reflect.AnnotatedElement;
@@ -27,13 +26,13 @@ class Validator {
     private final Comparator<AnnotatedType> typeComparator;
     private final Map<String, AnnotatedType> mappedTypes;
 
-    Validator(GlobalEnvironment environment, TypeMapperRegistry mappers, Collection<GraphQLNamedType> knownTypes, Comparator<AnnotatedType> typeComparator) {
-        this.environment = environment;
+    Validator(GlobalEnvironment env, TypeMapperRegistry mappers, Collection<GraphQLNamedType> knownTypes, Comparator<AnnotatedType> typeComparator) {
+        this.environment = env;
         this.mappers = mappers;
         this.typeComparator = typeComparator;
         this.mappedTypes = knownTypes.stream()
-                .filter(Directives::isMappedType)
-                .collect(Collectors.toMap(GraphQLNamedType::getName, type -> ClassUtils.normalize(Directives.getMappedType(type))));
+                .filter(env.typeRegistry::isMappedType)
+                .collect(Collectors.toMap(GraphQLNamedType::getName, type -> ClassUtils.normalize(env.typeRegistry.getMappedType(type))));
     }
 
     ValidationResult checkUniqueness(GraphQLOutputType graphQLType, AnnotatedElement element, AnnotatedType javaType) {
@@ -58,7 +57,7 @@ class Validator {
 
         AnnotatedType resolvedType;
         try {
-            resolvedType = resolveType(graphQLType, javaType);
+            resolvedType = resolveType(javaType);
         } catch (Exception e) {
             return ValidationResult.invalid(
                     String.format("Exception while checking the name uniqueness for %s: %s", namedType.getName(), e.getMessage()));
@@ -77,14 +76,8 @@ class Validator {
                 TypeInfoGenerator.class.getSimpleName(), Urls.Errors.NON_UNIQUE_TYPE_NAME, Urls.ISSUES));
     }
 
-    private AnnotatedType resolveType(GraphQLType graphQLType, Supplier<AnnotatedType> javaType) {
-        AnnotatedType resolvedType;
-        if (Directives.isMappedType(graphQLType)) {
-            resolvedType = Directives.getMappedType(graphQLType);
-        } else {
-            resolvedType = javaType.get();
-        }
-        return ClassUtils.normalize(resolvedType);
+    private AnnotatedType resolveType(Supplier<AnnotatedType> javaType) {
+        return ClassUtils.normalize(javaType.get());
     }
 
     private boolean isMappingAllowed(AnnotatedType resolvedType, AnnotatedType knownType) {

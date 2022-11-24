@@ -18,7 +18,7 @@ class TestGlobalEnvironment extends GlobalEnvironment {
         super(
                 EmptyMessageBundle.INSTANCE,
                 new Relay(),
-                new TypeRegistry(Collections.emptySet()),
+                new TypeRegistry(Collections.emptyMap()),
                 new ConverterRegistry(Collections.emptyList(), Collections.emptyList()),
                 new ArgumentInjectorRegistry(Collections.emptyList()),
                 new DefaultTypeTransformer(false, false),

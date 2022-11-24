@@ -2,6 +2,7 @@ package io.leangen.graphql.generator;
 
 import graphql.relay.Relay;
 import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphqlTypeComparatorRegistry;
@@ -71,6 +72,7 @@ public class BuildContext {
     public final GraphQLCodeRegistry.Builder codeRegistry;
 
     final Validator validator;
+    final List<GraphQLDirective> directives;
 
     /**
      * The shared context accessible throughout the schema generation process
@@ -80,8 +82,6 @@ public class BuildContext {
      * @param typeMappers Repository of all registered {@link io.leangen.graphql.generator.mapping.TypeMapper}s
      * @param transformers Repository of all registered {@link io.leangen.graphql.generator.mapping.SchemaTransformer}s
      * @param valueMapperFactory The factory used to produce {@link ValueMapper} instances
-     * @param typeInfoGenerator Generates type name/description
-     * @param messageBundle The global translation message bundle
      * @param interfaceStrategy The strategy deciding what Java type gets mapped to a GraphQL interface
      * @param scalarStrategy The strategy deciding how abstract Java types are discovered
      * @param abstractInputHandler The strategy deciding what Java type gets mapped to a GraphQL interface
@@ -93,8 +93,8 @@ public class BuildContext {
      */
     public BuildContext(String[] basePackages, GlobalEnvironment environment, OperationRegistry operationRegistry,
                         TypeMapperRegistry typeMappers, SchemaTransformerRegistry transformers, ValueMapperFactory valueMapperFactory,
-                        TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
-                        ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
+                        InterfaceMappingStrategy interfaceStrategy, ScalarDeserializationStrategy scalarStrategy,
+                        TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldBuilder inputFieldBuilder, ResolverInterceptorFactory interceptorFactory,
                         DirectiveBuilder directiveBuilder, InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig,
                         Collection<GraphQLNamedType> knownTypes, List<AnnotatedType> additionalDirectives, Comparator<AnnotatedType> typeComparator,
@@ -107,14 +107,14 @@ public class BuildContext {
         this.typeCache = new TypeCache(knownTypes);
         this.additionalDirectives = additionalDirectives;
         this.typeMappers = typeMappers;
-        this.typeInfoGenerator = typeInfoGenerator;
-        this.messageBundle = messageBundle;
+        this.typeInfoGenerator = environment.typeInfoGenerator;
+        this.messageBundle = environment.messageBundle;
         this.relay = environment.relay;
         this.node = knownTypes.stream()
                 .filter(GraphQLUtils::isRelayNodeInterface)
                 .findFirst().map(type -> (GraphQLInterfaceType) type)
-                .orElse(relay.nodeInterface(new RelayNodeTypeResolver(this.typeRegistry, typeInfoGenerator, messageBundle)));
-        this.typeResolver = new DelegatingTypeResolver(this.typeRegistry, typeInfoGenerator, messageBundle);
+                .orElse(relay.nodeInterface(new RelayNodeTypeResolver(environment)));
+        this.typeResolver = new DelegatingTypeResolver(environment);
         this.interfaceStrategy = interfaceStrategy;
         this.basePackages = basePackages;
         this.valueMapperFactory = valueMapperFactory;
@@ -128,6 +128,7 @@ public class BuildContext {
         this.relayMappingConfig = relayMappingConfig;
         this.classFinder = new ClassFinder();
         this.validator = new Validator(environment, typeMappers, knownTypes, typeComparator);
+        this.directives = new ArrayList<>();
         this.codeRegistry = codeRegistry;
         this.postBuildHooks = new ArrayList<>(Collections.singletonList(context -> classFinder.close()));
     }

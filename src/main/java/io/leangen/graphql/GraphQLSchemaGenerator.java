@@ -1,7 +1,21 @@
 package io.leangen.graphql;
 
 import graphql.relay.Relay;
-import graphql.schema.*;
+import graphql.schema.DataFetcher;
+import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.GraphQLDirective;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLFieldsContainer;
+import graphql.schema.GraphQLInputFieldsContainer;
+import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLNamedType;
+import graphql.schema.GraphQLSchema;
+import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLTypeReference;
+import graphql.schema.GraphQLUnionType;
+import graphql.schema.TypeResolver;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLNonNull;
@@ -9,31 +23,103 @@ import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolverInterceptor;
 import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.execution.ResolverInterceptorFactoryParams;
-import io.leangen.graphql.generator.*;
+import io.leangen.graphql.generator.BuildContext;
+import io.leangen.graphql.generator.DelegatingInputFieldBuilder;
+import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
+import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.generator.OperationRegistry;
+import io.leangen.graphql.generator.OperationSource;
+import io.leangen.graphql.generator.OperationSourceRegistry;
+import io.leangen.graphql.generator.RelayMappingConfig;
+import io.leangen.graphql.generator.TypeRegistry;
+import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
+import io.leangen.graphql.generator.mapping.ArgumentInjector;
+import io.leangen.graphql.generator.mapping.ArgumentInjectorRegistry;
+import io.leangen.graphql.generator.mapping.ConverterRegistry;
+import io.leangen.graphql.generator.mapping.IgnoredAnnotationsTypeComparator;
+import io.leangen.graphql.generator.mapping.InputConverter;
+import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
-import io.leangen.graphql.generator.mapping.*;
-import io.leangen.graphql.generator.mapping.common.*;
+import io.leangen.graphql.generator.mapping.SchemaTransformerRegistry;
+import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.mapping.TypeMapperRegistry;
+import io.leangen.graphql.generator.mapping.common.AnnotationMapper;
+import io.leangen.graphql.generator.mapping.common.ArrayAdapter;
+import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
+import io.leangen.graphql.generator.mapping.common.ContextInjector;
+import io.leangen.graphql.generator.mapping.common.DirectiveValueDeserializer;
+import io.leangen.graphql.generator.mapping.common.EnumMapToObjectTypeAdapter;
+import io.leangen.graphql.generator.mapping.common.EnumMapper;
+import io.leangen.graphql.generator.mapping.common.EnvironmentInjector;
+import io.leangen.graphql.generator.mapping.common.IdAdapter;
+import io.leangen.graphql.generator.mapping.common.InputValueDeserializer;
+import io.leangen.graphql.generator.mapping.common.InterfaceMapper;
+import io.leangen.graphql.generator.mapping.common.IterableAdapter;
+import io.leangen.graphql.generator.mapping.common.ListMapper;
+import io.leangen.graphql.generator.mapping.common.NonNullMapper;
+import io.leangen.graphql.generator.mapping.common.ObjectScalarMapper;
+import io.leangen.graphql.generator.mapping.common.ObjectTypeMapper;
+import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
+import io.leangen.graphql.generator.mapping.common.OptionalDoubleAdapter;
+import io.leangen.graphql.generator.mapping.common.OptionalIntAdapter;
+import io.leangen.graphql.generator.mapping.common.OptionalLongAdapter;
+import io.leangen.graphql.generator.mapping.common.PageMapper;
+import io.leangen.graphql.generator.mapping.common.RootContextInjector;
+import io.leangen.graphql.generator.mapping.common.ScalarMapper;
+import io.leangen.graphql.generator.mapping.common.StreamToCollectionTypeAdapter;
+import io.leangen.graphql.generator.mapping.common.UnionInlineMapper;
+import io.leangen.graphql.generator.mapping.common.UnionTypeMapper;
+import io.leangen.graphql.generator.mapping.common.VoidToBooleanTypeAdapter;
 import io.leangen.graphql.generator.mapping.core.CompletableFutureAdapter;
 import io.leangen.graphql.generator.mapping.core.DataFetcherResultMapper;
 import io.leangen.graphql.generator.mapping.core.PublisherAdapter;
-import io.leangen.graphql.generator.mapping.strategy.*;
+import io.leangen.graphql.generator.mapping.strategy.AbstractInputHandler;
+import io.leangen.graphql.generator.mapping.strategy.AnnotatedInterfaceStrategy;
+import io.leangen.graphql.generator.mapping.strategy.AutoScanAbstractInputHandler;
+import io.leangen.graphql.generator.mapping.strategy.DefaultImplementationDiscoveryStrategy;
+import io.leangen.graphql.generator.mapping.strategy.ImplementationDiscoveryStrategy;
+import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
+import io.leangen.graphql.generator.mapping.strategy.NoOpAbstractInputHandler;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.messages.DelegatingMessageBundle;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
-import io.leangen.graphql.metadata.strategy.query.*;
+import io.leangen.graphql.metadata.strategy.query.AnnotatedDirectiveBuilder;
+import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
+import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
+import io.leangen.graphql.metadata.strategy.query.DefaultOperationBuilder;
+import io.leangen.graphql.metadata.strategy.query.DirectiveBuilder;
+import io.leangen.graphql.metadata.strategy.query.OperationBuilder;
+import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
-import io.leangen.graphql.metadata.strategy.value.*;
+import io.leangen.graphql.metadata.strategy.value.AnnotationInputFieldBuilder;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
+import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.module.Module;
-import io.leangen.graphql.util.*;
+import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Defaults;
+import io.leangen.graphql.util.GraphQLUtils;
+import io.leangen.graphql.util.Urls;
+import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -79,7 +165,7 @@ import static java.util.Collections.addAll;
  *  }
  * </pre>
  */
-@SuppressWarnings({"WeakerAccess", "rawtypes"})
+@SuppressWarnings({"WeakerAccess", "rawtypes", "UnusedReturnValue", "unused"})
 public class GraphQLSchemaGenerator {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
@@ -94,7 +180,7 @@ public class GraphQLSchemaGenerator {
     private TypeTransformer typeTransformer = new DefaultTypeTransformer(false, false);
     private GlobalEnvironment environment;
     private String[] basePackages = Utils.emptyArray();
-    private DelegatingMessageBundle messageBundle = new DelegatingMessageBundle();
+    private final DelegatingMessageBundle messageBundle = new DelegatingMessageBundle();
     private List<TypeMapper> typeMappers;
     private List<SchemaTransformer> transformers;
     private Comparator<AnnotatedType> typeComparator;
@@ -119,6 +205,7 @@ public class GraphQLSchemaGenerator {
     private final List<AnnotatedType> additionalDirectiveTypes = new ArrayList<>();
     private final GraphQLCodeRegistry.Builder codeRegistry = GraphQLCodeRegistry.newCodeRegistry();
     private final Map<String, GraphQLNamedType> additionalTypes = new HashMap<>();
+    private final Map<String, AnnotatedType> additionalTypeMappings = new HashMap<>();
 
     private final String queryRoot;
     private final String mutationRoot;
@@ -597,14 +684,19 @@ public class GraphQLSchemaGenerator {
 
     @Deprecated
     public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes) {
-        return withAdditionalTypes(additionalTypes, new NoOpCodeRegistryBuilder());
+        return withAdditionalTypes(additionalTypes, Collections.emptyMap(), new NoOpCodeRegistryBuilder());
     }
 
-    public GraphQLSchemaGenerator withAdditionalTypes(Collection<? extends GraphQLType> additionalTypes, GraphQLCodeRegistry codeRegistry) {
-        return withAdditionalTypes(additionalTypes, new CodeRegistryMerger(codeRegistry));
+    public GraphQLSchemaGenerator withAdditionalTypes(Collection<? extends GraphQLType> additionalTypes,
+                                                      Map<String, AnnotatedType> additionalTypeMappings,
+                                                      GraphQLCodeRegistry codeRegistry) {
+        return withAdditionalTypes(additionalTypes, additionalTypeMappings, new CodeRegistryMerger(codeRegistry));
     }
 
-    public GraphQLSchemaGenerator withAdditionalTypes(Collection<? extends GraphQLType> additionalTypes, CodeRegistryBuilder codeRegistryUpdater) {
+    public GraphQLSchemaGenerator withAdditionalTypes(Collection<? extends GraphQLType> additionalTypes,
+                                                      Map<String, AnnotatedType> additionalTypeMappings,
+                                                      CodeRegistryBuilder codeRegistryUpdater) {
+        this.additionalTypeMappings.putAll(additionalTypeMappings);
         additionalTypes.forEach(type -> merge(type, this.additionalTypes, codeRegistryUpdater, this.codeRegistry));
         return this;
     }
@@ -852,7 +944,11 @@ public class GraphQLSchemaGenerator {
         }
         interceptorFactory = new DelegatingResolverInterceptorFactory(interceptorFactories);
 
-        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes.values()),
+        Map<GraphQLNamedType, AnnotatedType> additionalMappedTypes = new HashMap<>();
+        for (Map.Entry<String, GraphQLNamedType> entry : additionalTypes.entrySet()) {
+            additionalMappedTypes.put(entry.getValue(), additionalTypeMappings.get(entry.getKey()));
+        }
+        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalMappedTypes),
                 new ConverterRegistry(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors),
                 typeTransformer, inclusionStrategy, typeInfoGenerator);
         ExtendedGeneratorConfiguration extendedConfig = new ExtendedGeneratorConfiguration(configuration, environment);
@@ -909,7 +1005,7 @@ public class GraphQLSchemaGenerator {
         BuildContext buildContext = new BuildContext(
                 basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy,
                 typeTransformer, basePackages, environment), new TypeMapperRegistry(typeMappers),
-                new SchemaTransformerRegistry(transformers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy,
+                new SchemaTransformerRegistry(transformers), valueMapperFactory, interfaceStrategy,
                 scalarStrategy, typeTransformer, abstractInputHandler, new DelegatingInputFieldBuilder(inputFieldBuilders),
                 interceptorFactory, directiveBuilder, inclusionStrategy, relayMappingConfig, additionalTypes.values(),
                 additionalDirectiveTypes, typeComparator, implDiscoveryStrategy, codeRegistry);
@@ -952,7 +1048,7 @@ public class GraphQLSchemaGenerator {
         applyProcessors(builder, buildContext);
         buildContext.executePostBuildHooks();
         GraphQLSchema schema = builder.build();
-        return new ExecutableSchema(schema, operationMapper.getBatchResolvers());
+        return new ExecutableSchema(schema, buildContext.typeRegistry, operationMapper.getBatchResolvers());
     }
 
     private void applyProcessors(GraphQLSchema.Builder builder, BuildContext buildContext) {

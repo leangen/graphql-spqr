@@ -86,7 +86,7 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
 
     @Override
     public GraphQLInputObjectField transformInputField(GraphQLInputObjectField field, InputField inputField, OperationMapper operationMapper, BuildContext buildContext) {
-        if (field.getDefaultValue() == null && shouldWrap(field.getType(), inputField.getTypedElement())) {
+        if (field.getInputFieldDefaultValue().getValue() == null && shouldWrap(field.getType(), inputField.getTypedElement())) {
             return field.transform(builder -> builder.type(new GraphQLNonNull(field.getType())));
         }
         if (shouldUnwrap(field)) {
@@ -101,7 +101,7 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
 
     @Override
     public GraphQLArgument transformArgument(GraphQLArgument argument, OperationArgument operationArgument, OperationMapper operationMapper, BuildContext buildContext) {
-        return transformArgument(argument, operationArgument.getTypedElement(), operationArgument.toString(), operationMapper, buildContext);
+        return transformArgument(argument, operationArgument.getTypedElement(), operationArgument.toString());
     }
 
     @Override
@@ -109,10 +109,10 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
         if (directiveArgument.getAnnotation() != null && directiveArgument.getDefaultValue() == null) {
             return argument.transform(builder -> builder.type(GraphQLNonNull.nonNull(argument.getType())));
         }
-        return transformArgument(argument, directiveArgument.getTypedElement(), directiveArgument.toString(), operationMapper, buildContext);
+        return transformArgument(argument, directiveArgument.getTypedElement(), directiveArgument.toString());
     }
 
-    private GraphQLArgument transformArgument(GraphQLArgument argument, TypedElement element, String description, OperationMapper operationMapper, BuildContext buildContext) {
+    private GraphQLArgument transformArgument(GraphQLArgument argument, TypedElement element, String description) {
         if (!argument.hasSetDefaultValue() && shouldWrap(argument.getType(), element)) {
             return argument.transform(builder -> builder.type(new GraphQLNonNull(argument.getType())));
         }
@@ -137,7 +137,7 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
 
     //TODO Make this use hasSetDefaultValue once https://github.com/graphql-java/graphql-java/issues/1958 is fixed
     private boolean shouldUnwrap(GraphQLInputObjectField field) {
-        return field.getDefaultValue() != null && field.getType() instanceof GraphQLNonNull;
+        return field.getInputFieldDefaultValue().getValue() != null && field.getType() instanceof GraphQLNonNull;
     }
 
     private boolean shouldUnwrap(GraphQLArgument argument) {

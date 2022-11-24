@@ -52,16 +52,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static graphql.Scalars.GraphQLBigDecimal;
-import static graphql.Scalars.GraphQLBigInteger;
 import static graphql.Scalars.GraphQLBoolean;
-import static graphql.Scalars.GraphQLByte;
-import static graphql.Scalars.GraphQLChar;
 import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLInt;
-import static graphql.Scalars.GraphQLLong;
-import static graphql.Scalars.GraphQLShort;
 import static graphql.Scalars.GraphQLString;
+import static graphql.scalars.ExtendedScalars.GraphQLBigDecimal;
+import static graphql.scalars.ExtendedScalars.GraphQLBigInteger;
+import static graphql.scalars.ExtendedScalars.GraphQLByte;
+import static graphql.scalars.ExtendedScalars.GraphQLChar;
+import static graphql.scalars.ExtendedScalars.GraphQLLong;
+import static graphql.scalars.ExtendedScalars.GraphQLShort;
 
 @SuppressWarnings("WeakerAccess")
 public class Scalars {

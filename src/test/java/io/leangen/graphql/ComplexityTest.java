@@ -3,7 +3,6 @@ package io.leangen.graphql;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.GraphQLError;
-import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.RelayTest.BookService;
@@ -198,10 +197,10 @@ public class ComplexityTest {
     }
 
     private void testComplexity(Object service, AnnotatedType serviceType, String operation, int maxComplexity, int expectedComplexity) {
-        GraphQLSchema schema = new TestSchemaGenerator()
+        ExecutableSchema schema = new TestSchemaGenerator()
                 .withAbstractInputTypeResolution()
                 .withOperationsFromSingleton(service, serviceType)
-                .generate();
+                .generateExecutable();
 
         GraphQL exe = GraphQLRuntime.newGraphQL(schema)
                 .maximumQueryComplexity(maxComplexity)

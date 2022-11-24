@@ -4,6 +4,7 @@ import graphql.analysis.QueryTraverser;
 import graphql.analysis.QueryVisitorFragmentSpreadEnvironment;
 import graphql.analysis.QueryVisitorInlineFragmentEnvironment;
 import graphql.analysis.QueryVisitorStub;
+import graphql.execution.CoercedVariables;
 import graphql.execution.ExecutionStepInfo;
 import graphql.execution.ValuesResolver;
 import graphql.introspection.Introspection;
@@ -31,8 +32,6 @@ import java.util.stream.Stream;
 public class Directives {
 
     private Map<Introspection.DirectiveLocation, Map<String, List<Map<String, Object>>>> directives = new HashMap<>();
-
-    private static final ValuesResolver valuesResolver = new ValuesResolver();
 
     Directives(DataFetchingEnvironment env, ExecutionStepInfo step) {
         List<Field> fields = env.getMergedField().getFields();
@@ -101,8 +100,8 @@ public class Directives {
             return null;
         }
         return Collections.unmodifiableMap(
-                valuesResolver.getArgumentValues(env.getGraphQLSchema().getCodeRegistry(), directive.getArguments(),
-                        dir.getArguments(), env.getVariables()));
+                ValuesResolver.getArgumentValues(env.getGraphQLSchema().getCodeRegistry(), directive.getArguments(),
+                        dir.getArguments(), new CoercedVariables(env.getVariables())));
     }
 
     Map<Introspection.DirectiveLocation, Map<String, List<Map<String, Object>>>> getDirectives() {

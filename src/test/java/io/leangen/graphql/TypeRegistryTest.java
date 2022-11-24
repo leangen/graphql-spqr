@@ -25,7 +25,9 @@ import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
 import org.junit.Test;
 
+import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
+import java.util.Map;
 
 import static graphql.schema.GraphQLObjectType.newObject;
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
@@ -49,13 +51,17 @@ public class TypeRegistryTest {
 
     @Test
     public void additionalTypesFullCopyTest() {
-        GraphQLSchema schema = new TestSchemaGenerator()
+        ExecutableSchema executableSchema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
-                .generate();
+                .generateExecutable();
+        GraphQLSchema schema = executableSchema.getSchema();
 
         GraphQLSchema schema2 = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
-                .withAdditionalTypes(schema.getAllTypesAsList(), schema.getCodeRegistry())
+                .withAdditionalTypes(
+                        schema.getAllTypesAsList(),
+                        executableSchema.getTypeRegistry().getMappedTypes(),
+                        schema.getCodeRegistry())
                 .generate();
 
         schema.getTypeMap().values().stream()
@@ -73,13 +79,15 @@ public class TypeRegistryTest {
 
     @Test
     public void additionalTypesPartialCopyTest() {
-        GraphQLSchema schema = new TestSchemaGenerator()
+        ExecutableSchema executableSchema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new PersonService())
                 .withAdditionalDirectives(Directive.class)
-                .generate();
+                .generateExecutable();
+        GraphQLSchema schema = executableSchema.getSchema();
+        Map<String, AnnotatedType> mappedTypes = executableSchema.getTypeRegistry().getMappedTypes();
         GraphQLSchema schema2 = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
-                .withAdditionalTypes(Collections.singleton(schema.getType("Person")), schema.getCodeRegistry())
+                .withAdditionalTypes(Collections.singleton(schema.getType("Person")), mappedTypes, schema.getCodeRegistry())
                 .withAdditionalDirectives(schema.getDirective("directive"))
                 .generate();
 
@@ -89,13 +97,15 @@ public class TypeRegistryTest {
 
     @Test(expected = ConfigurationException.class)
     public void additionalTypesCollisionTest() {
-        GraphQLSchema schema = new TestSchemaGenerator()
+        ExecutableSchema executableSchema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new PersonService())
-                .generate();
+                .generateExecutable();
+        GraphQLSchema schema = executableSchema.getSchema();
+        Map<String, AnnotatedType> mappedTypes = executableSchema.getTypeRegistry().getMappedTypes();
         new TestSchemaGenerator()
                 .withOperationsFromSingleton(new Service())
-                .withAdditionalTypes(Collections.singleton(schema.getType("Person")), schema.getCodeRegistry())
-                .withAdditionalTypes(Collections.singleton(newObject().name("Street").build()), schema.getCodeRegistry())
+                .withAdditionalTypes(Collections.singleton(schema.getType("Person")), mappedTypes, schema.getCodeRegistry())
+                .withAdditionalTypes(Collections.singleton(newObject().name("Street").build()), mappedTypes, schema.getCodeRegistry())
                 .generate();
     }
 

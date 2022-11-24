@@ -56,7 +56,7 @@ public class ClassUtils {
 
     private static final Class<?> javassistProxyClass;
     private static final List<String> KNOWN_PROXY_CLASS_SEPARATORS = Arrays.asList("$$", "$ByteBuddy$", "$HibernateProxy$");
-    private static final List<Class> ROOT_TYPES = Arrays.asList(
+    private static final List<Class<?>> ROOT_TYPES = Arrays.asList(
             Object.class, Annotation.class, Cloneable.class, Comparable.class, Externalizable .class, Serializable.class,
             Closeable.class, AutoCloseable.class);
 
@@ -112,7 +112,7 @@ public class ClassUtils {
                 .collect(Collectors.toSet());
     }
 
-    private static void collectPublicAbstractMethods(Class type, Set<Method> methods) {
+    private static void collectPublicAbstractMethods(Class<?> type, Set<Method> methods) {
         if (type == null || type.equals(Object.class)) {
             return;
         }
@@ -211,6 +211,15 @@ public class ClassUtils {
             return clazz.getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Object... arguments) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Class<?>[] parameterTypes = stream(arguments).map(Object::getClass).toArray(Class<?>[]::new);
+        try {
+            return clazz.getDeclaredConstructor(parameterTypes).newInstance(arguments);
+        } catch (NoSuchMethodException e) {
+            return clazz.getDeclaredConstructor().newInstance();
         }
     }
 
@@ -587,7 +596,7 @@ public class ClassUtils {
 
     public static AnnotatedType completeGenerics(AnnotatedType type, AnnotatedType replacement) {
         if (type.getType() instanceof Class) {
-            Class clazz = (Class) type.getType();
+            Class<?> clazz = (Class<?>) type.getType();
             if (clazz.isArray()) {
                 return TypeFactory.arrayOf(completeGenerics(GenericTypeReflector.annotate(clazz.getComponentType()), replacement), type.getAnnotations());
             } else {

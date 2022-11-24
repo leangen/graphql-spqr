@@ -1,5 +1,6 @@
 package io.leangen.graphql.generator;
 
+import graphql.GraphQLContext;
 import graphql.cachecontrol.CacheControl;
 import graphql.execution.ExecutionId;
 import graphql.execution.ExecutionStepInfo;
@@ -60,8 +61,14 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     }
 
     @Override
+    @Deprecated
     public <T> T getContext() {
         return delegate.getContext();
+    }
+
+    @Override
+    public GraphQLContext getGraphQlContext() {
+        return delegate.getGraphQlContext();
     }
 
     @Override
@@ -146,6 +153,7 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     }
 
     @Override
+    @Deprecated
     public CacheControl getCacheControl() {
         return delegate.getCacheControl();
     }

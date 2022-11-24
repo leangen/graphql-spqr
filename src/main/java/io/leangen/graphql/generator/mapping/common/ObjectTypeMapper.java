@@ -15,7 +15,6 @@ import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.metadata.TypeDiscriminatorField;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
 import io.leangen.graphql.util.ClassUtils;
-import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedElement;
@@ -52,13 +51,13 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
             }
         });
 
-        typeBuilder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildObjectTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 typeBuilder.withDirective(env.operationMapper.toGraphQLDirective(directive, buildContext)));
         typeBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
 
         GraphQLObjectType type = typeBuilder.build();
         interfaces.forEach(inter -> buildContext.typeRegistry.registerCovariantType(inter.getName(), javaType, type));
+        buildContext.typeRegistry.registerMapping(type.getName(), javaType);
         return type;
     }
 
@@ -80,12 +79,12 @@ public class ObjectTypeMapper extends CachingMapper<GraphQLObjectType, GraphQLIn
             getTypeDiscriminatorField(params, buildContext).ifPresent(typeBuilder::field);
         }
 
-        typeBuilder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildInputObjectTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 typeBuilder.withDirective(env.operationMapper.toGraphQLDirective(directive, buildContext)));
         typeBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
-
-        return typeBuilder.build();
+        GraphQLInputObjectType type = typeBuilder.build();
+        buildContext.typeRegistry.registerMapping(type.getName(), javaType);
+        return type;
     }
 
     @Override

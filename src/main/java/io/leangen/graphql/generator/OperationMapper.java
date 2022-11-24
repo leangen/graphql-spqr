@@ -1,24 +1,55 @@
 package io.leangen.graphql.generator;
 
 import graphql.relay.Relay;
-import graphql.schema.*;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLDirective;
+import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLInputObjectField;
+import graphql.schema.GraphQLInputObjectType;
+import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLNamedOutputType;
+import graphql.schema.GraphQLNamedType;
+import graphql.schema.GraphQLNonNull;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLUnionType;
+import graphql.schema.PropertyDataFetcher;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
-import io.leangen.graphql.metadata.*;
+import io.leangen.graphql.metadata.Directive;
+import io.leangen.graphql.metadata.DirectiveArgument;
+import io.leangen.graphql.metadata.InputField;
+import io.leangen.graphql.metadata.Operation;
+import io.leangen.graphql.metadata.OperationArgument;
+import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.strategy.query.DirectiveBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
-import io.leangen.graphql.util.*;
+import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.ContextUtils;
+import io.leangen.graphql.util.GraphQLUtils;
+import io.leangen.graphql.util.Urls;
 import org.dataloader.BatchLoaderWithContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -63,6 +94,7 @@ public class OperationMapper {
         this.mutations = generateMutations(mutationRoot, buildContext);
         this.subscriptions = generateSubscriptions(subscriptionRoot, buildContext);
         this.directives = generateDirectives(buildContext);
+        this.directives.addAll(buildContext.directives);
         buildContext.resolveTypeReferences();
     }
 
@@ -101,11 +133,18 @@ public class OperationMapper {
      * @return A list of {@link GraphQLFieldDefinition}s representing all mutations
      */
     private List<GraphQLFieldDefinition> generateMutations(String mutationRoot, BuildContext buildContext) {
-        return buildContext.operationRegistry.getMutations().stream()
-                .map(mutation -> buildContext.relayMappingConfig.relayCompliantMutations
-                        ? toRelayMutation(mutationRoot, toGraphQLField(mutation, buildContext), createResolver(mutationRoot, mutation, buildContext), buildContext)
-                        : toGraphQLField(mutationRoot, mutation, buildContext))
-                .collect(Collectors.toList());
+        List<GraphQLFieldDefinition> mutations = new ArrayList<>();
+        for (Operation mutation : buildContext.operationRegistry.getMutations()) {
+            GraphQLFieldDefinition mutationField;
+            if (buildContext.relayMappingConfig.relayCompliantMutations) {
+                mutationField = toRelayMutation(mutationRoot, toGraphQLField(mutation, buildContext), createResolver(mutationRoot, mutation, buildContext), buildContext);
+                buildContext.typeRegistry.registerMapping(coordinates(mutationRoot, mutationField.getName()), mutation);
+            } else {
+                mutationField = toGraphQLField(mutationRoot, mutation, buildContext);
+            }
+            mutations.add(mutationField);
+        }
+        return mutations;
     }
 
     private List<GraphQLFieldDefinition> generateSubscriptions(String subscriptionRoot, BuildContext buildContext) {
@@ -132,8 +171,7 @@ public class OperationMapper {
                 .name(operation.getName())
                 .description(operation.getDescription())
                 .deprecate(operation.getDeprecationReason())
-                .type(type)
-                .withDirective(Directives.mappedOperation(operation));
+                .type(type);
 
         toGraphQLDirectives(operation.getTypedElement(), buildContext.directiveBuilder::buildFieldDefinitionDirectives, buildContext)
                 .forEach(fieldBuilder::withDirective);
@@ -161,7 +199,9 @@ public class OperationMapper {
     public GraphQLFieldDefinition toGraphQLField(String parentType, Operation operation, BuildContext buildContext) {
         GraphQLFieldDefinition field = toGraphQLField(operation, buildContext);
         DataFetcher<?> resolver = createResolver(parentType, operation, buildContext);
-        buildContext.codeRegistry.dataFetcher(coordinates(parentType, field.getName()), resolver);
+        FieldCoordinates coordinates = coordinates(parentType, field.getName());
+        buildContext.typeRegistry.registerMapping(coordinates, operation);
+        buildContext.codeRegistry.dataFetcher(coordinates, resolver);
         return field;
     }
 
@@ -199,8 +239,7 @@ public class OperationMapper {
         GraphQLInputObjectField.Builder builder = newInputObjectField()
                 .name(inputField.getName())
                 .description(inputField.getDescription())
-                .type(toGraphQLInputType(inputField.getJavaType(), new TypeMappingEnvironment(inputField.getTypedElement(), this, buildContext)))
-                .withDirective(Directives.mappedInputField(inputField));
+                .type(toGraphQLInputType(inputField.getJavaType(), new TypeMappingEnvironment(inputField.getTypedElement(), this, buildContext)));
 
         toGraphQLDirectives(inputField.getTypedElement(), buildContext.directiveBuilder::buildInputFieldDefinitionDirectives, buildContext)
                 .forEach(builder::withDirective);
@@ -260,7 +299,9 @@ public class OperationMapper {
                 .description(directive.getDescription())
                 .validLocations(directive.getLocations());
         directive.getArguments().forEach(arg -> builder.argument(toGraphQLArgument(arg, buildContext)));
-        return buildContext.transformers.transform(builder.build(), directive, this, buildContext);
+        GraphQLDirective dir = buildContext.transformers.transform(builder.build(), directive, this, buildContext);
+        buildContext.directives.add(dir);
+        return dir;
     }
 
     private GraphQLArgument toGraphQLArgument(DirectiveArgument directiveArgument, BuildContext buildContext) {
@@ -280,7 +321,6 @@ public class OperationMapper {
     }
 
     private GraphQLFieldDefinition toRelayMutation(String parentType, GraphQLFieldDefinition mutation, DataFetcher<?> resolver, BuildContext buildContext) {
-
         String payloadTypeName = mutation.getName() + "Payload";
         List<GraphQLFieldDefinition> outputFields;
         if (mutation.getType() instanceof GraphQLObjectType) {
@@ -302,7 +342,7 @@ public class OperationMapper {
                             .description(arg.getDescription())
                             .type(arg.getType());
                     if (arg.hasSetDefaultValue()) {
-                        builder.defaultValue(arg.getDefaultValue());
+                        builder.defaultValue(arg.getArgumentDefaultValue().getValue());
                     }
                     return builder.build();
                 })
@@ -460,10 +500,10 @@ public class OperationMapper {
                         typeRegistry.getOutputTypes(unwrappedOutput.getName()).stream()
                                 .map(MappedType::getAsObjectType)
                                 .filter(implementation -> implementation.getInterfaces().contains(node))
-                                .filter(Directives::isMappedType)
+                                .filter(typeRegistry::isMappedType)
                                 // only register the possible types that can actually be returned from the primary resolver
                                 // for interface-unions it is all the possible types but, for inline unions, only one (right?) possible type can match
-                                .filter(implementation -> GenericTypeReflector.isSuperType(query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME).getReturnType().getType(), Directives.getMappedType(implementation).getType()))
+                                .filter(implementation -> GenericTypeReflector.isSuperType(query.getResolver(GraphQLId.RELAY_ID_FIELD_NAME).getReturnType().getType(), typeRegistry.getMappedType(implementation).getType()))
                                 .forEach(nodeType -> nodeQueriesByType.putIfAbsent(nodeType.getName(), query.getName())); //never override more precise resolvers
                     }
                 }

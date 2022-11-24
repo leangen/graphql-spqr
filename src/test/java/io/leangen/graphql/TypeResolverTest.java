@@ -2,16 +2,16 @@ package io.leangen.graphql;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.TypeResolutionEnvironment;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
+import graphql.schema.TypeResolver;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLTypeResolver;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Street;
-import io.leangen.graphql.execution.TypeResolutionEnvironment;
-import io.leangen.graphql.execution.TypeResolver;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -102,8 +102,8 @@ public class TypeResolverTest {
     }
 
     public static class ContentBase implements Content {
-        private String id;
-        private String title;
+        private final String id;
+        private final String title;
         ContentBase(String id, String title) {
             this.title = title;
             this.id = id;
@@ -118,7 +118,7 @@ public class TypeResolverTest {
     }
 
     public static class Movie extends ContentBase {
-        private String rating;
+        private final String rating;
         Movie(String id, String title, String rating) {
             super(id, title);
             this.rating = rating;
@@ -135,8 +135,8 @@ public class TypeResolverTest {
     }
 
     public static class TVShow extends ContentBase {
-        private Integer seasonNumber;
-        private Integer episodeNumber;
+        private final Integer seasonNumber;
+        private final Integer episodeNumber;
         TVShow(String id, String title, Integer seasonNumber, Integer episodeNumber) {
             super(id, title);
             this.seasonNumber = seasonNumber;
@@ -151,9 +151,9 @@ public class TypeResolverTest {
     }
 
     public static class Movie2 implements Content {
-        private String id;
-        private String title;
-        private String rating;
+        private final String id;
+        private final String title;
+        private final String rating;
         Movie2(String id, String title, String rating) {
             this.id = id;
             this.title = title;
@@ -173,8 +173,8 @@ public class TypeResolverTest {
     }
 
     public static class Trailer2 implements Content {
-        private String id;
-        private String title;
+        private final String id;
+        private final String title;
         Trailer2(String id, String title) {
             this.id = id;
             this.title = title;
@@ -189,10 +189,10 @@ public class TypeResolverTest {
     }
 
     public static class TVShow2 implements Content {
-        private Integer seasonNumber;
-        private Integer episodeNumber;
-        private String id;
-        private String title;
+        private final Integer seasonNumber;
+        private final Integer episodeNumber;
+        private final String id;
+        private final String title;
         TVShow2(String id, String title, Integer seasonNumber, Integer episodeNumber) {
             this.id = id;
             this.title = title;
@@ -247,7 +247,7 @@ public class TypeResolverTest {
     @GraphQLTypeResolver(RepoTypeResolver.class)
     public static class SessionRepo<T> implements GenericRepo {
 
-        private T item;
+        private final T item;
 
         SessionRepo(T item) {
             this.item = item;
@@ -269,7 +269,7 @@ public class TypeResolverTest {
     public static class RepoTypeResolver implements TypeResolver {
 
         @Override
-        public GraphQLObjectType resolveType(TypeResolutionEnvironment env) {
+        public GraphQLObjectType getType(TypeResolutionEnvironment env) {
             String typeName = "SessionRepo_" + ((SessionRepo) env.getObject()).getStoredItem().getClass().getSimpleName();
             return (GraphQLObjectType) env.getSchema().getType(typeName);
         }

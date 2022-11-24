@@ -62,7 +62,7 @@ public class InterpolationTest {
         graphql.schema.GraphQLArgument mutationArgument = mutation.getArgument(translations.get("mutation.dish.arg.name"));
         assertNotNull(mutationArgument);
         assertEquals(translations.get("mutation.dish.arg.desc"), mutationArgument.getDescription());
-        assertEquals(Dish.Temperature.HOT, ((Dish) mutationArgument.getDefaultValue()).getTemperature());
+        assertEquals(Dish.Temperature.HOT, ((Dish) mutationArgument.getArgumentDefaultValue().getValue()).getTemperature());
 
         GraphQLInputObjectType dish = (GraphQLInputObjectType) mutationArgument.getType();
         assertEquals(translations.get("type.dish.name") + "Input", dish.getName());
@@ -71,7 +71,7 @@ public class InterpolationTest {
         GraphQLInputObjectField temperatureField = dish.getFieldDefinition(translations.get("type.dish.fields.temp.name"));
         assertNotNull(temperatureField);
         assertEquals(translations.get("type.dish.fields.temp.desc"), temperatureField.getDescription());
-        assertEquals(Dish.Temperature.COOL, temperatureField.getDefaultValue());
+        assertEquals(Dish.Temperature.COOL, temperatureField.getInputFieldDefaultValue().getValue());
 
         GraphQLEnumType temperature = (GraphQLEnumType) temperatureField.getType();
         assertEquals(translations.get("type.temp.name"), temperature.getName());

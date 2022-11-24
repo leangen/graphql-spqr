@@ -8,7 +8,6 @@ import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
-import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedElement;
@@ -43,7 +42,6 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
         List<GraphQLFieldDefinition> fields = objectTypeMapper.getFields(typeName, javaType, env);
         fields.forEach(typeBuilder::field);
 
-        typeBuilder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildInterfaceTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
                 typeBuilder.withDirective(env.operationMapper.toGraphQLDirective(directive, buildContext)));
         typeBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
@@ -51,6 +49,7 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
         buildContext.codeRegistry.typeResolver(type, buildContext.typeResolver);
 
         registerImplementations(javaType, type, env);
+        buildContext.typeRegistry.registerMapping(type.getName(), javaType);
         return type;
     }
 
