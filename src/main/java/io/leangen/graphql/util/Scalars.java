@@ -15,7 +15,7 @@ import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
-import graphql.schema.GraphQLDirective;
+import graphql.schema.GraphQLAppliedDirective;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLScalarType;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -343,7 +343,7 @@ public class Scalars {
         }
     }
 
-    private static Coercing<Object, Object> MAP_SCALAR_COERCION = new Coercing<Object, Object>() {
+    private static final Coercing<Object, Object> MAP_SCALAR_COERCION = new Coercing<Object, Object>() {
         @Override
         public Object serialize(Object dataFetcherResult) {
             return dataFetcherResult;
@@ -368,16 +368,16 @@ public class Scalars {
         }
     };
 
-    public static GraphQLScalarType graphQLMapScalar(String name, GraphQLDirective[] directives) {
+    public static GraphQLScalarType graphQLMapScalar(String name, GraphQLAppliedDirective[] directives) {
         return GraphQLScalarType.newScalar()
                 .name(name)
                 .description("Built-in scalar for map-like structures")
-                .withDirectives(directives)
+                .withAppliedDirectives(directives)
                 .coercing(MAP_SCALAR_COERCION)
                 .build();
     }
 
-    private static Coercing<Object, Object> OBJECT_SCALAR_COERCION = new Coercing<Object, Object>() {
+    private static final Coercing<Object, Object> OBJECT_SCALAR_COERCION = new Coercing<Object, Object>() {
         @Override
         public Object serialize(Object dataFetcherResult) {
             GraphQLScalarType scalar = toGraphQLScalarType(dataFetcherResult.getClass());
@@ -400,11 +400,11 @@ public class Scalars {
         }
     };
 
-    public static GraphQLScalarType graphQLObjectScalar(String name, GraphQLDirective[] directives) {
+    public static GraphQLScalarType graphQLObjectScalar(String name, GraphQLAppliedDirective[] directives) {
         return GraphQLScalarType.newScalar()
                 .name(name)
                 .description("Built-in scalar for dynamic values")
-                .withDirectives(directives)
+                .withAppliedDirectives(directives)
                 .coercing(OBJECT_SCALAR_COERCION)
                 .build();
     }

@@ -42,5 +42,6 @@ public @interface GraphQLDirective {
 
     String name() default "";
     String description() default "";
+    boolean repeatable() default false;
     Introspection.DirectiveLocation[] locations() default {};
 }

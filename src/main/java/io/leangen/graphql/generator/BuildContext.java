@@ -2,7 +2,6 @@ package io.leangen.graphql.generator;
 
 import graphql.relay.Relay;
 import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphqlTypeComparatorRegistry;
@@ -72,7 +71,6 @@ public class BuildContext {
     public final GraphQLCodeRegistry.Builder codeRegistry;
 
     final Validator validator;
-    final List<GraphQLDirective> directives;
 
     /**
      * The shared context accessible throughout the schema generation process
@@ -128,7 +126,6 @@ public class BuildContext {
         this.relayMappingConfig = relayMappingConfig;
         this.classFinder = new ClassFinder();
         this.validator = new Validator(environment, typeMappers, knownTypes, typeComparator);
-        this.directives = new ArrayList<>();
         this.codeRegistry = codeRegistry;
         this.postBuildHooks = new ArrayList<>(Collections.singletonList(context -> classFinder.close()));
     }

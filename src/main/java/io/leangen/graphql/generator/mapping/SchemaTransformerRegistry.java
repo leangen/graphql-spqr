@@ -1,5 +1,7 @@
 package io.leangen.graphql.generator.mapping;
 
+import graphql.schema.GraphQLAppliedDirective;
+import graphql.schema.GraphQLAppliedDirectiveArgument;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLFieldDefinition;
@@ -51,7 +53,21 @@ public class SchemaTransformerRegistry {
         return argument;
     }
 
+    public GraphQLAppliedDirectiveArgument transform(GraphQLAppliedDirectiveArgument argument, DirectiveArgument directiveArgument, OperationMapper operationMapper, BuildContext buildContext) {
+        for (SchemaTransformer transformer : transformers) {
+            argument = transformer.transformArgument(argument, directiveArgument, operationMapper, buildContext);
+        }
+        return argument;
+    }
+
     public GraphQLDirective transform(GraphQLDirective directive, Directive directiveModel, OperationMapper operationMapper, BuildContext buildContext) {
+        for (SchemaTransformer transformer : transformers) {
+            directive = transformer.transformDirective(directive, directiveModel, operationMapper, buildContext);
+        }
+        return directive;
+    }
+
+    public GraphQLAppliedDirective transform(GraphQLAppliedDirective directive, Directive directiveModel, OperationMapper operationMapper, BuildContext buildContext) {
         for (SchemaTransformer transformer : transformers) {
             directive = transformer.transformDirective(directive, directiveModel, operationMapper, buildContext);
         }

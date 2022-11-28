@@ -4,6 +4,8 @@ import graphql.relay.Relay;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLAppliedDirective;
+import graphql.schema.GraphQLAppliedDirectiveArgument;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLFieldDefinition;
@@ -18,6 +20,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
+import graphql.schema.InputValueWithState;
 import graphql.schema.PropertyDataFetcher;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLId;
@@ -81,6 +84,7 @@ public class OperationMapper {
     private final List<GraphQLFieldDefinition> mutations; //The list of all mapped mutations
     private final List<GraphQLFieldDefinition> subscriptions; //The list of all mapped subscriptions
     private final List<GraphQLDirective> directives; //The list of all added mapped directives
+    private final Map<String, GraphQLDirective> discoveredDirectives = new HashMap<>();
     private final Map<String, BatchLoaderWithContext<?, ?>> batchResolvers = new HashMap<>();
 
     private static final Logger log = LoggerFactory.getLogger(OperationMapper.class);
@@ -90,11 +94,13 @@ public class OperationMapper {
      * @param buildContext The shared context containing all the global information needed for mapping
      */
     public OperationMapper(String queryRoot, String mutationRoot, String subscriptionRoot, BuildContext buildContext) {
+        List<GraphQLDirective> registeredDirectives = generateDirectives(buildContext);
+        registeredDirectives.forEach(dir -> this.discoveredDirectives.put(dir.getName(), dir));
+        this.directives = registeredDirectives;
         this.queries = generateQueries(queryRoot, buildContext);
         this.mutations = generateMutations(mutationRoot, buildContext);
         this.subscriptions = generateSubscriptions(subscriptionRoot, buildContext);
-        this.directives = generateDirectives(buildContext);
-        this.directives.addAll(buildContext.directives);
+        this.directives.addAll(discoveredDirectives.values());
         buildContext.resolveTypeReferences();
     }
 
@@ -173,8 +179,8 @@ public class OperationMapper {
                 .deprecate(operation.getDeprecationReason())
                 .type(type);
 
-        toGraphQLDirectives(operation.getTypedElement(), buildContext.directiveBuilder::buildFieldDefinitionDirectives, buildContext)
-                .forEach(fieldBuilder::withDirective);
+        toGraphQLAppliedDirectives(operation.getTypedElement(), buildContext.directiveBuilder::buildFieldDefinitionDirectives, buildContext)
+                .forEach(fieldBuilder::withAppliedDirective);
 
         List<GraphQLArgument> arguments = operation.getArguments().stream()
                 .filter(OperationArgument::isMappable)
@@ -241,8 +247,8 @@ public class OperationMapper {
                 .description(inputField.getDescription())
                 .type(toGraphQLInputType(inputField.getJavaType(), new TypeMappingEnvironment(inputField.getTypedElement(), this, buildContext)));
 
-        toGraphQLDirectives(inputField.getTypedElement(), buildContext.directiveBuilder::buildInputFieldDefinitionDirectives, buildContext)
-                .forEach(builder::withDirective);
+        toGraphQLAppliedDirectives(inputField.getTypedElement(), buildContext.directiveBuilder::buildInputFieldDefinitionDirectives, buildContext)
+                .forEach(builder::withAppliedDirective);
 
         if (inputField.getDefaultValue().isSet()) {
             builder.defaultValue(inputField.getDefaultValue().getValue());
@@ -277,8 +283,8 @@ public class OperationMapper {
                 .description(operationArgument.getDescription())
                 .type(toGraphQLInputType(operationArgument.getJavaType(), new TypeMappingEnvironment(operationArgument.getTypedElement(), this, buildContext)));
 
-        toGraphQLDirectives(operationArgument.getTypedElement(), buildContext.directiveBuilder::buildArgumentDefinitionDirectives, buildContext)
-                .forEach(builder::withDirective);
+        toGraphQLAppliedDirectives(operationArgument.getTypedElement(), buildContext.directiveBuilder::buildArgumentDefinitionDirectives, buildContext)
+                .forEach(builder::withAppliedDirective);
 
         if (operationArgument.getDefaultValue().isSet()) {
             builder.defaultValue(operationArgument.getDefaultValue().getValue());
@@ -286,10 +292,10 @@ public class OperationMapper {
         return buildContext.transformers.transform(builder.build(), operationArgument, this, buildContext);
     }
 
-    private List<GraphQLDirective> toGraphQLDirectives(TypedElement element, BiFunction<AnnotatedElement, DirectiveBuilderParams, List<Directive>> directiveBuilder, BuildContext buildContext) {
+    private List<GraphQLAppliedDirective> toGraphQLAppliedDirectives(TypedElement element, BiFunction<AnnotatedElement, DirectiveBuilderParams, List<Directive>> directiveBuilder, BuildContext buildContext) {
         return element.getElements().stream()
                 .flatMap(el -> directiveBuilder.apply(el, buildContext.directiveBuilderParams()).stream())
-                .map(directive -> toGraphQLDirective(directive, buildContext))
+                .map(directive -> toGraphQLAppliedDirective(directive, buildContext))
                 .collect(Collectors.toList());
     }
 
@@ -297,26 +303,44 @@ public class OperationMapper {
         GraphQLDirective.Builder builder = GraphQLDirective.newDirective()
                 .name(directive.getName())
                 .description(directive.getDescription())
+                .repeatable(directive.isRepeatable())
                 .validLocations(directive.getLocations());
         directive.getArguments().forEach(arg -> builder.argument(toGraphQLArgument(arg, buildContext)));
-        GraphQLDirective dir = buildContext.transformers.transform(builder.build(), directive, this, buildContext);
-        buildContext.directives.add(dir);
-        return dir;
+        return buildContext.transformers.transform(builder.build(), directive, this, buildContext);
+    }
+
+    public GraphQLAppliedDirective toGraphQLAppliedDirective(Directive directive, BuildContext buildContext) {
+        if (!this.discoveredDirectives.containsKey(directive.getName())) {
+            this.discoveredDirectives.put(directive.getName(), toGraphQLDirective(directive, buildContext));
+        }
+        GraphQLAppliedDirective.Builder builder = GraphQLAppliedDirective.newDirective()
+                .name(directive.getName())
+                .description(directive.getDescription());
+        directive.getArguments().forEach(arg -> builder.argument(toGraphQLAppliedDirectiveArgument(arg, buildContext)));
+        return buildContext.transformers.transform(builder.build(), directive, this, buildContext);
     }
 
     private GraphQLArgument toGraphQLArgument(DirectiveArgument directiveArgument, BuildContext buildContext) {
         GraphQLArgument.Builder builder = newArgument()
                 .name(directiveArgument.getName())
                 .description(directiveArgument.getDescription())
-                .type(toGraphQLInputType(directiveArgument.getJavaType(), new TypeMappingEnvironment(directiveArgument.getTypedElement(), this, buildContext)))
-                .value(directiveArgument.getValue());
+                .type(toGraphQLInputType(directiveArgument.getJavaType(), new TypeMappingEnvironment(directiveArgument.getTypedElement(), this, buildContext)));
 
-        toGraphQLDirectives(directiveArgument.getTypedElement(), buildContext.directiveBuilder::buildArgumentDefinitionDirectives, buildContext)
-                .forEach(builder::withDirective);
+        toGraphQLAppliedDirectives(directiveArgument.getTypedElement(), buildContext.directiveBuilder::buildArgumentDefinitionDirectives, buildContext)
+                .forEach(builder::withAppliedDirective);
 
         if (directiveArgument.getDefaultValue().isSet()) {
             builder.defaultValue(directiveArgument.getDefaultValue().getValue());
         }
+        return buildContext.transformers.transform(builder.build(), directiveArgument, this, buildContext);
+    }
+
+    private GraphQLAppliedDirectiveArgument toGraphQLAppliedDirectiveArgument(DirectiveArgument directiveArgument, BuildContext buildContext) {
+        GraphQLAppliedDirectiveArgument.Builder builder = GraphQLAppliedDirectiveArgument.newArgument()
+                .name(directiveArgument.getName())
+                .description(directiveArgument.getDescription())
+                .type(toGraphQLInputType(directiveArgument.getJavaType(), new TypeMappingEnvironment(directiveArgument.getTypedElement(), this, buildContext)))
+                .inputValueWithState(InputValueWithState.newInternalValue(directiveArgument.getValue()));
         return buildContext.transformers.transform(builder.build(), directiveArgument, this, buildContext);
     }
 

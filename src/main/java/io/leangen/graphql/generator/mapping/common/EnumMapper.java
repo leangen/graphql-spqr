@@ -1,6 +1,6 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import graphql.schema.GraphQLDirective;
+import graphql.schema.GraphQLAppliedDirective;
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLEnumValueDefinition;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
@@ -37,7 +37,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateEnumTypeDescription(javaType, buildContext.messageBundle));
         buildContext.directiveBuilder.buildEnumTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
-                enumBuilder.withDirective(env.operationMapper.toGraphQLDirective(directive, buildContext)));
+                enumBuilder.withAppliedDirective(env.operationMapper.toGraphQLAppliedDirective(directive, buildContext)));
         addOptions(enumBuilder, javaType, env.operationMapper, buildContext);
         enumBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
         return enumBuilder.build();
@@ -57,7 +57,7 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
                         .value(enumConst)
                         .description(getValueDescription(enumConst, messageBundle))
                         .deprecationReason(getValueDeprecationReason(enumConst, messageBundle))
-                        .withDirectives(getValueDirectives(enumConst, operationMapper, buildContext))
+                        .withAppliedDirectives(getValueDirectives(enumConst, operationMapper, buildContext))
                         .build()));
     }
 
@@ -83,10 +83,10 @@ public class EnumMapper extends CachingMapper<GraphQLEnumType, GraphQLEnumType> 
         return javaDeprecationConfig.enabled && deprecated != null ? javaDeprecationConfig.deprecationReason : null;
     }
 
-    protected GraphQLDirective[] getValueDirectives(Enum<?> value, OperationMapper operationMapper, BuildContext buildContext) {
+    protected GraphQLAppliedDirective[] getValueDirectives(Enum<?> value, OperationMapper operationMapper, BuildContext buildContext) {
         return buildContext.directiveBuilder.buildEnumValueDirectives(value, buildContext.directiveBuilderParams()).stream()
-                .map(directive -> operationMapper.toGraphQLDirective(directive, buildContext))
-                .toArray(GraphQLDirective[]::new);
+                .map(directive -> operationMapper.toGraphQLAppliedDirective(directive, buildContext))
+                .toArray(GraphQLAppliedDirective[]::new);
     }
 
     @Override

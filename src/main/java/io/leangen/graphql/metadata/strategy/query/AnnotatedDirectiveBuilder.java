@@ -100,9 +100,10 @@ public class AnnotatedDirectiveBuilder implements DirectiveBuilder {
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         GraphQLDirective meta = directiveType.getAnnotation(GraphQLDirective.class);
         Introspection.DirectiveLocation[] locations = (meta != null && Utils.isNotEmpty(meta.locations())) ? meta.locations() : GraphQLDirective.ALL_CLIENT;
+        boolean repeatable = meta != null && meta.repeatable();
         return new Directive(
                 infoGenerator.generateDirectiveTypeName(directiveType, messageBundle),
-                infoGenerator.generateDirectiveTypeDescription(directiveType, messageBundle), locations, arguments);
+                infoGenerator.generateDirectiveTypeDescription(directiveType, messageBundle), repeatable, locations, arguments);
     }
 
     private List<Directive> buildDirectives(AnnotatedElement element, DirectiveBuilderParams params) {
@@ -123,7 +124,7 @@ public class AnnotatedDirectiveBuilder implements DirectiveBuilder {
         AnnotatedType directiveType = GenericTypeReflector.annotate(annotation.annotationType());
         return new Directive(
                 infoGenerator.generateDirectiveTypeName(directiveType, messageBundle),
-                infoGenerator.generateDirectiveTypeDescription(directiveType, messageBundle), locations, arguments);
+                infoGenerator.generateDirectiveTypeDescription(directiveType, messageBundle), meta.repeatable(), locations, arguments);
     }
 
     private DirectiveArgument buildDirectiveArgument(Annotation annotation, Method method) {

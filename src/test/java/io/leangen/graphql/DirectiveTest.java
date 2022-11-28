@@ -1,10 +1,11 @@
 package io.leangen.graphql;
 
-import graphql.DirectivesUtil;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
+import graphql.schema.GraphQLAppliedDirective;
+import graphql.schema.GraphQLAppliedDirectiveArgument;
 import graphql.schema.GraphQLDirectiveContainer;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
@@ -30,7 +31,6 @@ import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static graphql.introspection.Introspection.DirectiveLocation;
@@ -59,10 +59,12 @@ public class DirectiveTest {
 
         GraphQLInputObjectType inputType = (GraphQLInputObjectType) argument.getType();
         assertDirective(inputType, "inputObjectType", "input");
-        graphql.schema.GraphQLArgument directiveArg = DirectivesUtil.directiveWithArg(inputType.getDirectives(), "inputObjectType", "value").get();
-        Optional<graphql.schema.GraphQLArgument> metaArg = DirectivesUtil.directiveWithArg(directiveArg.getDirectives(), "meta", "value");
-        assertTrue(metaArg.isPresent());
-        assertEquals("meta", metaArg.get().getArgumentValue().getValue());
+        graphql.schema.GraphQLArgument directiveArg = schema.getDirective("inputObjectType").getArgument("value");
+        GraphQLAppliedDirective metaDir = directiveArg.getAppliedDirective("meta");
+        assertNotNull(metaDir);
+        GraphQLAppliedDirectiveArgument metaArg = metaDir.getArgument("value");
+        assertNotNull(metaArg);
+        assertEquals("meta", metaArg.getArgumentValue().getValue());
 
         GraphQLInputObjectField inputField = inputType.getField("value");
         assertDirective(inputField, "inputFieldDef", "inputField");
@@ -128,13 +130,15 @@ public class DirectiveTest {
     }
 
     private void assertDirective(GraphQLDirectiveContainer container, String directiveName, String innerName) {
-        Optional<graphql.schema.GraphQLArgument> argument = DirectivesUtil.directiveWithArg(container.getDirectives(), directiveName, "value");
-        assertTrue(argument.isPresent());
-        GraphQLInputObjectType argType = (GraphQLInputObjectType) GraphQLUtils.unwrapNonNull(argument.get().getType());
+        GraphQLAppliedDirective directive = container.getAppliedDirective(directiveName);
+        assertNotNull(directive);
+        GraphQLAppliedDirectiveArgument argument = directive.getArgument("value");
+        assertNotNull(argument);
+        GraphQLInputObjectType argType = (GraphQLInputObjectType) GraphQLUtils.unwrapNonNull(argument.getType());
         assertEquals("WrapperInput", argType.getName());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("name").getType());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("value").getType());
-        Wrapper wrapper = (Wrapper) argument.get().getArgumentValue().getValue();
+        Wrapper wrapper = (Wrapper) argument.getArgumentValue().getValue();
         assertEquals(innerName, wrapper.name());
         assertEquals("test", wrapper.value());
     }
