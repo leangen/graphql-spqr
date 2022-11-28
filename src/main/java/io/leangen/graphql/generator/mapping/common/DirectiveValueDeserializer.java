@@ -32,6 +32,11 @@ public class DirectiveValueDeserializer implements ArgumentInjector {
 
     @Override
     public Object getArgumentValue(ArgumentInjectorParams params) {
+        //Can happen inside BatchLoader
+        if (params.getResolutionEnvironment().dataFetchingEnvironment == null) {
+            //TODO Can this be supported? Since DataFetchingEnvs are saved as key contexts, it sounds possible.
+          throw new IllegalArgumentException("Directive injection isn't supported in BatchLoaders");
+        }
         GraphQLDirective descriptor = params.getParameter().getAnnotation(GraphQLDirective.class);
         boolean allDirectives = ClassUtils.isSuperClass(Collection.class, params.getType());
         ResolutionEnvironment env = params.getResolutionEnvironment();
