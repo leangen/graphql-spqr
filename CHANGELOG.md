@@ -4,14 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2022-11-28
+### Changed
+- [Breaking] Upgraded to graphql-java v19.2 [#433](https://github.com/leangen/graphql-spqr/issues/433)
+- [Breaking] Replace batching strategy with `DataLoader` [#432](https://github.com/leangen/graphql-spqr/issues/432)
+- [Breaking] Remove custom `TypeResolutionEnvironment` (replaced with constructor-injected `GlobalEnvironment`)
+- [Breaking] Remove implicit mapping directives [#435](https://github.com/leangen/graphql-spqr/issues/435)
+- ### Fixed
+- Applied directives are now correctly defined in the schema (and will be present in the SDL)
+
 ## [0.11.2] - 2021-03-21
 ### Added
-- Make it easy to customize how Executables are created [#383](https://github.com/leangen/graphql-spqr/issues/383)
+- Make it easy to customize how `Executable`s are created [#383](https://github.com/leangen/graphql-spqr/issues/383)
 ### Changed
-- Improve GraphQLSchemaGenerator API and JavaDoc [#384](https://github.com/leangen/graphql-spqr/issues/384)
+- Improve `GraphQLSchemaGenerator` API and JavaDoc [#384](https://github.com/leangen/graphql-spqr/issues/384)
 ### Fixed
 - Support for `@JsonTypeInfo` [#353](https://github.com/leangen/graphql-spqr/issues/353)
-- [Breaking] Bring MapToListTypeAdapter in line with the other adapters [#382](https://github.com/leangen/graphql-spqr/issues/382)
+- [Breaking] Bring `MapToListTypeAdapter` in line with the other adapters [#382](https://github.com/leangen/graphql-spqr/issues/382)
 
 ## [0.11.1] - 2021-02-09
 ### Changed

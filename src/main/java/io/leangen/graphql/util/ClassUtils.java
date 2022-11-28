@@ -51,7 +51,7 @@ import static io.leangen.geantyref.GenericTypeReflector.capture;
 import static io.leangen.geantyref.GenericTypeReflector.merge;
 import static java.util.Arrays.stream;
 
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class ClassUtils {
 
     private static final Class<?> javassistProxyClass;
@@ -216,6 +216,14 @@ public class ClassUtils {
 
     public static <T> T instanceWithOptionalInjection(Class<T> clazz, Object... arguments) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         Class<?>[] parameterTypes = stream(arguments).map(Object::getClass).toArray(Class<?>[]::new);
+        return instanceWithOptionalInjection(clazz, parameterTypes, arguments);
+    }
+
+    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Class<?> parameterType, Object argument) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        return instanceWithOptionalInjection(clazz, new Class<?>[]{parameterType}, new Object[]{argument});
+    }
+
+    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Class<?>[] parameterTypes, Object[] arguments) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         try {
             return clazz.getDeclaredConstructor(parameterTypes).newInstance(arguments);
         } catch (NoSuchMethodException e) {
