@@ -447,7 +447,7 @@ public class ClassUtils {
     }
 
     /**
-     * Checks if an annotation is present either directly on the {@code element}, or as a <b>1st level<b/> meta-annotation
+     * Checks if an annotation is present either directly on the {@code element}, or as a <b>1st level</b> meta-annotation
      *
      * @param element The element to search the annotation on
      * @param annotation The type of the annotation to search for
@@ -460,7 +460,7 @@ public class ClassUtils {
 
     /**
      * Checks if an annotation is present either directly on the {@code element}, or recursively as a meta-annotation,
-     * at <b>any level<b/>
+     * at <b>any level</b>
      *
      * @param element The element to search the annotation on
      * @param annotation The type of the annotation to search for

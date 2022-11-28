@@ -188,7 +188,7 @@
                     <plugin>
                         <inherited>true</inherited>
                         <artifactId>maven-deploy-plugin</artifactId>
-                        <version>2.8.2</version>
+                        <version>3.0.0</version>
                         <configuration>
                             <updateReleaseInfo>true</updateReleaseInfo>
                         </configuration>
@@ -197,7 +197,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <version>3.0.1</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -229,7 +229,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.1.1</version>
+                        <version>3.4.1</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -239,6 +239,7 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <source>8</source>
                             <excludePackageNames>*.classpath.*</excludePackageNames>
                             <quiet>true</quiet>
                             <links>
@@ -260,7 +261,7 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.8</version>
+                        <version>1.6.13</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
