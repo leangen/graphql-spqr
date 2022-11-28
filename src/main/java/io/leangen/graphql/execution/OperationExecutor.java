@@ -2,6 +2,7 @@ package io.leangen.graphql.execution;
 
 import graphql.GraphQLException;
 import graphql.execution.DataFetcherResult;
+import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
@@ -14,7 +15,12 @@ import io.leangen.graphql.util.ContextUtils;
 import io.leangen.graphql.util.Utils;
 import org.dataloader.BatchLoaderEnvironment;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -23,7 +29,7 @@ import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
 /**
  * Created by bojan.tomic on 1/29/17.
  */
-public class OperationExecutor {
+public class OperationExecutor implements DataFetcher<Object> {
 
     private final Operation operation;
     private final ValueMapper valueMapper;
@@ -42,7 +48,8 @@ public class OperationExecutor {
                 res -> interceptorFactory.getInterceptors(new ResolverInterceptorFactoryParams(res))));
     }
 
-    public Object execute(DataFetchingEnvironment env) throws Exception {
+    @Override
+    public Object get(DataFetchingEnvironment env) throws Exception {
         ContextUtils.setClientMutationId(env.getContext(), env.getArgument(CLIENT_MUTATION_ID));
 
         Map<String, Object> arguments = env.getArguments();
@@ -132,5 +139,9 @@ public class OperationExecutor {
     @SuppressWarnings("unchecked")
     private static <T extends Throwable> void sneakyThrow(Throwable t) throws T {
         throw (T) t;
+    }
+
+    public Operation getOperation() {
+        return operation;
     }
 }

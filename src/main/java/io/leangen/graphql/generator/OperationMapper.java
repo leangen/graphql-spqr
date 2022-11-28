@@ -417,7 +417,7 @@ public class OperationMapper {
 
     /**
      * Creates a generic resolver for the given operation.
-     * @implSpec This resolver simply invokes {@link OperationExecutor#execute(DataFetchingEnvironment)}
+     * @implSpec These resolvers are {@link OperationExecutor} instances in case of regular (non-batched) operations
      *
      * @param operation The operation for which the resolver is being created
      * @param buildContext The shared context containing all the global information needed for mapping
@@ -436,9 +436,10 @@ public class OperationMapper {
                     ? createBatchLoader(executor)
                     : createAsyncBatchLoader(executor);
             this.batchResolvers.put(loaderName, batchLoader);
+            //TODO Investigate whether it makes sense to support interceptors for data loader dispatchers
             return env -> env.getDataLoader(loaderName).load(env.getSource(), env);
         }
-        return executor::execute;
+        return executor;
     }
 
     @SuppressWarnings("unchecked")
