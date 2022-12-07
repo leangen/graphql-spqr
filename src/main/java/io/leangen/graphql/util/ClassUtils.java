@@ -290,6 +290,14 @@ public class ClassUtils {
         throw new IllegalArgumentException("Can not determine if an element of type " + element.getClass().getName() + " is real");
     }
 
+    public static boolean isStatic(AnnotatedElement element) {
+        Objects.requireNonNull(element, "Element must not be null");
+        if (element instanceof Member) {
+            return Modifier.isStatic(((Member) element).getModifiers());
+        }
+        return false;
+    }
+
     public static String getFieldNameFromGetter(Method getter) {
         String name = getter.getName();
         if (name.startsWith("get") && name.length() > 3 && Character.isUpperCase(name.charAt(3))) {

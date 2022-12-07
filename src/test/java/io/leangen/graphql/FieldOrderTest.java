@@ -88,6 +88,8 @@ public class FieldOrderTest {
         public String climate;
         public String coordinates;
         public String size;
+
+        public static String shouldBeOmitted;
     }
 
     @GraphQLType(fieldOrder = {"episodeID", "title"})

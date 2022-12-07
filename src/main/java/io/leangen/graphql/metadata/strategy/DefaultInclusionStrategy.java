@@ -20,7 +20,7 @@ public class DefaultInclusionStrategy implements InclusionStrategy {
 
     @Override
     public boolean includeOperation(List<AnnotatedElement> elements, AnnotatedType declaringType) {
-        return elements.stream().allMatch(element -> ClassUtils.isReal(element) && !isIgnored(element));
+        return elements.stream().allMatch(element -> ClassUtils.isReal(element) && !isIgnored(element) && !ClassUtils.isStatic(element));
     }
 
     @Override

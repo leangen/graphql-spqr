@@ -4,6 +4,7 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
+import io.leangen.graphql.annotations.types.GraphQLUnion;
 import io.leangen.graphql.generator.mapping.strategy.DefaultImplementationDiscoveryStrategy;
 import org.junit.Test;
 
@@ -65,23 +66,35 @@ public class ImplementationAutoDiscoveryTest {
 
     @GraphQLInterface(name = "Manual")
     interface Manual {
-        @GraphQLQuery String makeSchemaValidationPass = "";
+        @GraphQLQuery String makeSchemaValidationPass();
     }
 
     @GraphQLInterface(name = "Auto", implementationAutoDiscovery = true)
     interface Auto {
-        @GraphQLQuery String makeSchemaValidationPass = "";
+        @GraphQLQuery String makeSchemaValidationPass();
     }
 
     public static class One implements Manual, Auto {
         public String getOne() {
             return "one";
         }
+
+        @GraphQLQuery
+        @Override
+        public String makeSchemaValidationPass() {
+            return null;
+        }
     }
 
     public static class Two implements Manual, Auto {
         public String getTwo() {
             return "two";
+        }
+
+        @GraphQLQuery
+        @Override
+        public String makeSchemaValidationPass() {
+            return null;
         }
     }
 
