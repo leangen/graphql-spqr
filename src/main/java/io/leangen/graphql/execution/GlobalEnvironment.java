@@ -5,13 +5,18 @@ import io.leangen.graphql.generator.TypeRegistry;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRegistry;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.InputConverter;
+import io.leangen.graphql.metadata.messages.EmptyMessageBundle;
 import io.leangen.graphql.metadata.messages.MessageBundle;
+import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 
 import java.lang.reflect.AnnotatedType;
+import java.util.Collections;
 import java.util.List;
 
 @SuppressWarnings("WeakerAccess")
@@ -26,12 +31,14 @@ public class GlobalEnvironment {
     public final InclusionStrategy inclusionStrategy;
     public final TypeInfoGenerator typeInfoGenerator;
 
+    public static final GlobalEnvironment EMPTY = new EmptyEnvironment();
+
     /**
      * @param messageBundle The global translation message bundle
      * @param relay Relay mapping helper
      * @param typeRegistry The repository of mapped types
      * @param converters Repository of all registered {@link InputConverter}s
-*                   and {@link io.leangen.graphql.generator.mapping.OutputConverter}s
+     *                   and {@link io.leangen.graphql.generator.mapping.OutputConverter}s
      * @param injectors The repository of registered argument injectors
      * @param typeTransformer Transformer used to pre-process the types (can be used to complete the missing generics etc)
      * @param inclusionStrategy The strategy that decides which input fields are acceptable
@@ -65,5 +72,19 @@ public class GlobalEnvironment {
 
     public List<InputConverter> getInputConverters() {
         return this.converters.getInputConverters();
+    }
+
+    private static class EmptyEnvironment extends GlobalEnvironment {
+        EmptyEnvironment() {
+            super(
+                    EmptyMessageBundle.INSTANCE,
+                    new Relay(),
+                    new TypeRegistry(Collections.emptyMap()),
+                    new ConverterRegistry(Collections.emptyList(), Collections.emptyList()),
+                    new ArgumentInjectorRegistry(Collections.emptyList()),
+                    new DefaultTypeTransformer(false, false),
+                    new DefaultInclusionStrategy(),
+                    new DefaultTypeInfoGenerator());
+        }
     }
 }

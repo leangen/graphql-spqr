@@ -31,6 +31,7 @@ import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static graphql.introspection.Introspection.DirectiveLocation;
@@ -75,6 +76,10 @@ public class DirectiveTest {
 
         GraphQLFieldDefinition innerField = objResult.getFieldDefinition("value");
         assertDirective(innerField, "fieldDef", "field");
+
+        assertNotNull(schema.getSchemaAppliedDirective("schema"));
+        //TODO Enable this once https://github.com/graphql-java/graphql-java/issues/3053 is fixed
+        //assertDirective(schema.getSchemaAppliedDirective("schema"), "toplevel");
     }
 
     @Test
@@ -107,30 +112,34 @@ public class DirectiveTest {
         assertClientDirectiveValues(graphQL, "query Books @timeout(afterMillis: 10) {books(searchString: \"monkey\") {id review}}", 10);
         assertClientDirectiveValues(graphQL, "query Books @timeout(afterMillis: 10) {books(searchString: \"monkey\") {id review @timeout(afterMillis: 5)}}", 5, 10);
         assertClientDirectiveValues(graphQL,"fragment Details on Book @timeout(afterMillis: 25) {\n" +
-                "  title" +
-                "  review @timeout(afterMillis: 5)" +
-                "}" +
-                "query Books @timeout(afterMillis: 30) {" +
-                "  books(searchString: \"monkey\") {" +
-                "    ...Details @timeout(afterMillis: 20)" +
-                "    ...on Book @timeout(afterMillis: 15) {review @timeout(afterMillis: 10)} id}}",
+                        "  title" +
+                        "  review @timeout(afterMillis: 5)" +
+                        "}" +
+                        "query Books @timeout(afterMillis: 30) {" +
+                        "  books(searchString: \"monkey\") {" +
+                        "    ...Details @timeout(afterMillis: 20)" +
+                        "    ...on Book @timeout(afterMillis: 15) {review @timeout(afterMillis: 10)} id}}",
                 5, 10, 15, 20, 25, 30);
         assertClientDirectiveValues(graphQL,"fragment Details on Book @timeout(afterMillis: 30) {\n" +
-                "  review @timeout(afterMillis: 5)" +
-                "  ... Review @timeout(afterMillis: 15)" +
-                "}" +
-                "fragment Review on Book @timeout(afterMillis: 25) {\n" +
-                "  review @timeout(afterMillis: 10)" +
-                "}" +
-                "query Books @timeout(afterMillis: 35) {" +
-                "  books(searchString: \"monkey\") @timeout(afterMillis: 40) {" +
-                "    ...Details @timeout(afterMillis: 20)" +
-                "  }}",
+                        "  review @timeout(afterMillis: 5)" +
+                        "  ... Review @timeout(afterMillis: 15)" +
+                        "}" +
+                        "fragment Review on Book @timeout(afterMillis: 25) {\n" +
+                        "  review @timeout(afterMillis: 10)" +
+                        "}" +
+                        "query Books @timeout(afterMillis: 35) {" +
+                        "  books(searchString: \"monkey\") @timeout(afterMillis: 40) {" +
+                        "    ...Details @timeout(afterMillis: 20)" +
+                        "  }}",
                 5, 10, 15, 20, 25, 30, 35);
     }
 
     private void assertDirective(GraphQLDirectiveContainer container, String directiveName, String innerName) {
         GraphQLAppliedDirective directive = container.getAppliedDirective(directiveName);
+        assertDirective(directive, innerName);
+    }
+
+    private void assertDirective(GraphQLAppliedDirective directive, String innerName) {
         assertNotNull(directive);
         GraphQLAppliedDirectiveArgument argument = directive.getArgument("value");
         assertNotNull(argument);
@@ -138,9 +147,9 @@ public class DirectiveTest {
         assertEquals("WrapperInput", argType.getName());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("name").getType());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("value").getType());
-        Wrapper wrapper = (Wrapper) argument.getArgumentValue().getValue();
-        assertEquals(innerName, wrapper.name());
-        assertEquals("test", wrapper.value());
+        Map<String, Object> wrapperRawValue = (Map<String, Object>) argument.getArgumentValue().getValue();
+        assertEquals(innerName, wrapperRawValue.get("name"));
+        assertEquals("test", wrapperRawValue.get("value"));
     }
 
     private void assertClientDirectiveMapping(GraphQLSchema schema, String directiveName, String argumentName, DirectiveLocation... validLocations) {
@@ -156,7 +165,7 @@ public class DirectiveTest {
         AtomicReference<List<Interrupt>> interrupts = new AtomicReference<>();
         ExecutionResult result = graphQL.execute(ExecutionInput.newExecutionInput()
                 .query(query)
-                .context(interrupts)
+                .graphQLContext(ctx -> ctx.of("timeouts", interrupts))
                 .build());
 
         assertTrue(result.getErrors().isEmpty());
@@ -174,13 +183,14 @@ public class DirectiveTest {
 
         @GraphQLQuery
         public String review(@GraphQLContext Book book,
-                             @GraphQLRootContext AtomicReference<List<Interrupt>> context,
+                             @GraphQLRootContext("timeouts") AtomicReference<List<Interrupt>> context,
                              @io.leangen.graphql.annotations.GraphQLDirective List<Interrupt> timeouts) {
             context.set(timeouts);
             return "Wholesome";
         }
     }
 
+    @Schema(@Wrapper(name = "schema", value = "toplevel"))
     private static class ServiceWithDirectives {
 
         @GraphQLQuery
@@ -281,6 +291,13 @@ public class DirectiveTest {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.METHOD, ElementType.FIELD})
     public @interface InputFieldDef {
+        Wrapper value();
+    }
+
+    @GraphQLDirective
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    public @interface Schema {
         Wrapper value();
     }
 

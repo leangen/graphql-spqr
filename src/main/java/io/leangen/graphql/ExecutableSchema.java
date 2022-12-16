@@ -1,6 +1,7 @@
 package io.leangen.graphql;
 
 import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.TypeRegistry;
 import org.dataloader.BatchLoaderWithContext;
 
@@ -12,10 +13,14 @@ public class ExecutableSchema {
     private final TypeRegistry typeRegistry;
     private final Map<String, BatchLoaderWithContext<?, ?>> batchLoaders;
 
-    public ExecutableSchema(GraphQLSchema schema, TypeRegistry typeRegistry, Map<String, BatchLoaderWithContext<?, ?>> batchLoaders) {
+    public GlobalEnvironment globalEnvironment;
+
+    public ExecutableSchema(GraphQLSchema schema, TypeRegistry typeRegistry,
+                            Map<String, BatchLoaderWithContext<?, ?>> batchLoaders, GlobalEnvironment env) {
         this.schema = schema;
         this.typeRegistry = typeRegistry;
         this.batchLoaders = batchLoaders;
+        this.globalEnvironment = env;
     }
 
     public GraphQLSchema getSchema() {

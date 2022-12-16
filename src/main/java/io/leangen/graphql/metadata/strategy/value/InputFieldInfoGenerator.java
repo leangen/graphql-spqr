@@ -5,6 +5,7 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.messages.MessageBundle;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
 import io.leangen.graphql.util.Utils;
 
@@ -48,20 +49,11 @@ public class InputFieldInfoGenerator {
 
         GraphQLInputField ann = match.get().getAnnotation(GraphQLInputField.class);
         try {
-            return defaultValueProvider(ann.defaultValueProvider(), environment)
+            return ClassUtils.instance(ann.defaultValueProvider())
                     .getDefaultValue(match.get(), type, ReservedStrings.decodeDefault(environment.messageBundle.interpolate(ann.defaultValue())));
-        } catch (ReflectiveOperationException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException(
-                    ann.defaultValueProvider().getName() + " must expose a public default constructor, or a constructor accepting " + GlobalEnvironment.class.getName(), e);
-        }
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected <T extends DefaultValueProvider> T defaultValueProvider(Class<T> type, GlobalEnvironment environment) throws ReflectiveOperationException {
-        try {
-            return type.getConstructor(GlobalEnvironment.class).newInstance(environment);
-        } catch (NoSuchMethodException e) {
-            return type.getConstructor().newInstance();
+                    ann.defaultValueProvider().getName() + " must expose a public default constructor", e);
         }
     }
 }

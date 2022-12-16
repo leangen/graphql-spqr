@@ -76,7 +76,7 @@ public class DelegatingTypeResolver implements TypeResolver {
     private GraphQLObjectType resolveType(TypeResolutionEnvironment env, GraphQLTypeResolver descriptor) {
         try {
             return ClassUtils.instanceWithOptionalInjection(descriptor.value(), globalEnv).getType(env);
-        } catch (ReflectiveOperationException e) {
+        } catch (Exception e) {
             throw new UnresolvableTypeException(env.<Object>getObject(), e);
         }
     }

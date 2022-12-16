@@ -28,6 +28,7 @@ public class OperationRegistry {
     private final Set<Operation> queries;
     private final Set<Operation> mutations;
     private final Set<Operation> subscriptions;
+    private final Set<AnnotatedType> operationSourceTypes;
     private final OperationSourceRegistry operationSourceRegistry;
     private final OperationBuilder operationBuilder;
     private final InclusionStrategy inclusionStrategy;
@@ -51,6 +52,7 @@ public class OperationRegistry {
         queries = buildQueries(resolvers);
         mutations = buildMutations(mutationResolvers);
         subscriptions = buildSubscriptions(subscriptionResolvers);
+        operationSourceTypes = collectSourceTypes(operationSourceRegistry);
     }
 
     private Set<Operation> buildQueries(List<Resolver> resolvers) {
@@ -102,6 +104,12 @@ public class OperationRegistry {
         return contextTypes;
     }
 
+    private Set<AnnotatedType> collectSourceTypes(OperationSourceRegistry operationSourceRegistry) {
+        return operationSourceRegistry.getOperationSources().stream()
+                .map(OperationSource::getJavaType)
+                .collect(Collectors.toSet());
+    }
+
     private Collection<Operation> getAllQueries() {
         return queries;
     }
@@ -116,6 +124,10 @@ public class OperationRegistry {
 
     Collection<Operation> getSubscriptions() {
         return subscriptions;
+    }
+
+    Collection<AnnotatedType> getOperationSourceTypes() {
+        return operationSourceTypes;
     }
 
     private Set<Operation> getNestedQueries(AnnotatedType domainType) {

@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 
 public class Directives {
 
-    private Map<Introspection.DirectiveLocation, Map<String, List<Map<String, Object>>>> directives = new HashMap<>();
+    private final Map<Introspection.DirectiveLocation, Map<String, List<Map<String, Object>>>> directives = new HashMap<>();
 
     Directives(DataFetchingEnvironment env, ExecutionStepInfo step) {
         List<Field> fields = env.getMergedField().getFields();
@@ -101,7 +101,7 @@ public class Directives {
         }
         return Collections.unmodifiableMap(
                 ValuesResolver.getArgumentValues(env.getGraphQLSchema().getCodeRegistry(), directive.getArguments(),
-                        dir.getArguments(), new CoercedVariables(env.getVariables())));
+                        dir.getArguments(), new CoercedVariables(env.getVariables()), env.getGraphQlContext(), env.getLocale()));
     }
 
     Map<Introspection.DirectiveLocation, Map<String, List<Map<String, Object>>>> getDirectives() {
@@ -118,7 +118,7 @@ public class Directives {
         private final List<Directive> fragmentDirs;
         private final List<Directive> fragmentDefDirs;
         private final List<Field> fieldsToFind;
-        private final Set<Node> relevantFragments;
+        private final Set<Node<?>> relevantFragments;
 
         private FragmentDirectiveCollector(DataFetchingEnvironment env) {
             this.inlineFragmentDirs = new ArrayList<>();

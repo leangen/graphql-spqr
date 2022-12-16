@@ -173,7 +173,7 @@ public class GraphQLSchemaGenerator {
     private AbstractInputHandler abstractInputHandler = new NoOpAbstractInputHandler();
     private OperationBuilder operationBuilder = new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.NONE);
     private DirectiveBuilder directiveBuilder = new AnnotatedDirectiveBuilder();
-    private ValueMapperFactory valueMapperFactory;
+    private ValueMapperFactory<?> valueMapperFactory;
     private InclusionStrategy inclusionStrategy;
     private ImplementationDiscoveryStrategy implDiscoveryStrategy = new DefaultImplementationDiscoveryStrategy();
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
@@ -1043,12 +1043,14 @@ public class GraphQLSchemaGenerator {
         builder.additionalDirectives(new HashSet<>(additionalDirectives.values()));
         builder.additionalDirectives(new HashSet<>(operationMapper.getDirectives()));
 
+        builder.withSchemaAppliedDirectives(operationMapper.getSchemaDirectives());
+
         builder.codeRegistry(buildContext.codeRegistry.build());
 
         applyProcessors(builder, buildContext);
         buildContext.executePostBuildHooks();
         GraphQLSchema schema = builder.build();
-        return new ExecutableSchema(schema, buildContext.typeRegistry, operationMapper.getBatchResolvers());
+        return new ExecutableSchema(schema, buildContext.typeRegistry, operationMapper.getBatchResolvers(), environment);
     }
 
     private void applyProcessors(GraphQLSchema.Builder builder, BuildContext buildContext) {
@@ -1153,12 +1155,12 @@ public class GraphQLSchemaGenerator {
 
     private static class NoOpCodeRegistryBuilder implements CodeRegistryBuilder {}
 
-    private static class MemoizedValueMapperFactory implements ValueMapperFactory {
+    private static class MemoizedValueMapperFactory implements ValueMapperFactory<ValueMapper> {
 
         private final ValueMapper defaultValueMapper;
-        private final ValueMapperFactory delegate;
+        private final ValueMapperFactory<?> delegate;
 
-        public MemoizedValueMapperFactory(GlobalEnvironment environment, ValueMapperFactory delegate) {
+        public MemoizedValueMapperFactory(GlobalEnvironment environment, ValueMapperFactory<?> delegate) {
             this.defaultValueMapper = delegate.getValueMapper(Collections.emptyMap(), environment);
             this.delegate = delegate;
         }

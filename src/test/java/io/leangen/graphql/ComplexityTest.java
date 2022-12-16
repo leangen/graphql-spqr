@@ -178,8 +178,8 @@ public class ComplexityTest {
     @Test
     public void introspectionComplexityTest() {
         //introspection query complexity should be independent of the schema (service)
-        testComplexity(new PetService(), GraphQLUtils.FULL_INTROSPECTION_QUERY, 108, 109);
-        testComplexity(new BookService(), GraphQLUtils.FULL_INTROSPECTION_QUERY, 108, 109);
+        testComplexity(new PetService(), GraphQLUtils.FULL_INTROSPECTION_QUERY, 107, 108);
+        testComplexity(new BookService(), GraphQLUtils.FULL_INTROSPECTION_QUERY, 107, 108);
     }
 
     @Test

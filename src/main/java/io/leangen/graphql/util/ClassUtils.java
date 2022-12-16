@@ -20,7 +20,6 @@ import java.lang.reflect.AnnotatedWildcardType;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -34,10 +33,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -59,6 +60,7 @@ public class ClassUtils {
     private static final List<Class<?>> ROOT_TYPES = Arrays.asList(
             Object.class, Annotation.class, Cloneable.class, Comparable.class, Externalizable .class, Serializable.class,
             Closeable.class, AutoCloseable.class);
+    private static final Map<Class<?>, Object> DEFAULT_PRIMITIVE_VALUES;
 
     static {
         Class<?> proxy;
@@ -68,6 +70,17 @@ public class ClassUtils {
             proxy = null;
         }
         javassistProxyClass = proxy;
+
+        Map<Class<?>, Object> defaultPrimitives = new HashMap<>();
+        defaultPrimitives.put(boolean.class, false);
+        defaultPrimitives.put(byte.class, 0);
+        defaultPrimitives.put(char.class, '\u0000');
+        defaultPrimitives.put(double.class, 0.0d);
+        defaultPrimitives.put(float.class, 	0.0f);
+        defaultPrimitives.put(int.class, 0);
+        defaultPrimitives.put(long.class, 0L);
+        defaultPrimitives.put(short.class, 0);
+        DEFAULT_PRIMITIVE_VALUES = Collections.unmodifiableMap(defaultPrimitives);
     }
 
     /**
@@ -209,25 +222,31 @@ public class ClassUtils {
     public static <T> T instance(Class<T> clazz) {
         try {
             return clazz.getDeclaredConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Object... arguments) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Object... arguments) {
         Class<?>[] parameterTypes = stream(arguments).map(Object::getClass).toArray(Class<?>[]::new);
         return instanceWithOptionalInjection(clazz, parameterTypes, arguments);
     }
 
-    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Class<?> parameterType, Object argument) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Class<?> parameterType, Object argument) {
         return instanceWithOptionalInjection(clazz, new Class<?>[]{parameterType}, new Object[]{argument});
     }
 
-    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Class<?>[] parameterTypes, Object[] arguments) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Class<?>[] parameterTypes, Object[] arguments) {
         try {
-            return clazz.getDeclaredConstructor(parameterTypes).newInstance(arguments);
-        } catch (NoSuchMethodException e) {
-            return clazz.getDeclaredConstructor().newInstance();
+            try {
+                return clazz.getDeclaredConstructor(parameterTypes).newInstance(arguments);
+            } catch (NoSuchMethodException e) {
+                return clazz.getDeclaredConstructor().newInstance();
+            }
+        } catch (ReflectiveOperationException e) {
+            String argumentTypes = stream(parameterTypes).map(Class::getName).collect(Collectors.joining(","));
+            throw new IllegalArgumentException(
+                   clazz.getName() + " must expose a public default constructor, or a constructor accepting " + argumentTypes, e);
         }
     }
 
@@ -793,6 +812,14 @@ public class ClassUtils {
 
     public static Class<?> forName(String className) throws ClassNotFoundException {
         return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+    }
+
+    public static Object getDefaultValueForType(Class<?> type) {
+        return DEFAULT_PRIMITIVE_VALUES.get(type);
+    }
+
+    public static boolean isPrimitive(AnnotatedType type) {
+        return type.getType().getClass() == Class.class && ((Class<?>) type.getType()).isPrimitive();
     }
 
     /**

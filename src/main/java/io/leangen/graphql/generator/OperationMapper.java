@@ -20,7 +20,6 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLUnionType;
-import graphql.schema.InputValueWithState;
 import graphql.schema.PropertyDataFetcher;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLId;
@@ -47,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -83,8 +83,9 @@ public class OperationMapper {
     private final List<GraphQLFieldDefinition> queries; //The list of all mapped queries
     private final List<GraphQLFieldDefinition> mutations; //The list of all mapped mutations
     private final List<GraphQLFieldDefinition> subscriptions; //The list of all mapped subscriptions
-    private final List<GraphQLDirective> directives; //The list of all added mapped directives
+    private final Collection<GraphQLDirective> directives; //Collection of all mapped directives
     private final Map<String, GraphQLDirective> discoveredDirectives = new HashMap<>();
+    private final List<GraphQLAppliedDirective> schemaDirectives; //The list of directives applied to the schema itself
     private final Map<String, BatchLoaderWithContext<?, ?>> batchResolvers = new HashMap<>();
 
     private static final Logger log = LoggerFactory.getLogger(OperationMapper.class);
@@ -94,13 +95,12 @@ public class OperationMapper {
      * @param buildContext The shared context containing all the global information needed for mapping
      */
     public OperationMapper(String queryRoot, String mutationRoot, String subscriptionRoot, BuildContext buildContext) {
-        List<GraphQLDirective> registeredDirectives = generateDirectives(buildContext);
-        registeredDirectives.forEach(dir -> this.discoveredDirectives.put(dir.getName(), dir));
-        this.directives = registeredDirectives;
+        registerDirectiveDefinitions(buildContext); //Pre-fills discoveredDirectives
         this.queries = generateQueries(queryRoot, buildContext);
         this.mutations = generateMutations(mutationRoot, buildContext);
         this.subscriptions = generateSubscriptions(subscriptionRoot, buildContext);
-        this.directives.addAll(discoveredDirectives.values());
+        this.schemaDirectives = generateSchemaDirectives(buildContext);
+        this.directives = discoveredDirectives.values();
         buildContext.resolveTypeReferences();
     }
 
@@ -159,15 +159,21 @@ public class OperationMapper {
                 .collect(Collectors.toList());
     }
 
-    private List<GraphQLDirective> generateDirectives(BuildContext buildContext) {
-        return buildContext.additionalDirectives.stream()
+    private void registerDirectiveDefinitions(BuildContext buildContext) {
+        buildContext.additionalDirectives.stream()
                 .map(directiveType -> {
                     List<Class<?>> concreteSubTypes = ClassUtils.isAbstract(directiveType)
                             ? buildContext.abstractInputHandler.findConcreteSubTypes(ClassUtils.getRawType(directiveType.getType()), buildContext)
                             : Collections.emptyList();
                     return buildContext.directiveBuilder.buildClientDirective(directiveType, buildContext.directiveBuilderParams(concreteSubTypes));
                 })
-                .map(directive -> toGraphQLDirective(directive, buildContext))
+                .forEach(directive -> registerDirectiveDefinition(directive, buildContext));
+    }
+
+    private List<GraphQLAppliedDirective> generateSchemaDirectives(BuildContext buildContext) {
+        return buildContext.operationRegistry.getOperationSourceTypes().stream()
+                .flatMap(sourceType -> buildContext.directiveBuilder.buildSchemaDirectives(sourceType, buildContext.directiveBuilderParams()).stream())
+                .map(directive -> toGraphQLAppliedDirective(directive, buildContext))
                 .collect(Collectors.toList());
     }
 
@@ -251,7 +257,7 @@ public class OperationMapper {
                 .forEach(builder::withAppliedDirective);
 
         if (inputField.getDefaultValue().isSet()) {
-            builder.defaultValue(inputField.getDefaultValue().getValue());
+            builder.defaultValueProgrammatic(inputField.getDefaultValue().getValue());
         }
         return buildContext.transformers.transform(builder.build(), inputField, this, buildContext);
     }
@@ -287,7 +293,7 @@ public class OperationMapper {
                 .forEach(builder::withAppliedDirective);
 
         if (operationArgument.getDefaultValue().isSet()) {
-            builder.defaultValue(operationArgument.getDefaultValue().getValue());
+            builder.defaultValueProgrammatic(operationArgument.getDefaultValue().getValue());
         }
         return buildContext.transformers.transform(builder.build(), operationArgument, this, buildContext);
     }
@@ -297,6 +303,11 @@ public class OperationMapper {
                 .flatMap(el -> directiveBuilder.apply(el, buildContext.directiveBuilderParams()).stream())
                 .map(directive -> toGraphQLAppliedDirective(directive, buildContext))
                 .collect(Collectors.toList());
+    }
+
+    private void registerDirectiveDefinition(Directive directive, BuildContext buildContext) {
+        this.discoveredDirectives.computeIfAbsent(directive.getName(),
+                name -> toGraphQLDirective(directive, buildContext));
     }
 
     public GraphQLDirective toGraphQLDirective(Directive directive, BuildContext buildContext) {
@@ -310,9 +321,7 @@ public class OperationMapper {
     }
 
     public GraphQLAppliedDirective toGraphQLAppliedDirective(Directive directive, BuildContext buildContext) {
-        if (!this.discoveredDirectives.containsKey(directive.getName())) {
-            this.discoveredDirectives.put(directive.getName(), toGraphQLDirective(directive, buildContext));
-        }
+        registerDirectiveDefinition(directive, buildContext);
         GraphQLAppliedDirective.Builder builder = GraphQLAppliedDirective.newDirective()
                 .name(directive.getName())
                 .description(directive.getDescription());
@@ -330,7 +339,7 @@ public class OperationMapper {
                 .forEach(builder::withAppliedDirective);
 
         if (directiveArgument.getDefaultValue().isSet()) {
-            builder.defaultValue(directiveArgument.getDefaultValue().getValue());
+            builder.defaultValueProgrammatic(directiveArgument.getDefaultValue().getValue());
         }
         return buildContext.transformers.transform(builder.build(), directiveArgument, this, buildContext);
     }
@@ -340,7 +349,7 @@ public class OperationMapper {
                 .name(directiveArgument.getName())
                 .description(directiveArgument.getDescription())
                 .type(toGraphQLInputType(directiveArgument.getJavaType(), new TypeMappingEnvironment(directiveArgument.getTypedElement(), this, buildContext)))
-                .inputValueWithState(InputValueWithState.newInternalValue(directiveArgument.getValue()));
+                .valueProgrammatic(directiveArgument.getValue());
         return buildContext.transformers.transform(builder.build(), directiveArgument, this, buildContext);
     }
 
@@ -586,8 +595,12 @@ public class OperationMapper {
         return subscriptions;
     }
 
-    public List<GraphQLDirective> getDirectives() {
+    public Collection<GraphQLDirective> getDirectives() {
         return directives;
+    }
+
+    public List<GraphQLAppliedDirective> getSchemaDirectives() {
+        return schemaDirectives;
     }
 
     public Map<String, BatchLoaderWithContext<?, ?>> getBatchResolvers() {

@@ -70,7 +70,7 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         } else {
             if (!parameter.isNamePresent() && builderParams.getInclusionStrategy().includeArgumentForMapping(parameter, parameterType, builderParams.getDeclaringType())) {
                 log.warn("No explicit argument name given and the parameter name lost in compilation: "
-                        + parameter.getDeclaringExecutable().toGenericString() + "#" + parameter.toString()
+                        + parameter.getDeclaringExecutable().toGenericString() + "#" + parameter
                         + ". For details and possible solutions see " + Urls.Errors.MISSING_ARGUMENT_NAME);
             }
             return parameter.getName();
@@ -87,19 +87,20 @@ public class AnnotatedArgumentBuilder implements ResolverArgumentBuilder {
         GraphQLArgument meta = parameter.getAnnotation(GraphQLArgument.class);
         if (meta == null) return DefaultValue.EMPTY;
         try {
-            return defaultValueProvider(meta.defaultValueProvider(), environment)
-                    .getDefaultValue(parameter, environment.getMappableInputType(parameterType), ReservedStrings.decodeDefault(environment.messageBundle.interpolate(meta.defaultValue())));
+            DefaultValue initialValue = ReservedStrings.decodeDefault(environment.messageBundle.interpolate(meta.defaultValue()));
+            return defaultValueProvider(meta.defaultValueProvider())
+                    .getDefaultValue(parameter, environment.getMappableInputType(parameterType), initialValue);
         } catch (ReflectiveOperationException e) {
             throw new IllegalArgumentException(
                     meta.defaultValueProvider().getName() + " must expose a public default constructor, or a constructor accepting " + GlobalEnvironment.class.getName(), e);
         }
     }
 
-    protected <T extends DefaultValueProvider> T defaultValueProvider(Class<T> type, GlobalEnvironment environment) throws ReflectiveOperationException {
+    protected <T extends DefaultValueProvider> T defaultValueProvider(Class<T> type) throws ReflectiveOperationException {
         try {
-            return type.getConstructor(GlobalEnvironment.class).newInstance(environment);
-        } catch (NoSuchMethodException e) {
-            return type.getConstructor().newInstance();
+            return ClassUtils.instance(type);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(type.getName() + " must expose a public default constructor", e);
         }
     }
 }

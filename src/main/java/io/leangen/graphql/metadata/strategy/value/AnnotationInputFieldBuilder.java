@@ -1,7 +1,6 @@
 package io.leangen.graphql.metadata.strategy.value;
 
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.util.ClassUtils;
@@ -20,7 +19,7 @@ public class AnnotationInputFieldBuilder implements InputFieldBuilder {
                         AnnotationMappingUtils.inputFieldDescription(method),
                         new TypedElement(GenericTypeReflector.annotate(method.getReturnType()), method),
                         null,
-                        DefaultValue.ofNullable(method.getDefaultValue())
+                        AnnotationMappingUtils.inputFieldDefaultValue(method)
                 ))
                 .collect(Collectors.toSet());
     }

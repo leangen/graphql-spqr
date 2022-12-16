@@ -7,6 +7,7 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLSchema;
+import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
 import io.leangen.graphql.annotations.GraphQLInputField;
@@ -15,8 +16,13 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.types.GraphQLType;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.metadata.messages.SimpleMessageBundle;
+import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.util.Defaults;
 import org.junit.Test;
 
+import java.lang.annotation.Annotation;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,11 +54,15 @@ public class InterpolationTest {
         translations.put("type.temp.hot.desc", "🌶");
         translations.put("type.temp.hot.deprecation", "Too hot");
 
-        GraphQLSchema schema = new TestSchemaGenerator()
+        ExecutableSchema executableSchema = new TestSchemaGenerator()
                 .withTypeAdapters(new MapToListTypeAdapter())
                 .withOperationsFromSingleton(new Quick())
                 .withStringInterpolation(new SimpleMessageBundle(translations))
-                .generate();
+                .generateExecutable();
+
+        GraphQLSchema schema = executableSchema.getSchema();
+        ValueMapper valueMapper = Defaults.valueMapperFactory(new DefaultTypeInfoGenerator())
+                .getValueMapper(Collections.emptyMap(), executableSchema.globalEnvironment);
 
         GraphQLFieldDefinition mutation = schema.getMutationType().getFieldDefinition("makeIt" + translations.get("mutation.dish.name"));
         assertNotNull(mutation);
@@ -62,7 +72,8 @@ public class InterpolationTest {
         graphql.schema.GraphQLArgument mutationArgument = mutation.getArgument(translations.get("mutation.dish.arg.name"));
         assertNotNull(mutationArgument);
         assertEquals(translations.get("mutation.dish.arg.desc"), mutationArgument.getDescription());
-        assertEquals(Dish.Temperature.HOT, ((Dish) mutationArgument.getArgumentDefaultValue().getValue()).getTemperature());
+        Dish value = valueMapper.fromInput(mutationArgument.getArgumentDefaultValue().getValue(), TypeFactory.annotatedClass(Dish.class, new Annotation[0]));
+        assertEquals(Dish.Temperature.HOT, value.getTemperature());
 
         GraphQLInputObjectType dish = (GraphQLInputObjectType) mutationArgument.getType();
         assertEquals(translations.get("type.dish.name") + "Input", dish.getName());
@@ -71,7 +82,8 @@ public class InterpolationTest {
         GraphQLInputObjectField temperatureField = dish.getFieldDefinition(translations.get("type.dish.fields.temp.name"));
         assertNotNull(temperatureField);
         assertEquals(translations.get("type.dish.fields.temp.desc"), temperatureField.getDescription());
-        assertEquals(Dish.Temperature.COOL, temperatureField.getInputFieldDefaultValue().getValue());
+        Object value1 = valueMapper.fromInput(temperatureField.getInputFieldDefaultValue().getValue(), TypeFactory.annotatedClass(Dish.Temperature.class, new Annotation[0]));
+        assertEquals(Dish.Temperature.COOL, value1);
 
         GraphQLEnumType temperature = (GraphQLEnumType) temperatureField.getType();
         assertEquals(translations.get("type.temp.name"), temperature.getName());

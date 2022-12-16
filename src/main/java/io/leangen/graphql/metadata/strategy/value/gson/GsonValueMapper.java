@@ -71,7 +71,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
             return (T) json;
         }
         try {
-            if (Scalars.isScalar(type.getType())) {
+            if (Scalars.isScalar(type.getType()) && !ClassUtils.isPrimitive(type)) {
                 return (T) Scalars.toGraphQLScalarType(type.getType()).getCoercing().parseValue(json);
             }
             return gson.fromJson(json, type.getType());
@@ -109,6 +109,7 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
         return new HashSet<>(merged.values());
     }
 
+    @SuppressWarnings("deprecation")
     private Map<String, InputField> fromFields(InputFieldBuilderParams params) {
         AnnotatedType type = params.getType();
         Class<?> raw = ClassUtils.getRawType(type.getType());

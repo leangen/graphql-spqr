@@ -86,7 +86,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
             return (T) json;
         }
         try {
-            if (Scalars.isScalar(type.getType())) {
+            if (Scalars.isScalar(type.getType()) && !ClassUtils.isPrimitive(type)) {
                 return (T) Scalars.toGraphQLScalarType(type.getType()).getCoercing().parseValue(json);
             }
             return objectMapper.readValue(json, objectMapper.getTypeFactory().constructType(type.getType()));

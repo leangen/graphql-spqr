@@ -131,9 +131,17 @@ public class AnnotatedDirectiveBuilder implements DirectiveBuilder {
         try {
             TypedElement element = new TypedElement(GenericTypeReflector.annotate(method.getReturnType()), method);
             return new DirectiveArgument(AnnotationMappingUtils.inputFieldName(method), AnnotationMappingUtils.inputFieldDescription(method),
-                    element, method.invoke(annotation), DefaultValue.ofNullable(method.getDefaultValue()), annotation);
+                    element, appliedValue(method.invoke(annotation)), defaultValue(method), annotation);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected Object appliedValue(Object value) {
+        return AnnotationMappingUtils.inputFieldValue(value);
+    }
+
+    protected DefaultValue defaultValue(Method method) {
+        return AnnotationMappingUtils.inputFieldDefaultValue(method);
     }
 }

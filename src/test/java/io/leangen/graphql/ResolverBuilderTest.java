@@ -47,7 +47,7 @@ public class ResolverBuilderTest {
     private static final String[] BASE_PACKAGES = { "io.leangen" };
     private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy(BASE_PACKAGES);
     private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
-    private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
+    private static final GlobalEnvironment ENVIRONMENT = GlobalEnvironment.EMPTY;
 
     @Test
     public void bridgeMethodTest() {

@@ -77,7 +77,7 @@ public class GenericsTest {
     private static final AnnotatedType arrayOfListsOfNumbers = new TypeToken<GenericItemRepo<@GraphQLNonNull List<Number> @GraphQLNonNull []>>() {
     }.getAnnotatedType();
 
-    private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
+    private static final GlobalEnvironment ENVIRONMENT = GlobalEnvironment.EMPTY;
 
     @Parameterized.Parameter
     public ValueMapperFactory valueMapperFactory;
