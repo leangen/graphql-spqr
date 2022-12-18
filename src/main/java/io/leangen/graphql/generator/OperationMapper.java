@@ -306,8 +306,10 @@ public class OperationMapper {
     }
 
     private void registerDirectiveDefinition(Directive directive, BuildContext buildContext) {
-        this.discoveredDirectives.computeIfAbsent(directive.getName(),
-                name -> toGraphQLDirective(directive, buildContext));
+        //Causes ConcurrentModificationException if replaced with computeIfAbsent()
+        if (!this.discoveredDirectives.containsKey(directive.getName())) {
+            this.discoveredDirectives.put(directive.getName(), toGraphQLDirective(directive, buildContext));
+        }
     }
 
     public GraphQLDirective toGraphQLDirective(Directive directive, BuildContext buildContext) {
@@ -375,7 +377,7 @@ public class OperationMapper {
                             .description(arg.getDescription())
                             .type(arg.getType());
                     if (arg.hasSetDefaultValue()) {
-                        builder.defaultValue(arg.getArgumentDefaultValue().getValue());
+                        builder.defaultValueProgrammatic(arg.getArgumentDefaultValue().getValue());
                     }
                     return builder.build();
                 })
