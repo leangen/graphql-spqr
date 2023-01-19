@@ -159,7 +159,7 @@ public class ResolutionEnvironment {
         return ContextUtils.unwrapContext(rootContext);
     }
 
-    private static DataFetchingEnvironment firstResolutionEnvironment(List<Object> keyContexts) {
+    public static DataFetchingEnvironment firstResolutionEnvironment(List<Object> keyContexts) {
         if (keyContexts == null || keyContexts.isEmpty() || !(keyContexts.get(0) instanceof DataFetchingEnvironment)) {
             return null;
         }

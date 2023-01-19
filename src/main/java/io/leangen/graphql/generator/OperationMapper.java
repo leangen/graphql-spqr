@@ -53,9 +53,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -69,7 +66,6 @@ import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
 import static io.leangen.graphql.util.GraphQLUtils.name;
-import static io.leangen.graphql.util.Utils.failedFuture;
 
 /**
  * <p>Drives the work of mapping Java structures into their GraphQL representations.</p>
@@ -87,6 +83,7 @@ public class OperationMapper {
     private final Map<String, GraphQLDirective> discoveredDirectives = new HashMap<>();
     private final List<GraphQLAppliedDirective> schemaDirectives; //The list of directives applied to the schema itself
     private final Map<String, BatchLoaderWithContext<?, ?>> batchResolvers = new HashMap<>();
+    private final BatchLoaderFactory batchloaderFactory = new BatchLoaderFactory();
 
     private static final Logger log = LoggerFactory.getLogger(OperationMapper.class);
 
@@ -444,8 +441,8 @@ public class OperationMapper {
         if (operation.isBatched()) {
             String loaderName = parentType + ':' + operation.getName();
             BatchLoaderWithContext<?, ?> batchLoader = operation.isAsync()
-                    ? createBatchLoader(executor)
-                    : createAsyncBatchLoader(executor);
+                    ? batchloaderFactory.createBatchLoader(executor)
+                    : batchloaderFactory.createAsyncBatchLoader(executor);
             this.batchResolvers.put(loaderName, batchLoader);
             //TODO Investigate whether it makes sense to support interceptors for data loader dispatchers
             return env -> env.getDataLoader(loaderName).load(env.getSource(), env);
@@ -453,29 +450,7 @@ public class OperationMapper {
         return executor;
     }
 
-    @SuppressWarnings("unchecked")
-    private BatchLoaderWithContext<?, ?> createBatchLoader(OperationExecutor executor) {
-        return (keys, env) -> {
-            try {
-                return (CompletionStage<List<Object>>) executor.execute(keys, env);
-            } catch (Exception e) {
-                return failedFuture(e);
-            }
-        };
-    }
 
-    @SuppressWarnings("unchecked")
-    private BatchLoaderWithContext<?, ?> createAsyncBatchLoader(OperationExecutor executor) {
-        return (keys, env) -> CompletableFuture.supplyAsync(()-> {
-            try {
-                return (List<Object>) executor.execute(keys, env);
-            } catch (CompletionException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new CompletionException(e);
-            }
-        });
-    }
 
     /**
      * Creates a resolver for the <em>node</em> query as defined by the Relay GraphQL spec.

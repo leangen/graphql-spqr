@@ -64,12 +64,22 @@ public class OperationExecutor implements DataFetcher<Object> {
     }
 
     public Object execute(List<Object> keys, BatchLoaderEnvironment env) throws Exception {
-        Resolver resolver = this.operation.getApplicableResolver(Collections.emptySet());
+        Map<String, Object> arguments = ResolutionEnvironment.firstResolutionEnvironment(env.getKeyContextsList()).getArguments();
+        // ensure that all batches share the same arguments, otherwise ignore arguments
+        for (Object o : env.getKeyContextsList()) {
+            if (!(o instanceof DataFetchingEnvironment) ||
+                    !arguments.equals(((DataFetchingEnvironment) o).getArguments())) {
+                arguments = Collections.emptyMap();
+                break;
+            }
+        }
+
+        Resolver resolver = this.operation.getApplicableResolver(arguments.keySet());
         if (resolver == null) {
             throw new GraphQLException("Batch loader for operation " + operation.getName() + " not implemented");
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(resolver, keys, env, this.valueMapper, this.globalEnvironment, this.converterRegistry, this.derivedTypes);
-        Object result = execute(resolver, resolutionEnvironment, Collections.emptyMap());
+        Object result = execute(resolver, resolutionEnvironment, arguments);
         return resolutionEnvironment.adaptOutput(result, resolver.getTypedElement(), resolver.getReturnType());
     }
 
