@@ -346,9 +346,12 @@ public class ClassUtils {
     }
 
     public static Optional<Method> findGetter(Class<?> type, String fieldName) {
-        return Utils.or(
-                findMethod(type, "get" + Utils.capitalize(fieldName)),
-                findMethod(type, "is" + Utils.capitalize(fieldName)));
+        String propertyName = Utils.capitalize(fieldName);
+        Optional<Method> getter = findMethod(type, "get" + propertyName);
+        if (getter.isPresent()) {
+            return getter;
+        }
+        return findMethod(type, "is" + propertyName);
     }
 
     public static Optional<Method> findSetter(Class<?> type, String fieldName, Class<?> fieldType) {
