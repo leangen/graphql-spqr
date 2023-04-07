@@ -60,15 +60,17 @@ class ComplexityAnalyzer {
     ResolvedField collectFields(ExecutionContext context) {
         FieldCollectorParameters parameters = FieldCollectorParameters.newParameters()
                 .schema(context.getGraphQLSchema())
-                .objectType(context.getGraphQLSchema().getQueryType())
+                .objectType(getRootType(context.getGraphQLSchema(), context.getOperationDefinition()))
                 .fragments(context.getFragmentsByName())
                 .variables(context.getCoercedVariables().toMap())
                 .build();
-        List<Field> fields = context.getOperationDefinition().getSelectionSet().getSelections().stream()
-                .map(selection -> (Field) selection)
-                .collect(Collectors.toList());
 
-        Map<String, ResolvedField> roots = fields.stream()
+        Stream<Field> fields = extractRootRawFields(
+                context.getOperationDefinition().getSelectionSet().getSelections(),
+                context
+        );
+
+        Map<String, ResolvedField> roots = fields
                 .map(field -> {
                     GraphQLFieldDefinition fieldDefinition;
                     FieldCoordinates fieldCoordinates;
@@ -81,8 +83,13 @@ class ComplexityAnalyzer {
                         fieldCoordinates = FieldCoordinates.coordinates(rootType, fieldDefinition);
                     }
 
-                    Map<String, Object> argumentValues = ValuesResolver.getArgumentValues(fieldDefinition.getArguments(),
-                            field.getArguments(), context.getCoercedVariables(), context.getGraphQLContext(), context.getLocale());
+                    Map<String, Object> argumentValues = ValuesResolver.getArgumentValues(
+                            fieldDefinition.getArguments(),
+                            field.getArguments(),
+                            context.getCoercedVariables(),
+                            context.getGraphQLContext(),
+                            context.getLocale()
+                    );
                     return collectFields(parameters, Collections.singletonList(
                             new ResolvedField(fieldCoordinates, field, fieldDefinition, argumentValues, findResolver(fieldCoordinates, argumentValues))), context);
                 })
@@ -93,6 +100,24 @@ class ComplexityAnalyzer {
             throw new ComplexityLimitExceededException(root.getComplexityScore(), maximumComplexity);
         }
         return root;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private Stream<Field> extractRootRawFields(List<Selection> selections, ExecutionContext context) {
+        return selections.stream()
+                .flatMap(selection -> {
+                    if (selection instanceof Field) {
+                        return Stream.of((Field) selection);
+                    } else if (selection instanceof FragmentSpread) {
+                        String fragmentName = ((FragmentSpread) selection).getName();
+                        return extractRootRawFields(
+                                context.getFragment(fragmentName).getSelectionSet().getSelections(),
+                                context
+                        );
+                    } else {
+                        throw new IllegalStateException("Unexpected selection type: " + selection.getClass());
+                    }
+                });
     }
 
     /**

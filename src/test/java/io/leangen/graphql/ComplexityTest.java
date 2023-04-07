@@ -35,6 +35,17 @@ import static org.junit.Assert.assertTrue;
 
 public class ComplexityTest {
 
+    private static final String fragmentOnRootQuery = "" +
+            "{" +
+            "  ... Cat" +
+            "}" +
+            "" +
+            "fragment Cat on Query {" +
+            "  pet(cat: true) {" +
+            "    sound" +
+            "  }" +
+            "}";
+
     private static final String fragmentQuery = "{" +
             "  newUsers: users(regDate: 1465667452785) {" +
             "    name" +
@@ -149,6 +160,16 @@ public class ComplexityTest {
             "       }" +
             "   }" +
             "}";
+
+    @Test
+    public void fragmentOnRootQueryComplexityTest() {
+        testComplexity(
+                new PetService(),
+                fragmentOnRootQuery,
+                1,
+                2
+        );
+    }
 
     @Test
     public void fragmentComplexityTest() {
