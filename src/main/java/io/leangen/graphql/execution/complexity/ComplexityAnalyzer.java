@@ -42,14 +42,14 @@ import static graphql.execution.TypeFromAST.getTypeFromAST;
  * Once the threshold is exceeded, it throws a {@link ComplexityLimitExceededException}.
  * The complexity score calculation for each node is delegated to {@link ComplexityFunction}.
  */
-class ComplexityAnalyzer {
+public class ComplexityAnalyzer {
 
     private final ConditionalNodes conditionalNodes;
     private final ComplexityFunction complexityFunction;
     private final int maximumComplexity;
     private final TypeRegistry typeRegistry;
 
-    ComplexityAnalyzer(ComplexityFunction complexityFunction, int maximumComplexity, TypeRegistry typeRegistry) {
+    public ComplexityAnalyzer(ComplexityFunction complexityFunction, int maximumComplexity, TypeRegistry typeRegistry) {
         this.typeRegistry = typeRegistry;
         this.conditionalNodes = new ConditionalNodes();
         this.complexityFunction = complexityFunction;
@@ -57,7 +57,7 @@ class ComplexityAnalyzer {
     }
 
 
-    ResolvedField collectFields(ExecutionContext context) {
+    public ResolvedField collectFields(ExecutionContext context) {
         FieldCollectorParameters parameters = FieldCollectorParameters.newParameters()
                 .schema(context.getGraphQLSchema())
                 .objectType(context.getGraphQLSchema().getQueryType())
