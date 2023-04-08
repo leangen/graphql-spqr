@@ -103,7 +103,6 @@ class ComplexityAnalyzer {
         return root;
     }
 
-    @SuppressWarnings("rawtypes")
     private Stream<Field> extractRootRawFields(List<Selection> selections, ExecutionContext context) {
         return selections.stream()
                 .flatMap(selection -> {
