@@ -13,6 +13,7 @@ import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLSubscription;
 import io.leangen.graphql.domain.Cat;
+import io.leangen.graphql.domain.Character;
 import io.leangen.graphql.domain.Dog;
 import io.leangen.graphql.domain.Education;
 import io.leangen.graphql.domain.Pet;
@@ -34,6 +35,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ComplexityTest {
+
+    private static final String unionQuery = "" +
+            "{" +
+            "  character(name: \"name\") {" +
+            "    ... on Human {" +
+            "      name" +
+            "      nickName" +
+            "    }" +
+            "    ... on Robot {" +
+            "      name" +
+            "    }" +
+            "  }" +
+            "}";
 
     private static final String fragmentOnRootQuery = "" +
             "{" +
@@ -162,6 +176,16 @@ public class ComplexityTest {
             "}";
 
     @Test
+    public void unionComplexityTest() {
+        testComplexity(
+                new CharacterService(),
+                unionQuery,
+                2,
+                3
+        );
+    }
+
+    @Test
     public void fragmentOnRootQueryComplexityTest() {
         testComplexity(
                 new PetService(),
@@ -259,6 +283,13 @@ public class ComplexityTest {
         @GraphQLQuery(name = "pets")
         public Page<Pet> findPets(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             return PageFactory.createPage(Collections.emptyList(), PageFactory.offsetBasedCursorProvider(0L), false, false);
+        }
+    }
+
+    public static class CharacterService {
+        @GraphQLQuery(name = "character")
+        public Character findCharacter(@GraphQLArgument(name = "name") String name) {
+            return null;
         }
     }
 }

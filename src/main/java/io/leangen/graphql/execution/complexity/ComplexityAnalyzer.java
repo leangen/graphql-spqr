@@ -14,6 +14,7 @@ import graphql.language.OperationDefinition;
 import graphql.language.Selection;
 import graphql.language.SelectionSet;
 import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLCompositeType;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLObjectType;
@@ -159,12 +160,19 @@ class ComplexityAnalyzer {
 
     private ResolvedField collectFields(FieldCollectorParameters parameters, List<ResolvedField> fields, ExecutionContext ctx) {
         ResolvedField field = fields.get(0);
-        if (!fields.stream().allMatch(f -> f.getFieldType() instanceof GraphQLFieldsContainer)) {
+        if (!fields.stream().allMatch(f -> f.getFieldType() instanceof GraphQLCompositeType)) {
             field.setComplexityScore(complexityFunction.getComplexity(field, 0));
             return field;
         }
         List<Field> rawFields = fields.stream().map(ResolvedField::getField).collect(Collectors.toList());
-        Map<String, ResolvedField> children = collectFields(parameters, rawFields, (GraphQLFieldsContainer) field.getFieldType(), ctx);
+        Map<String, ResolvedField> children = collectFields(
+                parameters,
+                rawFields,
+                field.getFieldType() instanceof GraphQLFieldsContainer
+                        ? (GraphQLFieldsContainer) field.getFieldType()
+                        : parameters.getObjectType(),
+                ctx
+        );
         Resolver resolver = findResolver(field.getCoordinates(), field.getArguments());
         ResolvedField node = new ResolvedField(field.getCoordinates(), field.getField(), field.getFieldDefinition(), field.getArguments(), children, resolver);
         int childScore = children.values().stream().mapToInt(ResolvedField::getComplexityScore).sum();
