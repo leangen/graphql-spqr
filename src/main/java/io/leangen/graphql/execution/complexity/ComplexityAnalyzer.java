@@ -1,41 +1,17 @@
 package io.leangen.graphql.execution.complexity;
 
-import graphql.execution.CoercedVariables;
-import graphql.execution.ConditionalNodes;
 import graphql.execution.ExecutionContext;
-import graphql.execution.FieldCollectorParameters;
-import graphql.execution.ValuesResolver;
-import graphql.introspection.Introspection;
-import graphql.language.Field;
-import graphql.language.FragmentDefinition;
-import graphql.language.FragmentSpread;
-import graphql.language.InlineFragment;
-import graphql.language.OperationDefinition;
-import graphql.language.Selection;
-import graphql.language.SelectionSet;
-import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLCompositeType;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLFieldsContainer;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLSchema;
+import graphql.normalized.ExecutableNormalizedField;
+import graphql.normalized.ExecutableNormalizedOperation;
+import graphql.schema.*;
 import io.leangen.graphql.generator.TypeRegistry;
-import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static graphql.execution.TypeFromAST.getTypeFromAST;
 
 /**
  * Class used to perform static complexity analysis on the parsed operation AST.
@@ -43,271 +19,126 @@ import static graphql.execution.TypeFromAST.getTypeFromAST;
  * Once the threshold is exceeded, it throws a {@link ComplexityLimitExceededException}.
  * The complexity score calculation for each node is delegated to {@link ComplexityFunction}.
  */
-class ComplexityAnalyzer {
+public class ComplexityAnalyzer {
 
-    private final ConditionalNodes conditionalNodes;
+    private final int maxComplexity;
     private final ComplexityFunction complexityFunction;
-    private final int maximumComplexity;
     private final TypeRegistry typeRegistry;
 
-    ComplexityAnalyzer(ComplexityFunction complexityFunction, int maximumComplexity, TypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
-        this.conditionalNodes = new ConditionalNodes();
+    public ComplexityAnalyzer(int maxComplexity, ComplexityFunction complexityFunction, TypeRegistry typeRegistry) {
+        this.maxComplexity = maxComplexity;
         this.complexityFunction = complexityFunction;
-        this.maximumComplexity = maximumComplexity;
+        this.typeRegistry = typeRegistry;
     }
 
-
-    ResolvedField collectFields(ExecutionContext context) {
-        FieldCollectorParameters parameters = FieldCollectorParameters.newParameters()
-                .schema(context.getGraphQLSchema())
-                .objectType(getRootType(context.getGraphQLSchema(), context.getOperationDefinition()))
-                .fragments(context.getFragmentsByName())
-                .variables(context.getCoercedVariables().toMap())
-                .build();
-
-        Stream<Field> fields = extractRootRawFields(
-                context.getOperationDefinition().getSelectionSet().getSelections(),
-                context
-        );
-
-        Map<String, ResolvedField> roots = fields
-                .map(field -> {
-                    GraphQLFieldDefinition fieldDefinition;
-                    FieldCoordinates fieldCoordinates;
-                    if (GraphQLUtils.isIntrospectionField(field)) {
-                        fieldDefinition = Introspection.SchemaMetaFieldDef;
-                        fieldCoordinates = FieldCoordinates.systemCoordinates(field.getName());
-                    } else {
-                        GraphQLObjectType rootType = getRootType(context.getGraphQLSchema(), context.getOperationDefinition());
-                        fieldDefinition = Objects.requireNonNull(rootType.getFieldDefinition(field.getName()));
-                        fieldCoordinates = FieldCoordinates.coordinates(rootType, fieldDefinition);
-                    }
-
-                    Map<String, Object> argumentValues = ValuesResolver.getArgumentValues(
-                            fieldDefinition.getArguments(),
-                            field.getArguments(),
-                            context.getCoercedVariables(),
-                            context.getGraphQLContext(),
-                            context.getLocale()
-                    );
-                    return collectFields(parameters, Collections.singletonList(
-                            new ResolvedField(fieldCoordinates, field, fieldDefinition, argumentValues, findResolver(fieldCoordinates, argumentValues))), context);
-                })
-                .collect(Collectors.toMap(ResolvedField::getName, Function.identity()));
-
-        ResolvedField root = new ResolvedField(roots);
-        if (root.getComplexityScore() > maximumComplexity) {
-            throw new ComplexityLimitExceededException(root.getComplexityScore(), maximumComplexity);
-        }
-        return root;
-    }
-
-    private Stream<Field> extractRootRawFields(List<Selection> selections, ExecutionContext context) {
-        return selections.stream()
-                .flatMap(selection -> {
-                    if (selection instanceof Field) {
-                        return Stream.of((Field) selection);
-                    } else if (selection instanceof FragmentSpread) {
-                        String fragmentName = ((FragmentSpread) selection).getName();
-                        return extractRootRawFields(
-                                context.getFragment(fragmentName).getSelectionSet().getSelections(),
-                                context
-                        );
-                    } else {
-                        throw new IllegalStateException("Unexpected selection type: " + selection.getClass());
-                    }
-                });
-    }
-
-    /**
-     * Given a list of fields this will collect the sub-field selections and return it as a map
-     *
-     * @param parameters the parameters to this method
-     * @param fields     the list of fields to collect for
-     *
-     * @return a map of the sub field selections
+     /*
+     ExecutableNormalizedOperation is graphql-java internal API.
+     This method can hopefully be reimplemented to rely on supported API instead once
+     https://github.com/graphql-java/graphql-java/pull/3174 is merged 🤞
      */
-    private Map<String, ResolvedField> collectFields(FieldCollectorParameters parameters, List<Field> fields, GraphQLFieldsContainer parent, ExecutionContext ctx) {
-        List<String> visitedFragments = new ArrayList<>();
-        Map<String, List<ResolvedField>> unconditionalSubFields = new LinkedHashMap<>();
-        Map<String, Map<String, List<ResolvedField>>> conditionalSubFields = new LinkedHashMap<>();
+    public int complexity(ExecutionContext context) {
+        ComplexityAnalyzer analyzer = new ComplexityAnalyzer(maxComplexity, complexityFunction, typeRegistry);
+        ExecutableNormalizedOperation tree = context.getNormalizedQueryTree().get();
+        GraphQLSchema schema = context.getGraphQLSchema();
 
-        fields.stream()
-                .filter(field -> field.getSelectionSet() != null)
-                .forEach(field -> collectFields(parameters, unconditionalSubFields,
-                        getUnconditionalSelections(field.getSelectionSet(), parameters), visitedFragments, parent, ctx));
-
-        fields.stream()
-                .filter(field -> field.getSelectionSet() != null)
-                .forEach(field ->
-                        getConditionalSelections(field.getSelectionSet(), parameters).forEach((condition, selections) -> {
-                                    Map<String, List<ResolvedField>> subFields = new LinkedHashMap<>();
-                                    collectFields(parameters, subFields, selections, visitedFragments, parent, ctx);
-                                    conditionalSubFields.put(condition, subFields);
-                                }
-                        ));
-
-        if (conditionalSubFields.isEmpty()) {
-            return unconditionalSubFields.values().stream()
-                    .map(nodes -> collectFields(parameters, nodes, ctx))
-                    .collect(Collectors.toMap(ResolvedField::getName, Function.identity()));
-        } else {
-            return reduceAlternatives(parameters, ctx, unconditionalSubFields, conditionalSubFields);
-        }
+        int totalComplexity = tree.getTopLevelFields().stream()
+                .map(root -> resolvedField(schema, root))
+                .mapToInt(analyzer::complexity)
+                .sum();
+        return check(totalComplexity);
     }
 
-    private ResolvedField collectFields(FieldCollectorParameters parameters, List<ResolvedField> fields, ExecutionContext ctx) {
-        ResolvedField field = fields.get(0);
-        if (!fields.stream().allMatch(f -> f.getFieldType() instanceof GraphQLCompositeType)) {
-            field.setComplexityScore(complexityFunction.getComplexity(field, 0));
-            return field;
-        }
-        List<Field> rawFields = fields.stream().map(ResolvedField::getField).collect(Collectors.toList());
-        Map<String, ResolvedField> children = collectFields(
-                parameters,
-                rawFields,
-                field.getFieldType() instanceof GraphQLFieldsContainer
-                        ? (GraphQLFieldsContainer) field.getFieldType()
-                        : parameters.getObjectType(),
-                ctx
-        );
-        Resolver resolver = findResolver(field.getCoordinates(), field.getArguments());
-        ResolvedField node = new ResolvedField(field.getCoordinates(), field.getField(), field.getFieldDefinition(), field.getArguments(), children, resolver);
-        int childScore = children.values().stream().mapToInt(ResolvedField::getComplexityScore).sum();
-        int complexityScore = complexityFunction.getComplexity(node, childScore);
-        if (complexityScore > maximumComplexity) {
-            throw new ComplexityLimitExceededException(complexityScore, maximumComplexity);
-        }
-        node.setComplexityScore(complexityScore);
-        return node;
+    // This method exists solely to exemplify what can currently be done using only the public API.
+    // Remove if the above-mentioned issue is resolved in graphql-java.
+    private int complexity(DataFetchingEnvironment env) {
+        return complexity(resolvedField(env));
     }
 
-    private void collectFields(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, List<Selection> selectionSet,
-                               List<String> visitedFragments, GraphQLFieldsContainer parent, ExecutionContext ctx) {
-
-        for (Selection selection : selectionSet) {
-            if (selection instanceof Field) {
-                collectField(parameters, fields, (Field) selection, parent, ctx);
-            } else if (selection instanceof InlineFragment) {
-                collectInlineFragment(parameters, ctx, fields, visitedFragments, (InlineFragment) selection, parent);
-            } else if (selection instanceof FragmentSpread) {
-                collectFragmentSpread(parameters, ctx, fields, visitedFragments, (FragmentSpread) selection, parent);
-            }
-        }
-    }
-
-    private void collectFragmentSpread(FieldCollectorParameters parameters, ExecutionContext ctx, Map<String, List<ResolvedField>> fields,
-                                       List<String> visitedFragments, FragmentSpread fragmentSpread, GraphQLFieldsContainer parent) {
-
-        if (visitedFragments.contains(fragmentSpread.getName())) {
-            return;
-        }
-        if (!conditionalNodes.shouldInclude(parameters.getVariables(), fragmentSpread.getDirectives())) {
-            return;
-        }
-        visitedFragments.add(fragmentSpread.getName());
-        FragmentDefinition fragmentDefinition = definition(fragmentSpread, parameters);
-
-        if (!conditionalNodes.shouldInclude(parameters.getVariables(), fragmentDefinition.getDirectives())) {
-            return;
-        }
-        if (fragmentDefinition.getTypeCondition() != null) {
-            parent = (GraphQLFieldsContainer) getTypeFromAST(parameters.getGraphQLSchema(), fragmentDefinition.getTypeCondition());
-        }
-        collectFields(parameters, fields, fragmentDefinition.getSelectionSet().getSelections(), visitedFragments, parent, ctx);
-    }
-
-    private void collectInlineFragment(FieldCollectorParameters parameters, ExecutionContext ctx, Map<String, List<ResolvedField>> fields,
-                                       List<String> visitedFragments, InlineFragment inlineFragment, GraphQLFieldsContainer parent) {
-
-        if (!conditionalNodes.shouldInclude(parameters.getVariables(), inlineFragment.getDirectives())) {
-            return;
-        }
-        if (inlineFragment.getTypeCondition() != null) {
-            parent = (GraphQLFieldsContainer) getTypeFromAST(parameters.getGraphQLSchema(), inlineFragment.getTypeCondition());
-        }
-        collectFields(parameters, fields, inlineFragment.getSelectionSet().getSelections(), visitedFragments, parent, ctx);
-    }
-
-    private void collectField(FieldCollectorParameters parameters, Map<String, List<ResolvedField>> fields, Field field, GraphQLFieldsContainer parent, ExecutionContext ctx) {
-        if (!conditionalNodes.shouldInclude(parameters.getVariables(), field.getDirectives())) {
-            return;
-        }
-        GraphQLFieldDefinition fieldDefinition = parent.getFieldDefinition(field.getName());
-        FieldCoordinates fieldCoordinates = FieldCoordinates.coordinates(parent, fieldDefinition);
-        Map<String, Object> argumentValues = ValuesResolver.getArgumentValues(fieldDefinition.getArguments(), field.getArguments(),
-                new CoercedVariables(parameters.getVariables()), ctx.getGraphQLContext(), ctx.getLocale());
-        ResolvedField node = new ResolvedField(fieldCoordinates, field, fieldDefinition, argumentValues, findResolver(fieldCoordinates, argumentValues));
-        fields.putIfAbsent(node.getName(), new ArrayList<>());
-        fields.get(node.getName()).add(node);
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    protected Map<String, ResolvedField> reduceAlternatives(FieldCollectorParameters parameters, ExecutionContext ctx,
-                                                            Map<String, List<ResolvedField>> unconditionalSubFields,
-                                                            Map<String, Map<String, List<ResolvedField>>> conditionalSubFields) {
-        Map<String, ResolvedField> reduced = null;
-        for (Map.Entry<String, Map<String, List<ResolvedField>>> conditional : conditionalSubFields.entrySet()) {
-            Map<String, List<ResolvedField>> merged = new HashMap<>(conditional.getValue());
-            for (Map.Entry<String, List<ResolvedField>> unconditional : unconditionalSubFields.entrySet()) {
-                merged.merge(unconditional.getKey(), unconditional.getValue(),
-                        (condNodes, uncondNodes) -> Stream.concat(condNodes.stream(), uncondNodes.stream()).collect(Collectors.toList()));
-            }
-            Map<String, ResolvedField> flat = merged.values().stream()
-                    .map(nodes -> collectFields(parameters, nodes, ctx))
-                    .collect(Collectors.toMap(ResolvedField::getName, Function.identity()));
-            if (reduced == null) {
-                reduced = flat;
-            } else {
-                int currentScore = flat.values().stream().mapToInt(ResolvedField::getComplexityScore).sum();
-                int maxScore = reduced.values().stream().mapToInt(ResolvedField::getComplexityScore).sum();
-                if (currentScore > maxScore) {
-                    reduced = flat;
+    private int complexity(ResolvedField resolvedField) {
+        List<SelectedField> fields = resolvedField.getSelectionSet().getImmediateFields();
+        if (isAbstract(resolvedField.getFieldType())) {
+            List<SelectedField> unconditionalFields = new ArrayList<>();
+            Map<String, List<SelectedField>> conditionalFieldsPerType = new HashMap<>();
+            // List<MappedType> outputTypes = typeRegistry.getOutputTypes(resolvedField.getFieldType().getName());
+            for (SelectedField subField : fields) {
+                if (subField.isConditional()) {
+                    subField.getObjectTypeNames().forEach(obj -> {
+                        conditionalFieldsPerType.computeIfAbsent(obj, __ -> new ArrayList<>());
+                        conditionalFieldsPerType.get(obj).add(subField);
+                    });
+                } else {
+                    unconditionalFields.add(subField);
                 }
             }
+            int unconditionalChildScore = score(unconditionalFields);
+            int maxConditionalChildScore = conditionalFieldsPerType.entrySet().stream()
+                    .mapToInt(e -> score(e.getKey(), e.getValue()))
+                    .max()
+                    .orElse(0);
+            return check(complexityFunction.getComplexity(resolvedField, unconditionalChildScore + maxConditionalChildScore));
         }
-        return reduced;
+        int childScore = score(fields);
+        return check(complexityFunction.getComplexity(resolvedField, childScore));
     }
 
-    private List<Selection> getUnconditionalSelections(SelectionSet selectionSet, FieldCollectorParameters parameters) {
-        return selectionSet.getSelections().stream()
-                .filter(selection -> !isConditional(selection, parameters))
-                .collect(Collectors.toList());
+    private boolean isAbstract(GraphQLType type) {
+        return type instanceof GraphQLInterfaceType || type instanceof GraphQLUnionType;
     }
 
-    private Map<String, List<Selection>> getConditionalSelections(SelectionSet selectionSet, FieldCollectorParameters parameters) {
-        return selectionSet.getSelections().stream()
-                .filter(selection -> isConditional(selection, parameters))
-                .collect(Collectors.groupingBy(s -> s instanceof FragmentSpread
-                        ? definition(s, parameters).getTypeCondition().getName()
-                        : ((InlineFragment) s).getTypeCondition().getName()));
+    private FieldCoordinates coordinates(DataFetchingEnvironment env) {
+        return FieldCoordinates.coordinates(
+                (GraphQLFieldsContainer) GraphQLUtils.unwrap(env.getParentType()), env.getFieldDefinition());
     }
 
-    private boolean isConditional(Selection selection, FieldCollectorParameters parameters) {
-        return (selection instanceof FragmentSpread && definition(selection, parameters).getTypeCondition() != null)
-                || (selection instanceof InlineFragment && ((InlineFragment) selection).getTypeCondition() != null);
+    private FieldCoordinates coordinates(SelectedField field) {
+        return coordinates(GraphQLUtils.unwrap(field.getParentField().getType()).getName(), field);
     }
 
-    private GraphQLObjectType getRootType(GraphQLSchema schema, OperationDefinition operationDefinition) {
-        if (operationDefinition.getOperation() == OperationDefinition.Operation.MUTATION) {
-            return Objects.requireNonNull(schema.getMutationType());
-        } else if (operationDefinition.getOperation() == OperationDefinition.Operation.QUERY) {
-            return Objects.requireNonNull(schema.getQueryType());
-        } else if (operationDefinition.getOperation() == OperationDefinition.Operation.SUBSCRIPTION) {
-            return Objects.requireNonNull(schema.getSubscriptionType());
-        } else {
-            throw new IllegalStateException("Unknown operation type encountered. Incompatible graphql-java version?");
+    private FieldCoordinates coordinates(String concreteTypeName, SelectedField field) {
+        return FieldCoordinates.coordinates(concreteTypeName, field.getName());
+    }
+
+    private ResolvedField resolvedField(DataFetchingEnvironment env) {
+        FieldCoordinates coordinates = coordinates(env);
+        Resolver resolver = typeRegistry.getMappedResolver(coordinates, env.getArguments().keySet());
+        return new ResolvedField(coordinates, resolver,
+                env.getFieldType(), env.getArguments(), env.getSelectionSet());
+    }
+
+    private ResolvedField resolvedField(GraphQLSchema schema, ExecutableNormalizedField field) {
+        FieldCoordinates coordinates = FieldCoordinates.coordinates(field.getSingleObjectTypeName(), field.getFieldName());
+        GraphQLOutputType type = field.getFieldDefinitions(schema).get(0).getType();
+        DataFetchingFieldSelectionSet selectionSet = DataFetchingFieldSelectionSetImpl.newCollector(
+                schema,
+                type,
+                () -> field);
+        Resolver resolver = typeRegistry.getMappedResolver(coordinates, field.getResolvedArguments().keySet());
+        return new ResolvedField(coordinates, resolver, type, field.getResolvedArguments(), selectionSet);
+    }
+
+    private ResolvedField resolvedField(FieldCoordinates coordinates, SelectedField field) {
+        Resolver resolver = typeRegistry.getMappedResolver(coordinates, field.getArguments().keySet());
+        return new ResolvedField(coordinates, resolver, field.getType(), field.getArguments(),
+                field.getSelectionSet());
+    }
+
+    private int score(List<SelectedField> fields) {
+        return fields.stream()
+                .mapToInt(field -> complexity(resolvedField(coordinates(field), field)))
+                .sum();
+    }
+
+    private int score(String concreteTypeName, List<SelectedField> fields) {
+        return fields.stream()
+                .mapToInt(field -> complexity(resolvedField(coordinates(concreteTypeName, field), field)))
+                .sum();
+    }
+
+    private int check(int score) {
+        if (score > maxComplexity) {
+            throw new ComplexityLimitExceededException(score, maxComplexity);
         }
-    }
-
-    private FragmentDefinition definition(Selection fragmentSpread, FieldCollectorParameters parameters) {
-        return parameters.getFragmentsByName().get(((FragmentSpread) fragmentSpread).getName());
-    }
-
-    private Resolver findResolver(FieldCoordinates coordinates, Map<String, Object> arguments) {
-        Operation mappedOperation = typeRegistry.getMappedOperation(coordinates);
-        return mappedOperation != null ? mappedOperation.getApplicableResolver(arguments.keySet()) : null;
+        return score;
     }
 }
 

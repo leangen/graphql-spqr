@@ -1,24 +1,14 @@
 package io.leangen.graphql.generator;
 
-import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLNamedOutputType;
-import graphql.schema.GraphQLNamedType;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLTypeReference;
-import graphql.schema.GraphQLUnionType;
+import graphql.schema.*;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
+import io.leangen.graphql.metadata.Resolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -125,6 +115,11 @@ public class TypeRegistry {
 
     public Operation getMappedOperation(FieldCoordinates field) {
         return this.mappedOperations.get(field);
+    }
+
+    public Resolver getMappedResolver(FieldCoordinates field, Set<String> argumentNames) {
+        Operation operation = getMappedOperation(field);
+        return operation != null ? operation.getApplicableResolver(argumentNames) : null;
     }
 
     public InputField getMappedInputField(FieldCoordinates inputField) {

@@ -5,7 +5,7 @@ import graphql.GraphQL;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.InstrumentationState;
-import graphql.execution.instrumentation.SimpleInstrumentation;
+import graphql.execution.instrumentation.SimplePerformantInstrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.schema.GraphQLSchema;
@@ -13,18 +13,9 @@ import io.leangen.graphql.execution.complexity.ComplexityAnalysisInstrumentation
 import io.leangen.graphql.execution.complexity.JavaScriptEvaluator;
 import io.leangen.graphql.generator.TypeRegistry;
 import io.leangen.graphql.util.ContextUtils;
-import org.dataloader.BatchLoaderWithContext;
-import org.dataloader.DataLoader;
-import org.dataloader.DataLoaderFactory;
-import org.dataloader.DataLoaderOptions;
-import org.dataloader.DataLoaderRegistry;
+import org.dataloader.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationState.EMPTY_DATALOADER_REGISTRY;
 
@@ -65,7 +56,7 @@ public class GraphQLRuntime {
         }
 
         public Builder maximumQueryComplexity(int limit) {
-            instrumentations.add(new ComplexityAnalysisInstrumentation(new JavaScriptEvaluator(), limit, typeRegistry));
+            instrumentations.add(new ComplexityAnalysisInstrumentation(limit, new JavaScriptEvaluator(), typeRegistry));
             return this;
         }
 
@@ -110,7 +101,7 @@ public class GraphQLRuntime {
         }
     }
 
-    static class InputTransformer extends SimpleInstrumentation {
+    static class InputTransformer extends SimplePerformantInstrumentation {
 
         private final Map<String, BatchLoaderWithContext<?, ?>> batchLoaders;
         private final Map<String, DataLoaderOptions> dataLoaderOptions;

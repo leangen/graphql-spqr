@@ -44,7 +44,7 @@ public class JavaScriptEvaluator implements ComplexityFunction {
             return ((Number) engine.eval(resolver.getComplexityExpression(), bindings)).intValue();
         } catch (Exception e) {
             throw new IllegalArgumentException(String.format("Complexity expression \"%s\" on field %s could not be evaluated",
-                    resolver.getComplexityExpression(), node.getName()), e);
+                    resolver.getComplexityExpression(), node.getCoordinates()), e);
         }
     }
 
