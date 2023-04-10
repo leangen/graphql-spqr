@@ -5,32 +5,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import graphql.GraphQLContext;
-import graphql.relay.ConnectionCursor;
-import graphql.relay.DefaultEdge;
-import graphql.relay.Edge;
-import graphql.relay.PageInfo;
-import graphql.relay.Relay;
+import graphql.relay.*;
 import graphql.scalars.ExtendedScalars;
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLUnion;
-import io.leangen.graphql.domain.Cat;
+import io.leangen.graphql.annotations.*;
 import io.leangen.graphql.domain.Character;
-import io.leangen.graphql.domain.Dog;
-import io.leangen.graphql.domain.Education;
-import io.leangen.graphql.domain.Human;
-import io.leangen.graphql.domain.Pet;
-import io.leangen.graphql.domain.Robot;
-import io.leangen.graphql.domain.Street;
-import io.leangen.graphql.domain.User;
+import io.leangen.graphql.domain.*;
 import io.leangen.graphql.execution.relay.Connection;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
@@ -44,12 +28,7 @@ import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
@@ -127,7 +106,6 @@ public class RelayTest {
         //Check with the default context
         ExecutionResult result = exe.execute(ExecutionInput.newExecutionInput()
                 .query(relayMapInputMutation)
-                .context(GraphQLContext.newContext().build()) //Needed because of a bug in graphql-java v12
                 .build());
         assertNoErrors(result);
         assertValueAtPathEquals("123", result, "upMe." + GraphQLUtils.CLIENT_MUTATION_ID);

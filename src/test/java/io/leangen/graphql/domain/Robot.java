@@ -5,8 +5,8 @@ import io.leangen.graphql.annotations.GraphQLQuery;
 
 public class Robot implements Character {
 
-    private String model;
-    private String name;
+    private final String model;
+    private final String name;
 
     public Robot(String model, String name) {
         this.model = model;
