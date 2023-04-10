@@ -3,19 +3,8 @@ package io.leangen.graphql.metadata.strategy.value.jackson;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
-import com.fasterxml.jackson.databind.introspect.AnnotatedConstructor;
-import com.fasterxml.jackson.databind.introspect.AnnotatedField;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-import com.fasterxml.jackson.databind.introspect.AnnotatedParameter;
-import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
@@ -30,11 +19,7 @@ import io.leangen.graphql.metadata.exceptions.TypeMappingException;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InputFieldInclusionParams;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
-import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
-import io.leangen.graphql.metadata.strategy.value.InputFieldBuilderParams;
-import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
-import io.leangen.graphql.metadata.strategy.value.InputParsingException;
-import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.metadata.strategy.value.*;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Scalars;
 import io.leangen.graphql.util.Utils;
@@ -43,19 +28,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Executable;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static io.leangen.geantyref.GenericTypeReflector.isBoxType;
+import static io.leangen.graphql.util.ClassUtils.isPrimitive;
 
 public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
 
@@ -86,7 +67,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
             return (T) json;
         }
         try {
-            if (Scalars.isScalar(type.getType()) && !ClassUtils.isPrimitive(type)) {
+            if (Scalars.isScalar(type.getType()) && !isPrimitive(type) && !isBoxType(type.getType())) {
                 return (T) Scalars.toGraphQLScalarType(type.getType()).getCoercing().parseValue(json);
             }
             return objectMapper.readValue(json, objectMapper.getTypeFactory().constructType(type.getType()));
