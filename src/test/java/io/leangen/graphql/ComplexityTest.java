@@ -6,17 +6,9 @@ import graphql.GraphQLError;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.RelayTest.BookService;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLComplexity;
-import io.leangen.graphql.annotations.GraphQLMutation;
-import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLSubscription;
-import io.leangen.graphql.domain.Cat;
+import io.leangen.graphql.annotations.*;
 import io.leangen.graphql.domain.Character;
-import io.leangen.graphql.domain.Dog;
-import io.leangen.graphql.domain.Education;
-import io.leangen.graphql.domain.Pet;
+import io.leangen.graphql.domain.*;
 import io.leangen.graphql.execution.complexity.ComplexityLimitExceededException;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
@@ -38,6 +30,28 @@ public class ComplexityTest {
 
     private static final String unionQuery = "" +
             "{" +
+            "  character(name: \"name\") {" +
+            "    ... on Human {" +
+            "      name" +
+            "      nickName" +
+            "    }" +
+            "    ... on Robot {" +
+            "      name" +
+            "    }" +
+            "  }" +
+            "}";
+
+    private static final String mixedIntrospectionQuery = "" +
+            "{" +
+            "  __schema {" +
+            "    queryType {" +
+            "      name" +
+            "    }" +
+            "    mutationType {" +
+            "      name" +
+            "    }" +
+            "  }" +
+            "  __typename" +
             "  character(name: \"name\") {" +
             "    ... on Human {" +
             "      name" +
@@ -225,6 +239,12 @@ public class ComplexityTest {
         //introspection query complexity should be independent of the schema (service)
         testComplexity(new PetService(), GraphQLUtils.FULL_INTROSPECTION_QUERY, 107, 108);
         testComplexity(new BookService(), GraphQLUtils.FULL_INTROSPECTION_QUERY, 107, 108);
+    }
+
+    @Test
+    public void mixedIntrospectionComplexityTest() {
+        //introspection query complexity should be independent of the schema (service)
+        testComplexity(new CharacterService(), mixedIntrospectionQuery, 8, 9);
     }
 
     @Test

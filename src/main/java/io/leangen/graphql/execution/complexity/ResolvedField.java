@@ -1,6 +1,6 @@
 package io.leangen.graphql.execution.complexity;
 
-import graphql.schema.DataFetchingFieldSelectionSet;
+import graphql.normalized.ExecutableNormalizedField;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLNamedOutputType;
 import graphql.schema.GraphQLOutputType;
@@ -15,15 +15,15 @@ class ResolvedField {
     private final GraphQLNamedOutputType fieldType;
     private final Map<String, Object> arguments;
     private final Resolver resolver;
-    private final DataFetchingFieldSelectionSet selectionSet;
+    private final ExecutableNormalizedField field;
 
     ResolvedField(FieldCoordinates coordinates, Resolver resolver, GraphQLOutputType type,
-                  Map<String, Object> arguments, DataFetchingFieldSelectionSet selectionSet) {
+                  Map<String, Object> arguments, ExecutableNormalizedField field) {
         this.coordinates = coordinates;
         this.fieldType = (GraphQLNamedOutputType) GraphQLUtils.unwrap(type);
         this.resolver = resolver;
         this.arguments = arguments;
-        this.selectionSet = selectionSet;
+        this.field = field;
     }
 
     FieldCoordinates getCoordinates() {
@@ -38,8 +38,8 @@ class ResolvedField {
         return arguments;
     }
 
-    DataFetchingFieldSelectionSet getSelectionSet() {
-        return selectionSet;
+    ExecutableNormalizedField getField() {
+        return field;
     }
 
     Resolver getResolver() {

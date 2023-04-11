@@ -31,11 +31,6 @@ public class ComplexityAnalyzer {
         this.typeRegistry = typeRegistry;
     }
 
-     /*
-     ExecutableNormalizedOperation is graphql-java internal API.
-     This method can hopefully be reimplemented to rely on supported API instead once
-     https://github.com/graphql-java/graphql-java/pull/3174 is merged 🤞
-     */
     public int complexity(ExecutionContext context) {
         ComplexityAnalyzer analyzer = new ComplexityAnalyzer(maxComplexity, complexityFunction, typeRegistry);
         ExecutableNormalizedOperation tree = context.getNormalizedQueryTree().get();
@@ -43,25 +38,21 @@ public class ComplexityAnalyzer {
 
         int totalComplexity = tree.getTopLevelFields().stream()
                 .map(root -> resolvedField(schema, root))
-                .mapToInt(analyzer::complexity)
+                .mapToInt(field -> analyzer.complexity(schema, field))
                 .sum();
         return check(totalComplexity);
     }
 
-    // This method exists solely to exemplify what can currently be done using only the public API.
-    // Remove if the above-mentioned issue is resolved in graphql-java.
-    private int complexity(DataFetchingEnvironment env) {
-        return complexity(resolvedField(env));
-    }
-
-    private int complexity(ResolvedField resolvedField) {
-        List<SelectedField> fields = resolvedField.getSelectionSet().getImmediateFields();
+    private int complexity(GraphQLSchema schema, ResolvedField resolvedField) {
+        List<ExecutableNormalizedField> fields = resolvedField.getField().getChildren();
         if (isAbstract(resolvedField.getFieldType())) {
-            List<SelectedField> unconditionalFields = new ArrayList<>();
-            Map<String, List<SelectedField>> conditionalFieldsPerType = new HashMap<>();
+            List<ExecutableNormalizedField> unconditionalFields = new ArrayList<>();
+            Map<String, List<ExecutableNormalizedField>> conditionalFieldsPerType = new HashMap<>();
             // List<MappedType> outputTypes = typeRegistry.getOutputTypes(resolvedField.getFieldType().getName());
-            for (SelectedField subField : fields) {
-                if (subField.isConditional()) {
+            // 👆 can be used instead of the potentially expensive isConditional().
+            // if subField.getObjectTypeNames().size() != outputTypes.size() -> the field is conditional
+            for (ExecutableNormalizedField subField : fields) {
+                if (subField.isConditional(schema)) {
                     subField.getObjectTypeNames().forEach(obj -> {
                         conditionalFieldsPerType.computeIfAbsent(obj, __ -> new ArrayList<>());
                         conditionalFieldsPerType.get(obj).add(subField);
@@ -70,14 +61,14 @@ public class ComplexityAnalyzer {
                     unconditionalFields.add(subField);
                 }
             }
-            int unconditionalChildScore = score(unconditionalFields);
+            int unconditionalChildScore = score(schema, unconditionalFields);
             int maxConditionalChildScore = conditionalFieldsPerType.entrySet().stream()
-                    .mapToInt(e -> score(e.getKey(), e.getValue()))
+                    .mapToInt(e -> score(schema, e.getKey(), e.getValue()))
                     .max()
                     .orElse(0);
             return check(complexityFunction.getComplexity(resolvedField, unconditionalChildScore + maxConditionalChildScore));
         }
-        int childScore = score(fields);
+        int childScore = score(schema, fields);
         return check(complexityFunction.getComplexity(resolvedField, childScore));
     }
 
@@ -85,52 +76,35 @@ public class ComplexityAnalyzer {
         return type instanceof GraphQLInterfaceType || type instanceof GraphQLUnionType;
     }
 
-    private FieldCoordinates coordinates(DataFetchingEnvironment env) {
-        return FieldCoordinates.coordinates(
-                (GraphQLFieldsContainer) GraphQLUtils.unwrap(env.getParentType()), env.getFieldDefinition());
+    private FieldCoordinates coordinates(GraphQLSchema schema, ExecutableNormalizedField field) {
+        return coordinates(GraphQLUtils.unwrap(field.getParent().getType(schema)).getName(), field);
     }
 
-    private FieldCoordinates coordinates(SelectedField field) {
-        return coordinates(GraphQLUtils.unwrap(field.getParentField().getType()).getName(), field);
-    }
-
-    private FieldCoordinates coordinates(String concreteTypeName, SelectedField field) {
+    private FieldCoordinates coordinates(String concreteTypeName, ExecutableNormalizedField field) {
         return FieldCoordinates.coordinates(concreteTypeName, field.getName());
-    }
-
-    private ResolvedField resolvedField(DataFetchingEnvironment env) {
-        FieldCoordinates coordinates = coordinates(env);
-        Resolver resolver = typeRegistry.getMappedResolver(coordinates, env.getArguments().keySet());
-        return new ResolvedField(coordinates, resolver,
-                env.getFieldType(), env.getArguments(), env.getSelectionSet());
     }
 
     private ResolvedField resolvedField(GraphQLSchema schema, ExecutableNormalizedField field) {
         FieldCoordinates coordinates = FieldCoordinates.coordinates(field.getSingleObjectTypeName(), field.getFieldName());
         GraphQLOutputType type = field.getFieldDefinitions(schema).get(0).getType();
-        DataFetchingFieldSelectionSet selectionSet = DataFetchingFieldSelectionSetImpl.newCollector(
-                schema,
-                type,
-                () -> field);
         Resolver resolver = typeRegistry.getMappedResolver(coordinates, field.getResolvedArguments().keySet());
-        return new ResolvedField(coordinates, resolver, type, field.getResolvedArguments(), selectionSet);
+        return new ResolvedField(coordinates, resolver, type, field.getResolvedArguments(), field);
     }
 
-    private ResolvedField resolvedField(FieldCoordinates coordinates, SelectedField field) {
-        Resolver resolver = typeRegistry.getMappedResolver(coordinates, field.getArguments().keySet());
-        return new ResolvedField(coordinates, resolver, field.getType(), field.getArguments(),
-                field.getSelectionSet());
+    private ResolvedField resolvedField(GraphQLSchema schema, FieldCoordinates coordinates, ExecutableNormalizedField field) {
+        Resolver resolver = typeRegistry.getMappedResolver(coordinates, field.getResolvedArguments().keySet());
+        return new ResolvedField(coordinates, resolver, field.getType(schema), field.getResolvedArguments(), field);
     }
 
-    private int score(List<SelectedField> fields) {
+    private int score(GraphQLSchema schema, List<ExecutableNormalizedField> fields) {
         return fields.stream()
-                .mapToInt(field -> complexity(resolvedField(coordinates(field), field)))
+                .mapToInt(field -> complexity(schema, resolvedField(schema, coordinates(schema, field), field)))
                 .sum();
     }
 
-    private int score(String concreteTypeName, List<SelectedField> fields) {
+    private int score(GraphQLSchema schema, String concreteTypeName, List<ExecutableNormalizedField> fields) {
         return fields.stream()
-                .mapToInt(field -> complexity(resolvedField(coordinates(concreteTypeName, field), field)))
+                .mapToInt(field -> complexity(schema, resolvedField(schema, coordinates(concreteTypeName, field), field)))
                 .sum();
     }
 
