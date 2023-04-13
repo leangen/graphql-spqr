@@ -3,17 +3,10 @@ package io.leangen.graphql.util;
 import graphql.Scalars;
 import graphql.language.Field;
 import graphql.relay.Relay;
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLModifiedType;
-import graphql.schema.GraphQLNamedSchemaElement;
-import graphql.schema.GraphQLNamedType;
-import graphql.schema.GraphQLNonNull;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLSchemaElement;
-import graphql.schema.GraphQLType;
+import graphql.schema.*;
 import io.leangen.graphql.annotations.GraphQLId;
+
+import java.util.Map;
 
 public class GraphQLUtils {
 
@@ -91,6 +84,18 @@ public class GraphQLUtils {
 
     public static String name(GraphQLSchemaElement element) {
         return ((GraphQLNamedSchemaElement) element).getName();
+    }
+
+    public static Integer getPageSize(Map<String, Object> arguments) {
+        Object size = arguments.get("first");
+        if (size instanceof Integer) {
+            return (Integer) size;
+        }
+        size = arguments.get("last");
+        if (size instanceof Integer) {
+            return (Integer) size;
+        }
+        return null;
     }
 
     private static boolean isIntrospection(String name) {

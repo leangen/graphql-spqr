@@ -9,12 +9,17 @@ import io.leangen.graphql.RelayTest.BookService;
 import io.leangen.graphql.annotations.*;
 import io.leangen.graphql.domain.Character;
 import io.leangen.graphql.domain.*;
+import io.leangen.graphql.execution.complexity.ComplexityFunction;
 import io.leangen.graphql.execution.complexity.ComplexityLimitExceededException;
+import io.leangen.graphql.execution.complexity.JavaScriptEvaluator;
+import io.leangen.graphql.execution.complexity.SimpleComplexityFunction;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
 import io.leangen.graphql.services.UserService;
 import io.leangen.graphql.util.GraphQLUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.reactivestreams.Publisher;
 
 import java.lang.reflect.AnnotatedType;
@@ -26,6 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(Parameterized.class)
 public class ComplexityTest {
 
     private static final String unionQuery = "" +
@@ -189,6 +195,14 @@ public class ComplexityTest {
             "   }" +
             "}";
 
+    @Parameterized.Parameter
+    public ComplexityFunction complexityFunction;
+
+    @Parameterized.Parameters(name = "{index}: {0}")
+    public static ComplexityFunction[] data() {
+        return new ComplexityFunction[] { new JavaScriptEvaluator(), new SimpleComplexityFunction() };
+    }
+
     @Test
     public void unionComplexityTest() {
         testComplexity(
@@ -268,7 +282,7 @@ public class ComplexityTest {
                 .generateExecutable();
 
         GraphQL exe = GraphQLRuntime.newGraphQL(schema)
-                .maximumQueryComplexity(maxComplexity)
+                .maximumQueryComplexity(maxComplexity, complexityFunction)
                 .build();
 
         ExecutionResult res = exe.execute(operation);

@@ -89,11 +89,11 @@ public class SchemaTest {
             "}";
 
     @Parameterized.Parameter
-    public ValueMapperFactory valueMapperFactory;
+    public ValueMapperFactory<?> valueMapperFactory;
 
     @Parameterized.Parameters(name = "{index}: {0}")
-    public static Object[] data() {
-        return new Object[] { new JacksonValueMapperFactory(), new GsonValueMapperFactory() };
+    public static ValueMapperFactory<?>[] data() {
+        return new ValueMapperFactory[] { new JacksonValueMapperFactory(), new GsonValueMapperFactory() };
     }
 
     @Test

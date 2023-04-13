@@ -10,7 +10,8 @@ import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrume
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.execution.complexity.ComplexityAnalysisInstrumentation;
-import io.leangen.graphql.execution.complexity.JavaScriptEvaluator;
+import io.leangen.graphql.execution.complexity.ComplexityFunction;
+import io.leangen.graphql.execution.complexity.SimpleComplexityFunction;
 import io.leangen.graphql.generator.TypeRegistry;
 import io.leangen.graphql.util.ContextUtils;
 import org.dataloader.*;
@@ -56,7 +57,11 @@ public class GraphQLRuntime {
         }
 
         public Builder maximumQueryComplexity(int limit) {
-            instrumentations.add(new ComplexityAnalysisInstrumentation(limit, new JavaScriptEvaluator(), typeRegistry));
+            return maximumQueryComplexity(limit, new SimpleComplexityFunction());
+        }
+
+        public Builder maximumQueryComplexity(int limit, ComplexityFunction complexityFunction) {
+            instrumentations.add(new ComplexityAnalysisInstrumentation(limit, complexityFunction, typeRegistry));
             return this;
         }
 

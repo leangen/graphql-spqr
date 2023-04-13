@@ -140,4 +140,10 @@ public class Utils {
         failed.completeExceptionally(throwable);
         return failed;
     }
+
+    public static <K, V> Map<K, V> put(Map<K, V> map, K k, V v) {
+        Map<K, V> fresh = new HashMap<>(map);
+        fresh.put(k, v);
+        return fresh;
+    }
 }
