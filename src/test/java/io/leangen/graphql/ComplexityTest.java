@@ -34,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class ComplexityTest {
 
-    private static final String unionQuery = "" +
+    private static final String unionQuery =
             "{" +
             "  character(name: \"name\") {" +
             "    ... on Human {" +
@@ -47,7 +47,7 @@ public class ComplexityTest {
             "  }" +
             "}";
 
-    private static final String mixedIntrospectionQuery = "" +
+    private static final String mixedIntrospectionQuery =
             "{" +
             "  __schema {" +
             "    queryType {" +
@@ -69,7 +69,7 @@ public class ComplexityTest {
             "  }" +
             "}";
 
-    private static final String fragmentOnRootQuery = "" +
+    private static final String fragmentOnRootQuery =
             "{" +
             "  ... Cat" +
             "}" +
@@ -106,7 +106,8 @@ public class ComplexityTest {
             "  }" +
             "}";
 
-    private static final String branchingQuery = "{" +
+    private static final String branchingQuery =
+            "{" +
             "  pet(cat: true) {" +
             "    sound" +
             "    owner {" +
@@ -124,7 +125,8 @@ public class ComplexityTest {
             "  }" +
             "}";
 
-    private static final String branchingFragmentQuery = "{" +
+    private static final String branchingFragmentQuery =
+            "{" +
             "  pet(cat: true) {" +
             "    sound" +
             "    owner {" +

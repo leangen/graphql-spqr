@@ -1,3 +1,5 @@
+package io.leangen.graphql;
+
 import org.junit.Test;
 
 import java.util.Map;
@@ -11,6 +13,11 @@ public class ExpressionEvalTest {
     @Test
     public void trivialTest() {
         assertEquals(5, eval("5", emptyMap()).intValue());
+    }
+
+    @Test
+    public void trivialTestWithParentheses() {
+        assertEquals(5, eval("(5)", emptyMap()).intValue());
     }
 
     @Test
