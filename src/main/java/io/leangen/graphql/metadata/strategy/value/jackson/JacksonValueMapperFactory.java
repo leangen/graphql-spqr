@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDeserializationStrategy {
+public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValueMapper>, ScalarDeserializationStrategy {
 
     private final ObjectMapper prototype;
     private final List<Configurer> configurers;
@@ -186,7 +186,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory, ScalarDese
 
     public static class Builder {
 
-        private List<Configurer> configurers = defaultConfigurers();
+        private final List<Configurer> configurers = defaultConfigurers();
         private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
         private ObjectMapper prototype;
 

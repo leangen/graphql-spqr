@@ -19,4 +19,10 @@ public class ArgumentInjectorRegistry {
     public ArgumentInjector getInjector(AnnotatedType inputType, Parameter parameter) {
         return argumentInjectors.stream().filter(injector -> injector.supports(inputType, parameter)).findFirst().orElse(null);
     }
+
+    public ArgumentInjector getInjector(AnnotatedType inputType, Parameter parameter, ArgumentInjector skip) {
+        return argumentInjectors.stream()
+                .filter(injector -> !injector.equals(skip))
+                .filter(injector -> injector.supports(inputType, parameter)).findFirst().orElse(null);
+    }
 }

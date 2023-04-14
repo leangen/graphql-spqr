@@ -63,11 +63,11 @@ public class ClassFinder {
      *
      * @return A collection of classes discovered that implementation/extend {@code superType}
      */
-    public List<Class<?>> findImplementations(Class superType, Predicate<ClassInfo> filter, String... packages) {
+    public List<Class<?>> findImplementations(Class<?> superType, Predicate<ClassInfo> filter, String... packages) {
         String[] scanPackages = Utils.emptyIfNull(packages);
         String cacheKey = Arrays.stream(scanPackages).sorted().collect(Collectors.joining());
         ScanResult scanResults = cache.computeIfAbsent(cacheKey, k -> new ClassGraph()
-                .whitelistPackages(packages)
+                .acceptPackages(packages)
                 .enableAllInfo()
                 .initializeLoadedClasses()
                 .scan());

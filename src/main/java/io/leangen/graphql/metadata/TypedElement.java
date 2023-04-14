@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 public class TypedElement implements AnnotatedElement {
 
     private final AnnotatedType javaType;
-    private final List<? extends AnnotatedElement> elements;
+    private final List<AnnotatedElement> elements;
 
     public TypedElement(AnnotatedType javaType, AnnotatedElement... elements) {
         this(javaType, Utils.asList(elements));
@@ -65,7 +65,7 @@ public class TypedElement implements AnnotatedElement {
         return javaType;
     }
 
-    public List<? extends AnnotatedElement> getElements() {
+    public List<AnnotatedElement> getElements() {
         return elements;
     }
 
@@ -74,5 +74,10 @@ public class TypedElement implements AnnotatedElement {
             return elements.get(0);
         }
         throw new IllegalStateException("Multiple mappable elements found when a single was expected");
+    }
+
+    @Override
+    public String toString() {
+        return javaType.getType().getTypeName() + " [" + (elements != null ? elements.toString() : "") + "]";
     }
 }

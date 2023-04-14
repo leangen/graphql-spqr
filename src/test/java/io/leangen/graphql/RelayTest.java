@@ -5,31 +5,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import graphql.GraphQLContext;
-import graphql.Scalars;
-import graphql.relay.ConnectionCursor;
-import graphql.relay.DefaultEdge;
-import graphql.relay.Edge;
-import graphql.relay.PageInfo;
-import graphql.relay.Relay;
+import graphql.relay.*;
+import graphql.scalars.ExtendedScalars;
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
-import io.leangen.graphql.annotations.GraphQLArgument;
-import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLUnion;
-import io.leangen.graphql.domain.Cat;
+import io.leangen.graphql.annotations.*;
 import io.leangen.graphql.domain.Character;
-import io.leangen.graphql.domain.Dog;
-import io.leangen.graphql.domain.Education;
-import io.leangen.graphql.domain.Human;
-import io.leangen.graphql.domain.Pet;
-import io.leangen.graphql.domain.Robot;
-import io.leangen.graphql.domain.Street;
-import io.leangen.graphql.domain.User;
+import io.leangen.graphql.domain.*;
 import io.leangen.graphql.execution.relay.Connection;
 import io.leangen.graphql.execution.relay.Page;
 import io.leangen.graphql.execution.relay.generic.PageFactory;
@@ -43,12 +28,7 @@ import io.leangen.graphql.util.GraphQLUtils;
 import io.leangen.graphql.util.Urls;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertNonNull;
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
@@ -126,7 +106,6 @@ public class RelayTest {
         //Check with the default context
         ExecutionResult result = exe.execute(ExecutionInput.newExecutionInput()
                 .query(relayMapInputMutation)
-                .context(GraphQLContext.newContext().build()) //Needed because of a bug in graphql-java v12
                 .build());
         assertNoErrors(result);
         assertValueAtPathEquals("123", result, "upMe." + GraphQLUtils.CLIENT_MUTATION_ID);
@@ -149,6 +128,11 @@ public class RelayTest {
     }
 
     @Test
+    public void testPagedListQuery() {
+        testPagedQuery("bookLists");
+    }
+
+    @Test
     public void testExtendedPageMapping() {
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new ExtendedPageBookService())
@@ -157,7 +141,7 @@ public class RelayTest {
         GraphQLFieldDefinition totalCount = schema.getObjectType("BookConnection")
                 .getFieldDefinition("totalCount");
         assertNotNull(totalCount);
-        assertNonNull(totalCount.getType(), Scalars.GraphQLLong);
+        assertNonNull(totalCount.getType(), ExtendedScalars.GraphQLLong);
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
 
         ExecutionResult result = exe.execute("{extended(first:10, after:\"20\") {" +
@@ -184,7 +168,7 @@ public class RelayTest {
         assertEquals(3, bookConnection.getFieldDefinitions().size());
         GraphQLFieldDefinition totalCount = bookConnection.getFieldDefinition("totalCount");
         assertNotNull(totalCount);
-        assertNonNull(totalCount.getType(), Scalars.GraphQLLong);
+        assertNonNull(totalCount.getType(), ExtendedScalars.GraphQLLong);
 
         GraphQLObjectType bookEdge = schema.getObjectType("BookEdge");
         assertEquals(3, bookEdge.getFieldDefinitions().size());
@@ -352,8 +336,8 @@ public class RelayTest {
     }
 
     public static class Book {
-        private String title;
-        private String isbn;
+        private final String title;
+        private final String isbn;
 
         @JsonCreator
         Book(@JsonProperty("title") String title, @JsonProperty("id") String isbn) {
@@ -372,8 +356,8 @@ public class RelayTest {
     }
 
     public static class Descriptor {
-        private Book book;
-        private String text;
+        private final Book book;
+        private final String text;
 
         @JsonCreator
         Descriptor(@JsonProperty("id") Book book, @JsonProperty("text") String text) {
@@ -394,14 +378,17 @@ public class RelayTest {
     public static class BookService {
         @GraphQLQuery(name = "books")
         public Page<Book> getBooks(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
-            List<Book> books = new ArrayList<>();
-            books.add(new Book("Tesseract", "x123"));
-            return PageFactory.createOffsetBasedPage(books, 100, 10);
+            return PageFactory.createOffsetBasedPage(Collections.singletonList(new Book("Tesseract", "x123")), 100, 10);
         }
 
         @GraphQLQuery(name = "empty")
         public Page<Book> getEmpty(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
             return PageFactory.createOffsetBasedPage(Collections.emptyList(), 100, 10);
+        }
+
+        @GraphQLQuery
+        public Page<List<@GraphQLNonNull Book>> getBookLists(@GraphQLArgument(name = "first") int first, @GraphQLArgument(name = "after") String after) {
+            return PageFactory.createOffsetBasedPage(Collections.singletonList(Collections.singletonList(new Book("Tesseract", "x123"))), 5, 0);
         }
 
         @GraphQLQuery
@@ -564,7 +551,7 @@ public class RelayTest {
         }
     }
 
-    public static class ExtendedConnection<E extends Edge> implements Connection<E> {
+    public static class ExtendedConnection<E extends Edge<?>> implements Connection<E> {
 
         private final List<E> edges;
         private final PageInfo pageInfo;

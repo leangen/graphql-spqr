@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
+import io.leangen.graphql.generator.mapping.SynonymBaseTypeComparator;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.module.SimpleModule;
 
@@ -43,7 +44,7 @@ public class JacksonModule implements SimpleModule {
         if (!getInputConverters().isEmpty()) {
             context.getSchemaGenerator().withInputConvertersPrepended(getInputConverters().toArray(new InputConverter[0]));
         }
-        context.getSchemaGenerator().withTypeSynonymGroup(ObjectNode.class, POJONode.class);
-        context.getSchemaGenerator().withTypeSynonymGroup(DecimalNode.class, NumericNode.class);
+        context.getSchemaGenerator().withTypeComparators(new SynonymBaseTypeComparator(ObjectNode.class, POJONode.class));
+        context.getSchemaGenerator().withTypeComparators(new SynonymBaseTypeComparator(DecimalNode.class, NumericNode.class));
     }
 }

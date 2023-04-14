@@ -3,6 +3,7 @@ package io.leangen.graphql.metadata.strategy.query;
 import graphql.introspection.Introspection;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.types.GraphQLDirective;
+import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.Directive;
 import io.leangen.graphql.metadata.DirectiveArgument;
 import io.leangen.graphql.metadata.TypedElement;
@@ -98,10 +99,11 @@ public class AnnotatedDirectiveBuilder implements DirectiveBuilder {
         TypeInfoGenerator infoGenerator = params.getEnvironment().typeInfoGenerator;
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         GraphQLDirective meta = directiveType.getAnnotation(GraphQLDirective.class);
-        Introspection.DirectiveLocation[] locations = (meta != null && Utils.isArrayNotEmpty(meta.locations())) ? meta.locations() : GraphQLDirective.ALL_CLIENT;
+        Introspection.DirectiveLocation[] locations = (meta != null && Utils.isNotEmpty(meta.locations())) ? meta.locations() : GraphQLDirective.ALL_CLIENT;
+        boolean repeatable = meta != null && meta.repeatable();
         return new Directive(
                 infoGenerator.generateDirectiveTypeName(directiveType, messageBundle),
-                infoGenerator.generateDirectiveTypeDescription(directiveType, messageBundle), locations, arguments);
+                infoGenerator.generateDirectiveTypeDescription(directiveType, messageBundle), repeatable, locations, arguments);
     }
 
     private List<Directive> buildDirectives(AnnotatedElement element, DirectiveBuilderParams params) {
@@ -116,22 +118,30 @@ public class AnnotatedDirectiveBuilder implements DirectiveBuilder {
         List<DirectiveArgument> arguments = ClassUtils.getAnnotationFields(annotation.annotationType()).stream()
                 .map(method -> buildDirectiveArgument(annotation, method))
                 .collect(Collectors.toList());
-        Introspection.DirectiveLocation[] locations = Utils.isArrayNotEmpty(meta.locations()) ? meta.locations() : GraphQLDirective.ALL_SCHEMA;
+        Introspection.DirectiveLocation[] locations = Utils.isNotEmpty(meta.locations()) ? meta.locations() : GraphQLDirective.ALL_SCHEMA;
         TypeInfoGenerator infoGenerator = params.getEnvironment().typeInfoGenerator;
         MessageBundle messageBundle = params.getEnvironment().messageBundle;
         AnnotatedType directiveType = GenericTypeReflector.annotate(annotation.annotationType());
         return new Directive(
                 infoGenerator.generateDirectiveTypeName(directiveType, messageBundle),
-                infoGenerator.generateDirectiveTypeDescription(directiveType, messageBundle), locations, arguments);
+                infoGenerator.generateDirectiveTypeDescription(directiveType, messageBundle), meta.repeatable(), locations, arguments);
     }
 
     private DirectiveArgument buildDirectiveArgument(Annotation annotation, Method method) {
         try {
             TypedElement element = new TypedElement(GenericTypeReflector.annotate(method.getReturnType()), method);
             return new DirectiveArgument(AnnotationMappingUtils.inputFieldName(method), AnnotationMappingUtils.inputFieldDescription(method),
-                    element, method.invoke(annotation), method.getDefaultValue(), annotation);
+                    element, appliedValue(method.invoke(annotation)), defaultValue(method), annotation);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected Object appliedValue(Object value) {
+        return AnnotationMappingUtils.inputFieldValue(value);
+    }
+
+    protected DefaultValue defaultValue(Method method) {
+        return AnnotationMappingUtils.inputFieldDefaultValue(method);
     }
 }

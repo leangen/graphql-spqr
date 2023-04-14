@@ -20,7 +20,6 @@ import java.lang.reflect.AnnotatedWildcardType;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -34,10 +33,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -50,14 +52,15 @@ import static io.leangen.geantyref.GenericTypeReflector.capture;
 import static io.leangen.geantyref.GenericTypeReflector.merge;
 import static java.util.Arrays.stream;
 
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class ClassUtils {
 
     private static final Class<?> javassistProxyClass;
     private static final List<String> KNOWN_PROXY_CLASS_SEPARATORS = Arrays.asList("$$", "$ByteBuddy$", "$HibernateProxy$");
-    private static final List<Class> ROOT_TYPES = Arrays.asList(
+    private static final List<Class<?>> ROOT_TYPES = Arrays.asList(
             Object.class, Annotation.class, Cloneable.class, Comparable.class, Externalizable .class, Serializable.class,
             Closeable.class, AutoCloseable.class);
+    private static final Map<Class<?>, Object> DEFAULT_PRIMITIVE_VALUES;
 
     static {
         Class<?> proxy;
@@ -67,6 +70,17 @@ public class ClassUtils {
             proxy = null;
         }
         javassistProxyClass = proxy;
+
+        Map<Class<?>, Object> defaultPrimitives = new HashMap<>();
+        defaultPrimitives.put(boolean.class, false);
+        defaultPrimitives.put(byte.class, 0);
+        defaultPrimitives.put(char.class, '\u0000');
+        defaultPrimitives.put(double.class, 0.0d);
+        defaultPrimitives.put(float.class, 	0.0f);
+        defaultPrimitives.put(int.class, 0);
+        defaultPrimitives.put(long.class, 0L);
+        defaultPrimitives.put(short.class, 0);
+        DEFAULT_PRIMITIVE_VALUES = Collections.unmodifiableMap(defaultPrimitives);
     }
 
     /**
@@ -111,7 +125,7 @@ public class ClassUtils {
                 .collect(Collectors.toSet());
     }
 
-    private static void collectPublicAbstractMethods(Class type, Set<Method> methods) {
+    private static void collectPublicAbstractMethods(Class<?> type, Set<Method> methods) {
         if (type == null || type.equals(Object.class)) {
             return;
         }
@@ -208,8 +222,31 @@ public class ClassUtils {
     public static <T> T instance(Class<T> clazz) {
         try {
             return clazz.getDeclaredConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Object... arguments) {
+        Class<?>[] parameterTypes = stream(arguments).map(Object::getClass).toArray(Class<?>[]::new);
+        return instanceWithOptionalInjection(clazz, parameterTypes, arguments);
+    }
+
+    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Class<?> parameterType, Object argument) {
+        return instanceWithOptionalInjection(clazz, new Class<?>[]{parameterType}, new Object[]{argument});
+    }
+
+    public static <T> T instanceWithOptionalInjection(Class<T> clazz, Class<?>[] parameterTypes, Object[] arguments) {
+        try {
+            try {
+                return clazz.getDeclaredConstructor(parameterTypes).newInstance(arguments);
+            } catch (NoSuchMethodException e) {
+                return clazz.getDeclaredConstructor().newInstance();
+            }
+        } catch (ReflectiveOperationException e) {
+            String argumentTypes = stream(parameterTypes).map(Class::getName).collect(Collectors.joining(","));
+            throw new IllegalArgumentException(
+                   clazz.getName() + " must expose a public default constructor, or a constructor accepting " + argumentTypes, e);
         }
     }
 
@@ -240,6 +277,36 @@ public class ClassUtils {
 
     public static boolean isReal(Method method) {
         return !method.isBridge() && !method.isSynthetic();
+    }
+
+    public static boolean isReal(Field field) {
+        return !field.isSynthetic();
+    }
+
+    public static boolean isReal(Parameter parameter) {
+        return !parameter.isImplicit() && !parameter.isSynthetic();
+    }
+
+    public static boolean isReal(Member member) {
+        Objects.requireNonNull(member, "Member must not be null");
+        if (member instanceof Method) {
+            return isReal((Method) member);
+        }
+        if (member instanceof Field) {
+            return isReal(((Field) member));
+        }
+        return member.isSynthetic();
+    }
+
+    public static boolean isReal(AnnotatedElement element) {
+        Objects.requireNonNull(element, "Element must not be null");
+        if (element instanceof Member) {
+            return isReal(((Member) element));
+        }
+        if (element instanceof Parameter) {
+            return isReal(((Parameter) element));
+        }
+        throw new IllegalArgumentException("Can not determine if an element of type " + element.getClass().getName() + " is real");
     }
 
     public static String getFieldNameFromGetter(Method getter) {
@@ -279,9 +346,12 @@ public class ClassUtils {
     }
 
     public static Optional<Method> findGetter(Class<?> type, String fieldName) {
-        return Utils.or(
-                findMethod(type, "get" + Utils.capitalize(fieldName)),
-                findMethod(type, "is" + Utils.capitalize(fieldName)));
+        String propertyName = Utils.capitalize(fieldName);
+        Optional<Method> getter = findMethod(type, "get" + propertyName);
+        if (getter.isPresent()) {
+            return getter;
+        }
+        return findMethod(type, "is" + propertyName);
     }
 
     public static Optional<Method> findSetter(Class<?> type, String fieldName, Class<?> fieldType) {
@@ -351,21 +421,6 @@ public class ClassUtils {
         return new ClassFinder().findImplementations(superType, info -> true, false, packages);
     }
 
-    /**
-     * Searches for the implementations/subtypes of the given class. Only the matching classes are loaded.
-     *
-     * @param superType The type the implementations/subtypes of which are to be searched for
-     * @param packages The packages to limit the search to
-     *
-     * @return A collection of classes discovered that implementation/extend {@code superType}
-     *
-     * @deprecated Use {@link ClassFinder} directly as that enables caching of the search results
-     */
-    @Deprecated
-    public static List<Class<?>> findImplementations(Class superType, String... packages) {
-        return new ClassFinder().findImplementations(superType, info -> true, packages);
-    }
-
     public static boolean isAbstract(AnnotatedType type) {
         return isAbstract(getRawType(type.getType()));
     }
@@ -413,9 +468,53 @@ public class ClassUtils {
         return element.toString();
     }
 
+    /**
+     * Checks if an annotation is present either directly on the {@code element}, or as a <b>1st level</b> meta-annotation
+     *
+     * @param element The element to search the annotation on
+     * @param annotation The type of the annotation to search for
+     * @return {@code true} if the annotation of type {@code annotation} is found, {@code false} otherwise
+     */
     public static boolean hasAnnotation(AnnotatedElement element, Class<? extends Annotation> annotation) {
         return element.isAnnotationPresent(annotation) || Arrays.stream(element.getAnnotations())
                 .anyMatch(ann -> ann.annotationType().isAnnotationPresent(annotation));
+    }
+
+    /**
+     * Checks if an annotation is present either directly on the {@code element}, or recursively as a meta-annotation,
+     * at <b>any level</b>
+     *
+     * @param element The element to search the annotation on
+     * @param annotation The type of the annotation to search for
+     * @return {@code true} if the annotation of type {@code annotation} is found, {@code false} otherwise
+     */
+    public static boolean hasMetaAnnotation(AnnotatedElement element, Class<? extends Annotation> annotation) {
+        return hasMetaAnnotation(element, annotation, new HashSet<>());
+    }
+
+    private static boolean hasMetaAnnotation(AnnotatedElement element, Class<? extends Annotation> annotation, Set<AnnotatedElement> seen) {
+        if (seen.contains(element)) {
+            return false;
+        }
+        seen.add(element);
+        return element.isAnnotationPresent(annotation) || Arrays.stream(element.getAnnotations())
+                .anyMatch(ann -> hasMetaAnnotation(ann.annotationType(), annotation, seen));
+    }
+
+    public static <T extends Annotation> Optional<T> findApplicableAnnotation(AnnotatedElement element, Class<T> annotation) {
+        if (element.isAnnotationPresent(annotation)) {
+            return Optional.of(element.getAnnotation(annotation));
+        }
+        if (element instanceof Member) {
+            Class<?> declaringClass = ((Member) element).getDeclaringClass();
+            if (declaringClass.isAnnotationPresent(annotation)){
+                return Optional.of(declaringClass.getAnnotation(annotation));
+            }
+            if (declaringClass.getPackage() != null && declaringClass.getPackage().isAnnotationPresent(annotation)) {
+                return Optional.of(declaringClass.getPackage().getAnnotation(annotation));
+            }
+        }
+        return Optional.empty();
     }
 
     public static List<Method> getAnnotationFields(Class<? extends Annotation> annotation) {
@@ -455,7 +554,7 @@ public class ClassUtils {
                 .toArray(Annotation[]::new);
     }
 
-    public static <T extends AnnotatedType> T addAnnotations(T type, Annotation[] annotations) {
+    public static <T extends AnnotatedType> T addAnnotations(T type, Annotation... annotations) {
         if (type == null || annotations == null || annotations.length == 0) return type;
         return GenericTypeReflector.updateAnnotations(type, merge(type.getAnnotations(), annotations));
     }
@@ -527,7 +626,7 @@ public class ClassUtils {
 
     public static AnnotatedType completeGenerics(AnnotatedType type, AnnotatedType replacement) {
         if (type.getType() instanceof Class) {
-            Class clazz = (Class) type.getType();
+            Class<?> clazz = (Class<?>) type.getType();
             if (clazz.isArray()) {
                 return TypeFactory.arrayOf(completeGenerics(GenericTypeReflector.annotate(clazz.getComponentType()), replacement), type.getAnnotations());
             } else {
@@ -716,6 +815,14 @@ public class ClassUtils {
 
     public static Class<?> forName(String className) throws ClassNotFoundException {
         return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+    }
+
+    public static Object getDefaultValueForType(Class<?> type) {
+        return DEFAULT_PRIMITIVE_VALUES.get(type);
+    }
+
+    public static boolean isPrimitive(AnnotatedType type) {
+        return type.getType().getClass() == Class.class && ((Class<?>) type.getType()).isPrimitive();
     }
 
     /**

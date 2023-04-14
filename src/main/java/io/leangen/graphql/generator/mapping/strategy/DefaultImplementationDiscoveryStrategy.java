@@ -34,7 +34,7 @@ public class DefaultImplementationDiscoveryStrategy implements ImplementationDis
 
     @Override
     public List<AnnotatedType> findImplementations(AnnotatedType type, boolean autoDiscover, String[] scanPackages, BuildContext buildContext) {
-        if (Utils.isArrayEmpty(scanPackages) && Utils.isArrayNotEmpty(buildContext.basePackages)) {
+        if (Utils.isEmpty(scanPackages) && Utils.isNotEmpty(buildContext.basePackages)) {
             scanPackages = buildContext.basePackages;
         }
         Predicate<ClassInfo> filter = NON_IGNORED.and(filters.stream().reduce(Predicate::and).orElse(ALL));

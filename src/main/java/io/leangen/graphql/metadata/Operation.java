@@ -6,15 +6,8 @@ import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 public class Operation {
@@ -28,9 +21,10 @@ public class Operation {
     private final List<OperationArgument> arguments;
     private final OperationDefinition.Operation operationType;
     private final boolean batched;
+    private final boolean async;
 
     public Operation(String name, AnnotatedType javaType, Type contextType, List<OperationArgument> arguments,
-                     List<Resolver> resolvers, OperationDefinition.Operation operationType, boolean batched) {
+                     List<Resolver> resolvers, OperationDefinition.Operation operationType, boolean batched, boolean async) {
 
         if (!(resolvers.stream().allMatch(Resolver::isBatched) || resolvers.stream().noneMatch(Resolver::isBatched))) {
             throw new IllegalArgumentException("Operation \"" + name + "\" mixes regular and batched resolvers");
@@ -47,6 +41,7 @@ public class Operation {
         this.arguments = arguments;
         this.operationType = operationType;
         this.batched = batched;
+        this.async = async;
     }
     
     public Operation unbatch() {
@@ -121,6 +116,10 @@ public class Operation {
         return typedElement;
     }
 
+    public boolean isAsync() {
+        return async;
+    }
+
     @Override
     public String toString() {
         return name + "(" + arguments.stream().map(OperationArgument::getName).collect(Collectors.joining(",")) + ")";
@@ -129,11 +128,14 @@ public class Operation {
     private static class UnbatchedOperation extends Operation {
         
         private UnbatchedOperation(Operation operation) {
-            super(operation.name, unbatchJavaType(operation.typedElement.getJavaType()), unbatchContextType(operation.contextType),
-                    operation.arguments, new ArrayList<>(operation.getResolvers()), operation.getOperationType(), true);
+            super(operation.name, unbatchJavaType(operation.getJavaType(), operation.isAsync()), unbatchContextType(operation.contextType),
+                    operation.arguments, new ArrayList<>(operation.getResolvers()), operation.getOperationType(), true, operation.isAsync());
         }
 
-        private static AnnotatedType unbatchJavaType(AnnotatedType javaType) {
+        private static AnnotatedType unbatchJavaType(AnnotatedType javaType, boolean async) {
+            if (async) {
+                javaType = GenericTypeReflector.getTypeParameter(javaType, CompletionStage.class.getTypeParameters()[0]);
+            }
             return GenericTypeReflector.getTypeParameter(javaType, List.class.getTypeParameters()[0]);
         }
         

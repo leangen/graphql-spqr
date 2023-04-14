@@ -4,25 +4,26 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
 
+@SuppressWarnings("WeakerAccess")
 public class InputFieldInclusionParams {
 
-    private final AnnotatedType type;
+    private final AnnotatedType declaringType;
     private final Class<?> elementDeclaringClass;
     private final List<AnnotatedElement> elements;
     private final boolean directlyDeserializable;
     private final boolean deserializableInSubType;
 
-    private InputFieldInclusionParams(AnnotatedType type, Class<?> elementDeclaringClass, List<AnnotatedElement> elements,
+    private InputFieldInclusionParams(AnnotatedType declaringType, Class<?> elementDeclaringClass, List<AnnotatedElement> elements,
                                       boolean directlyDeserializable, boolean deserializableInSubType) {
-        this.type = type;
+        this.declaringType = declaringType;
         this.elementDeclaringClass = elementDeclaringClass;
         this.elements = elements;
         this.directlyDeserializable = directlyDeserializable;
         this.deserializableInSubType = deserializableInSubType;
     }
 
-    public AnnotatedType getType() {
-        return type;
+    public AnnotatedType getDeclaringType() {
+        return declaringType;
     }
 
     public Class<?> getElementDeclaringClass() {

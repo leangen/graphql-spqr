@@ -3,6 +3,7 @@ package io.leangen.graphql;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLQuery;
@@ -12,16 +13,16 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import io.leangen.graphql.services.UserService;
+import io.leangen.graphql.util.GraphQLUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(Parameterized.class)
 public class SchemaTest {
@@ -88,11 +89,11 @@ public class SchemaTest {
             "}";
 
     @Parameterized.Parameter
-    public ValueMapperFactory valueMapperFactory;
+    public ValueMapperFactory<?> valueMapperFactory;
 
     @Parameterized.Parameters(name = "{index}: {0}")
-    public static Object[] data() {
-        return new Object[] { new JacksonValueMapperFactory(), new GsonValueMapperFactory() };
+    public static ValueMapperFactory<?>[] data() {
+        return new ValueMapperFactory[] { new JacksonValueMapperFactory(), new GsonValueMapperFactory() };
     }
 
     @Test
@@ -110,30 +111,36 @@ public class SchemaTest {
 
     @Test
     public void testSchema() {
-        GraphQLSchema schema = new TestSchemaGenerator()
+        ExecutableSchema schema = new TestSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
                 .withTypeAdapters(new MapToListTypeAdapter())
                 .withOperationsFromSingleton(new UserService<Education>(), new TypeToken<UserService<Education>>(){}.getAnnotatedType())
-                .generate();
+                .generateExecutable();
 
-        List<String> context = Arrays.asList("xxx", "zzz", "yyy");
+        schema.getSchema().getQueryType().getFieldDefinitions().forEach(fieldDef -> {
+            if (!GraphQLUtils.isRelayNodeInterface(fieldDef.getType())) {
+                //All operations must have the underlying Java element mapped
+                assertNotNull(schema.getTypeRegistry().getMappedOperation(FieldCoordinates.coordinates(schema.getSchema().getQueryType(), fieldDef)));
+            }
+        });
+
         GraphQL exe = GraphQLRuntime.newGraphQL(schema).build();
         ExecutionResult result;
 
-        result = execute(exe, simpleFragmentQuery, context);
+        result = execute(exe, simpleFragmentQuery);
         assertNoErrors(result);
-        result = execute(exe, complexGenericInputQuery, context);
+        result = execute(exe, complexGenericInputQuery);
         assertNoErrors(result);
-        result = execute(exe, simpleQuery, context);
+        result = execute(exe, simpleQuery);
         assertNoErrors(result);
-        result = execute(exe, simpleQueryWithNullInput, context);
+        result = execute(exe, simpleQueryWithNullInput);
         assertNoErrors(result);
-        result = execute(exe, mapInputMutation, context);
+        result = execute(exe, mapInputMutation);
         assertNoErrors(result);
     }
 
-    private ExecutionResult execute(GraphQL graphQL, String operation, Object context) {
-        return graphQL.execute(ExecutionInput.newExecutionInput().query(operation).context(context).build());
+    private ExecutionResult execute(GraphQL graphQL, String operation) {
+        return graphQL.execute(ExecutionInput.newExecutionInput().query(operation).build());
     }
 
     public static class Dynamic {

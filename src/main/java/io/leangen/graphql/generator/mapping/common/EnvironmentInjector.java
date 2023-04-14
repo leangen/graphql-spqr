@@ -1,6 +1,7 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import graphql.language.Field;
+import graphql.execution.MergedField;
+import graphql.schema.SelectedField;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLEnvironment;
@@ -12,28 +13,25 @@ import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class EnvironmentInjector implements ArgumentInjector {
     
-    private static final Type listOfFields = new TypeToken<List<Field>>(){}.getType();
     private static final Type setOfStrings = new TypeToken<Set<String>>(){}.getType();
     
     @Override
     public Object getArgumentValue(ArgumentInjectorParams params) {
-        Class raw = GenericTypeReflector.erase(params.getType().getType());
+        Class<?> raw = GenericTypeReflector.erase(params.getType().getType());
         if (ResolutionEnvironment.class.isAssignableFrom(raw)) {
             return params.getResolutionEnvironment();
         }
         if (GenericTypeReflector.isSuperType(setOfStrings, params.getType().getType())) {
-            return params.getResolutionEnvironment().dataFetchingEnvironment.getSelectionSet().get().keySet();
+            return params.getResolutionEnvironment().dataFetchingEnvironment.getSelectionSet().getImmediateFields()
+                    .stream().map(SelectedField::getName).collect(Collectors.toSet());
         }
-        if (Field.class.equals(raw)) {
-            return params.getResolutionEnvironment().fields.get(0);
-        }
-        if (GenericTypeReflector.isSuperType(listOfFields, params.getType().getType())) {
-            return params.getResolutionEnvironment().fields;
+        if (MergedField.class.equals(raw)) {
+            return params.getResolutionEnvironment().dataFetchingEnvironment.getMergedField();
         }
         if (ValueMapper.class.isAssignableFrom(raw)) {
             return params.getResolutionEnvironment().valueMapper;

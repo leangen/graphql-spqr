@@ -10,12 +10,12 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLInputFieldsContainer;
 import graphql.schema.GraphQLInterfaceType;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import graphql.schema.GraphQLTypeReference;
 import graphql.schema.GraphQLUnionType;
 import graphql.schema.TypeResolver;
-import io.leangen.geantyref.AnnotatedTypeSet;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.annotations.GraphQLNonNull;
@@ -24,7 +24,7 @@ import io.leangen.graphql.execution.ResolverInterceptor;
 import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.execution.ResolverInterceptorFactoryParams;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.InputFieldBuilderRegistry;
+import io.leangen.graphql.generator.DelegatingInputFieldBuilder;
 import io.leangen.graphql.generator.JavaDeprecationMappingConfig;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.OperationRegistry;
@@ -35,8 +35,8 @@ import io.leangen.graphql.generator.TypeRegistry;
 import io.leangen.graphql.generator.mapping.AbstractTypeAdapter;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorRegistry;
-import io.leangen.graphql.generator.mapping.BaseTypeSynonymComparator;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
+import io.leangen.graphql.generator.mapping.IgnoredAnnotationsTypeComparator;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
@@ -165,7 +165,7 @@ import static java.util.Collections.addAll;
  *  }
  * </pre>
  */
-@SuppressWarnings("WeakerAccess")
+@SuppressWarnings({"WeakerAccess", "rawtypes", "UnusedReturnValue", "unused"})
 public class GraphQLSchemaGenerator {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
@@ -173,14 +173,14 @@ public class GraphQLSchemaGenerator {
     private AbstractInputHandler abstractInputHandler = new NoOpAbstractInputHandler();
     private OperationBuilder operationBuilder = new DefaultOperationBuilder(DefaultOperationBuilder.TypeInference.NONE);
     private DirectiveBuilder directiveBuilder = new AnnotatedDirectiveBuilder();
-    private ValueMapperFactory valueMapperFactory;
+    private ValueMapperFactory<?> valueMapperFactory;
     private InclusionStrategy inclusionStrategy;
     private ImplementationDiscoveryStrategy implDiscoveryStrategy = new DefaultImplementationDiscoveryStrategy();
     private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
     private TypeTransformer typeTransformer = new DefaultTypeTransformer(false, false);
     private GlobalEnvironment environment;
     private String[] basePackages = Utils.emptyArray();
-    private DelegatingMessageBundle messageBundle = new DelegatingMessageBundle();
+    private final DelegatingMessageBundle messageBundle = new DelegatingMessageBundle();
     private List<TypeMapper> typeMappers;
     private List<SchemaTransformer> transformers;
     private Comparator<AnnotatedType> typeComparator;
@@ -198,13 +198,14 @@ public class GraphQLSchemaGenerator {
     private final List<ExtensionProvider<GeneratorConfiguration, ResolverBuilder>> nestedResolverBuilderProviders = new ArrayList<>();
     private final List<ExtensionProvider<GeneratorConfiguration, Module>> moduleProviders = new ArrayList<>();
     private final List<ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory>> interceptorFactoryProviders = new ArrayList<>();
+    private final List<ExtensionProvider<GeneratorConfiguration, Comparator<AnnotatedType>>> typeComparatorProviders = new ArrayList<>();
     private final Collection<GraphQLSchemaProcessor> processors = new HashSet<>();
     private final RelayMappingConfig relayMappingConfig = new RelayMappingConfig();
     private final Map<String, GraphQLDirective> additionalDirectives = new HashMap<>();
     private final List<AnnotatedType> additionalDirectiveTypes = new ArrayList<>();
     private final GraphQLCodeRegistry.Builder codeRegistry = GraphQLCodeRegistry.newCodeRegistry();
-    private final Map<String, GraphQLType> additionalTypes = new HashMap<>();
-    private final Set<Comparator<AnnotatedType>> typeComparators = new HashSet<>();
+    private final Map<String, GraphQLNamedType> additionalTypes = new HashMap<>();
+    private final Map<String, AnnotatedType> additionalTypeMappings = new HashMap<>();
 
     private final String queryRoot;
     private final String mutationRoot;
@@ -247,62 +248,16 @@ public class GraphQLSchemaGenerator {
 
     /**
      * Register {@code serviceSingleton} as a singleton {@link OperationSource},
-     * with its class (obtained via {@link Object#getClass()}) as its runtime type and with the globally registered
-     * {@link ResolverBuilder}s.
+     * with its class (obtained via {@link Object#getClass()}) as its runtime type, using the provided
+     * {@link ResolverBuilder}s to look for methods to be exposed or the globally registered
+     * {@link ResolverBuilder}s if none are provided.
      * All query/mutation methods discovered by analyzing the {@code serviceSingleton}'s type will be later,
      * in query resolution time, invoked on this specific instance (hence the 'singleton' in the method name).
      * Instances of stateless service classes are commonly registered this way.
      *
-     * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
-     *                        those methods will be invoked in query/mutation execution time
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton) {
-        checkType(serviceSingleton.getClass());
-        return withOperationsFromSingleton(serviceSingleton, serviceSingleton.getClass());
-    }
-
-    /**
-     * Register {@code serviceSingleton} as a singleton {@link OperationSource},
-     * with {@code beanType} as its runtime type and with the globally registered {@link ResolverBuilder}s.
-     * <p>See {@link #withOperationsFromSingleton(Object)}</p>
-     *
-     * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
-     *                        those methods will be invoked in query/mutation execution time
-     * @param beanType Runtime type of {@code serviceSingleton}. Should be explicitly provided when it differs from its class
-     *                 (that can be obtained via {@link Object#getClass()}). This is commonly the case when the class is generic
-     *                 or when the instance has been proxied by a framework.
-     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
-     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, Type beanType) {
-        return withOperationsFromSingleton(serviceSingleton, GenericTypeReflector.annotate(beanType));
-    }
-
-    /**
-     * Same as {@link #withOperationsFromSingleton(Object, Type)}, except that an {@link AnnotatedType} is used as
-     * {@code serviceSingleton}'s runtime type. Needed when type annotations such as {@link GraphQLNonNull}
-     * not directly declared on the class should be captured.
-     *
-     * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
-     *                        those methods will be invoked in query/mutation execution time
-     * @param beanType Runtime type of {@code serviceSingleton}. Should be explicitly provided when it differs from its class
-     *                 (that can be obtained via {@link Object#getClass()}) and when annotations on the type should be kept.
-     *                 Use {@link io.leangen.geantyref.TypeToken} to get an {@link AnnotatedType} literal
-     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType) {
-        return withOperationsFromBean(() -> serviceSingleton, beanType);
-    }
-
-    /**
-     * Same as {@link #withOperationsFromSingleton(Object)} except that custom {@link ResolverBuilder}s will be used
-     * to look through {@code beanType} for methods to be exposed.
+     * @implNote Injection containers (like Spring or CDI) will often wrap managed bean instances into proxies,
+     * making it difficult to reliably detect their type. For this reason, it is recommended in such cases to use
+     * a different overload of this method and provide the type explicitly.
      *
      * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -315,8 +270,12 @@ public class GraphQLSchemaGenerator {
     }
 
     /**
-     * Same as {@link #withOperationsFromSingleton(Object, Type)} except that custom {@link ResolverBuilder}s will be used
-     * to look through {@code beanType} for methods to be exposed.
+     * Register {@code serviceSingleton} as a singleton {@link OperationSource}, with {@code beanType}
+     * as its static type, using the provided {@link ResolverBuilder}s to look for methods to be exposed
+     * or the globally registered {@link ResolverBuilder}s if none are provided.
+     * All query/mutation methods discovered by analyzing the {@code beanType} will be later,
+     * in query resolution time, invoked on this specific instance (hence the 'singleton' in the method name).
+     * Instances of stateless service classes are commonly registered this way.
      *
      * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -330,13 +289,13 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, Type beanType, ResolverBuilder... builders) {
-        checkType(beanType);
-        return withOperationsFromSingleton(serviceSingleton, GenericTypeReflector.annotate(beanType), builders);
+        return withOperationsFromSingleton(serviceSingleton, GenericTypeReflector.annotate(checkType(beanType)), builders);
     }
 
     /**
-     * Same as {@link #withOperationsFromSingleton(Object, AnnotatedType)} except that custom {@link ResolverBuilder}s will be used
-     * to look through {@code beanType} for methods to be exposed.
+     * Same as {@link #withOperationsFromSingleton(Object, Type, ResolverBuilder...)}, except that an {@link AnnotatedType} is used as
+     * {@code serviceSingleton}'s static type. Needed when type annotations such as {@link GraphQLNonNull}
+     * not directly declared on the class should be captured.
      *
      * @param serviceSingleton The singleton bean whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -349,13 +308,12 @@ public class GraphQLSchemaGenerator {
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
     public GraphQLSchemaGenerator withOperationsFromSingleton(Object serviceSingleton, AnnotatedType beanType, ResolverBuilder... builders) {
-        checkType(beanType);
-        this.operationSourceRegistry.registerOperationSource(() -> serviceSingleton, beanType, Arrays.asList(builders));
-        return this;
+        return withOperationsFromBean(() -> serviceSingleton, beanType, null, builders);
     }
 
     /**
-     * Same as {@link #withOperationsFromSingleton(Object)} except that multiple beans can be registered at the same time.
+     * Same as {@link #withOperationsFromSingleton(Object, ResolverBuilder...)} except that multiple beans
+     * can be registered at the same time.
      *
      * @param serviceSingletons Singleton beans whose type is to be scanned for query/mutation methods and on which
      *                        those methods will be invoked in query/mutation execution time
@@ -367,31 +325,79 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, Type beanType) {
-        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(beanType));
-    }
-
-    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, AnnotatedType beanType) {
-        checkType(beanType);
-        this.operationSourceRegistry.registerOperationSource(serviceSupplier, beanType);
-        return this;
-    }
-
+    /**
+     * Analyzes {@code beanType} using the provided {@link ResolverBuilder}s to look for methods to be exposed
+     * or the globally registered {@link ResolverBuilder}s if none are provided, and uses {@code serviceSupplier}
+     * to obtain an instance on which query/mutation methods are invoked at runtime.
+     * Container managed beans (of any scope) are commonly registered this way..
+     *
+     * @param serviceSupplier The supplier that will be used to obtain an instance on which the exposed methods
+     *                        will be invoked when resolving queries/mutations/subscriptions.
+     * @param beanType Static type of instances provided by {@code serviceSupplier}.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
+     * @param builders Custom strategy to use when analyzing {@code beanType}
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
     public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, Type beanType, ResolverBuilder... builders) {
-        checkType(beanType);
-        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(beanType), builders);
+        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(checkType(beanType)), ClassUtils.getRawType(beanType), builders);
     }
 
+    /**
+     * Same as {@link #withOperationsFromBean(Supplier, Type, ResolverBuilder...)}, except that an {@link AnnotatedType}
+     * is used as the static type of the instances provided by {@code serviceSupplier}.
+     * Needed when type annotations such as {@link GraphQLNonNull} not directly declared on the class should be captured.
+     */
     public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, AnnotatedType beanType, ResolverBuilder... builders) {
+        return withOperationsFromBean(serviceSupplier, beanType, ClassUtils.getRawType(beanType.getType()),  builders);
+    }
+
+    /**
+     * Same as {@link #withOperationsFromBean(Supplier, Type, ResolverBuilder...)}, but the actual runtime type of
+     * the instances provided by {@code serviceSupplier} will be used to choose the method to invoke at runtime.
+     * This is the absolute safest approach to registering beans, and is needed when the instances are proxied
+     * by a container (e.g. Spring, CDI or others) and can _not_ be cast to {@code beanType} at runtime.
+     *
+     * @param serviceSupplier The supplier that will be used to obtain an instance on which the exposed methods
+     *                        will be invoked when resolving queries/mutations/subscriptions.
+     * @param beanType Static type of instances provided by {@code serviceSupplier}.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
+     * @param exposedType Runtime type of the instances provided by {@code serviceSupplier},
+     *                    not necessarily possible to cast to {@code beanType}
+     * @param builders Custom strategy to use when analyzing {@code beanType}
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
+    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, Type beanType, Class<?> exposedType, ResolverBuilder... builders) {
+        return withOperationsFromBean(serviceSupplier, GenericTypeReflector.annotate(checkType(beanType)), exposedType, builders);
+    }
+
+    /**
+     * Same as {@link #withOperationsFromBean(Supplier, Type, Class, ResolverBuilder...)}, except that an {@link AnnotatedType}
+     * is used as the static type of the instances provided by {@code serviceSupplier}.
+     * Needed when type annotations such as {@link GraphQLNonNull} not directly declared on the class should be captured.
+     */
+    public GraphQLSchemaGenerator withOperationsFromBean(Supplier<Object> serviceSupplier, AnnotatedType beanType, Class<?> exposedType, ResolverBuilder... builders) {
         checkType(beanType);
-        this.operationSourceRegistry.registerOperationSource(serviceSupplier, beanType, Arrays.asList(builders));
+        this.operationSourceRegistry.registerOperationSource(serviceSupplier, beanType, exposedType, Utils.asList(builders));
         return this;
     }
 
-    public GraphQLSchemaGenerator withOperationsFromType(Type serviceType) {
-        return this.withOperationsFromType(GenericTypeReflector.annotate(serviceType));
-    }
-
+    /**
+     * Analyzes {@code serviceType} using the provided {@link ResolverBuilder}s to look for methods to be exposed
+     * or the globally registered {@link ResolverBuilder}s if none are provided.
+     * An instance of {@code serviceType} on which the exposed methods are invoked at runtime must be explicitly
+     * provided as GraphQL {@code root} for each execution. See {@link graphql.ExecutionInput.Builder#root(Object)}.
+     *
+     * @param serviceType Type to analyze for methods to expose.
+     *                 Use {@link io.leangen.geantyref.TypeToken} to get a {@link Type} literal
+     *                 or {@link io.leangen.geantyref.TypeFactory} to create it dynamically.
+     * @param builders Custom strategy to use when analyzing {@code serviceType}
+     *
+     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
+     */
     public GraphQLSchemaGenerator withOperationsFromType(Type serviceType, ResolverBuilder... builders) {
         return this.withOperationsFromType(GenericTypeReflector.annotate(serviceType), builders);
     }
@@ -401,15 +407,13 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withOperationsFromType(AnnotatedType serviceType) {
-        checkType(serviceType);
-        this.operationSourceRegistry.registerOperationSource(serviceType);
-        return this;
-    }
-
+    /**
+     * Same as {@link #withOperationsFromType(Type, ResolverBuilder...)}, except that an {@link AnnotatedType} is used.
+     * Needed when type annotations such as {@link GraphQLNonNull} not directly declared on the class should be captured.
+     */
     public GraphQLSchemaGenerator withOperationsFromType(AnnotatedType serviceType, ResolverBuilder... builders) {
         checkType(serviceType);
-        this.operationSourceRegistry.registerOperationSource(serviceType, Arrays.asList(builders));
+        this.operationSourceRegistry.registerOperationSource(serviceType, Utils.asList(builders));
         return this;
     }
 
@@ -528,7 +532,7 @@ public class GraphQLSchemaGenerator {
      * Registers custom {@link TypeMapper}s to be used for mapping Java type to GraphQL types.
      * <p><b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type
      * will be used for mapping it.</b></p>
-     * <p>See {@link TypeMapper#supports(AnnotatedType)}</p>
+     * <p>See {@link TypeMapper#supports(java.lang.reflect.AnnotatedElement, AnnotatedType)}</p>
      *
      * @param typeMappers Custom type mappers to register with the builder
      *
@@ -543,11 +547,16 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withTypeMappersPrepended(ExtensionProvider<GeneratorConfiguration, TypeMapper> provider) {
+        this.typeMapperProviders.add(0, provider);
+        return this;
+    }
+
     /**
      * Registers custom {@link TypeMapper}s to be used for mapping Java type to GraphQL types.
      * <p><b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type
      * will be used for mapping it.</b></p>
-     * <p>See {@link TypeMapper#supports(AnnotatedType)}</p>
+     * <p>See {@link TypeMapper#supports(java.lang.reflect.AnnotatedElement, AnnotatedType)}</p>
      *
      * @param provider Provides the customized list of TypeMappers to use
      *
@@ -601,7 +610,7 @@ public class GraphQLSchemaGenerator {
      * is normally done because GraphQL type system has no direct support for maps.
      * <p><b>Ordering of converters is strictly important as the first {@link OutputConverter} that supports the given Java type
      * will be used for converting it.</b></p>
-     * <p>See {@link OutputConverter#supports(AnnotatedType)}</p>
+     * <p>See {@link OutputConverter#supports(java.lang.reflect.AnnotatedElement, AnnotatedType)}</p>
      *
      * @param outputConverters Custom output converters to register with the builder
      *
@@ -675,45 +684,50 @@ public class GraphQLSchemaGenerator {
 
     @Deprecated
     public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes) {
-        return withAdditionalTypes(additionalTypes, new NoOpCodeRegistryBuilder());
+        return withAdditionalTypes(additionalTypes, Collections.emptyMap(), new NoOpCodeRegistryBuilder());
     }
 
-    public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes, GraphQLCodeRegistry codeRegistry) {
-        return withAdditionalTypes(additionalTypes, new CodeRegistryMerger(codeRegistry));
+    public GraphQLSchemaGenerator withAdditionalTypes(Collection<? extends GraphQLType> additionalTypes,
+                                                      Map<String, AnnotatedType> additionalTypeMappings,
+                                                      GraphQLCodeRegistry codeRegistry) {
+        return withAdditionalTypes(additionalTypes, additionalTypeMappings, new CodeRegistryMerger(codeRegistry));
     }
 
-    public GraphQLSchemaGenerator withAdditionalTypes(Collection<GraphQLType> additionalTypes, CodeRegistryBuilder codeRegistryUpdater) {
+    public GraphQLSchemaGenerator withAdditionalTypes(Collection<? extends GraphQLType> additionalTypes,
+                                                      Map<String, AnnotatedType> additionalTypeMappings,
+                                                      CodeRegistryBuilder codeRegistryUpdater) {
+        this.additionalTypeMappings.putAll(additionalTypeMappings);
         additionalTypes.forEach(type -> merge(type, this.additionalTypes, codeRegistryUpdater, this.codeRegistry));
         return this;
     }
 
-    private void merge(GraphQLType type, Map<String, GraphQLType> additionalTypes, CodeRegistryBuilder updater, GraphQLCodeRegistry.Builder builder) {
-        type = GraphQLUtils.unwrap(type);
-        if (!isRealType(type)) {
+    private void merge(GraphQLType type, Map<String, GraphQLNamedType> additionalTypes, CodeRegistryBuilder updater, GraphQLCodeRegistry.Builder builder) {
+        GraphQLNamedType namedType = GraphQLUtils.unwrap(type);
+        if (!isRealType(namedType)) {
             return;
         }
-        if (additionalTypes.containsKey(type.getName())) {
-            if (additionalTypes.get(type.getName()).equals(type)) {
+        if (additionalTypes.containsKey(namedType.getName())) {
+            if (additionalTypes.get(namedType.getName()).equals(namedType)) {
                 return;
             }
-            throw new ConfigurationException("Type name collision: multiple registered additional types are named '" + type.getName() + "'");
+            throw new ConfigurationException("Type name collision: multiple registered additional types are named '" + namedType.getName() + "'");
         }
-        additionalTypes.put(type.getName(), type);
+        additionalTypes.put(namedType.getName(), namedType);
 
-        if (type instanceof GraphQLInterfaceType) {
-            TypeResolver typeResolver = updater.getTypeResolver((GraphQLInterfaceType) type);
+        if (namedType instanceof GraphQLInterfaceType) {
+            TypeResolver typeResolver = updater.getTypeResolver((GraphQLInterfaceType) namedType);
             if (typeResolver != null) {
-                builder.typeResolverIfAbsent((GraphQLInterfaceType) type, typeResolver);
+                builder.typeResolverIfAbsent((GraphQLInterfaceType) namedType, typeResolver);
             }
         }
-        if (type instanceof GraphQLUnionType) {
-            TypeResolver typeResolver = updater.getTypeResolver((GraphQLUnionType) type);
+        if (namedType instanceof GraphQLUnionType) {
+            TypeResolver typeResolver = updater.getTypeResolver((GraphQLUnionType) namedType);
             if (typeResolver != null) {
-                builder.typeResolverIfAbsent((GraphQLUnionType) type, typeResolver);
+                builder.typeResolverIfAbsent((GraphQLUnionType) namedType, typeResolver);
             }
         }
-        if (type instanceof GraphQLFieldsContainer) {
-            GraphQLFieldsContainer fieldsContainer = (GraphQLFieldsContainer) type;
+        if (namedType instanceof GraphQLFieldsContainer) {
+            GraphQLFieldsContainer fieldsContainer = (GraphQLFieldsContainer) namedType;
             fieldsContainer.getFieldDefinitions().forEach(fieldDef -> {
                 DataFetcher<?> dataFetcher = updater.getDataFetcher(fieldsContainer, fieldDef);
                 if (dataFetcher != null) {
@@ -724,8 +738,8 @@ public class GraphQLSchemaGenerator {
                 fieldDef.getArguments().forEach(arg -> merge(arg.getType(), additionalTypes, updater, builder));
             });
         }
-        if (type instanceof GraphQLInputFieldsContainer) {
-            ((GraphQLInputFieldsContainer) type).getFieldDefinitions()
+        if (namedType instanceof GraphQLInputFieldsContainer) {
+            ((GraphQLInputFieldsContainer) namedType).getFieldDefinitions()
                     .forEach(fieldDef -> merge(fieldDef.getType(), additionalTypes, updater, builder));
         }
     }
@@ -752,20 +766,13 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    public GraphQLSchemaGenerator withTypeSynonymGroup(Type... synonyms) {
-        this.typeComparators.add(new BaseTypeSynonymComparator(synonyms));
-        return this;
+    @SafeVarargs
+    public final GraphQLSchemaGenerator withTypeComparators(Comparator<AnnotatedType>... comparators) {
+        return withTypeComparators((config, current) -> current.append(comparators));
     }
 
-    public GraphQLSchemaGenerator withTypeSynonymGroup(AnnotatedType... synonyms) {
-        Set<AnnotatedType> synonymGroup = new AnnotatedTypeSet<>();
-        Collections.addAll(synonymGroup, synonyms);
-        this.typeComparators.add((t1, t2) -> synonymGroup.contains(t1) && synonymGroup.contains(t2) ? 0 : -1);
-        return this;
-    }
-
-    public GraphQLSchemaGenerator withTypeComparator(Comparator<AnnotatedType> comparator) {
-        this.typeComparators.add(comparator);
+    public GraphQLSchemaGenerator withTypeComparators(ExtensionProvider<GeneratorConfiguration, Comparator<AnnotatedType>> provider) {
+        this.typeComparatorProviders.add(provider);
         return this;
     }
 
@@ -893,7 +900,7 @@ public class GraphQLSchemaGenerator {
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureAdapter<>(),
                 publisherAdapter, new AnnotationMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
-                new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper(), new VoidToBooleanTypeAdapter(),
+                new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper<>(), new VoidToBooleanTypeAdapter(),
                 new ListMapper(), new IterableAdapter<>(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
                 new ObjectScalarMapper(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         for (ExtensionProvider<GeneratorConfiguration, TypeMapper> provider : typeMapperProviders) {
@@ -937,7 +944,11 @@ public class GraphQLSchemaGenerator {
         }
         interceptorFactory = new DelegatingResolverInterceptorFactory(interceptorFactories);
 
-        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalTypes.values()),
+        Map<GraphQLNamedType, AnnotatedType> additionalMappedTypes = new HashMap<>();
+        for (Map.Entry<String, GraphQLNamedType> entry : additionalTypes.entrySet()) {
+            additionalMappedTypes.put(entry.getValue(), additionalTypeMappings.get(entry.getKey()));
+        }
+        environment = new GlobalEnvironment(messageBundle, new Relay(), new TypeRegistry(additionalMappedTypes),
                 new ConverterRegistry(inputConverters, outputConverters), new ArgumentInjectorRegistry(argumentInjectors),
                 typeTransformer, inclusionStrategy, typeInfoGenerator);
         ExtendedGeneratorConfiguration extendedConfig = new ExtendedGeneratorConfiguration(configuration, environment);
@@ -956,12 +967,21 @@ public class GraphQLSchemaGenerator {
         }
         checkForEmptyOrDuplicates("input field builders", inputFieldBuilders);
 
+        List<Comparator<AnnotatedType>> typeComparators = new ArrayList<>();
+        //Only consider leangen annotations except @GraphQLNonNull
+        typeComparators.add(new IgnoredAnnotationsTypeComparator().include("io.leangen").exclude(GraphQLNonNull.class));
         Type annotatedTypeComparator = TypeFactory.parameterizedClass(Comparator.class, AnnotatedType.class);
-        //noinspection unchecked
-        typeMappers.stream()
-                .filter(mapper -> GenericTypeReflector.isSuperType(annotatedTypeComparator, mapper.getClass()))
-                .forEach(mapper -> typeComparators.add((Comparator<AnnotatedType>) mapper));
-        typeComparator = (t1, t2) -> typeComparators.stream().anyMatch(comparator -> comparator.compare(t1, t2) == 0) ? 0 : -1;
+        for (TypeMapper mapper : typeMappers) {
+            if (GenericTypeReflector.isSuperType(annotatedTypeComparator, mapper.getClass())) {
+                //noinspection unchecked
+                typeComparators.add((Comparator<AnnotatedType>) mapper);
+            }
+        }
+        for (ExtensionProvider<GeneratorConfiguration, Comparator<AnnotatedType>> provider : this.typeComparatorProviders) {
+            typeComparators = provider.getExtensions(configuration, new ExtensionList<>(typeComparators));
+        }
+        List<Comparator<AnnotatedType>> finalTypeComparators = typeComparators;
+        typeComparator = (t1, t2) -> finalTypeComparators.stream().anyMatch(comparator -> comparator.compare(t1, t2) == 0) ? 0 : -1;
     }
 
     /**
@@ -972,6 +992,10 @@ public class GraphQLSchemaGenerator {
      * @return A GraphQL schema
      */
     public GraphQLSchema generate() {
+        return generateExecutable().getSchema();
+    }
+
+    public ExecutableSchema generateExecutable() {
         init();
 
         final String queryRootName = messageBundle.interpolate(queryRoot);
@@ -981,8 +1005,8 @@ public class GraphQLSchemaGenerator {
         BuildContext buildContext = new BuildContext(
                 basePackages, environment, new OperationRegistry(operationSourceRegistry, operationBuilder, inclusionStrategy,
                 typeTransformer, basePackages, environment), new TypeMapperRegistry(typeMappers),
-                new SchemaTransformerRegistry(transformers), valueMapperFactory, typeInfoGenerator, messageBundle, interfaceStrategy,
-                scalarStrategy, typeTransformer, abstractInputHandler, new InputFieldBuilderRegistry(inputFieldBuilders),
+                new SchemaTransformerRegistry(transformers), valueMapperFactory, interfaceStrategy,
+                scalarStrategy, typeTransformer, abstractInputHandler, new DelegatingInputFieldBuilder(inputFieldBuilders),
                 interceptorFactory, directiveBuilder, inclusionStrategy, relayMappingConfig, additionalTypes.values(),
                 additionalDirectiveTypes, typeComparator, implDiscoveryStrategy, codeRegistry);
         OperationMapper operationMapper = new OperationMapper(queryRootName, mutationRootName, subscriptionRootName, buildContext);
@@ -1019,11 +1043,14 @@ public class GraphQLSchemaGenerator {
         builder.additionalDirectives(new HashSet<>(additionalDirectives.values()));
         builder.additionalDirectives(new HashSet<>(operationMapper.getDirectives()));
 
+        builder.withSchemaAppliedDirectives(operationMapper.getSchemaDirectives());
+
         builder.codeRegistry(buildContext.codeRegistry.build());
 
         applyProcessors(builder, buildContext);
         buildContext.executePostBuildHooks();
-        return builder.build();
+        GraphQLSchema schema = builder.build();
+        return new ExecutableSchema(schema, buildContext.typeRegistry, operationMapper.getBatchResolvers(), environment);
     }
 
     private void applyProcessors(GraphQLSchema.Builder builder, BuildContext buildContext) {
@@ -1032,7 +1059,7 @@ public class GraphQLSchemaGenerator {
         }
     }
 
-    private boolean isRealType(GraphQLType type) {
+    private boolean isRealType(GraphQLNamedType type) {
         // Reject introspection types
         return !(GraphQLUtils.isIntrospectionType(type)
                 // Reject quasi-types
@@ -1045,7 +1072,7 @@ public class GraphQLSchemaGenerator {
                 || type.getName().equals(messageBundle.interpolate(subscriptionRoot)));
     }
 
-    private void checkType(Type type) {
+    private Type checkType(Type type) {
         if (type == null) {
             throw TypeMappingException.unknownType();
         }
@@ -1061,6 +1088,7 @@ public class GraphQLSchemaGenerator {
                     " Provide the full type explicitly when registering the bean." +
                     " For details and solutions see " + Urls.Errors.TOP_LEVEL_GENERICS);
         }
+        return type;
     }
 
     private void checkType(AnnotatedType type) {
@@ -1127,12 +1155,12 @@ public class GraphQLSchemaGenerator {
 
     private static class NoOpCodeRegistryBuilder implements CodeRegistryBuilder {}
 
-    private static class MemoizedValueMapperFactory implements ValueMapperFactory {
+    private static class MemoizedValueMapperFactory implements ValueMapperFactory<ValueMapper> {
 
         private final ValueMapper defaultValueMapper;
-        private final ValueMapperFactory delegate;
+        private final ValueMapperFactory<?> delegate;
 
-        public MemoizedValueMapperFactory(GlobalEnvironment environment, ValueMapperFactory delegate) {
+        public MemoizedValueMapperFactory(GlobalEnvironment environment, ValueMapperFactory<?> delegate) {
             this.defaultValueMapper = delegate.getValueMapper(Collections.emptyMap(), environment);
             this.delegate = delegate;
         }

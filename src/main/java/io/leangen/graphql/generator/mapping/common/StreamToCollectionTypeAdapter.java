@@ -24,7 +24,7 @@ public class StreamToCollectionTypeAdapter<T> extends AbstractSimpleTypeAdapter<
     public List<T> convertOutput(Stream<T> original, AnnotatedType type, ResolutionEnvironment env) {
         try (Stream<T> stream = original) {
             return stream
-                    .map(item -> env.<T, T>convertOutput(item, env.getDerived(type, 0)))
+                    .map(item -> env.<T, T>convertOutput(item, env.resolver.getTypedElement(), env.getDerived(type, 0)))
                     .collect(Collectors.toList());
         }
     }

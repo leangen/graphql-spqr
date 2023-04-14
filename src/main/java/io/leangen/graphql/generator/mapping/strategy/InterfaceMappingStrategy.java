@@ -8,7 +8,7 @@ import java.util.Collection;
  */
 public interface InterfaceMappingStrategy {
 
-    boolean supports(AnnotatedType interfase);
-
     Collection<AnnotatedType> getInterfaces(AnnotatedType type);
+
+    boolean supports(AnnotatedType interfase);
 }

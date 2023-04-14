@@ -1,7 +1,9 @@
 package io.leangen.graphql.generator.mapping;
 
+import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,6 +14,7 @@ import java.util.Set;
 /**
  * @author Bojan Tomic (kaqqao)
  */
+@SuppressWarnings("rawtypes")
 public class ConverterRegistry {
 
     private final List<InputConverter> inputConverters;
@@ -32,8 +35,8 @@ public class ConverterRegistry {
     }
 
     @SuppressWarnings("unchecked")
-    public <T, S> OutputConverter<T, S> getOutputConverter(AnnotatedType outputType) {
-        return (OutputConverter<T, S>) outputConverters.stream().filter(conv -> conv.supports(outputType)).findFirst().orElse(null);
+    public <T, S> OutputConverter<T, S> getOutputConverter(AnnotatedElement element, AnnotatedType outputType) {
+        return (OutputConverter<T, S>) outputConverters.stream().filter(conv -> conv.supports(element, outputType)).findFirst().orElse(null);
     }
 
     public List<OutputConverter> getOutputConverters() {
@@ -48,9 +51,9 @@ public class ConverterRegistry {
         return ClassUtils.transformType(type, this::getMappableInputType);
     }
 
-    public ConverterRegistry optimize(List<AnnotatedType> types) {
+    public ConverterRegistry optimize(List<TypedElement> elements) {
         Set<OutputConverter> filtered = new HashSet<>();
-        types.forEach(type -> collectConverters(type, filtered));
+        elements.forEach(element -> collectConverters(element, element.getJavaType(), filtered));
         if (filtered.stream().allMatch(converter -> converter instanceof DelegatingOutputConverter
                 && ((DelegatingOutputConverter) converter).isTransparent())) {
             return new ConverterRegistry(this.getInputConverters(), Collections.emptyList());
@@ -60,13 +63,13 @@ public class ConverterRegistry {
                 : new ConverterRegistry(this.getInputConverters(), new ArrayList<>(filtered));
     }
 
-    private void collectConverters(AnnotatedType type, Set<OutputConverter> filtered) {
-        OutputConverter<?, ?> converter = this.getOutputConverter(type);
+    private void collectConverters(AnnotatedElement element, AnnotatedType type, Set<OutputConverter> filtered) {
+        OutputConverter<?, ?> converter = this.getOutputConverter(element, type);
         if (converter != null) {
             filtered.add(converter);
             if (converter instanceof DelegatingOutputConverter) {
                 ((DelegatingOutputConverter<?, ?>) converter).getDerivedTypes(type)
-                        .forEach(derived -> collectConverters(derived, filtered));
+                        .forEach(derived -> collectConverters(element, derived, filtered));
             }
         }
     }

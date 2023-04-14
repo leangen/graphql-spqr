@@ -13,14 +13,16 @@ public class ResolverBuilderParams {
 
     private final Supplier<Object> querySourceBeanSupplier;
     private final AnnotatedType beanType;
+    private final Class<?> exposedBeanType;
     private final InclusionStrategy inclusionStrategy;
     private final TypeTransformer typeTransformer;
     private final String[] basePackages;
     private final GlobalEnvironment environment;
 
-    public ResolverBuilderParams(Supplier<Object> querySourceBeanSupplier, AnnotatedType beanType, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages, GlobalEnvironment environment) {
+    public ResolverBuilderParams(Supplier<Object> querySourceBeanSupplier, AnnotatedType beanType, Class<?> exposedBeanType, InclusionStrategy inclusionStrategy, TypeTransformer typeTransformer, String[] basePackages, GlobalEnvironment environment) {
         this.querySourceBeanSupplier = querySourceBeanSupplier;
         this.beanType = Objects.requireNonNull(beanType);
+        this.exposedBeanType = exposedBeanType;
         this.inclusionStrategy = Objects.requireNonNull(inclusionStrategy);
         this.typeTransformer = Objects.requireNonNull(typeTransformer);
         this.basePackages = Objects.requireNonNull(basePackages);
@@ -33,6 +35,10 @@ public class ResolverBuilderParams {
 
     public AnnotatedType getBeanType() {
         return beanType;
+    }
+
+    public Class<?> getExposedBeanType() {
+        return exposedBeanType;
     }
 
     public InclusionStrategy getInclusionStrategy() {

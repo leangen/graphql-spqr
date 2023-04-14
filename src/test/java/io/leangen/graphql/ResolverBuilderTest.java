@@ -22,6 +22,7 @@ import io.leangen.graphql.metadata.strategy.query.ResolverBuilderParams;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
+import io.leangen.graphql.util.Utils;
 import lombok.Getter;
 import org.junit.Test;
 
@@ -32,25 +33,27 @@ import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import static io.leangen.graphql.support.GraphQLTypeAssertions.assertFieldNamesEqual;
+import static io.leangen.graphql.util.GraphQLUtils.name;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ResolverBuilderTest {
 
-    private static final String[] BASE_PACKAGES = {"io.leangen"};
+    private static final String[] BASE_PACKAGES = { "io.leangen" };
     private static final InclusionStrategy INCLUSION_STRATEGY = new DefaultInclusionStrategy(BASE_PACKAGES);
     private static final TypeTransformer TYPE_TRANSFORMER = new DefaultTypeTransformer(false, false);
-    private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
+    private static final GlobalEnvironment ENVIRONMENT = GlobalEnvironment.EMPTY;
 
     @Test
     public void bridgeMethodTest() {
         Collection<Resolver> resolvers = new PublicResolverBuilder(BASE_PACKAGES).buildQueryResolvers(new ResolverBuilderParams(
                 BaseServiceImpl::new, new TypeToken<BaseServiceImpl<Number, String>>(){}.getAnnotatedType(),
-                INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT));
+                BaseServiceImpl.class, INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT));
         assertEquals(1, resolvers.size());
         assertEquals(resolvers.iterator().next().getReturnType().getType(), Number.class);
     }
@@ -65,9 +68,18 @@ public class ResolverBuilderTest {
 
     @Test
     public void fieldIgnoreTest() {
-        for(Collection<Resolver> resolvers : resolvers(new IgnoredFields(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
+        for(Collection<Resolver> resolvers : resolvers(new IgnoredFields<>(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
             assertEquals(1, resolvers.size());
             assertEquals("notIgnored", resolvers.iterator().next().getOperationName());
+        }
+    }
+
+    @Test
+    public void parameterIgnoreTest() {
+        for(Collection<Resolver> resolvers : resolvers(new IgnoredParameters<>(), new PublicResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
+            Resolver resolver = resolvers.iterator().next();
+            assertEquals(1, resolver.getArguments().size());
+            assertEquals("notIgnored", resolver.getArguments().get(0).getName());
         }
     }
 
@@ -95,9 +107,9 @@ public class ResolverBuilderTest {
                 .generate();
         assertEquals(2, schema.getQueryType().getFieldDefinitions().size());
         assertEquals("One_findOne", schema.getQueryType().getFieldDefinitions().get(0).getName());
-        assertEquals("Person", schema.getQueryType().getFieldDefinitions().get(0).getType().getName());
+        assertEquals("Person", name(schema.getQueryType().getFieldDefinitions().get(0).getType()));
         assertEquals("Two_findOne", schema.getQueryType().getFieldDefinitions().get(1).getName());
-        assertEquals("BigDecimal", schema.getQueryType().getFieldDefinitions().get(1).getType().getName());
+        assertEquals("BigDecimal", name(schema.getQueryType().getFieldDefinitions().get(1).getType()));
     }
 
     @Test
@@ -141,11 +153,30 @@ public class ResolverBuilderTest {
         assertFieldNamesEqual(schema.getQueryType(), "name", "hasName", "title");
     }
 
+    @Test
+    public void basePackageTest() {
+        PublicResolverBuilder resolverBuilder = new PublicResolverBuilder(BASE_PACKAGES);
+        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
+                UserHandleService::new, GenericTypeReflector.annotate(UserHandleService.class), UserHandleService.class, INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+        assertEquals(2, resolvers.size());
+        assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("userHandle")));
+        assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("nickname")));
+    }
+
+    @Test
+    public void badBasePackageTest() {
+        PublicResolverBuilder resolverBuilder = new PublicResolverBuilder("bad.package");
+        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
+                UserHandleService::new, GenericTypeReflector.annotate(UserHandleService.class), UserHandleService.class, INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+        assertEquals(1, resolvers.size());
+        assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("userHandle")));
+    }
+
     private Collection<Collection<Resolver>> resolvers(Object bean, ResolverBuilder... builders) {
         Collection<Collection<Resolver>> resolvers = new ArrayList<>(builders.length);
         for (ResolverBuilder builder : builders) {
             resolvers.add(builder.buildQueryResolvers(new ResolverBuilderParams(
-                    () -> bean, GenericTypeReflector.annotate(bean.getClass()), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+                    () -> bean, GenericTypeReflector.annotate(bean.getClass()), bean.getClass(), INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         }
         return resolvers;
     }
@@ -198,16 +229,32 @@ public class ResolverBuilderTest {
         public String getIgnored() {
             return null;
         }
+
+        @GraphQLIgnore
+        @GraphQLQuery(name = "ignoredToo")
+        public <T> T wouldBreak() { return null; }
     }
 
-    private static class IgnoredFields {
+    private static class IgnoredFields<T> {
 
         @GraphQLIgnore
         @GraphQLQuery(name = "ignored")
         public String ignored;
 
+        @GraphQLIgnore
+        @GraphQLQuery(name = "ignoredToo")
+        public T wouldBreak;
+
         @GraphQLQuery(name = "notIgnored")
         public String getNotIgnored() {
+            return null;
+        }
+    }
+
+    private static class IgnoredParameters<T> {
+
+        @GraphQLQuery
+        public String notIgnored(String notIgnored, @GraphQLIgnore T wouldBreak) {
             return null;
         }
     }
@@ -276,6 +323,21 @@ public class ResolverBuilderTest {
 
         public boolean hasTitle() {
             return true;
+        }
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public static class NicknameService {
+
+        public String getNickname(String name) {
+            return Utils.isNotEmpty(name) && name.length() > 3 ? name.substring(0, 3) : name;
+        }
+    }
+
+    public static class UserHandleService extends NicknameService {
+
+        public String getUserHandle(String name) {
+            return "@" + super.getNickname(name);
         }
     }
 }

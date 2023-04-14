@@ -15,6 +15,8 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
+import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMapper;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.util.ClassUtils;
@@ -22,6 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +32,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper implements SchemaTransformer, OutputConverter<Publisher<T>, Object> {
+public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper<Object> implements SchemaTransformer, OutputConverter<Publisher<T>, Object> {
 
     private final Executor executor;
 
@@ -43,7 +46,7 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper implemen
     }
 
     @Override
-    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set mappersToSkip, BuildContext buildContext) {
+    public GraphQLInputType toGraphQLInputType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
         throw new UnsupportedOperationException(ClassUtils.getRawType(javaType.getType()).getSimpleName() + " can not be used as an input type");
     }
 
@@ -79,7 +82,7 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper implemen
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return ClassUtils.isSuperClass(Publisher.class, type);
     }
 

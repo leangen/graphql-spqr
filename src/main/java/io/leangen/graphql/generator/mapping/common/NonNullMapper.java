@@ -12,6 +12,7 @@ import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
 import io.leangen.graphql.generator.mapping.TypeMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.metadata.DirectiveArgument;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
@@ -23,9 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,7 +34,7 @@ import java.util.Set;
  * @author Bojan Tomic (kaqqao)
  */
 @GraphQLIgnore
-public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, SchemaTransformer {
+public class NonNullMapper implements TypeMapper, SchemaTransformer {
 
     private final Set<Class<? extends Annotation>> nonNullAnnotations;
 
@@ -43,7 +44,8 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
             "javax.annotation.Nonnull",
             "javax.validation.constraints.NotNull",
             "javax.validation.constraints.NotEmpty",
-            "javax.validation.constraints.NotBlank"
+            "javax.validation.constraints.NotBlank",
+            "org.eclipse.microprofile.graphql.NonNull"
     };
 
     @SuppressWarnings("unchecked")
@@ -61,16 +63,16 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
     }
 
     @Override
-    public GraphQLNonNull toGraphQLType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
+    public GraphQLNonNull toGraphQLType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
         mappersToSkip.add(this.getClass());
-        GraphQLOutputType inner = operationMapper.toGraphQLType(javaType, mappersToSkip, buildContext);
+        GraphQLOutputType inner = env.operationMapper.toGraphQLType(javaType, mappersToSkip, env);
         return inner instanceof GraphQLNonNull ? (GraphQLNonNull) inner : new GraphQLNonNull(inner);
     }
 
     @Override
-    public GraphQLNonNull toGraphQLInputType(AnnotatedType javaType, OperationMapper operationMapper, Set<Class<? extends TypeMapper>> mappersToSkip, BuildContext buildContext) {
+    public GraphQLNonNull toGraphQLInputType(AnnotatedType javaType, Set<Class<? extends TypeMapper>> mappersToSkip, TypeMappingEnvironment env) {
         mappersToSkip.add(this.getClass());
-        GraphQLInputType inner = operationMapper.toGraphQLInputType(javaType, mappersToSkip, buildContext);
+        GraphQLInputType inner = env.operationMapper.toGraphQLInputType(javaType, mappersToSkip, env);
         return inner instanceof GraphQLNonNull ? (GraphQLNonNull) inner : new GraphQLNonNull(inner);
     }
 
@@ -84,10 +86,10 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
 
     @Override
     public GraphQLInputObjectField transformInputField(GraphQLInputObjectField field, InputField inputField, OperationMapper operationMapper, BuildContext buildContext) {
-        if (field.getDefaultValue() == null && shouldWrap(field.getType(), inputField.getTypedElement())) {
+        if (field.getInputFieldDefaultValue().getValue() == null && shouldWrap(field.getType(), inputField.getTypedElement())) {
             return field.transform(builder -> builder.type(new GraphQLNonNull(field.getType())));
         }
-        if (shouldUnwrap(field.getDefaultValue(), field.getType())) {
+        if (shouldUnwrap(field)) {
             //do not warn on primitives as their non-nullness is implicit
             if (!ClassUtils.getRawType(inputField.getJavaType().getType()).isPrimitive()) {
                 log.warn("Non-null input field with a default value will be treated as nullable: " + inputField);
@@ -99,7 +101,7 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
 
     @Override
     public GraphQLArgument transformArgument(GraphQLArgument argument, OperationArgument operationArgument, OperationMapper operationMapper, BuildContext buildContext) {
-        return transformArgument(argument, operationArgument.getTypedElement(), operationArgument.toString(), operationMapper, buildContext);
+        return transformArgument(argument, operationArgument.getTypedElement(), operationArgument.toString());
     }
 
     @Override
@@ -107,14 +109,14 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
         if (directiveArgument.getAnnotation() != null && directiveArgument.getDefaultValue() == null) {
             return argument.transform(builder -> builder.type(GraphQLNonNull.nonNull(argument.getType())));
         }
-        return transformArgument(argument, directiveArgument.getTypedElement(), directiveArgument.toString(), operationMapper, buildContext);
+        return transformArgument(argument, directiveArgument.getTypedElement(), directiveArgument.toString());
     }
 
-    private GraphQLArgument transformArgument(GraphQLArgument argument, TypedElement element, String description, OperationMapper operationMapper, BuildContext buildContext) {
-        if (argument.getDefaultValue() == null && shouldWrap(argument.getType(), element)) {
+    private GraphQLArgument transformArgument(GraphQLArgument argument, TypedElement element, String description) {
+        if (!argument.hasSetDefaultValue() && shouldWrap(argument.getType(), element)) {
             return argument.transform(builder -> builder.type(new GraphQLNonNull(argument.getType())));
         }
-        if (shouldUnwrap(argument.getDefaultValue(), argument.getType())) {
+        if (shouldUnwrap(argument)) {
             //do not warn on primitives as their non-nullness is implicit
             if (!ClassUtils.getRawType(element.getJavaType().getType()).isPrimitive()) {
                 log.warn("Non-null argument with a default value will be treated as nullable: " + description);
@@ -125,20 +127,20 @@ public class NonNullMapper implements TypeMapper, Comparator<AnnotatedType>, Sch
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return nonNullAnnotations.stream().anyMatch(type::isAnnotationPresent) || ClassUtils.getRawType(type.getType()).isPrimitive();
-    }
-
-    @Override
-    public int compare(AnnotatedType o1, AnnotatedType o2) {
-        return ClassUtils.removeAnnotations(o1, nonNullAnnotations).equals(ClassUtils.removeAnnotations(o2, nonNullAnnotations)) ? 0 : -1;
     }
 
     private boolean shouldWrap(GraphQLType type, TypedElement typedElement) {
         return !(type instanceof GraphQLNonNull) && nonNullAnnotations.stream().anyMatch(typedElement::isAnnotationPresent);
     }
 
-    private boolean shouldUnwrap(Object defaultValue, GraphQLType type) {
-        return defaultValue != null && type instanceof GraphQLNonNull;
+    //TODO Make this use hasSetDefaultValue once https://github.com/graphql-java/graphql-java/issues/1958 is fixed
+    private boolean shouldUnwrap(GraphQLInputObjectField field) {
+        return field.getInputFieldDefaultValue().getValue() != null && field.getType() instanceof GraphQLNonNull;
+    }
+
+    private boolean shouldUnwrap(GraphQLArgument argument) {
+        return argument.hasSetDefaultValue() && argument.getType() instanceof GraphQLNonNull;
     }
 }

@@ -2,24 +2,24 @@
 
 > GraphQL SPQR (GraphQL Schema Publisher & Query Resolver, pronounced like _speaker_) is a simple-to-use library for rapid development of GraphQL APIs in Java.
 
-[![Join the chat at https://gitter.im/leangen/graphql-spqr](https://badges.gitter.im/leangen/graphql-spqr.svg)](https://gitter.im/leangen/graphql-spqr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![StackOverflow](https://img.shields.io/badge/StackOverflow-graphql--spqr-brightgreen.svg)](https://stackoverflow.com/questions/tagged/graphql-spqr)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.leangen.graphql/spqr/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.leangen.graphql/spqr)
-[![Javadoc](http://javadoc-badge.appspot.com/io.leangen.graphql/spqr.svg?label=javadoc)](http://www.javadoc.io/doc/io.leangen.graphql/spqr)
-[![Build Status](https://travis-ci.org/leangen/graphql-spqr.svg?branch=master)](https://travis-ci.org/leangen/graphql-spqr)
-[![Hex.pm](https://img.shields.io/hexpm/l/plug.svg?maxAge=2592000)](https://raw.githubusercontent.com/leangen/graphql-spqr/master/LICENSE)
-[![Semver](http://img.shields.io/SemVer/2.0.0.png)](http://semver.org/spec/v2.0.0.html)
+[![Join the chat at https://gitter.im/leangen/graphql-spqr](https://img.shields.io/gitter/room/leangen/graphql-spqr?color=green&logo=gitter&style=flat-square)](https://gitter.im/leangen/graphql-spqr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![StackOverflow](https://img.shields.io/static/v1?label=stackoverflow&message=graphql-spqr&color=green&style=flat-square)](https://stackoverflow.com/questions/tagged/graphql-spqr)
+[![Maven Central](https://img.shields.io/maven-central/v/io.leangen.graphql/spqr?color=green&style=flat-square)](https://maven-badges.herokuapp.com/maven-central/io.leangen.graphql/spqr)
+[![Javadoc](https://img.shields.io/badge/dynamic/json.svg?style=flat-square&prefix=v&color=green&label=javadoc&query=$.response.docs[0].latestVersion&uri=http%3A%2F%2Fsearch.maven.org%2Fsolrsearch%2Fselect%3Fq%3Dg%3A%2522io.leangen.graphql%2522%2BAND%2Ba%3A%2522spqr%2522%26wt%3Djson)](http://www.javadoc.io/doc/io.leangen.graphql/spqr)
+[![Build Status](https://img.shields.io/travis/leangen/graphql-spqr?style=flat-square)](https://travis-ci.org/leangen/graphql-spqr)
+[![License](https://img.shields.io/github/license/leangen/graphql-spqr.svg?style=flat-square)](https://raw.githubusercontent.com/leangen/graphql-spqr/master/LICENSE)
 
    * [Intro](#intro)
-   * [Known issues](#known-issues)
-      * [Kotlin](#kotlin)
-      * [OpenJDK](#openjdk)
    * [Code-first approach](#code-first-approach)
+      * [Still schema-first](#still-schema-first)
    * [Installation](#installation)
    * [Hello world](#hello-world)
    * [Spring Boot Starter](#spring-boot-starter)
    * [Full example](#full-example)
    * [Full tutorial](#full-tutorial)
+   * [Known issues](#known-issues)
+      * [Kotlin](#kotlin)
+      * [OpenJDK](#openjdk)
    * [Asking questions](#asking-questions)
 
 ## Intro
@@ -31,19 +31,6 @@ GraphQL SPQR aims to make it dead simple to add a GraphQL API to _any_ Java proj
 * Allows rapid prototyping and iteration (no boilerplate)
 * Easily used in legacy projects with no changes to the existing code base
 * Has very few dependencies
-
-## Known issues
-
-### Kotlin
-
-Due to a 3 year old [bug](https://youtrack.jetbrains.com/oauth?state=%2Fissue%2FKT-13228), Kotlin properties produce incorrect `AnnotatedType`s on which most of SPQR is based. The most obvious implication is that `@GraphQLNonNull` (and other `TYPE_USE` annotations) won't work when used on Kotlin properties.
-There's nothing that can be done about this from our side so, for the time being, **Kotlin support is a non-goal of this project** but we will try to be compatible where possible.
-
-### OpenJDK
-
-There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202473) in OpenJDK's annotation parser that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious `AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull` occuring
-when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`. Oracle JDK does not have this bug.
-Do note it is only relevant which Java **compiles** the sources, not which Java _runs_ the code. Also note that IntelliJ IDEA comes bundled with OpenJDK, so building the project in IDEA may lead to this error. You should configure your IDE to use the system Java if it is different.
 
 ## Code-first approach
 
@@ -73,9 +60,13 @@ public class Link {
 }
 ```
 
-Both of these blocks contain the exact same information. Worse yet, changing one requires an immediate change to the other. This makes refactoring risky and cumbersome. On the other hand, if you’re trying to introduce a GraphQL API into an existing project, writing the schema practically means re-describing the entire existing model. This is both expensive and error-prone, and still suffers from duplication.
+Both of these blocks contain the exact same information. Worse yet, changing one requires an immediate change to the other. This makes refactoring risky and cumbersome, and the compiler can not help. On the other hand, if you’re trying to introduce a GraphQL API into an existing project, writing the schema practically means re-describing the entire existing model. This is both expensive and error-prone, and still suffers from duplication and lack of tooling.
 
 Instead, GraphQL SPQR takes the code-first approach, by generating the schema from the existing model. This keeps the schema and the model in sync, easing refactoring. It also works well in projects where GraphQL is introduced on top of an existing codebase.
+
+### Still schema-first
+
+Note that developing in the code-first style is still effectively schema-first, the difference is that you develop your schema not in yet another language, but in Java, with your IDE, the compiler and all your tools helping you. Breaking changes to the schema mean the compilation will fail. No need for linters or other fragile hacks.
 
 ## Installation
 
@@ -87,14 +78,14 @@ Maven
 <dependency>
     <groupId>io.leangen.graphql</groupId>
     <artifactId>spqr</artifactId>
-    <version>0.10.0</version>
+    <version>0.12.0</version>
 </dependency>
 ```
 
 Gradle
 
 ```groovy
-compile 'io.leangen.graphql:spqr:0.10.0'
+compile 'io.leangen.graphql:spqr:0.12.0'
 ```
 
 ## Hello world
@@ -190,6 +181,24 @@ See more complete examples using Spring Boot at https://github.com/leangen/graph
 ## Full tutorial
 
 _Coming soon_
+
+## Known issues
+
+### Kotlin
+
+For best compatibility, Kotlin 1.3.70 or later is needed with the compiler argument `-Xemit-jvm-type-annotations`.
+This instructs the Kotlin compiler to produce type-use annotations (introduced in JDK8) correctly.
+See [KT-35843](https://youtrack.jetbrains.com/issue/KT-35843) and [KT-13228](https://youtrack.jetbrains.com/issue/KT-13228) for details.
+
+### OpenJDK
+
+There's [a bug](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8202473) in OpenJDK's annotation parser before version **16 b17** that causes annotations on generic type parameters to be duplicated. You may experience this in a form of a mysterious
+```
+AnnotationFormatError: Duplicate annotation for class: interface io.leangen.graphql.annotations.GraphQLNonNull
+```
+being thrown when using `@GraphQLNonNull` both on a type and on its generic parameters e.g. `@GraphQLNonNull List<@GraphQLNonNull Item>`.
+
+Fortunately, very few users seem to experience this problem, even on affected JDKs. Do note it is only relevant which Java **compiles** the sources, not which Java _runs_ the code. Also note that IntelliJ IDEA comes bundled with a JDK of its own, so building the project in IDEA may lead to this error. You should configure your IDE to use the system Java if it is different.
 
 ## Asking questions
 

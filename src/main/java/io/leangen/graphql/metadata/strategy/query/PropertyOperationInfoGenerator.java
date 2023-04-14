@@ -13,7 +13,7 @@ public class PropertyOperationInfoGenerator extends AnnotatedOperationInfoGenera
 
     @Override
     public String name(OperationInfoGeneratorParams params) {
-        List<? extends AnnotatedElement> elements = params.getElement().getElements();
+        List<AnnotatedElement> elements = params.getElement().getElements();
         Optional<String> field = Utils.extractInstances(elements, Field.class).findFirst().map(Field::getName);
         Optional<String> getter = Utils.extractInstances(elements, Method.class).findFirst().map(ClassUtils::getFieldNameFromGetter);
 

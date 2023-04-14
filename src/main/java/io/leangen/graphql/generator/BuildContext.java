@@ -3,7 +3,7 @@ package io.leangen.graphql.generator;
 import graphql.relay.Relay;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLType;
+import graphql.schema.GraphQLNamedType;
 import graphql.schema.GraphqlTypeComparatorRegistry;
 import graphql.schema.TypeResolver;
 import io.leangen.graphql.execution.GlobalEnvironment;
@@ -19,6 +19,7 @@ import io.leangen.graphql.metadata.strategy.query.DirectiveBuilder;
 import io.leangen.graphql.metadata.strategy.query.DirectiveBuilderParams;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
+import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
@@ -54,7 +55,7 @@ public class BuildContext {
     public final String[] basePackages;
     public final MessageBundle messageBundle;
     public final ValueMapperFactory valueMapperFactory;
-    public final InputFieldBuilderRegistry inputFieldBuilders;
+    public final InputFieldBuilder inputFieldBuilder;
     public final InclusionStrategy inclusionStrategy;
     public final ScalarDeserializationStrategy scalarStrategy;
     public final TypeTransformer typeTransformer;
@@ -79,12 +80,10 @@ public class BuildContext {
      * @param typeMappers Repository of all registered {@link io.leangen.graphql.generator.mapping.TypeMapper}s
      * @param transformers Repository of all registered {@link io.leangen.graphql.generator.mapping.SchemaTransformer}s
      * @param valueMapperFactory The factory used to produce {@link ValueMapper} instances
-     * @param typeInfoGenerator Generates type name/description
-     * @param messageBundle The global translation message bundle
      * @param interfaceStrategy The strategy deciding what Java type gets mapped to a GraphQL interface
      * @param scalarStrategy The strategy deciding how abstract Java types are discovered
      * @param abstractInputHandler The strategy deciding what Java type gets mapped to a GraphQL interface
-     * @param inputFieldBuilders The strategy deciding how GraphQL input fields are discovered from Java types
+     * @param inputFieldBuilder The strategy deciding how GraphQL input fields are discovered from Java types
      * @param interceptorFactory The factory to use to obtain interceptors applicable to a resolver
      * @param directiveBuilder The factory used to create directives where applicable
      * @param relayMappingConfig Relay specific configuration
@@ -92,11 +91,11 @@ public class BuildContext {
      */
     public BuildContext(String[] basePackages, GlobalEnvironment environment, OperationRegistry operationRegistry,
                         TypeMapperRegistry typeMappers, SchemaTransformerRegistry transformers, ValueMapperFactory valueMapperFactory,
-                        TypeInfoGenerator typeInfoGenerator, MessageBundle messageBundle, InterfaceMappingStrategy interfaceStrategy,
-                        ScalarDeserializationStrategy scalarStrategy, TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
-                        InputFieldBuilderRegistry inputFieldBuilders, ResolverInterceptorFactory interceptorFactory,
+                        InterfaceMappingStrategy interfaceStrategy, ScalarDeserializationStrategy scalarStrategy,
+                        TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
+                        InputFieldBuilder inputFieldBuilder, ResolverInterceptorFactory interceptorFactory,
                         DirectiveBuilder directiveBuilder, InclusionStrategy inclusionStrategy, RelayMappingConfig relayMappingConfig,
-                        Collection<GraphQLType> knownTypes, List<AnnotatedType> additionalDirectives, Comparator<AnnotatedType> typeComparator,
+                        Collection<GraphQLNamedType> knownTypes, List<AnnotatedType> additionalDirectives, Comparator<AnnotatedType> typeComparator,
                         ImplementationDiscoveryStrategy implementationStrategy, GraphQLCodeRegistry.Builder codeRegistry) {
         this.operationRegistry = operationRegistry;
         this.typeRegistry = environment.typeRegistry;
@@ -106,18 +105,18 @@ public class BuildContext {
         this.typeCache = new TypeCache(knownTypes);
         this.additionalDirectives = additionalDirectives;
         this.typeMappers = typeMappers;
-        this.typeInfoGenerator = typeInfoGenerator;
-        this.messageBundle = messageBundle;
+        this.typeInfoGenerator = environment.typeInfoGenerator;
+        this.messageBundle = environment.messageBundle;
         this.relay = environment.relay;
         this.node = knownTypes.stream()
                 .filter(GraphQLUtils::isRelayNodeInterface)
                 .findFirst().map(type -> (GraphQLInterfaceType) type)
-                .orElse(relay.nodeInterface(new RelayNodeTypeResolver(this.typeRegistry, typeInfoGenerator, messageBundle)));
-        this.typeResolver = new DelegatingTypeResolver(this.typeRegistry, typeInfoGenerator, messageBundle);
+                .orElse(relay.nodeInterface(new RelayNodeTypeResolver(environment)));
+        this.typeResolver = new DelegatingTypeResolver(environment);
         this.interfaceStrategy = interfaceStrategy;
         this.basePackages = basePackages;
         this.valueMapperFactory = valueMapperFactory;
-        this.inputFieldBuilders = inputFieldBuilders;
+        this.inputFieldBuilder = inputFieldBuilder;
         this.inclusionStrategy = inclusionStrategy;
         this.scalarStrategy = scalarStrategy;
         this.typeTransformer = typeTransformer;
@@ -135,6 +134,7 @@ public class BuildContext {
         return messageBundle.interpolate(template);
     }
 
+    @SuppressWarnings("rawtypes")
     ValueMapper createValueMapper(Stream<AnnotatedType> inputTypes) {
         List<Class> abstractTypes = inputTypes
                 .flatMap(input -> abstractInputHandler.findConstituentAbstractTypes(input, this).stream().map(ClassUtils::getRawType))
@@ -156,7 +156,7 @@ public class BuildContext {
     public DirectiveBuilderParams directiveBuilderParams(List<Class<?>> concreteSubTypes) {
         return DirectiveBuilderParams.builder()
                 .withEnvironment(globalEnvironment)
-                .withInputFieldBuilders(inputFieldBuilders)
+                .withInputFieldBuilder(inputFieldBuilder)
                 .withConcreteSubTypes(concreteSubTypes)
                 .build();
     }

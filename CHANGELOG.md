@@ -4,11 +4,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.12.1] - 2022-12-18
+### Changed
+- [Breaking] Upgraded to graphql-java v20.0 [#437](https://github.com/leangen/graphql-spqr/issues/437)
+
+## [0.12.0] - 2022-11-28
+### Changed
+- [Breaking] Upgraded to graphql-java v19.2 [#433](https://github.com/leangen/graphql-spqr/issues/433)
+- [Breaking] Replace batching strategy with `DataLoader` [#432](https://github.com/leangen/graphql-spqr/issues/432)
+- [Breaking] Remove custom `TypeResolutionEnvironment` (replaced with constructor-injected `GlobalEnvironment`)
+- [Breaking] Remove implicit mapping directives [#435](https://github.com/leangen/graphql-spqr/issues/435)
+- ### Fixed
+- Applied directives are now correctly defined in the schema (and will be present in the SDL)
+
+## [0.11.2] - 2021-03-21
 ### Added
+- Make it easy to customize how `Executable`s are created [#383](https://github.com/leangen/graphql-spqr/issues/383)
+### Changed
+- Improve `GraphQLSchemaGenerator` API and JavaDoc [#384](https://github.com/leangen/graphql-spqr/issues/384)
+### Fixed
+- Support for `@JsonTypeInfo` [#353](https://github.com/leangen/graphql-spqr/issues/353)
+- [Breaking] Bring `MapToListTypeAdapter` in line with the other adapters [#382](https://github.com/leangen/graphql-spqr/issues/382)
+
+## [0.11.1] - 2021-02-09
+### Changed
+- Upgraded to graphql-java v16.2
+### Fixed
+- Complexity analysis broken with multiple named fragments [#379](https://github.com/leangen/graphql-spqr/issues/379)
+
+## [0.11.0] - 2021-01-31
+### Added
+- Add `GraphQLError`s to the response via `ResolutionEnvironment` [#346](https://github.com/leangen/graphql-spqr/issues/346)
+### Changed
+- [Breaking] Upgraded to graphql-java v16.1 [#373](https://github.com/leangen/graphql-spqr/issues/373)
+- [Breaking] Distinguish between no default value and null default value [#374](https://github.com/leangen/graphql-spqr/issues/374)
+
+## [0.10.1] - 2019-12-30
+### Added
+- Easy hierarchical names for nested types: `DefaultTypeInfoGenerator#withHierarchicalNames` [#310](https://github.com/leangen/graphql-spqr/issues/310)
 - Reintroduce `fieldOrder` and add `inputFieldOrder` [#279](https://github.com/leangen/graphql-spqr/issues/279)
 - Make it easier to apply a `ResolverBuilder` to specific types only [#277](https://github.com/leangen/graphql-spqr/issues/277)
 - Make it easy to filter interfaces in `InterfaceMappingStrategy` [#299](https://github.com/leangen/graphql-spqr/issues/299)
+- Support `DataFetcherResult` even when not declared [#318](https://github.com/leangen/graphql-spqr/issues/318)
+- Add `reason` field to `@GraphQLIgnore` annotation
+
+### Changed
+- Relax the mapping rules for abstract inputs (makes it easy to use e.g. Immutables and AutoValue) [#293](https://github.com/leangen/graphql-spqr/issues/293) [#245](https://github.com/leangen/graphql-spqr/issues/245)
+- Don't scan for implementations of concrete input types by default [#332](https://github.com/leangen/graphql-spqr/issues/332)
+- Collect transitive interfaces for object types [#282](https://github.com/leangen/graphql-spqr/issues/282)
+- Relax name collision detection: only consider `io.leangen` annotations [#232](https://github.com/leangen/graphql-spqr/issues/232)
+- Upgraded to graphql-java v13
+  
+### Fixed
+- [Breaking] Filtering of fields/methods/parameters now happens _before_ type resolution [#298](https://github.com/leangen/graphql-spqr/issues/298)
+- Complexity calculation for multi-root queries [#313](https://github.com/leangen/graphql-spqr/issues/313)
+- `ResolverInterceptor`s must see real underlying exceptions [#314](https://github.com/leangen/graphql-spqr/issues/314)
+- `@GraphQLIgnore` should affect auto discovery only if applied directly [#288](https://github.com/leangen/graphql-spqr/issues/288)
 
 ## [0.10.0] - 2019-05-24
 ### Added

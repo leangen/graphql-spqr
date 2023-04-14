@@ -26,7 +26,7 @@ import java.util.Objects;
 /**
  * @author Bojan Tomic (kaqqao)
  */
-public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeserializationStrategy {
+public class GsonValueMapperFactory implements ValueMapperFactory<GsonValueMapper>, ScalarDeserializationStrategy {
 
     private final Gson prototype;
     private final FieldNamingStrategy fieldNamingStrategy;
@@ -143,7 +143,7 @@ public class GsonValueMapperFactory implements ValueMapperFactory, ScalarDeseria
         private Gson prototype;
         private FieldNamingStrategy fieldNamingStrategy;
         private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
-        private List<Configurer> configurers = new ArrayList<>(Collections.singleton(new AbstractClassAdapterConfigurer()));
+        private final List<Configurer> configurers = new ArrayList<>(Collections.singleton(new AbstractClassAdapterConfigurer()));
 
         public Builder withFieldNamingStrategy(FieldNamingStrategy fieldNamingStrategy) {
             this.fieldNamingStrategy = fieldNamingStrategy;

@@ -1,5 +1,6 @@
 package io.leangen.graphql.generator;
 
+import graphql.GraphQLContext;
 import graphql.cachecontrol.CacheControl;
 import graphql.execution.ExecutionId;
 import graphql.execution.ExecutionStepInfo;
@@ -16,9 +17,11 @@ import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.GraphQLType;
 import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderRegistry;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
@@ -53,8 +56,19 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     }
 
     @Override
+    public <T> T getArgumentOrDefault(String name, T defaultValue) {
+        return delegate.getArgumentOrDefault(name, defaultValue);
+    }
+
+    @Override
+    @Deprecated
     public <T> T getContext() {
         return delegate.getContext();
+    }
+
+    @Override
+    public GraphQLContext getGraphQlContext() {
+        return delegate.getGraphQlContext();
     }
 
     @Override
@@ -134,8 +148,19 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     }
 
     @Override
+    public DataLoaderRegistry getDataLoaderRegistry() {
+        return delegate.getDataLoaderRegistry();
+    }
+
+    @Override
+    @Deprecated
     public CacheControl getCacheControl() {
         return delegate.getCacheControl();
+    }
+
+    @Override
+    public Locale getLocale() {
+        return delegate.getLocale();
     }
 
     @Override

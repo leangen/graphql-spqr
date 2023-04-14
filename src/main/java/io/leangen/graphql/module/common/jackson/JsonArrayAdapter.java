@@ -13,6 +13,7 @@ import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMappe
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,8 +37,8 @@ public class JsonArrayAdapter extends AbstractTypeSubstitutingMapper<List<JsonNo
     @Override
     public List convertOutput(ArrayNode original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         List<Object> nodes = new ArrayList<>(original.size());
-        for (JsonNode element : original) {
-            nodes.add(resolutionEnvironment.convertOutput(element, JSON));
+        for (JsonNode jsonNode : original) {
+            nodes.add(resolutionEnvironment.convertOutput(jsonNode, resolutionEnvironment.resolver.getTypedElement(), JSON));
         }
         return nodes;
     }
@@ -50,5 +51,10 @@ public class JsonArrayAdapter extends AbstractTypeSubstitutingMapper<List<JsonNo
     @Override
     public boolean supports(AnnotatedType type) {
         return ClassUtils.isSuperClass(ArrayNode.class, type);
+    }
+
+    @Override
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
+        return supports(type);
     }
 }

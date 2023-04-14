@@ -3,7 +3,9 @@ package io.leangen.graphql.metadata.strategy.value;
 import io.leangen.graphql.annotations.GraphQLInputField;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.messages.MessageBundle;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.ReservedStrings;
 import io.leangen.graphql.util.Utils;
 
@@ -38,28 +40,20 @@ public class InputFieldInfoGenerator {
         return Utils.or(explicit, implicit).filter(Utils::isNotEmpty).map(messageBundle::interpolate);
     }
 
-    public Optional<Object> defaultValue(List<? extends AnnotatedElement> candidates, AnnotatedType type, GlobalEnvironment environment) {
-        return candidates.stream()
+    public DefaultValue defaultValue(List<? extends AnnotatedElement> candidates, AnnotatedType type, GlobalEnvironment environment) {
+        Optional<? extends AnnotatedElement> match = candidates.stream()
                 .filter(element -> element.isAnnotationPresent(GraphQLInputField.class))
-                .findFirst()
-                .map(element -> {
-                    GraphQLInputField ann = element.getAnnotation(GraphQLInputField.class);
-                    try {
-                        return defaultValueProvider(ann.defaultValueProvider(), environment)
-                                .getDefaultValue(element, type, environment.messageBundle.interpolate(ReservedStrings.decode(ann.defaultValue())));
-                    } catch (ReflectiveOperationException e) {
-                        throw new IllegalArgumentException(
-                                ann.defaultValueProvider().getName() + " must expose a public default constructor, or a constructor accepting " + GlobalEnvironment.class.getName(), e);
-                    }
-                });
-    }
+                .findFirst();
 
-    @SuppressWarnings("WeakerAccess")
-    protected <T extends DefaultValueProvider> T defaultValueProvider(Class<T> type, GlobalEnvironment environment) throws ReflectiveOperationException {
+        if (!match.isPresent()) return DefaultValue.EMPTY;
+
+        GraphQLInputField ann = match.get().getAnnotation(GraphQLInputField.class);
         try {
-            return type.getConstructor(GlobalEnvironment.class).newInstance(environment);
-        } catch (NoSuchMethodException e) {
-            return type.getConstructor().newInstance();
+            return ClassUtils.instance(ann.defaultValueProvider())
+                    .getDefaultValue(match.get(), type, ReservedStrings.decodeDefault(environment.messageBundle.interpolate(ann.defaultValue())));
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    ann.defaultValueProvider().getName() + " must expose a public default constructor", e);
         }
     }
 }

@@ -47,7 +47,7 @@ public class InterceptorTest {
         assertNoErrors(result);
 
         input = input.transform(builder -> builder.query("{admin}"));
-        try(TestLog log = new TestLog(SimpleDataFetcherExceptionHandler.class)) {
+        try(TestLog log = TestLog.unsafe(SimpleDataFetcherExceptionHandler.class)) {
             result = graphQL.execute(input);
         }
         assertEquals(1, result.getErrors().size());
@@ -73,9 +73,10 @@ public class InterceptorTest {
 
     @Test
     public void exceptionLogInterceptorTest() {
+        ExceptionLoggingInterceptor interceptor = new ExceptionLoggingInterceptor();
         GraphQLSchema schema = new TestSchemaGenerator()
                 .withOperationsFromSingleton(new BrokenService())
-                .withResolverInterceptors(new ExceptionLoggingInterceptor())
+                .withResolverInterceptors(interceptor)
                 .generate();
 
         GraphQL graphQL = GraphQL.newGraphQL(schema).build();
@@ -83,11 +84,12 @@ public class InterceptorTest {
                 .query("{test}")
                 .build();
 
-        try(TestLog log = new TestLog(ExceptionLoggingInterceptor.class)) {
+        try (TestLog log = new TestLog(ExceptionLoggingInterceptor.class)) {
             ExecutionResult result = graphQL.execute(input);
             assertNoErrors(result);
             assertValueAtPathEquals(null, result, "test");
             assertWarningsLogged(log.getEvents(), "Bad mojo");
+            assertTrue(interceptor.exception instanceof IllegalArgumentException); //the exception must not be wrapped
         }
     }
 
@@ -130,6 +132,7 @@ public class InterceptorTest {
 
     private static class ExceptionLoggingInterceptor implements ResolverInterceptor {
 
+        Exception exception;
         private static final Logger log = LoggerFactory.getLogger(ExceptionLoggingInterceptor.class);
 
         @Override
@@ -138,6 +141,7 @@ public class InterceptorTest {
                 return continuation.proceed(context);
             } catch (Exception e) {
                 log.warn("Bad mojo!", e);
+                this.exception = e;
                 return null;
             }
         }

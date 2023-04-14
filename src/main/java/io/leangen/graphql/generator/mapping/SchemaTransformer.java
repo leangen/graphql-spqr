@@ -1,5 +1,7 @@
 package io.leangen.graphql.generator.mapping;
 
+import graphql.schema.GraphQLAppliedDirective;
+import graphql.schema.GraphQLAppliedDirectiveArgument;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLDirective;
 import graphql.schema.GraphQLFieldDefinition;
@@ -12,6 +14,7 @@ import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 
+@SuppressWarnings("unused")
 public interface SchemaTransformer {
 
     default GraphQLFieldDefinition transformField(GraphQLFieldDefinition field, Operation operation, OperationMapper operationMapper, BuildContext buildContext) {
@@ -30,7 +33,15 @@ public interface SchemaTransformer {
         return argument;
     }
 
+    default GraphQLAppliedDirectiveArgument transformArgument(GraphQLAppliedDirectiveArgument argument, DirectiveArgument directiveArgument, OperationMapper operationMapper, BuildContext buildContext) {
+        return argument;
+    }
+
     default GraphQLDirective transformDirective(GraphQLDirective directive, Directive directiveModel, OperationMapper operationMapper, BuildContext buildContext) {
+        return directive;
+    }
+
+    default GraphQLAppliedDirective transformDirective(GraphQLAppliedDirective directive, Directive directiveModel, OperationMapper operationMapper, BuildContext buildContext) {
         return directive;
     }
 }

@@ -3,15 +3,17 @@ package io.leangen.graphql.metadata;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.execution.Executable;
+import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Class representing a single method used to resolve a specific query given specific arguments.
@@ -21,6 +23,7 @@ import java.util.stream.Stream;
  *
  * @author bojan.tomic (kaqqao)
  */
+@SuppressWarnings("WeakerAccess")
 public class Resolver {
 
     private final String operationName;
@@ -28,13 +31,15 @@ public class Resolver {
     private final String operationDeprecationReason;
     private final List<OperationArgument> arguments;
     private final TypedElement typedElement;
+    private final Class<?> rawReturnType;
     private final Set<OperationArgument> contextArguments;
     private final String complexityExpression;
-    private final Executable executable;
+    private final Executable<?> executable;
     private final boolean batched;
+    private final boolean async;
 
     public Resolver(String operationName, String operationDescription, String operationDeprecationReason, boolean batched,
-                    Executable executable, TypedElement typedElement, List<OperationArgument> arguments, String complexityExpression) {
+                    Executable<?> executable, TypedElement typedElement, List<OperationArgument> arguments, String complexityExpression) {
 
         Set<OperationArgument> contextArguments = resolveContexts(arguments);
         
@@ -47,13 +52,15 @@ public class Resolver {
         this.operationDeprecationReason = operationDeprecationReason;
         this.arguments = arguments;
         this.typedElement = typedElement;
+        this.rawReturnType = ClassUtils.getRawType(typedElement.getJavaType().getType());
         this.contextArguments = contextArguments;
         this.complexityExpression = complexityExpression;
         this.executable = executable;
         this.batched = batched;
+        this.async = isListPromise(typedElement.getJavaType());
     }
 
-    private String validateName(String operationName, Executable executable) {
+    private String validateName(String operationName, Executable<?> executable) {
         if (Utils.isEmpty(operationName)) {
             throw new MappingException("The operation name for executable " + executable.toString() + " could not be determined");
         }
@@ -61,13 +68,23 @@ public class Resolver {
     }
 
     private void validateBatching(String executableSignature, AnnotatedType returnType, Set<OperationArgument> contextArguments) {
-        if (contextArguments.isEmpty() || !Stream.concat(contextArguments.stream().map(arg -> arg.getJavaType().getType()), Stream.of(returnType.getType()))
-                .allMatch(type -> GenericTypeReflector.isSuperType(List.class, type))) {
+        if (contextArguments.isEmpty()
+                || !contextArguments.stream().map(arg -> arg.getJavaType().getType()).allMatch(type -> GenericTypeReflector.isSuperType(List.class, type))
+                || !(GenericTypeReflector.isSuperType(List.class, returnType.getType()) || isListPromise(returnType))) {
             throw new IllegalArgumentException("Resolver method " + executableSignature
-                    + " is marked as batched but doesn't return a list or its context argument is not a list");
+                    + " is marked as batched but doesn't return a (promise of) list or its context argument is not a list");
         }
     }
-    
+
+    private boolean isListPromise(AnnotatedType type) {
+        if (type.getType() instanceof ParameterizedType) {
+            ParameterizedType pType = (ParameterizedType) type.getType();
+            return GenericTypeReflector.isSuperType(CompletionStage.class, pType)
+                    && GenericTypeReflector.isSuperType(List.class, pType.getActualTypeArguments()[0]);
+        }
+        return false;
+    }
+
     /**
      * Finds the argument representing the query context (object returned by the parent query), if it exists.
      * Query context arguments potentially exist only for the resolvers of nestable queries.
@@ -116,6 +133,10 @@ public class Resolver {
         return batched;
     }
 
+    public boolean isAsync() {
+        return async;
+    }
+
     public String getOperationDescription() {
         return operationDescription;
     }
@@ -153,11 +174,15 @@ public class Resolver {
         return typedElement.getJavaType();
     }
 
+    public Class<?> getRawReturnType() {
+        return rawReturnType;
+    }
+
     public String getComplexityExpression() {
         return complexityExpression;
     }
 
-    public Executable getExecutable() {
+    public Executable<?> getExecutable() {
         return executable;
     }
 

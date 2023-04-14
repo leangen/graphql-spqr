@@ -1,11 +1,7 @@
 package io.leangen.graphql.util;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -62,12 +58,19 @@ public class Utils {
         return String.valueOf(newChars);
     }
 
-    public static boolean isArrayEmpty(Object array) {
-        return !isArrayNotEmpty(array);
+    public static <T> boolean isEmpty(T[] array) {
+        return !isNotEmpty(array);
     }
 
-    public static boolean isArrayNotEmpty(Object array) {
-        return array != null && Array.getLength(array) != 0;
+    public static <T>  boolean isNotEmpty(T[] array) {
+        return array != null && array.length > 0;
+    }
+
+    public static <T> T[] requireNonEmpty(T[] array) {
+        if (isEmpty(array)) {
+            throw new IllegalArgumentException("Empty array is not a valid value");
+        }
+        return array;
     }
 
     public static int indexOf(String[] strings, String element, int missingIndex) {
@@ -85,7 +88,23 @@ public class Utils {
         return Arrays.stream(streams).reduce(Stream::concat).orElse(Stream.empty());
     }
 
-    public static <T> Stream<T> extractInstances(Collection<?> collection, Class<T> clazz) {
+    public static <C extends Collection<T>, T> boolean isEmpty(C collection) {
+        return collection == null || collection.isEmpty();
+    }
+
+    public static <C extends Collection<T>, T> boolean isNotEmpty(C collection) {
+        return !isEmpty(collection);
+    }
+
+    public static <C extends Collection<T>, T> C defaultIfEmpty(C collection, C fallback) {
+        return collection == null || collection.isEmpty() ? fallback : collection;
+    }
+
+    public static <T> Stream<T> stream(Collection<T> collection) {
+        return collection == null ? Stream.empty() : collection.stream();
+    }
+
+    public static <T> Stream<T> extractInstances(Collection<? super T> collection, Class<T> clazz) {
         return collection.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 
@@ -114,5 +133,17 @@ public class Utils {
 
     public static <T> Predicate<T> acceptAll() {
         return x -> true;
+    }
+
+    public static <T> CompletableFuture<T> failedFuture(Throwable throwable) {
+        CompletableFuture<T> failed = new CompletableFuture<>();
+        failed.completeExceptionally(throwable);
+        return failed;
+    }
+
+    public static <K, V> Map<K, V> put(Map<K, V> map, K k, V v) {
+        Map<K, V> fresh = new HashMap<>(map);
+        fresh.put(k, v);
+        return fresh;
     }
 }

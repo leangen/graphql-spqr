@@ -3,10 +3,7 @@ package io.leangen.graphql;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import graphql.execution.batched.Batched;
-import graphql.execution.batched.BatchedExecutionStrategy;
-import graphql.schema.GraphQLSchema;
-import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.Batched;
 import io.leangen.graphql.annotations.GraphQLContext;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLRootContext;
@@ -17,6 +14,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -27,21 +26,33 @@ import static org.junit.Assert.assertTrue;
 public class BatchingTest {
 
     @Test
+    public void syncBatchingTest() {
+        batchingTest("education");
+    }
+
+    @Test
+    public void asyncBatchingTest() {
+        batchingTest("educationAsync");
+    }
+
     @SuppressWarnings("unchecked")
-    public void batchingTest() {
-        GraphQLSchema schema = new TestSchemaGenerator()
-                .withOperationsFromSingleton(new CandidatesService())
-                .generate();
+    private void batchingTest(String fieldName) {
+        GraphQLSchemaGenerator generator = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new CandidatesService());
+        ExecutableSchema schema = generator
+                .generateExecutable();
 
         AtomicBoolean runBatched = new AtomicBoolean(false);
-        @SuppressWarnings("deprecation")
-        GraphQL batchExe = GraphQLRuntime.newGraphQL(schema).queryExecutionStrategy(new BatchedExecutionStrategy()).build();
+        GraphQL batchExe = GraphQLRuntime.newGraphQL(schema).build();
         ExecutionResult result;
         result = batchExe.execute(ExecutionInput.newExecutionInput()
-                .query("{candidates {educations {startYear}}}")
-                .context(runBatched).build());
+                .query("{candidates {" + fieldName + " {startYear}}}")
+                .context(runBatched)
+                .build());
+        assertNoErrors(result);
         assertTrue("Query didn't run in batched mode", runBatched.get());
         assertNoErrors(result);
+        //noinspection rawtypes
         assertEquals(3, ((Map<String, List>) result.getData()).get("candidates").size());
 
         //TODO put this back when/if the ability to expose nested queries as top-level is reintroduced
@@ -71,12 +82,18 @@ public class BatchingTest {
 
         @Batched
         @GraphQLQuery
-        public List<Education> educations(@GraphQLArgument(name = "users") @GraphQLContext List<SimpleUser> users, @GraphQLRootContext AtomicBoolean flag) {
+        public List<Education> education(@GraphQLContext List<SimpleUser> users, @GraphQLRootContext AtomicBoolean flag) {
             assertEquals(3, users.size());
             flag.getAndSet(true);
             return users.stream()
                     .map(u -> u.getEducation(2000 + u.getFullName().charAt(0)))
                     .collect(Collectors.toList());
+        }
+
+        @Batched
+        @GraphQLQuery
+        public CompletionStage<List<Education>> educationAsync(@GraphQLContext List<SimpleUser> users, @GraphQLRootContext AtomicBoolean flag) {
+            return CompletableFuture.supplyAsync(() -> education(users, flag));
         }
     }
 }

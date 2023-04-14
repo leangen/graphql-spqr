@@ -8,12 +8,14 @@ public class Directive {
 
     private final String name;
     private final String description;
+    private final boolean repeatable;
     private final Introspection.DirectiveLocation[] locations;
     private final List<DirectiveArgument> arguments;
 
-    public Directive(String name, String description, Introspection.DirectiveLocation[] locations, List<DirectiveArgument> arguments) {
+    public Directive(String name, String description, boolean repeatable, Introspection.DirectiveLocation[] locations, List<DirectiveArgument> arguments) {
         this.name = name;
         this.description = description;
+        this.repeatable = repeatable;
         this.locations = locations;
         this.arguments = arguments;
     }
@@ -24,6 +26,10 @@ public class Directive {
 
     public String getDescription() {
         return description;
+    }
+
+    public boolean isRepeatable() {
+        return repeatable;
     }
 
     public Introspection.DirectiveLocation[] getLocations() {

@@ -8,6 +8,7 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Scalars;
 
 import java.lang.reflect.AnnotatedArrayType;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Array;
 import java.util.Collections;
@@ -17,6 +18,7 @@ import java.util.stream.IntStream;
 /**
  * @author Bojan Tomic (kaqqao)
  */
+@SuppressWarnings("rawtypes")
 public class ArrayAdapter extends AbstractTypeSubstitutingMapper implements DelegatingOutputConverter {
 
     @Override
@@ -30,9 +32,9 @@ public class ArrayAdapter extends AbstractTypeSubstitutingMapper implements Dele
     }
 
     @Override
-    public Object convertOutput(Object original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+    public Object convertOutput(Object original, AnnotatedType type, ResolutionEnvironment env) {
         return IntStream.range(0, Array.getLength(original))
-                .mapToObj(i -> resolutionEnvironment.convertOutput(Array.get(original, i), getElementType(type)))
+                .mapToObj(i -> env.convertOutput(Array.get(original, i), env.resolver.getTypedElement(), getElementType(type)))
                 .toArray();
     }
 
@@ -47,7 +49,7 @@ public class ArrayAdapter extends AbstractTypeSubstitutingMapper implements Dele
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return !Scalars.isScalar(type.getType()) && type instanceof AnnotatedArrayType;
     }
 

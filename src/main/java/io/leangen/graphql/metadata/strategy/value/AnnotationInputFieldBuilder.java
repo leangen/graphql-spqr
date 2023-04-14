@@ -19,7 +19,7 @@ public class AnnotationInputFieldBuilder implements InputFieldBuilder {
                         AnnotationMappingUtils.inputFieldDescription(method),
                         new TypedElement(GenericTypeReflector.annotate(method.getReturnType()), method),
                         null,
-                        method.getDefaultValue()
+                        AnnotationMappingUtils.inputFieldDefaultValue(method)
                 ))
                 .collect(Collectors.toSet());
     }

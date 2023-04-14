@@ -9,6 +9,7 @@ import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLScalar;
 import io.leangen.graphql.execution.GlobalEnvironment;
+import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.InputField;
 import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.strategy.value.InputFieldBuilder;
@@ -24,38 +25,38 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static io.leangen.graphql.metadata.DefaultValue.EMPTY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class InputFieldDiscoveryTest {
 
-    private JacksonValueMapper jackson = new JacksonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
-    private GsonValueMapper gson = new GsonValueMapperFactory().getValueMapper(Collections.emptyMap(), ENVIRONMENT);
+    private final JacksonValueMapper jackson = new JacksonValueMapperFactory().getValueMapper();
+    private final GsonValueMapper gson = new GsonValueMapperFactory().getValueMapper();
 
     private static final TypedElement IGNORED_TYPE = new TypedElement(GenericTypeReflector.annotate(Object.class), (AnnotatedElement) null);
-    private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
+    private static final GlobalEnvironment ENVIRONMENT = GlobalEnvironment.EMPTY;
 
     private static final InputField[] expectedDefaultFields = new InputField[] {
-            new InputField("field1", null, IGNORED_TYPE, null, null),
-            new InputField("field2", null, IGNORED_TYPE, null, null),
-            new InputField("field3", null, IGNORED_TYPE, null, null)
+            new InputField("field1", null, IGNORED_TYPE, null, EMPTY),
+            new InputField("field2", null, IGNORED_TYPE, null, EMPTY),
+            new InputField("field3", null, IGNORED_TYPE, null, EMPTY)
     };
     private static final InputField[] expectedFilteredDefaultFields = new InputField[] {expectedDefaultFields[0], expectedDefaultFields[2]};
     private static final InputField[] expectedExplicitFields = new InputField[] {
-            new InputField("aaa", "AAA", IGNORED_TYPE, null, "AAAA"),
-            new InputField("bbb", "BBB", IGNORED_TYPE, null, 2222),
-            new InputField("ccc", "CCC", IGNORED_TYPE, null, 3333)
+            new InputField("aaa", "AAA", IGNORED_TYPE, null, new DefaultValue("AAAA")),
+            new InputField("bbb", "BBB", IGNORED_TYPE, null, new DefaultValue(2222)),
+            new InputField("ccc", "CCC", IGNORED_TYPE, null, new DefaultValue(3333))
     };
     private static final InputField[] expectedQueryFields = new InputField[] {
-            new InputField("aaa", null, IGNORED_TYPE, null, null),
-            new InputField("bbb", null, IGNORED_TYPE, null, null),
-            new InputField("ccc", null, IGNORED_TYPE, null, null)
+            new InputField("aaa", null, IGNORED_TYPE, null, EMPTY),
+            new InputField("bbb", null, IGNORED_TYPE, null, EMPTY),
+            new InputField("ccc", null, IGNORED_TYPE, null, EMPTY)
     };
     
     @Test
@@ -215,13 +216,13 @@ public class InputFieldDiscoveryTest {
                         && Objects.equals(f1.getDefaultValue(), f2.getDefaultValue()))));
     }
 
-    private class FieldsOnly {
+    private static class FieldsOnly {
         public String field1;
         public int field2;
         public Object field3;
     }
 
-    private class GettersOnly {
+    private static class GettersOnly {
         private String field1;
         private int field2;
         private Object field3;
@@ -239,7 +240,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
-    private class SettersOnly {
+    private static class SettersOnly {
         private String field1;
         private int field2;
         private Object field3;
@@ -257,7 +258,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
-    private class ExplicitFields {
+    private static class ExplicitFields {
         @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         public String field1;
         @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
@@ -266,7 +267,7 @@ public class InputFieldDiscoveryTest {
         public Object field3;
     }
 
-    private class ExplicitGetters {
+    private static class ExplicitGetters {
         private String field1;
         private int field2;
         private Object field3;
@@ -287,7 +288,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
-    private class ExplicitSetters {
+    private static class ExplicitSetters {
         private String field1;
         private int field2;
         private Object field3;
@@ -308,7 +309,7 @@ public class InputFieldDiscoveryTest {
         }
     }
     
-    private class QueryFields {
+    private static class QueryFields {
         @GraphQLQuery(name = "aaa")
         public String field1;
         @GraphQLQuery(name = "bbb")
@@ -317,7 +318,7 @@ public class InputFieldDiscoveryTest {
         public Object field3;
     }
 
-    private class QueryGetters {
+    private static class QueryGetters {
         private String field1;
         private int field2;
         private Object field3;
@@ -338,7 +339,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
-    private class QuerySetters {
+    private static class QuerySetters {
         private String field1;
         private int field2;
         private Object field3;
@@ -359,7 +360,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
-    private class MixedFieldsWin {
+    private static class MixedFieldsWin {
         @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         private String field1;
         @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
@@ -383,7 +384,7 @@ public class InputFieldDiscoveryTest {
         }
     }
     
-    private class MixedGettersWin {
+    private static class MixedGettersWin {
         @GraphQLQuery(name = "xxx")
         private String field1;
         @GraphQLQuery(name = "yyy")
@@ -407,7 +408,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
-    private class MixedSettersWin {
+    private static class MixedSettersWin {
         @GraphQLQuery(name = "xxx")
         private String field1;
         @GraphQLQuery(name = "yyy")
@@ -431,7 +432,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
-    private class ConflictingGettersWin {
+    private static class ConflictingGettersWin {
         @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
         private String field1;
         @GraphQLInputField(name = "yyy", description = "YYY", defaultValue = "-1")
@@ -455,7 +456,8 @@ public class InputFieldDiscoveryTest {
         }
     }
     
-    private class ConflictingSettersWin {
+    @SuppressWarnings("FieldCanBeLocal")
+    private static class ConflictingSettersWin {
         @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
         private String field1;
         @GraphQLInputField(name = "yyy", description = "YYY", defaultValue = "-1")
@@ -479,7 +481,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
-    private class AllConflictingSettersWin {
+    private static class AllConflictingSettersWin {
         @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
         private String field1;
         @GraphQLInputField(name = "yyy", description = "YYY", defaultValue = "-1")
@@ -518,7 +520,8 @@ public class InputFieldDiscoveryTest {
         }
     }
 
-    private class HiddenSetters {
+    @SuppressWarnings("unused")
+    private static class HiddenSetters {
         private String field1;
         private int field2;
         private Object field3;
@@ -554,9 +557,9 @@ public class InputFieldDiscoveryTest {
     }
 
     public static class HiddenCtorParams {
-        private String field1;
-        private int field2;
-        private Object field3;
+        private final String field1;
+        private final int field2;
+        private final Object field3;
 
         @JsonCreator
         public HiddenCtorParams(String field1, @GraphQLIgnore int field2, Object field3) {
@@ -619,8 +622,8 @@ public class InputFieldDiscoveryTest {
 
     private static class Concrete implements Abstract {
 
-        private String fieldX;
-        private int field2;
+        private final String fieldX;
+        private final int field2;
 
         @JsonCreator
         @ConstructorProperties({"fieldX", "field2"})

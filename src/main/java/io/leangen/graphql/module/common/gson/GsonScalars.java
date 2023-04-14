@@ -32,93 +32,102 @@ import static io.leangen.graphql.util.Scalars.valueParsingException;
 @SuppressWarnings("WeakerAccess")
 public class GsonScalars {
 
-    public static final GraphQLScalarType JsonAnyNode = new GraphQLScalarType("JSON", "JSON object", new Coercing() {
+    public static final GraphQLScalarType JsonAnyNode = GraphQLScalarType.newScalar()
+            .name("JSON")
+            .description("JSON object")
+            .coercing(new Coercing() {
 
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            if (dataFetcherResult instanceof JsonPrimitive) {
-                return JsonPrimitiveNode.getCoercing().serialize(dataFetcherResult);
-            }
-            return dataFetcherResult;
-        }
-
-        @Override
-        public Object parseValue(Object input) {
-            return input;
-        }
-
-        @Override
-        public Object parseLiteral(Object input) {
-            return parseJsonValue(((Value) input));
-        }
-    });
-
-    public static final GraphQLScalarType JsonObjectNode = new GraphQLScalarType("JSONObject", "JSON object", new Coercing() {
-
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            return dataFetcherResult;
-        }
-
-        @Override
-        public Object parseValue(Object input) {
-            return input;
-        }
-
-        @Override
-        public Object parseLiteral(Object input) {
-            return parseJsonValue(literalOrException(input, ObjectValue.class));
-        }
-    });
-
-    public static final GraphQLScalarType JsonPrimitiveNode = new GraphQLScalarType("JSONPrimitive", "A primitive JSON value", new Coercing() {
-
-        @Override
-        public Object serialize(Object dataFetcherResult) {
-            if (dataFetcherResult instanceof JsonPrimitive) {
-                JsonPrimitive primitive = (JsonPrimitive) dataFetcherResult;
-                if (primitive.isString()) {
-                    return primitive.getAsString();
+                @Override
+                public Object serialize(Object dataFetcherResult) {
+                    if (dataFetcherResult instanceof JsonPrimitive) {
+                        return JsonPrimitiveNode.getCoercing().serialize(dataFetcherResult);
+                    }
+                    return dataFetcherResult;
                 }
-                if (primitive.isNumber()) {
-                    return primitive.getAsNumber();
-                }
-                if (primitive.isBoolean()) {
-                    return primitive.getAsBoolean();
-                }
-                if (primitive.isJsonNull()) {
-                    return null;
-                }
-            }
-            throw serializationException(dataFetcherResult, JsonPrimitive.class);
-        }
 
-        @Override
-        public Object parseValue(Object input) {
-            if (input instanceof String) {
-                return new JsonPrimitive((String) input);
-            }
-            if (input instanceof Number) {
-                return new JsonPrimitive((Number) input);
-            }
-            if (input instanceof Boolean) {
-                return new JsonPrimitive((Boolean) input);
-            }
-            if (input instanceof Character) {
-                return new JsonPrimitive((Character) input);
-            }
-            throw valueParsingException(input, String.class, Number.class, Boolean.class, Character.class);
-        }
+                @Override
+                public Object parseValue(Object input) {
+                    return input;
+                }
 
-        @Override
-        public Object parseLiteral(Object input) {
-            if (input instanceof ObjectValue || input instanceof ArrayValue) {
-                throw literalParsingException(input, StringValue.class, BooleanValue.class, EnumValue.class,
-                        FloatValue.class, IntValue.class, NullValue.class);
-            }
-            return parseJsonValue(((Value) input));
-        }
-    });
+                @Override
+                public Object parseLiteral(Object input) {
+                    return parseJsonValue(((Value) input));
+                }
+            }).build();
+
+    public static final GraphQLScalarType JsonObjectNode = GraphQLScalarType.newScalar()
+            .name("JSONObject")
+            .description("JSON object")
+            .coercing(new Coercing() {
+
+                @Override
+                public Object serialize(Object dataFetcherResult) {
+                    return dataFetcherResult;
+                }
+
+                @Override
+                public Object parseValue(Object input) {
+                    return input;
+                }
+
+                @Override
+                public Object parseLiteral(Object input) {
+                    return parseJsonValue(literalOrException(input, ObjectValue.class));
+                }
+            }).build();
+
+    public static final GraphQLScalarType JsonPrimitiveNode = GraphQLScalarType.newScalar()
+            .name("JSONPrimitive")
+            .description("A primitive JSON value")
+            .coercing(new Coercing<JsonElement, Object>() {
+
+                @Override
+                public Object serialize(Object dataFetcherResult) {
+                    if (dataFetcherResult instanceof JsonPrimitive) {
+                        JsonPrimitive primitive = (JsonPrimitive) dataFetcherResult;
+                        if (primitive.isString()) {
+                            return primitive.getAsString();
+                        }
+                        if (primitive.isNumber()) {
+                            return primitive.getAsNumber();
+                        }
+                        if (primitive.isBoolean()) {
+                            return primitive.getAsBoolean();
+                        }
+                        if (primitive.isJsonNull()) {
+                            return null;
+                        }
+                    }
+                    throw serializationException(dataFetcherResult, JsonPrimitive.class);
+                }
+
+                @Override
+                public JsonElement parseValue(Object input) {
+                    if (input instanceof String) {
+                        return new JsonPrimitive((String) input);
+                    }
+                    if (input instanceof Number) {
+                        return new JsonPrimitive((Number) input);
+                    }
+                    if (input instanceof Boolean) {
+                        return new JsonPrimitive((Boolean) input);
+                    }
+                    if (input instanceof Character) {
+                        return new JsonPrimitive((Character) input);
+                    }
+                    throw valueParsingException(input, String.class, Number.class, Boolean.class, Character.class);
+                }
+
+                @Override
+                public JsonElement parseLiteral(Object input) {
+                    if (input instanceof ObjectValue || input instanceof ArrayValue) {
+                        throw literalParsingException(input, StringValue.class, BooleanValue.class, EnumValue.class,
+                                FloatValue.class, IntValue.class, NullValue.class);
+                    }
+                    return parseJsonValue(((Value) input));
+                }
+            }).build();
 
     private static JsonElement parseJsonValue(Value value) {
         if (value instanceof BooleanValue) {

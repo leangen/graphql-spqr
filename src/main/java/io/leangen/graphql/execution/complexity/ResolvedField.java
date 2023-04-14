@@ -1,85 +1,53 @@
 package io.leangen.graphql.execution.complexity;
 
-import graphql.language.Field;
-import graphql.schema.GraphQLFieldDefinition;
+import graphql.normalized.ExecutableNormalizedField;
+import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLNamedOutputType;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.graphql.metadata.Resolver;
-import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.GraphQLUtils;
 
-import java.util.Collections;
 import java.util.Map;
 
-public class ResolvedField {
+class ResolvedField {
 
-    private final String name;
-    private final Field field;
-    private final GraphQLFieldDefinition fieldDefinition;
-    private final GraphQLOutputType fieldType;
+    private final FieldCoordinates coordinates;
+    private final GraphQLNamedOutputType fieldType;
     private final Map<String, Object> arguments;
     private final Resolver resolver;
+    private final ExecutableNormalizedField field;
 
-    private Map<String, ResolvedField> children;
-    private int complexityScore;
-
-    public ResolvedField(Field field, GraphQLFieldDefinition fieldDefinition, Map<String, Object> arguments) {
-        this(field, fieldDefinition, arguments, Collections.emptyMap());
-    }
-
-    public ResolvedField(Field field, GraphQLFieldDefinition fieldDefinition, Map<String, Object> arguments, Map<String, ResolvedField> children) {
-        this.name = field.getAlias() != null ? field.getAlias() : field.getName();
-        this.field = field;
-        this.fieldDefinition = fieldDefinition;
-        this.fieldType = (GraphQLOutputType) GraphQLUtils.unwrap(fieldDefinition.getType());
+    ResolvedField(FieldCoordinates coordinates, Resolver resolver, GraphQLOutputType type,
+                  Map<String, Object> arguments, ExecutableNormalizedField field) {
+        this.coordinates = coordinates;
+        this.fieldType = (GraphQLNamedOutputType) GraphQLUtils.unwrap(type);
+        this.resolver = resolver;
         this.arguments = arguments;
-        this.children = children;
-        this.resolver = findResolver(fieldDefinition, arguments);
+        this.field = field;
     }
 
-    private Resolver findResolver(GraphQLFieldDefinition fieldDefinition, Map<String, Object> arguments) {
-        return Directives.getMappedOperation(fieldDefinition)
-                .map(operation -> operation.getApplicableResolver(arguments.keySet()))
-                .orElse(null);
+    FieldCoordinates getCoordinates() {
+        return coordinates;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public Field getField() {
-        return field;
-    }
-
-    public GraphQLFieldDefinition getFieldDefinition() {
-        return fieldDefinition;
-    }
-
-    public GraphQLOutputType getFieldType() {
+    GraphQLNamedOutputType getFieldType() {
         return fieldType;
     }
 
-    public Map<String, Object> getArguments() {
+    Map<String, Object> getArguments() {
         return arguments;
     }
 
-    public Map<String, ResolvedField> getChildren() {
-        return children;
+    ExecutableNormalizedField getField() {
+        return field;
     }
 
-    public int getComplexityScore() {
-        return complexityScore;
-    }
-
-    public void setComplexityScore(int complexityScore) {
-        this.complexityScore = complexityScore;
-    }
-
-    public Resolver getResolver() {
+    Resolver getResolver() {
         return resolver;
     }
 
     @Override
     public String toString() {
-        return name;
+        return coordinates.toString();
     }
 }

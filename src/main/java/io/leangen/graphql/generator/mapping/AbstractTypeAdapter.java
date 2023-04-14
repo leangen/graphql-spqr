@@ -4,6 +4,7 @@ import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.generator.mapping.common.AbstractTypeSubstitutingMapper;
 import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 
 /**
@@ -22,6 +23,11 @@ public abstract class AbstractTypeAdapter<T, S>
     @Override
     public boolean supports(AnnotatedType type) {
         return ClassUtils.isAssignable(sourceType.getType(), type.getType());
+    }
+
+    @Override
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
+        return supports(type);
     }
 
     private AnnotatedType getSourceType() {

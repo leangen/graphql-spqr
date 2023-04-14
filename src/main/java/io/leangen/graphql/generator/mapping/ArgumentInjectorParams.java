@@ -1,6 +1,7 @@
 package io.leangen.graphql.generator.mapping;
 
 import io.leangen.graphql.execution.ResolutionEnvironment;
+import io.leangen.graphql.metadata.OperationArgument;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
@@ -10,17 +11,13 @@ public class ArgumentInjectorParams {
 
     private final Object input;
     private final boolean present;
-    private final AnnotatedType type;
-    private final AnnotatedType baseType;
-    private final Parameter parameter;
+    private final OperationArgument argument;
     private final ResolutionEnvironment resolutionEnvironment;
 
-    public ArgumentInjectorParams(Object input, boolean present, AnnotatedType type, AnnotatedType baseType, Parameter parameter, ResolutionEnvironment resolutionEnvironment) {
+    public ArgumentInjectorParams(Object input, boolean present, OperationArgument argument, ResolutionEnvironment resolutionEnvironment) {
         this.input = input;
         this.present = present;
-        this.type = Objects.requireNonNull(type);
-        this.baseType = baseType;
-        this.parameter = parameter;
+        this.argument = argument;
         this.resolutionEnvironment = Objects.requireNonNull(resolutionEnvironment);
     }
 
@@ -33,15 +30,19 @@ public class ArgumentInjectorParams {
     }
 
     public AnnotatedType getType() {
-        return type;
+        return argument.getJavaType();
     }
 
     public AnnotatedType getBaseType() {
-        return baseType;
+        return argument.getBaseType();
     }
 
     public Parameter getParameter() {
-        return parameter;
+        return argument.getParameter();
+    }
+
+    public OperationArgument getArgument() {
+        return argument;
     }
 
     public ResolutionEnvironment getResolutionEnvironment() {

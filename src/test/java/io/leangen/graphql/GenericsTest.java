@@ -5,6 +5,7 @@ import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
 import graphql.relay.Relay;
+import graphql.scalars.ExtendedScalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLList;
@@ -76,7 +77,7 @@ public class GenericsTest {
     private static final AnnotatedType arrayOfListsOfNumbers = new TypeToken<GenericItemRepo<@GraphQLNonNull List<Number> @GraphQLNonNull []>>() {
     }.getAnnotatedType();
 
-    private static final GlobalEnvironment ENVIRONMENT = new TestGlobalEnvironment();
+    private static final GlobalEnvironment ENVIRONMENT = GlobalEnvironment.EMPTY;
 
     @Parameterized.Parameter
     public ValueMapperFactory valueMapperFactory;
@@ -166,16 +167,16 @@ public class GenericsTest {
 
         GraphQLOutputType itemType = schemaWithGenerics.getQueryType().getFieldDefinition("item").getType();
         assertNonNull(itemType, GraphQLList.class);
-        assertListOf(((graphql.schema.GraphQLNonNull) itemType).getWrappedType(), Scalars.GraphQLBigDecimal);
+        assertListOf(((graphql.schema.GraphQLNonNull) itemType).getWrappedType(), ExtendedScalars.GraphQLBigDecimal);
 
         GraphQLOutputType itemCollectionType = schemaWithGenerics.getQueryType().getFieldDefinition("allItems").getType();
         assertListOfNonNull(itemCollectionType, GraphQLList.class);
-        assertListOf(((graphql.schema.GraphQLNonNull) ((GraphQLList) itemCollectionType).getWrappedType()).getWrappedType(), Scalars.GraphQLBigDecimal);
+        assertListOf(((graphql.schema.GraphQLNonNull) ((GraphQLList) itemCollectionType).getWrappedType()).getWrappedType(), ExtendedScalars.GraphQLBigDecimal);
 
         GraphQLFieldDefinition addOneItem = schemaWithGenerics.getMutationType().getFieldDefinition("addItem");
         GraphQLType itemArgType = addOneItem.getArgument("item").getType();
         assertNonNull(itemArgType, GraphQLList.class);
-        assertListOf(((graphql.schema.GraphQLNonNull) itemArgType).getWrappedType(), Scalars.GraphQLBigDecimal);
+        assertListOf(((graphql.schema.GraphQLNonNull) itemArgType).getWrappedType(), ExtendedScalars.GraphQLBigDecimal);
 
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithGenerics).build();
         ExecutionResult result = graphQL.execute("{ allItems }");
@@ -205,7 +206,7 @@ public class GenericsTest {
         GraphQLType inner = ((graphql.schema.GraphQLNonNull) itemType).getWrappedType();
         assertListOf(inner, graphql.schema.GraphQLNonNull.class);
         inner = ((graphql.schema.GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
-        assertListOf(inner, Scalars.GraphQLBigDecimal);
+        assertListOf(inner, ExtendedScalars.GraphQLBigDecimal);
 
         GraphQLFieldDefinition addOneItem = schemaWithGenerics.getMutationType().getFieldDefinition("addItem");
         GraphQLType itemArgType = addOneItem.getArgument("item").getType();
@@ -213,7 +214,7 @@ public class GenericsTest {
         inner = ((graphql.schema.GraphQLNonNull) itemType).getWrappedType();
         assertListOf(inner, graphql.schema.GraphQLNonNull.class);
         inner = ((graphql.schema.GraphQLNonNull) ((GraphQLList) inner).getWrappedType()).getWrappedType();
-        assertListOf(inner, Scalars.GraphQLBigDecimal);
+        assertListOf(inner, ExtendedScalars.GraphQLBigDecimal);
 
         GraphQL graphQL = GraphQL.newGraphQL(schemaWithGenerics).build();
         ExecutionResult result = graphQL.execute("{ allItems }");
@@ -232,8 +233,8 @@ public class GenericsTest {
                 .generate();
 
         GraphQLFieldDefinition query = schema.getQueryType().getFieldDefinition("echo");
-        assertEquals(Scalars.GraphQLBigDecimal, query.getType());
-        assertEquals(Scalars.GraphQLBigDecimal, query.getArgument("in").getType());
+        assertEquals(ExtendedScalars.GraphQLBigDecimal, query.getType());
+        assertEquals(ExtendedScalars.GraphQLBigDecimal, query.getArgument("in").getType());
 
         GraphQL graphQL = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = graphQL.execute("{ echo (in: 3) }");

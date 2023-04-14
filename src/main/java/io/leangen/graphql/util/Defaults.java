@@ -45,7 +45,15 @@ public class Defaults {
         }
     }
 
-    public static ValueMapperFactory valueMapperFactory(TypeInfoGenerator typeInfoGenerator) {
+    public static ValueMapperFactory<?> valueMapperFactory() {
+        switch (jsonLibrary()) {
+            case GSON: return GsonValueMapperFactory.builder().build();
+            case JACKSON: return JacksonValueMapperFactory.builder().build();
+            default: throw noJsonLib;
+        }
+    }
+
+    public static ValueMapperFactory<?> valueMapperFactory(TypeInfoGenerator typeInfoGenerator) {
         switch (jsonLibrary()) {
             case GSON: return GsonValueMapperFactory.builder()
                     .withTypeInfoGenerator(typeInfoGenerator)

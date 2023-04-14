@@ -88,7 +88,13 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     @Override
     public TypeResolverBuilder<?> findTypeResolver(MapperConfig<?> config, AnnotatedClass ac, JavaType baseType) {
         TypeResolverBuilder<?> original = super.findTypeResolver(config, ac, baseType);
-        return original == null && typeMap.containsKey(ac.getRawType()) ? typeResolverBuilder : original;
+        if (original != null) {
+            return original;
+        }
+        if (typeMap.containsKey(ac.getRawType()) || (typeMap.isEmpty() && Utils.isNotEmpty(super.findSubtypes(ac)))) {
+            return typeResolverBuilder;
+        }
+        return null;
     }
 
     @Override
@@ -97,7 +103,9 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
         if ((original == null || original.isEmpty()) && typeMap.containsKey(a.getRawType())) {
             return typeMap.get(a.getRawType());
         }
-        return original;
+        // Don't return the original here as this AnnotationIntrospector is one of a pair,
+        // and if both return results, they'll end up merged and duplicated
+        return null;
     }
 
     @Override

@@ -19,7 +19,7 @@ import java.util.OptionalLong;
  */
 public class InputValueDeserializer implements ArgumentInjector {
 
-    private static Map<Class<?>, Object> EMPTY_VALUES = emptyValues();
+    private static final Map<Class<?>, Object> EMPTY_VALUES = emptyValues();
 
     @Override
     public Object getArgumentValue(ArgumentInjectorParams params) {

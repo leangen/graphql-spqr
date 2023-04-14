@@ -3,6 +3,7 @@ package io.leangen.graphql;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
+import graphql.scalars.ExtendedScalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLArgument;
@@ -33,8 +34,8 @@ public class OptionalsTest {
         GraphQLFieldDefinition nestedQuery = schema.getQueryType().getFieldDefinition("nested");
         assertEquals(Scalars.GraphQLInt, intQuery.getType());
         assertEquals(Scalars.GraphQLInt, intQuery.getArgument("opt").getType());
-        assertEquals(Scalars.GraphQLLong, longQuery.getType());
-        assertEquals(Scalars.GraphQLLong, longQuery.getArgument("opt").getType());
+        assertEquals(ExtendedScalars.GraphQLLong, longQuery.getType());
+        assertEquals(ExtendedScalars.GraphQLLong, longQuery.getArgument("opt").getType());
         assertEquals(Scalars.GraphQLFloat, doubleQuery.getType());
         assertEquals(Scalars.GraphQLFloat, doubleQuery.getArgument("opt").getType());
         assertEquals(Scalars.GraphQLString, stringQuery.getType());

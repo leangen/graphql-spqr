@@ -17,23 +17,23 @@ public class OperationArgument {
     private final AnnotatedType baseType;
     private final String name;
     private final String description;
-    private final Object defaultValue;
+    private final DefaultValue defaultValue;
     private final boolean context;
     private final boolean mappable;
 
-    public OperationArgument(AnnotatedType javaType, String name, String description, Object defaultValue,
+    public OperationArgument(AnnotatedType javaType, String name, String description, DefaultValue defaultValue,
                              Parameter parameter, boolean context, boolean mappable) {
         this(javaType, name, description, defaultValue, Utils.singletonList(parameter), context, mappable);
     }
 
-    public OperationArgument(AnnotatedType javaType, String name, String description, Object defaultValue,
+    public OperationArgument(AnnotatedType javaType, String name, String description, DefaultValue defaultValue,
                              List<Parameter> parameters, boolean context, boolean mappable) {
 
         this.typedElement = new TypedElement(Objects.requireNonNull(javaType), parameters);
         this.baseType = resolveBaseType(typedElement.getJavaType());
         this.name = Objects.requireNonNull(name);
         this.description = description;
-        this.defaultValue = defaultValue;
+        this.defaultValue = Objects.requireNonNull(defaultValue);
         this.context = context;
         this.mappable = mappable;
     }
@@ -54,7 +54,7 @@ public class OperationArgument {
         return description;
     }
 
-    public Object getDefaultValue() {
+    public DefaultValue getDefaultValue() {
         return this.defaultValue;
     }
 

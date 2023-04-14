@@ -1,17 +1,23 @@
 package io.leangen.graphql;
 
+import graphql.ErrorType;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
+import graphql.GraphqlErrorBuilder;
+import graphql.execution.DataFetcherResult;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
+import io.leangen.graphql.execution.InvocationContext;
+import io.leangen.graphql.execution.ResolverInterceptor;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.generator.mapping.common.CollectionOutputConverter;
 import io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter;
 import io.leangen.graphql.generator.mapping.common.OptionalAdapter;
+import io.leangen.graphql.metadata.TypedElement;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
@@ -29,9 +35,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
+import static io.leangen.graphql.support.QueryResultAssertions.assertErrorsEqual;
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertEquals;
@@ -41,6 +49,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests whether various input/output converters are doing their job
  */
+@SuppressWarnings("rawtypes")
 @RunWith(Parameterized.class)
 public class ConversionTest {
 
@@ -106,6 +115,22 @@ public class ConversionTest {
         assertValueAtPathEquals("xyz", result, "echo.future");
     }
 
+    @Test
+    public void testImplicitDataFetcherResultConversion() {
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withValueMapperFactory(valueMapperFactory)
+                .withOperationsFromSingleton(new ImplicitlyWrappedService())
+                .withResolverInterceptors(new ErrorAppendingInterceptor())
+                .generate();
+
+        GraphQL api = GraphQL.newGraphQL(schema).build();
+
+        ExecutionResult result = api.execute("{test}");
+        assertErrorsEqual(result, "Test error");
+        assertValueAtPathEquals(11, result, "test.0");
+        assertValueAtPathEquals(22, result, "test.1");
+    }
+
     /**
      * Due to the lack of support for {@code AnnotatedType} in <i>all</i> JSON libraries for Java,
      * {@link ElementType#TYPE_USE} annotations on input field types or nested operation argument types are lost.
@@ -118,12 +143,12 @@ public class ConversionTest {
                 .withOperationsFromSingleton(new IdService())
                 .generate();
 
-        GraphQL exe = GraphQL.newGraphQL(schema).build();
+        GraphQL api = GraphQL.newGraphQL(schema).build();
 
-        ExecutionResult result = exe.execute("{echo(id: \"{\\\"key\\\": {\\\"some\\\": \\\"value\\\"}}\") {key}}");
+        ExecutionResult result = api.execute("{echo(id: \"{\\\"key\\\": {\\\"some\\\": \\\"value\\\"}}\") {key}}");
         assertNoErrors(result);
 
-        result = exe.execute("{other(id: \"{\\\"value\\\": \\\"something\\\"}\")}");
+        result = api.execute("{other(id: \"{\\\"value\\\": \\\"something\\\"}\")}");
         assertNoErrors(result);
     }
 
@@ -140,23 +165,23 @@ public class ConversionTest {
         AnnotatedType listOfOptionals = new TypeToken<List<Optional<String>>>(){}.getAnnotatedType();
         AnnotatedType mapOfOptionals = new TypeToken<Map<String, Optional<String>>>(){}.getAnnotatedType();
 
-        List<OutputConverter> optimized = registry.optimize(Collections.singletonList(string)).getOutputConverters();
+        List<OutputConverter> optimized = registry.optimize(Collections.singletonList(new TypedElement(string))).getOutputConverters();
         assertTrue(optimized.isEmpty());
 
-        optimized = registry.optimize(Collections.singletonList(listOfStrings)).getOutputConverters();
+        optimized = registry.optimize(Collections.singletonList(new TypedElement(listOfStrings))).getOutputConverters();
         assertTrue(optimized.isEmpty());
 
-        optimized = registry.optimize(Collections.singletonList(listOfOptionals)).getOutputConverters();
+        optimized = registry.optimize(Collections.singletonList(new TypedElement(listOfOptionals))).getOutputConverters();
         assertEquals(2, optimized.size());
         assertTrue(optimized.contains(collectionConverter));
         assertTrue(optimized.contains(optionalAdapter));
 
-        optimized = registry.optimize(Collections.singletonList(mapOfOptionals)).getOutputConverters();
+        optimized = registry.optimize(Collections.singletonList(new TypedElement(mapOfOptionals))).getOutputConverters();
         assertEquals(2, optimized.size());
         assertTrue(optimized.contains(mapToListAdapter));
         assertTrue(optimized.contains(optionalAdapter));
 
-        ConverterRegistry optimizedRegistry = registry.optimize(Arrays.asList(listOfOptionals, mapOfOptionals));
+        ConverterRegistry optimizedRegistry = registry.optimize(Arrays.asList(new TypedElement(listOfOptionals), new TypedElement(mapOfOptionals)));
         assertSame(registry, optimizedRegistry);
     }
 
@@ -281,8 +306,30 @@ public class ConversionTest {
         }
 
         @Override
+        @SuppressWarnings("NullableProblems")
         public Iterator<T> iterator() {
             return source.iterator();
+        }
+    }
+
+    public static class ImplicitlyWrappedService {
+        @GraphQLQuery
+        public List<OptionalInt> test() {
+            return Arrays.asList(OptionalInt.of(11), OptionalInt.of(22));
+        }
+    }
+
+    public static class ErrorAppendingInterceptor implements ResolverInterceptor {
+
+        @Override
+        public Object aroundInvoke(InvocationContext context, ResolverInterceptor.Continuation continuation) throws Exception {
+            return DataFetcherResult.newResult()
+                    .data(continuation.proceed(context))
+                    .error(GraphqlErrorBuilder.newError(context.getResolutionEnvironment().dataFetchingEnvironment)
+                            .message("Test error")
+                            .errorType(ErrorType.DataFetchingException)
+                            .build())
+                    .build();
         }
     }
 }

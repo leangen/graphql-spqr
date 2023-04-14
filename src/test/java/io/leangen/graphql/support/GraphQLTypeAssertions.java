@@ -1,6 +1,8 @@
 package io.leangen.graphql.support;
 
 import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLEnumType;
+import graphql.schema.GraphQLEnumValueDefinition;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.GraphQLInputObjectType;
@@ -15,6 +17,7 @@ import graphql.schema.GraphQLUnionType;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -87,6 +90,14 @@ public class GraphQLTypeAssertions {
         GraphQLUnionType union = (GraphQLUnionType) unionType;
         assertEquals(union.getTypes().size(), members.length);
         assertTrue(union.getTypes().containsAll(Arrays.asList(members)));
+    }
+
+    public static void assertEnum(GraphQLType enumType, String... names) {
+        assertEquals(enumType.getClass(), GraphQLEnumType.class);
+        List<String> actualNames = ((GraphQLEnumType) enumType).getValues().stream()
+                .map(GraphQLEnumValueDefinition::getName)
+                .collect(Collectors.toList());
+        assertTrue(actualNames.containsAll(Arrays.asList(names)));
     }
 
     public static void assertArgumentsPresent(GraphQLFieldDefinition field, String... argumentNames) {

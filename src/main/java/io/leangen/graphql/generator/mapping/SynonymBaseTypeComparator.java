@@ -8,11 +8,11 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
-public class BaseTypeSynonymComparator implements Comparator<AnnotatedType> {
+public class SynonymBaseTypeComparator implements Comparator<AnnotatedType> {
 
     private final Set<Type> synonymGroup;
 
-    public BaseTypeSynonymComparator(Type... synonymGroup) {
+    public SynonymBaseTypeComparator(Type... synonymGroup) {
         this.synonymGroup = new HashSet<>();
         Collections.addAll(this.synonymGroup, synonymGroup);
     }

@@ -6,11 +6,11 @@ import graphql.schema.GraphQLInterfaceType;
 import graphql.schema.GraphQLObjectType;
 import io.leangen.graphql.annotations.types.GraphQLInterface;
 import io.leangen.graphql.generator.BuildContext;
-import io.leangen.graphql.generator.OperationMapper;
+import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
 import io.leangen.graphql.generator.mapping.strategy.InterfaceMappingStrategy;
-import io.leangen.graphql.util.Directives;
 import io.leangen.graphql.util.Utils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
 import java.util.Objects;
@@ -32,38 +32,41 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
     }
 
     @Override
-    public GraphQLInterfaceType toGraphQLType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
+    public GraphQLInterfaceType toGraphQLType(String typeName, AnnotatedType javaType, TypeMappingEnvironment env) {
+        BuildContext buildContext = env.buildContext;
+
         GraphQLInterfaceType.Builder typeBuilder = newInterface()
                 .name(typeName)
                 .description(buildContext.typeInfoGenerator.generateTypeDescription(javaType, buildContext.messageBundle));
 
-        List<GraphQLFieldDefinition> fields = objectTypeMapper.getFields(typeName, javaType, buildContext, operationMapper);
+        List<GraphQLFieldDefinition> fields = objectTypeMapper.getFields(typeName, javaType, env);
         fields.forEach(typeBuilder::field);
 
-        typeBuilder.withDirective(Directives.mappedType(javaType));
         buildContext.directiveBuilder.buildInterfaceTypeDirectives(javaType, buildContext.directiveBuilderParams()).forEach(directive ->
-                typeBuilder.withDirective(operationMapper.toGraphQLDirective(directive, buildContext)));
+                typeBuilder.withAppliedDirective(env.operationMapper.toGraphQLAppliedDirective(directive, buildContext)));
         typeBuilder.comparatorRegistry(buildContext.comparatorRegistry(javaType));
         GraphQLInterfaceType type = typeBuilder.build();
         buildContext.codeRegistry.typeResolver(type, buildContext.typeResolver);
 
-        registerImplementations(javaType, type, operationMapper, buildContext);
+        registerImplementations(javaType, type, env);
+        buildContext.typeRegistry.registerMapping(type.getName(), javaType);
         return type;
     }
 
     @Override
-    public GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, OperationMapper operationMapper, BuildContext buildContext) {
-        return objectTypeMapper.toGraphQLInputType(typeName, javaType, operationMapper, buildContext);
+    public GraphQLInputObjectType toGraphQLInputType(String typeName, AnnotatedType javaType, TypeMappingEnvironment env) {
+        return objectTypeMapper.toGraphQLInputType(typeName, javaType, env);
     }
 
     @Override
-    public boolean supports(AnnotatedType type) {
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
         return interfaceStrategy.supports(type);
     }
 
-    private void registerImplementations(AnnotatedType javaType, GraphQLInterfaceType type, OperationMapper operationMapper, BuildContext buildContext) {
+    private void registerImplementations(AnnotatedType javaType, GraphQLInterfaceType type, TypeMappingEnvironment env) {
+        BuildContext buildContext = env.buildContext;
         buildContext.implDiscoveryStrategy.findImplementations(javaType, isImplementationAutoDiscoveryEnabled(javaType), getScanPackages(javaType), buildContext)
-                .forEach(impl -> getImplementingType(impl, operationMapper, buildContext)
+                .forEach(impl -> getImplementingType(impl, env)
                         .ifPresent(implType -> buildContext.typeRegistry.registerDiscoveredCovariantType(type.getName(), impl, implType)));
     }
 
@@ -77,10 +80,10 @@ public class InterfaceMapper extends CachingMapper<GraphQLInterfaceType, GraphQL
         return javaType.isAnnotationPresent(GraphQLInterface.class) ? javaType.getAnnotation(GraphQLInterface.class).scanPackages() : Utils.emptyArray();
     }
 
-    private Optional<GraphQLObjectType> getImplementingType(AnnotatedType implType, OperationMapper operationMapper, BuildContext buildContext) {
+    private Optional<GraphQLObjectType> getImplementingType(AnnotatedType implType, TypeMappingEnvironment env) {
         return Optional.of(implType)
                 .filter(impl -> !interfaceStrategy.supports(impl))
-                .map(impl -> operationMapper.toGraphQLType(impl, buildContext))
+                .map(impl -> env.operationMapper.toGraphQLType(impl, env))
                 .filter(impl -> impl instanceof GraphQLObjectType)
                 .map(impl -> (GraphQLObjectType) impl);
     }

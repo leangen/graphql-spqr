@@ -1,7 +1,8 @@
 package io.leangen.graphql.execution;
 
-import graphql.GraphQLContext;
 import graphql.GraphQLException;
+import graphql.execution.DataFetcherResult;
+import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
@@ -10,9 +11,12 @@ import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.OperationArgument;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
+import io.leangen.graphql.util.ContextUtils;
 import io.leangen.graphql.util.Utils;
+import org.dataloader.BatchLoaderEnvironment;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +29,7 @@ import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
 /**
  * Created by bojan.tomic on 1/29/17.
  */
-public class OperationExecutor {
+public class OperationExecutor implements DataFetcher<Object> {
 
     private final Operation operation;
     private final ValueMapper valueMapper;
@@ -44,18 +48,9 @@ public class OperationExecutor {
                 res -> interceptorFactory.getInterceptors(new ResolverInterceptorFactoryParams(res))));
     }
 
-    public Object execute(DataFetchingEnvironment env) throws Exception {
-        if (env.getContext() instanceof ContextWrapper) {
-            ContextWrapper context = env.getContext();
-            if (env.getArgument(CLIENT_MUTATION_ID) != null) {
-                context.setClientMutationId(env.getArgument(CLIENT_MUTATION_ID));
-            }
-        } else if (env.getContext() instanceof GraphQLContext) {
-            GraphQLContext context = env.getContext();
-            if (env.getArgument(CLIENT_MUTATION_ID) != null) {
-                context.put(CLIENT_MUTATION_ID, env.getArgument(CLIENT_MUTATION_ID));
-            }
-        }
+    @Override
+    public Object get(DataFetchingEnvironment env) throws Exception {
+        ContextUtils.setClientMutationId(env.getContext(), env.getArgument(CLIENT_MUTATION_ID));
 
         Map<String, Object> arguments = env.getArguments();
         Resolver resolver = this.operation.getApplicableResolver(arguments.keySet());
@@ -64,13 +59,18 @@ public class OperationExecutor {
                     + arguments.keySet() + " not implemented");
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(resolver, env, this.valueMapper, this.globalEnvironment, this.converterRegistry, this.derivedTypes);
-        try {
-            Object result = execute(resolver, resolutionEnvironment, arguments);
-            return resolutionEnvironment.convertOutput(result, resolver.getReturnType());
-        } catch (ReflectiveOperationException e) {
-            sneakyThrow(unwrap(e));
+        Object result = execute(resolver, resolutionEnvironment, arguments);
+        return resolutionEnvironment.adaptOutput(result, resolver.getTypedElement(), resolver.getReturnType());
+    }
+
+    public Object execute(List<Object> keys, BatchLoaderEnvironment env) throws Exception {
+        Resolver resolver = this.operation.getApplicableResolver(Collections.emptySet());
+        if (resolver == null) {
+            throw new GraphQLException("Batch loader for operation " + operation.getName() + " not implemented");
         }
-        return null; //never happens, needed because of sneakyThrow
+        ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(resolver, keys, env, this.valueMapper, this.globalEnvironment, this.converterRegistry, this.derivedTypes);
+        Object result = execute(resolver, resolutionEnvironment, Collections.emptyMap());
+        return resolutionEnvironment.adaptOutput(result, resolver.getTypedElement(), resolver.getReturnType());
     }
 
     /**
@@ -97,9 +97,19 @@ public class OperationExecutor {
 
             args[i] = resolutionEnvironment.getInputValue(rawArgValue, argDescriptor);
         }
+        if (!resolutionEnvironment.errors.isEmpty()) {
+            return DataFetcherResult.newResult().errors(resolutionEnvironment.errors).build();
+        }
         InvocationContext invocationContext = new InvocationContext(operation, resolver, resolutionEnvironment, args);
         Queue<ResolverInterceptor> interceptors = new LinkedList<>(this.interceptors.get(resolver));
-        interceptors.add((ctx, cont) -> resolver.resolve(ctx.getResolutionEnvironment().context, ctx.getArguments()));
+        interceptors.add((ctx, cont) -> {
+            try {
+                return resolver.resolve(ctx.getResolutionEnvironment().context, ctx.getArguments());
+            } catch (ReflectiveOperationException e) {
+                sneakyThrow(unwrap(e));
+            }
+            return null; //never happens, needed because of sneakyThrow
+        });
         return execute(invocationContext, interceptors);
     }
 
@@ -108,12 +118,12 @@ public class OperationExecutor {
     }
 
     private ConverterRegistry optimizeConverters(Collection<Resolver> resolvers, ConverterRegistry converters) {
-        return converters.optimize(resolvers.stream().map(Resolver::getReturnType).collect(Collectors.toList()));
+        return converters.optimize(resolvers.stream().map(Resolver::getTypedElement).collect(Collectors.toList()));
     }
 
     private DerivedTypeRegistry deriveTypes(Collection<Resolver> resolvers, ConverterRegistry converterRegistry) {
         return new DerivedTypeRegistry(
-                resolvers.stream().map(Resolver::getReturnType).collect(Collectors.toList()),
+                resolvers.stream().map(Resolver::getTypedElement).collect(Collectors.toList()),
                 Utils.extractInstances(converterRegistry.getOutputConverters(), DelegatingOutputConverter.class)
                         .collect(Collectors.toList()));
     }
@@ -129,5 +139,9 @@ public class OperationExecutor {
     @SuppressWarnings("unchecked")
     private static <T extends Throwable> void sneakyThrow(Throwable t) throws T {
         throw (T) t;
+    }
+
+    public Operation getOperation() {
+        return operation;
     }
 }

@@ -7,6 +7,7 @@ import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.List;
 
@@ -42,5 +43,10 @@ public class IterableAdapter<T> extends AbstractTypeSubstitutingMapper<List<T>> 
         TODO Consider registering this adapter as an input converter for Gson only
         */
         return ClassUtils.getRawType(type.getType()).equals(Iterable.class);
+    }
+
+    @Override
+    public boolean supports(AnnotatedElement element, AnnotatedType type) {
+        return supports(type);
     }
 }

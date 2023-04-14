@@ -1,11 +1,11 @@
 package io.leangen.graphql;
 
-import graphql.DirectivesUtil;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
-import graphql.introspection.Introspection;
+import graphql.schema.GraphQLAppliedDirective;
+import graphql.schema.GraphQLAppliedDirectiveArgument;
 import graphql.schema.GraphQLDirectiveContainer;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
@@ -31,9 +31,10 @@ import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static graphql.introspection.Introspection.DirectiveLocation;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -59,10 +60,12 @@ public class DirectiveTest {
 
         GraphQLInputObjectType inputType = (GraphQLInputObjectType) argument.getType();
         assertDirective(inputType, "inputObjectType", "input");
-        graphql.schema.GraphQLArgument directiveArg = DirectivesUtil.directiveWithArg(inputType.getDirectives(), "inputObjectType", "value").get();
-        Optional<graphql.schema.GraphQLArgument> metaArg = DirectivesUtil.directiveWithArg(directiveArg.getDirectives(), "meta", "value");
-        assertTrue(metaArg.isPresent());
-        assertEquals("meta", metaArg.get().getValue());
+        graphql.schema.GraphQLArgument directiveArg = schema.getDirective("inputObjectType").getArgument("value");
+        GraphQLAppliedDirective metaDir = directiveArg.getAppliedDirective("meta");
+        assertNotNull(metaDir);
+        GraphQLAppliedDirectiveArgument metaArg = metaDir.getArgument("value");
+        assertNotNull(metaArg);
+        assertEquals("meta", metaArg.getArgumentValue().getValue());
 
         GraphQLInputObjectField inputField = inputType.getField("value");
         assertDirective(inputField, "inputFieldDef", "inputField");
@@ -73,6 +76,10 @@ public class DirectiveTest {
 
         GraphQLFieldDefinition innerField = objResult.getFieldDefinition("value");
         assertDirective(innerField, "fieldDef", "field");
+
+        assertNotNull(schema.getSchemaAppliedDirective("schema"));
+        //TODO Enable this once https://github.com/graphql-java/graphql-java/issues/3053 is fixed
+        //assertDirective(schema.getSchemaAppliedDirective("schema"), "toplevel");
     }
 
     @Test
@@ -82,11 +89,11 @@ public class DirectiveTest {
                 .withAdditionalDirectives(Field.class, Frags.class, Operation.class)
                 .generate();
 
-        assertClientDirectiveMapping(schema, "field", "enabled", Introspection.DirectiveLocation.FIELD);
-        assertClientDirectiveMapping(schema, "frags", "enabled", Introspection.DirectiveLocation.FRAGMENT_DEFINITION,
-                Introspection.DirectiveLocation.FRAGMENT_SPREAD, Introspection.DirectiveLocation.INLINE_FRAGMENT);
+        assertClientDirectiveMapping(schema, "field", "enabled", DirectiveLocation.FIELD);
+        assertClientDirectiveMapping(schema, "frags", "enabled", DirectiveLocation.FRAGMENT_DEFINITION,
+                DirectiveLocation.FRAGMENT_SPREAD, DirectiveLocation.INLINE_FRAGMENT);
         assertClientDirectiveMapping(schema, "operation", "enabled",
-                Introspection.DirectiveLocation.QUERY, Introspection.DirectiveLocation.MUTATION);
+                DirectiveLocation.QUERY, DirectiveLocation.MUTATION);
     }
 
     @Test
@@ -105,41 +112,47 @@ public class DirectiveTest {
         assertClientDirectiveValues(graphQL, "query Books @timeout(afterMillis: 10) {books(searchString: \"monkey\") {id review}}", 10);
         assertClientDirectiveValues(graphQL, "query Books @timeout(afterMillis: 10) {books(searchString: \"monkey\") {id review @timeout(afterMillis: 5)}}", 5, 10);
         assertClientDirectiveValues(graphQL,"fragment Details on Book @timeout(afterMillis: 25) {\n" +
-                "  title" +
-                "  review @timeout(afterMillis: 5)" +
-                "}" +
-                "query Books @timeout(afterMillis: 30) {" +
-                "  books(searchString: \"monkey\") {" +
-                "    ...Details @timeout(afterMillis: 20)" +
-                "    ...on Book @timeout(afterMillis: 15) {review @timeout(afterMillis: 10)} id}}",
+                        "  title" +
+                        "  review @timeout(afterMillis: 5)" +
+                        "}" +
+                        "query Books @timeout(afterMillis: 30) {" +
+                        "  books(searchString: \"monkey\") {" +
+                        "    ...Details @timeout(afterMillis: 20)" +
+                        "    ...on Book @timeout(afterMillis: 15) {review @timeout(afterMillis: 10)} id}}",
                 5, 10, 15, 20, 25, 30);
         assertClientDirectiveValues(graphQL,"fragment Details on Book @timeout(afterMillis: 30) {\n" +
-                "  review @timeout(afterMillis: 5)" +
-                "  ... Review @timeout(afterMillis: 15)" +
-                "}" +
-                "fragment Review on Book @timeout(afterMillis: 25) {\n" +
-                "  review @timeout(afterMillis: 10)" +
-                "}" +
-                "query Books @timeout(afterMillis: 35) {" +
-                "  books(searchString: \"monkey\") @timeout(afterMillis: 40) {" +
-                "    ...Details @timeout(afterMillis: 20)" +
-                "  }}",
+                        "  review @timeout(afterMillis: 5)" +
+                        "  ... Review @timeout(afterMillis: 15)" +
+                        "}" +
+                        "fragment Review on Book @timeout(afterMillis: 25) {\n" +
+                        "  review @timeout(afterMillis: 10)" +
+                        "}" +
+                        "query Books @timeout(afterMillis: 35) {" +
+                        "  books(searchString: \"monkey\") @timeout(afterMillis: 40) {" +
+                        "    ...Details @timeout(afterMillis: 20)" +
+                        "  }}",
                 5, 10, 15, 20, 25, 30, 35);
     }
 
     private void assertDirective(GraphQLDirectiveContainer container, String directiveName, String innerName) {
-        Optional<graphql.schema.GraphQLArgument> argument = DirectivesUtil.directiveWithArg(container.getDirectives(), directiveName, "value");
-        assertTrue(argument.isPresent());
-        GraphQLInputObjectType argType = (GraphQLInputObjectType) GraphQLUtils.unwrapNonNull(argument.get().getType());
+        GraphQLAppliedDirective directive = container.getAppliedDirective(directiveName);
+        assertDirective(directive, innerName);
+    }
+
+    private void assertDirective(GraphQLAppliedDirective directive, String innerName) {
+        assertNotNull(directive);
+        GraphQLAppliedDirectiveArgument argument = directive.getArgument("value");
+        assertNotNull(argument);
+        GraphQLInputObjectType argType = (GraphQLInputObjectType) GraphQLUtils.unwrapNonNull(argument.getType());
         assertEquals("WrapperInput", argType.getName());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("name").getType());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("value").getType());
-        Wrapper wrapper = (Wrapper) argument.get().getValue();
-        assertEquals(innerName, wrapper.name());
-        assertEquals("test", wrapper.value());
+        Map<String, Object> wrapperRawValue = (Map<String, Object>) argument.getArgumentValue().getValue();
+        assertEquals(innerName, wrapperRawValue.get("name"));
+        assertEquals("test", wrapperRawValue.get("value"));
     }
 
-    private void assertClientDirectiveMapping(GraphQLSchema schema, String directiveName, String argumentName, Introspection.DirectiveLocation... validLocations) {
+    private void assertClientDirectiveMapping(GraphQLSchema schema, String directiveName, String argumentName, DirectiveLocation... validLocations) {
         graphql.schema.GraphQLDirective directive = schema.getDirective(directiveName);
         assertNotNull(directive);
         assertEquals(validLocations.length, directive.validLocations().size());
@@ -152,7 +165,7 @@ public class DirectiveTest {
         AtomicReference<List<Interrupt>> interrupts = new AtomicReference<>();
         ExecutionResult result = graphQL.execute(ExecutionInput.newExecutionInput()
                 .query(query)
-                .context(interrupts)
+                .graphQLContext(ctx -> ctx.of("timeouts", interrupts))
                 .build());
 
         assertTrue(result.getErrors().isEmpty());
@@ -170,13 +183,14 @@ public class DirectiveTest {
 
         @GraphQLQuery
         public String review(@GraphQLContext Book book,
-                             @GraphQLRootContext AtomicReference<List<Interrupt>> context,
+                             @GraphQLRootContext("timeouts") AtomicReference<List<Interrupt>> context,
                              @io.leangen.graphql.annotations.GraphQLDirective List<Interrupt> timeouts) {
             context.set(timeouts);
             return "Wholesome";
         }
     }
 
+    @Schema(@Wrapper(name = "schema", value = "toplevel"))
     private static class ServiceWithDirectives {
 
         @GraphQLQuery
@@ -282,6 +296,13 @@ public class DirectiveTest {
 
     @GraphQLDirective
     @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    public @interface Schema {
+        Wrapper value();
+    }
+
+    @GraphQLDirective
+    @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.METHOD})
     public @interface Meta {
         String value();
@@ -301,17 +322,17 @@ public class DirectiveTest {
         public int after;
     }
 
-    @GraphQLDirective(locations = Introspection.DirectiveLocation.FIELD)
+    @GraphQLDirective(locations = DirectiveLocation.FIELD)
     public static class Field {
         public boolean enabled;
     }
 
-    @GraphQLDirective(locations = {Introspection.DirectiveLocation.FRAGMENT_DEFINITION, Introspection.DirectiveLocation.FRAGMENT_SPREAD, Introspection.DirectiveLocation.INLINE_FRAGMENT})
+    @GraphQLDirective(locations = {DirectiveLocation.FRAGMENT_DEFINITION, DirectiveLocation.FRAGMENT_SPREAD, DirectiveLocation.INLINE_FRAGMENT})
     public static class Frags {
         public boolean enabled;
     }
 
-    @GraphQLDirective(locations = {Introspection.DirectiveLocation.QUERY, Introspection.DirectiveLocation.MUTATION})
+    @GraphQLDirective(locations = {DirectiveLocation.QUERY, DirectiveLocation.MUTATION})
     public static class Operation {
         public boolean enabled;
     }
