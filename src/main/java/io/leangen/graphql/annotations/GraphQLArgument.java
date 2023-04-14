@@ -15,7 +15,7 @@ public @interface GraphQLArgument {
 
     String NULL = ReservedStrings.NULL;
 
-    String name();
+    String name() default "";
 
     String description() default "";
 
