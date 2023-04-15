@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.12.2] - 2023-04-15
+
+### Added
+
+- Support record-like accessors [##453](https://github.com/leangen/graphql-spqr/issues/453)
+- The `name` is no longer mandatory on `@GraphQLArgument` [##311](https://github.com/leangen/graphql-spqr/pull/311)
+
+### Changed
+
+- Upgraded to graphql-java v20.2 [#437](https://github.com/leangen/graphql-spqr/issues/437)
+- `ComplexityAnalyzer` greatly simplified and made public [#450](https://github.com/leangen/graphql-spqr/issues/450)
+- Replaced `JavaScriptEvaluator` as the default `ComplexityFunction` with a simpler [#452](https://github.com/leangen/graphql-spqr/issues/452)
+- Deprecated inline unions (`io.leangen.graphql.annotations.@GraphQLUnion`) for removal
+
+### Fixed
+
+- `@GraphQLId` deserialization to `Integer` [#444](https://github.com/leangen/graphql-spqr/issues/444)
+
 ## [0.12.1] - 2022-12-18
 ### Changed
 - [Breaking] Upgraded to graphql-java v20.0 [#437](https://github.com/leangen/graphql-spqr/issues/437)

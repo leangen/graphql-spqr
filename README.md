@@ -78,14 +78,14 @@ Maven
 <dependency>
     <groupId>io.leangen.graphql</groupId>
     <artifactId>spqr</artifactId>
-    <version>0.12.0</version>
+    <version>0.12.2</version>
 </dependency>
 ```
 
 Gradle
 
 ```groovy
-compile 'io.leangen.graphql:spqr:0.12.0'
+compile 'io.leangen.graphql:spqr:0.12.2'
 ```
 
 ## Hello world
