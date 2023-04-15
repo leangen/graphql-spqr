@@ -11,37 +11,8 @@ import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedArrayType;
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.AnnotatedParameterizedType;
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.AnnotatedTypeVariable;
-import java.lang.reflect.AnnotatedWildcardType;
-import java.lang.reflect.Executable;
-import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.lang.reflect.*;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -116,10 +87,28 @@ public class ClassUtils {
         return stream(type.getMethods())
                 .filter(ClassUtils::isGetter)
                 .map(getter -> findFieldByGetter(getter)
+                        .filter(ClassUtils::isReal)
                         .map(field -> new Property(field, getter))
                         .filter(prop -> prop.getField().getType().equals(prop.getGetter().getReturnType()))
                         .filter(prop -> !Modifier.isPublic(prop.getField().getModifiers()))
                         .filter(prop -> !Modifier.isAbstract(prop.getGetter().getModifiers())))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toSet());
+    }
+
+    public static Set<Property> getRecordComponents(final AnnotatedType type) {
+        return getRecordComponents(getRawType(type.getType()));
+    }
+
+    public static Set<Property> getRecordComponents(final Class<?> type) {
+        return stream(type.getMethods())
+                .filter(ClassUtils::isReal)
+                .filter(accessor -> !Modifier.isAbstract(accessor.getModifiers()))
+                .map(accessor -> findField(type, accessor.getName())
+                        .filter(ClassUtils::isReal)
+                        .map(field -> new Property(field, accessor))
+                        .filter(prop -> prop.getField().getType().equals(prop.getGetter().getReturnType())))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());
@@ -246,7 +235,7 @@ public class ClassUtils {
         } catch (ReflectiveOperationException e) {
             String argumentTypes = stream(parameterTypes).map(Class::getName).collect(Collectors.joining(","));
             throw new IllegalArgumentException(
-                   clazz.getName() + " must expose a public default constructor, or a constructor accepting " + argumentTypes, e);
+                    clazz.getName() + " must expose a public default constructor, or a constructor accepting " + argumentTypes, e);
         }
     }
 
@@ -540,8 +529,8 @@ public class ClassUtils {
         if (type instanceof AnnotatedWildcardType) {
             AnnotatedWildcardType wildcard = ((AnnotatedWildcardType) type);
             return Stream.concat(
-                    Arrays.stream(wildcard.getAnnotatedLowerBounds()),
-                    Arrays.stream(wildcard.getAnnotatedUpperBounds()))
+                            Arrays.stream(wildcard.getAnnotatedLowerBounds()),
+                            Arrays.stream(wildcard.getAnnotatedUpperBounds()))
                     .anyMatch(param -> containsTypeAnnotation(param, annotation));
         }
         return type instanceof AnnotatedArrayType && containsTypeAnnotation(((AnnotatedArrayType) type).getAnnotatedGenericComponentType(), annotation);
@@ -823,6 +812,21 @@ public class ClassUtils {
 
     public static boolean isPrimitive(AnnotatedType type) {
         return type.getType().getClass() == Class.class && ((Class<?>) type.getType()).isPrimitive();
+    }
+
+    /**
+     * Checks whether the given type is a record type.
+     * Reflective invocation of {@code Class#isRecord} ensures the check works on Java versions below 15.
+     * @param type The class to check
+     * @return {@code true} if the given type is a record type, {@code false} otherwise
+     */
+    @SuppressWarnings("JavaReflectionMemberAccess")
+    public static boolean isRecord(AnnotatedType type) {
+        try {
+            return (boolean) Class.class.getMethod("isRecord").invoke(getRawType(type.getType()));
+        } catch (ReflectiveOperationException e) {
+            return false;
+        }
     }
 
     /**

@@ -12,13 +12,7 @@ import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.DefaultInclusionStrategy;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
-import io.leangen.graphql.metadata.strategy.query.AnnotatedResolverBuilder;
-import io.leangen.graphql.metadata.strategy.query.BeanResolverBuilder;
-import io.leangen.graphql.metadata.strategy.query.OperationInfoGenerator;
-import io.leangen.graphql.metadata.strategy.query.OperationInfoGeneratorParams;
-import io.leangen.graphql.metadata.strategy.query.PublicResolverBuilder;
-import io.leangen.graphql.metadata.strategy.query.ResolverBuilder;
-import io.leangen.graphql.metadata.strategy.query.ResolverBuilderParams;
+import io.leangen.graphql.metadata.strategy.query.*;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeTransformer;
 import io.leangen.graphql.metadata.strategy.type.TypeTransformer;
 import io.leangen.graphql.util.ClassUtils;
@@ -60,7 +54,7 @@ public class ResolverBuilderTest {
 
     @Test
     public void explicitIgnoreTest() {
-        for(Collection<Resolver> resolvers : resolvers(new IgnoredMethods(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
+        for (Collection<Resolver> resolvers : resolvers(new IgnoredMethods(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
             assertEquals(1, resolvers.size());
             assertEquals("notIgnored", resolvers.iterator().next().getOperationName());
         }
@@ -68,7 +62,7 @@ public class ResolverBuilderTest {
 
     @Test
     public void fieldIgnoreTest() {
-        for(Collection<Resolver> resolvers : resolvers(new IgnoredFields<>(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
+        for (Collection<Resolver> resolvers : resolvers(new IgnoredFields<>(), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
             assertEquals(1, resolvers.size());
             assertEquals("notIgnored", resolvers.iterator().next().getOperationName());
         }
@@ -76,7 +70,7 @@ public class ResolverBuilderTest {
 
     @Test
     public void parameterIgnoreTest() {
-        for(Collection<Resolver> resolvers : resolvers(new IgnoredParameters<>(), new PublicResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
+        for (Collection<Resolver> resolvers : resolvers(new IgnoredParameters<>(), new PublicResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder())) {
             Resolver resolver = resolvers.iterator().next();
             assertEquals(1, resolver.getArguments().size());
             assertEquals("notIgnored", resolver.getArguments().get(0).getName());
@@ -116,7 +110,7 @@ public class ResolverBuilderTest {
     public void typeMergeTest() {
         ResolverBuilder[] allBuilders = new ResolverBuilder[] {
                 new PublicResolverBuilder(BASE_PACKAGES), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder()};
-        for(Collection<Resolver> resolvers : resolvers(new MergedTypes(), allBuilders)) {
+        for (Collection<Resolver> resolvers : resolvers(new MergedTypes(), allBuilders)) {
             assertEquals(2, resolvers.size());
 
             Optional<AnnotatedType> field1 = resolvers.stream().filter(res -> "field1".equals(res.getOperationName())).findFirst()
@@ -135,7 +129,7 @@ public class ResolverBuilderTest {
     public void privateFieldHierarchyTest() {
         ResolverBuilder[] allBuilders = new ResolverBuilder[] {
                 new PublicResolverBuilder(BASE_PACKAGES), new BeanResolverBuilder(BASE_PACKAGES), new AnnotatedResolverBuilder()};
-        for(Collection<Resolver> resolvers : resolvers(new Concrete(), allBuilders)) {
+        for (Collection<Resolver> resolvers : resolvers(new Concrete(), allBuilders)) {
             assertEquals(3, resolvers.size());
             Stream.of("abstractField", "concreteField", "thing").forEach(field ->
                 assertTrue(resolvers.stream().anyMatch(res -> res.getOperationName().equals(field)))
@@ -170,6 +164,15 @@ public class ResolverBuilderTest {
                 UserHandleService::new, GenericTypeReflector.annotate(UserHandleService.class), UserHandleService.class, INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
         assertEquals(1, resolvers.size());
         assertTrue(resolvers.stream().anyMatch(resolver -> resolver.getOperationName().equals("userHandle")));
+    }
+
+    @Test
+    public void recordLikeAccessorTest() {
+        RecordLikeResolverBuilder resolverBuilder = new RecordLikeResolverBuilder(BASE_PACKAGES);
+        List<Resolver> resolvers = new ArrayList<>(resolverBuilder.buildQueryResolvers(new ResolverBuilderParams(
+                () -> new RecordLikeClass("x"), GenericTypeReflector.annotate(RecordLikeClass.class), RecordLikeClass.class, INCLUSION_STRATEGY, TYPE_TRANSFORMER, BASE_PACKAGES, ENVIRONMENT)));
+        assertEquals(1, resolvers.size());
+        assertEquals("name", resolvers.get(0).getOperationName());
     }
 
     private Collection<Collection<Resolver>> resolvers(Object bean, ResolverBuilder... builders) {
@@ -260,6 +263,7 @@ public class ResolverBuilderTest {
     }
 
     @Getter
+    @SuppressWarnings("unused")
     private static class MergedTypes {
         @GraphQLQuery(name = "field1")
         private @GraphQLNonNull Object badName;
@@ -272,6 +276,7 @@ public class ResolverBuilderTest {
         }
     }
 
+    @SuppressWarnings("unused")
     private interface Interface {
         Object getThing();
     }
@@ -338,6 +343,24 @@ public class ResolverBuilderTest {
 
         public String getUserHandle(String name) {
             return "@" + super.getNickname(name);
+        }
+    }
+
+    public static class RecordLikeClass {
+        private final String name;
+
+        public RecordLikeClass(String name) {
+            this.name = name;
+        }
+
+        //Record-like accessor
+        public String name() {
+            return name;
+        }
+
+        //Not an accessor
+        public String more() {
+            return name;
         }
     }
 }

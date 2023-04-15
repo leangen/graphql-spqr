@@ -80,11 +80,15 @@ public class PublicResolverBuilder extends AbstractResolverBuilder {
 
     @Override
     public Collection<Resolver> buildQueryResolvers(ResolverBuilderParams params) {
-        Set<Property> properties = ClassUtils.getProperties(ClassUtils.getRawType(params.getBeanType().getType()));
+        Set<Property> properties = findProperties(params);
         Collection<Resolver> propertyAccessors = buildPropertyAccessors(properties.stream(), params);
         Collection<Resolver> methodInvokers = buildMethodInvokers(params, (method, par) -> isQuery(method, par) && properties.stream().noneMatch(prop -> prop.getGetter().equals(method)), OperationDefinition.Operation.QUERY, true);
         Collection<Resolver> fieldAccessors = buildFieldAccessors(params);
         return Utils.concat(methodInvokers.stream(), propertyAccessors.stream(), fieldAccessors.stream()).collect(Collectors.toSet());
+    }
+
+    protected Set<Property> findProperties(ResolverBuilderParams params) {
+        return ClassUtils.getProperties(ClassUtils.getRawType(params.getBeanType().getType()));
     }
 
     @Override
