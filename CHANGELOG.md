@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+
+### Fixed
+
+- Restored public accessibility of`ResolvedField` [#455](https://github.com/leangen/graphql-spqr/issues/455)
+
 ## [0.12.2] - 2023-04-15
 
 ### Added

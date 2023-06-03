@@ -9,7 +9,7 @@ import io.leangen.graphql.util.GraphQLUtils;
 
 import java.util.Map;
 
-class ResolvedField {
+public class ResolvedField {
 
     private final FieldCoordinates coordinates;
     private final GraphQLNamedOutputType fieldType;
@@ -26,23 +26,23 @@ class ResolvedField {
         this.field = field;
     }
 
-    FieldCoordinates getCoordinates() {
+    public FieldCoordinates getCoordinates() {
         return coordinates;
     }
 
-    GraphQLNamedOutputType getFieldType() {
+    public GraphQLNamedOutputType getFieldType() {
         return fieldType;
     }
 
-    Map<String, Object> getArguments() {
+    public Map<String, Object> getArguments() {
         return arguments;
     }
 
-    ExecutableNormalizedField getField() {
+    public ExecutableNormalizedField getField() {
         return field;
     }
 
-    Resolver getResolver() {
+    public Resolver getResolver() {
         return resolver;
     }
 
