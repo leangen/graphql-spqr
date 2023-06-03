@@ -35,7 +35,7 @@ public class Expressions {
             // read in the next token (operator or value)
             String s = tokens.poll();
 
-            if (s.isBlank()) {
+            if (s.trim().isEmpty()) {
                 continue;
             }
 

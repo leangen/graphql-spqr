@@ -8,8 +8,7 @@ import java.lang.annotation.*;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE_USE)
-@Deprecated(forRemoval = true)
-
+@Deprecated
 public @interface GraphQLUnion {
 
     String name() default "";

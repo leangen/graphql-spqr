@@ -2,6 +2,7 @@ package io.leangen.graphql;
 
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static io.leangen.graphql.execution.complexity.Expressions.eval;
@@ -33,19 +34,19 @@ public class ExpressionEvalTest {
     @Test
     public void intVariablesTest() {
         assertEquals(-48, eval("x + word * 6 - 7 * (camelCase + 5)",
-                Map.of("x", 13, "word", 5, "camelCase", 8)).intValue());
+                vars("x", 13, "word", 5, "camelCase", 8)).intValue());
     }
 
     @Test
     public void stringVariablesTest() {
         assertEquals(-48, eval("x + word * 6 - 7 * (camelCase + 5)",
-                Map.of("x", "13", "word", "5", "camelCase", "8")).intValue());
+                vars("x", "13", "word", "5", "camelCase", "8")).intValue());
     }
 
     @Test
     public void mixedVariablesTest() {
         assertEquals(-48, eval("x + word * 6 - 7 * (camelCase + 5)",
-                Map.of("x", 13, "word", "5", "camelCase", 8)).intValue());
+                vars("x", 13, "word", "5", "camelCase", 8)).intValue());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -56,5 +57,13 @@ public class ExpressionEvalTest {
     @Test(expected = IllegalArgumentException.class)
     public void missingVariableTest() {
         eval("5 * x", emptyMap());
+    }
+
+    private static Map<String, Object> vars(Object... objects) {
+        Map<String, Object> vars = new HashMap<>();
+        for (int i = 0; i < objects.length; i+=2) {
+            vars.put(objects[i].toString(), objects[i+1]);
+        }
+        return vars;
     }
 }
