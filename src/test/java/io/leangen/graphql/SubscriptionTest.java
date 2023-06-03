@@ -5,6 +5,7 @@ import graphql.GraphQL;
 import graphql.Scalars;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLSchema;
+import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLSubscription;
 import io.reactivex.BackpressureStrategy;
@@ -26,11 +27,20 @@ import static org.junit.Assert.fail;
 public class SubscriptionTest {
 
     @Test
-    @SuppressWarnings("ReactiveStreamsSubscriberImplementation")
     public void subscriptionTest() {
+        testSubscription(new Ticker());
+    }
+
+    @Test
+    public void nonNullPublisherSubscriptionTest() {
+        testSubscription(new NonNullTicker());
+    }
+
+    @SuppressWarnings("ReactiveStreamsSubscriberImplementation")
+    private void testSubscription(Ticker ticker) {
 
         GraphQLSchema schema = new GraphQLSchemaGenerator()
-                .withOperationsFromSingleton(new Ticker())
+                .withOperationsFromSingleton(ticker)
                 .generate();
 
         List<GraphQLFieldDefinition> subscriptions = schema.getSubscriptionType().getFieldDefinitions();
@@ -74,6 +84,7 @@ public class SubscriptionTest {
         public String makeSchemaValidationPass;
 
         @GraphQLSubscription
+        @SuppressWarnings("BlockingMethodInNonBlockingContext")
         public Publisher<Integer> tick() {
             Observable<Integer> observable = Observable.create(emitter -> {
                 emitter.onNext(1);
@@ -84,6 +95,13 @@ public class SubscriptionTest {
             });
 
             return observable.toFlowable(BackpressureStrategy.BUFFER);
+        }
+    }
+
+    public static class NonNullTicker extends Ticker {
+        @GraphQLSubscription
+        public @GraphQLNonNull Publisher<Integer> tick() {
+            return super.tick();
         }
     }
 }

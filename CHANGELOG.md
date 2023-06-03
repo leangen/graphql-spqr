@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Restored public accessibility of`ResolvedField` [#455](https://github.com/leangen/graphql-spqr/issues/455)
+- Restored public accessibility of `ResolvedField` [#455](https://github.com/leangen/graphql-spqr/issues/455)
 - Restored Java 8 support [#457](https://github.com/leangen/graphql-spqr/issues/457)
+- Subscription methods returning a non-null `Publisher` are now mapped correctly [#458](https://github.com/leangen/graphql-spqr/issues/458)
 
 ## [0.12.2] - 2023-04-15
 

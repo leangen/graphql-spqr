@@ -4,10 +4,7 @@ import graphql.ExceptionWhileDataFetching;
 import graphql.execution.DataFetcherResult;
 import graphql.execution.ExecutionStepInfo;
 import graphql.language.OperationDefinition;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLList;
-import graphql.schema.GraphQLOutputType;
+import graphql.schema.*;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
 import io.leangen.graphql.execution.ResolutionEnvironment;
@@ -58,7 +55,7 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper<Object> 
 
     @Override
     public GraphQLFieldDefinition transformField(GraphQLFieldDefinition field, Operation operation, OperationMapper operationMapper, BuildContext buildContext) {
-        //Publisher returned from a subscription must be mapped as singular result (i.e. not a list)
+        //Publisher returned from a subscription must be mapped as a singular result (i.e. not a list)
         if (operation.getOperationType() == OperationDefinition.Operation.SUBSCRIPTION) {
             return field.transform(builder -> builder.type(unwrapList(field.getType())));
         }
@@ -91,7 +88,7 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper<Object> 
 
         executor.execute(() -> publisher.subscribe(new Subscriber<R>() {
 
-            private List<R> buffer = new ArrayList<>();
+            private final List<R> buffer = new ArrayList<>();
 
             @Override
             public void onSubscribe(Subscription subscription) {
@@ -121,7 +118,12 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper<Object> 
     }
 
     private GraphQLOutputType unwrapList(GraphQLOutputType type) {
-        if (type instanceof GraphQLList) {
+        if (type instanceof GraphQLNonNull) {
+            GraphQLType wrapped = ((GraphQLNonNull) type).getWrappedType();
+            if (wrapped instanceof GraphQLList) {
+                return (GraphQLOutputType) ((GraphQLList) wrapped).getWrappedType();
+            }
+        } else if (type instanceof GraphQLList) {
             return (GraphQLOutputType) ((GraphQLList) type).getWrappedType();
         }
         return type;
