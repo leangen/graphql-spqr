@@ -89,6 +89,7 @@ public class ClassUtils {
                 .map(getter -> findFieldByGetter(getter)
                         .filter(ClassUtils::isReal)
                         .map(field -> new Property(field, getter))
+                        .filter(ClassUtils::isMembershipConsistent)
                         .filter(prop -> prop.getField().getType().equals(prop.getGetter().getReturnType()))
                         .filter(prop -> !Modifier.isPublic(prop.getField().getModifiers()))
                         .filter(prop -> !Modifier.isAbstract(prop.getGetter().getModifiers())))
@@ -408,6 +409,16 @@ public class ClassUtils {
     @Deprecated
     public static List<AnnotatedType> findImplementations(AnnotatedType superType, String... packages) {
         return new ClassFinder().findImplementations(superType, info -> true, false, packages);
+    }
+
+    public static boolean isStatic(Member member) {
+        return Modifier.isStatic(member.getModifiers());
+    }
+
+    //Checks whether the field and the getter are either both instance or both static members
+    private static boolean isMembershipConsistent(Property p) {
+        return (isStatic(p.getField()) && isStatic(p.getGetter()))
+                || (!isStatic(p.getField()) && !isStatic(p.getGetter()));
     }
 
     public static boolean isAbstract(AnnotatedType type) {

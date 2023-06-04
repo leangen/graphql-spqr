@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [unreleased]
 
+### Added
+
+- Enable easier exclusion of static members [#460](https://github.com/leangen/graphql-spqr/issues/460)
+
 ### Fixed
 
 - Restored public accessibility of `ResolvedField` [#455](https://github.com/leangen/graphql-spqr/issues/455)

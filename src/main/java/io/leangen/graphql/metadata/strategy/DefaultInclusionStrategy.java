@@ -4,23 +4,25 @@ import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class DefaultInclusionStrategy implements InclusionStrategy {
 
     private final String[] basePackages;
+    private final List<Predicate<AnnotatedElement>> operationElementFilters;
 
     public DefaultInclusionStrategy(String... basePackages) {
         this.basePackages = basePackages;
+        this.operationElementFilters = new ArrayList<>();
     }
 
     @Override
     public boolean includeOperation(List<AnnotatedElement> elements, AnnotatedType declaringType) {
-        return elements.stream().allMatch(element -> ClassUtils.isReal(element) && !isIgnored(element));
+        return elements.stream().allMatch(element -> ClassUtils.isReal(element) && !isIgnored(element) && isAccepted(element));
     }
 
     @Override
@@ -60,5 +62,14 @@ public class DefaultInclusionStrategy implements InclusionStrategy {
 
     protected boolean isIgnored(AnnotatedElement element) {
         return ClassUtils.hasAnnotation(element, GraphQLIgnore.class);
+    }
+
+    public DefaultInclusionStrategy excludeStaticMembers() {
+        this.operationElementFilters.add(e -> !Modifier.isStatic(((Member) e).getModifiers()));
+        return this;
+    }
+
+    private boolean isAccepted(AnnotatedElement element) {
+        return operationElementFilters.stream().allMatch(filter -> filter.test(element));
     }
 }
