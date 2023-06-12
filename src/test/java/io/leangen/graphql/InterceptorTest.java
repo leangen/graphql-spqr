@@ -6,9 +6,12 @@ import graphql.GraphQL;
 import graphql.execution.SimpleDataFetcherExceptionHandler;
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLEnvironment;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.execution.InvocationContext;
+import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.execution.ResolverInterceptor;
+import io.leangen.graphql.generator.mapping.OutputConverter;
 import io.leangen.graphql.support.TestLog;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -18,11 +21,14 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.AnnotatedType;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
+import static io.leangen.graphql.support.QueryResultAssertions.assertErrorsEqual;
 import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
 import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
 import static org.junit.Assert.assertEquals;
@@ -93,6 +99,48 @@ public class InterceptorTest {
         }
     }
 
+    @Test
+    public void interceptorOrderTest() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new TracedService())
+                .withOutputConverters(new OutputConverter<String, String>() {
+                    @Override
+                    public String convertOutput(String original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
+                        resolutionEnvironment.addError("Conversion: exit");
+                        return original;
+                    }
+
+                    @Override
+                    public boolean supports(AnnotatedElement element, AnnotatedType type) {
+                        return type.getType() == String.class;
+                    }
+                })
+                .withResolverInterceptors(new ErrorAppendingInterceptor("Inner 1"), new ErrorAppendingInterceptor("Inner 2"))
+                .withOuterResolverInterceptors(new ErrorAppendingInterceptor("Outer 1"), new ErrorAppendingInterceptor("Outer 2"))
+                .generate();
+
+        GraphQL graphQL = GraphQL.newGraphQL(schema).build();
+        ExecutionInput input = ExecutionInput.newExecutionInput()
+                .query("{trace}")
+                .build();
+
+       ExecutionResult result = graphQL.execute(input);
+       assertErrorsEqual(result, "Outer 1: enter", "Outer 2: enter", "Inner 1: enter", "Inner 2: enter",
+               "Resolver called", "Inner 2: exit", "Inner 1: exit", "Conversion: exit", "Outer 2: exit", "Outer 1: exit");
+    }
+
+    @Test
+    public void interceptorOnNullTest() {
+        GraphQLSchema schema = new GraphQLSchemaGenerator()
+                .withOperationsFromSingleton(new TracedService())
+                .generate();
+
+        GraphQL api = GraphQL.newGraphQL(schema).build();
+
+        ExecutionResult result = api.execute("{nil}");
+        assertErrorsEqual(result, "Resolver called");
+    }
+
     private static class AuthInterceptor implements ResolverInterceptor {
 
         @Override
@@ -147,6 +195,24 @@ public class InterceptorTest {
         }
     }
 
+    private static class ErrorAppendingInterceptor implements ResolverInterceptor {
+
+        private final String id;
+
+        ErrorAppendingInterceptor(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public Object aroundInvoke(InvocationContext context, Continuation continuation) throws Exception {
+            ResolutionEnvironment env = context.getResolutionEnvironment();
+            env.addError(id + ": enter");
+            Object result = continuation.proceed(context);
+            env.addError(id + ": exit");
+            return result;
+        }
+    }
+
     private static class User {
         private final Set<String> roles;
 
@@ -177,6 +243,20 @@ public class InterceptorTest {
         @GraphQLQuery
         public String test(@GraphQLArgument(name = "string") String s, @GraphQLArgument(name = "int") int i) {
             return s + i;
+        }
+    }
+
+    public static class TracedService {
+        @GraphQLQuery
+        public String trace(@GraphQLEnvironment ResolutionEnvironment env) {
+            env.addError("Resolver called");
+            return "";
+        }
+
+        @GraphQLQuery
+        public String nil(@GraphQLEnvironment ResolutionEnvironment env) {
+            env.addError("Resolver called");
+            return null;
         }
     }
 

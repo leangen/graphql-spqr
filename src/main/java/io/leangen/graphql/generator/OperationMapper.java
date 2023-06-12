@@ -1,37 +1,13 @@
 package io.leangen.graphql.generator;
 
 import graphql.relay.Relay;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLAppliedDirective;
-import graphql.schema.GraphQLAppliedDirectiveArgument;
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLDirective;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLInputObjectField;
-import graphql.schema.GraphQLInputObjectType;
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLNamedOutputType;
-import graphql.schema.GraphQLNamedType;
-import graphql.schema.GraphQLNonNull;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLType;
-import graphql.schema.GraphQLUnionType;
-import graphql.schema.PropertyDataFetcher;
+import graphql.schema.*;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.execution.OperationExecutor;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
-import io.leangen.graphql.metadata.Directive;
-import io.leangen.graphql.metadata.DirectiveArgument;
-import io.leangen.graphql.metadata.InputField;
-import io.leangen.graphql.metadata.Operation;
-import io.leangen.graphql.metadata.OperationArgument;
-import io.leangen.graphql.metadata.TypedElement;
+import io.leangen.graphql.metadata.*;
 import io.leangen.graphql.metadata.exceptions.MappingException;
 import io.leangen.graphql.metadata.strategy.query.DirectiveBuilderParams;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
@@ -45,16 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -443,9 +410,7 @@ public class OperationMapper {
         OperationExecutor executor = new OperationExecutor(operation, valueMapper, buildContext.globalEnvironment, buildContext.interceptorFactory);
         if (operation.isBatched()) {
             String loaderName = parentType + ':' + operation.getName();
-            BatchLoaderWithContext<?, ?> batchLoader = operation.isAsync()
-                    ? createBatchLoader(executor)
-                    : createAsyncBatchLoader(executor);
+            BatchLoaderWithContext<?, ?> batchLoader = createBatchLoader(executor);
             this.batchResolvers.put(loaderName, batchLoader);
             //TODO Investigate whether it makes sense to support interceptors for data loader dispatchers
             return env -> env.getDataLoader(loaderName).load(env.getSource(), env);
@@ -462,19 +427,6 @@ public class OperationMapper {
                 return failedFuture(e);
             }
         };
-    }
-
-    @SuppressWarnings("unchecked")
-    private BatchLoaderWithContext<?, ?> createAsyncBatchLoader(OperationExecutor executor) {
-        return (keys, env) -> CompletableFuture.supplyAsync(()-> {
-            try {
-                return (List<Object>) executor.execute(keys, env);
-            } catch (CompletionException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new CompletionException(e);
-            }
-        });
     }
 
     /**

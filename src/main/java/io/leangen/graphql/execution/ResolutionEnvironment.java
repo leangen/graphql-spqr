@@ -1,7 +1,8 @@
 package io.leangen.graphql.execution;
 
+import graphql.ErrorType;
 import graphql.GraphQLError;
-import graphql.execution.DataFetcherResult;
+import graphql.GraphqlErrorBuilder;
 import graphql.execution.ExecutionStepInfo;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLNamedType;
@@ -20,10 +21,8 @@ import org.dataloader.BatchLoaderEnvironment;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -97,25 +96,6 @@ public class ResolutionEnvironment {
         return convert(output, element, type);
     }
 
-    Object adaptOutput(Object output, AnnotatedElement element, AnnotatedType type) {
-        if (output == null) {
-            return null;
-        }
-
-        // Transparently handle unexpected wrapped results. This enables elegant exception handling, partial results etc.
-        if (DataFetcherResult.class.equals(output.getClass()) /*&& !DataFetcherResult.class.equals(resolver.getRawReturnType())*/) {
-            DataFetcherResult<?> result = (DataFetcherResult<?>) output;
-            if (result.getData() == null) {
-                return result;
-            }
-            return result.transform(res -> res
-                    .data(convert(result.getData(), element, type))
-                    .errors(errors));
-        }
-        Object converted = convert(output, element, type);
-        return errors.isEmpty() ? converted : DataFetcherResult.newResult().data(converted).errors(errors).build();
-    }
-
     @SuppressWarnings("unchecked")
     private <T, S> S convert(T output, AnnotatedElement element, AnnotatedType type) {
         OutputConverter<T, S> outputConverter = converters.getOutputConverter(element, type);
@@ -145,6 +125,27 @@ public class ResolutionEnvironment {
             arguments.put(argument.getName(), value);
         }
         return value;
+    }
+
+    public void addError(String message, Object... formatArgs) {
+        this.errors.addAll(createErrors(message, formatArgs));
+    }
+
+    public List<GraphQLError> createErrors(String message, Object... formatArgs) {
+        if (dataFetchingEnvironment != null) {
+            return Collections.singletonList(error(dataFetchingEnvironment, message, formatArgs));
+        }
+        return batchLoaderEnvironment.getKeyContextsList().stream()
+                .filter(k -> k instanceof DataFetchingEnvironment)
+                .map(e -> error((DataFetchingEnvironment) e, message, formatArgs))
+                .collect(Collectors.toList());
+    }
+
+    private static GraphQLError error(DataFetchingEnvironment env, String message, Object... formatArgs) {
+        return GraphqlErrorBuilder.newError(env)
+                .message(message, formatArgs)
+                .errorType(ErrorType.DataFetchingException)
+                .build();
     }
 
     public Directives getDirectives(ExecutionStepInfo step) {

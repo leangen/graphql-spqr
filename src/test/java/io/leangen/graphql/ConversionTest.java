@@ -1,16 +1,16 @@
 package io.leangen.graphql;
 
-import graphql.ErrorType;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import graphql.GraphqlErrorBuilder;
 import graphql.execution.DataFetcherResult;
 import graphql.schema.GraphQLSchema;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLArgument;
+import io.leangen.graphql.annotations.GraphQLEnvironment;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.execution.InvocationContext;
+import io.leangen.graphql.execution.ResolutionEnvironment;
 import io.leangen.graphql.execution.ResolverInterceptor;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.OutputConverter;
@@ -27,15 +27,7 @@ import org.junit.runners.Parameterized;
 
 import java.lang.annotation.ElementType;
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -120,13 +112,13 @@ public class ConversionTest {
         GraphQLSchema schema = new GraphQLSchemaGenerator()
                 .withValueMapperFactory(valueMapperFactory)
                 .withOperationsFromSingleton(new ImplicitlyWrappedService())
-                .withResolverInterceptors(new ErrorAppendingInterceptor())
+                .withOuterResolverInterceptors(new ErrorAppendingInterceptor())
                 .generate();
 
         GraphQL api = GraphQL.newGraphQL(schema).build();
 
         ExecutionResult result = api.execute("{test}");
-        assertErrorsEqual(result, "Test error");
+        assertErrorsEqual(result, "Test error", "Original error");
         assertValueAtPathEquals(11, result, "test.0");
         assertValueAtPathEquals(22, result, "test.1");
     }
@@ -314,7 +306,8 @@ public class ConversionTest {
 
     public static class ImplicitlyWrappedService {
         @GraphQLQuery
-        public List<OptionalInt> test() {
+        public List<OptionalInt> test(@GraphQLEnvironment ResolutionEnvironment env) {
+            env.addError("Original error");
             return Arrays.asList(OptionalInt.of(11), OptionalInt.of(22));
         }
     }
@@ -325,10 +318,7 @@ public class ConversionTest {
         public Object aroundInvoke(InvocationContext context, ResolverInterceptor.Continuation continuation) throws Exception {
             return DataFetcherResult.newResult()
                     .data(continuation.proceed(context))
-                    .error(GraphqlErrorBuilder.newError(context.getResolutionEnvironment().dataFetchingEnvironment)
-                            .message("Test error")
-                            .errorType(ErrorType.DataFetchingException)
-                            .build())
+                    .errors(context.getResolutionEnvironment().createErrors("Test error"))
                     .build();
         }
     }

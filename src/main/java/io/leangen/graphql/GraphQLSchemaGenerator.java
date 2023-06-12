@@ -14,7 +14,7 @@ import io.leangen.graphql.generator.mapping.SchemaTransformer;
 import io.leangen.graphql.generator.mapping.*;
 import io.leangen.graphql.generator.mapping.common.*;
 import io.leangen.graphql.generator.mapping.core.CompletableFutureAdapter;
-import io.leangen.graphql.generator.mapping.core.DataFetcherResultMapper;
+import io.leangen.graphql.generator.mapping.core.DataFetcherResultAdapter;
 import io.leangen.graphql.generator.mapping.core.PublisherAdapter;
 import io.leangen.graphql.generator.mapping.strategy.*;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
@@ -34,6 +34,7 @@ import io.leangen.graphql.util.*;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -95,6 +96,7 @@ public class GraphQLSchemaGenerator {
     private GlobalEnvironment environment;
     private String[] basePackages = Utils.emptyArray();
     private final DelegatingMessageBundle messageBundle = new DelegatingMessageBundle();
+    private Executor batchLoaderExecutor;
     private List<TypeMapper> typeMappers;
     private List<SchemaTransformer> transformers;
     private Comparator<AnnotatedType> typeComparator;
@@ -587,8 +589,26 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    public GraphQLSchemaGenerator withResolverInterceptors(List<ResolverInterceptor> innerInterceptors,
+                                                           List<ResolverInterceptor> outerInterceptors) {
+        return withResolverInterceptorFactories((config, current) -> current.append(
+                new GlobalResolverInterceptorFactory(innerInterceptors, outerInterceptors)));
+    }
+
     public GraphQLSchemaGenerator withResolverInterceptors(ResolverInterceptor... interceptors) {
-        return withResolverInterceptorFactories((config, current) -> current.append(new GlobalResolverInterceptorFactory(Arrays.asList(interceptors))));
+        return withResolverInterceptors(Arrays.asList(interceptors));
+    }
+
+    public GraphQLSchemaGenerator withResolverInterceptors(List<ResolverInterceptor> interceptors) {
+        return withResolverInterceptorFactories((config, current) -> current.append(GlobalResolverInterceptorFactory.early(interceptors)));
+    }
+
+    public GraphQLSchemaGenerator withOuterResolverInterceptors(ResolverInterceptor... interceptors) {
+        return withOuterResolverInterceptors(Arrays.asList(interceptors));
+    }
+
+    public GraphQLSchemaGenerator withOuterResolverInterceptors(List<ResolverInterceptor> interceptors) {
+        return withResolverInterceptorFactories((config, current) -> current.append(GlobalResolverInterceptorFactory.late(interceptors)));
     }
 
     public GraphQLSchemaGenerator withResolverInterceptorFactories(ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory> provider) {
@@ -612,6 +632,11 @@ public class GraphQLSchemaGenerator {
                                                       CodeRegistryBuilder codeRegistryUpdater) {
         this.additionalTypeMappings.putAll(additionalTypeMappings);
         additionalTypes.forEach(type -> merge(type, this.additionalTypes, codeRegistryUpdater, this.codeRegistry));
+        return this;
+    }
+
+    public GraphQLSchemaGenerator withBatchLoaderExecutor(Executor executor) {
+        this.batchLoaderExecutor = executor;
         return this;
     }
 
@@ -815,7 +840,7 @@ public class GraphQLSchemaGenerator {
                 new NonNullMapper(), new IdAdapter(), new ScalarMapper(), new CompletableFutureAdapter<>(),
                 publisherAdapter, new AnnotationMapper(), new OptionalIntAdapter(), new OptionalLongAdapter(), new OptionalDoubleAdapter(),
                 enumMapper, new ArrayAdapter(), new UnionTypeMapper(), new UnionInlineMapper(),
-                new StreamToCollectionTypeAdapter(), new DataFetcherResultMapper<>(), new VoidToBooleanTypeAdapter(),
+                new StreamToCollectionTypeAdapter(), new DataFetcherResultAdapter<>(), new VoidToBooleanTypeAdapter(),
                 new ListMapper(), new IterableAdapter<>(), new PageMapper(), new OptionalAdapter(), new EnumMapToObjectTypeAdapter(enumMapper),
                 new ObjectScalarMapper(), new InterfaceMapper(interfaceStrategy, objectTypeMapper), objectTypeMapper);
         for (ExtensionProvider<GeneratorConfiguration, TypeMapper> provider : typeMapperProviders) {
@@ -853,7 +878,8 @@ public class GraphQLSchemaGenerator {
         }
         checkForDuplicates("argument injectors", argumentInjectors);
 
-        List<ResolverInterceptorFactory> interceptorFactories = Collections.singletonList(new VoidToBooleanTypeAdapter());
+        List<ResolverInterceptorFactory> interceptorFactories = Arrays.asList(
+                new DataFetcherResultAdapter<>(), new BatchLoaderAdapterFactory(batchLoaderExecutor), new VoidToBooleanTypeAdapter());
         for (ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory> provider : this.interceptorFactoryProviders) {
             interceptorFactories = provider.getExtensions(configuration, new ExtensionList<>(interceptorFactories));
         }
@@ -1091,15 +1117,31 @@ public class GraphQLSchemaGenerator {
 
     private static class GlobalResolverInterceptorFactory implements ResolverInterceptorFactory {
 
-        private final List<ResolverInterceptor> interceptors;
+        private final List<ResolverInterceptor> earlyInterceptors;
+        private final List<ResolverInterceptor> lateInterceptors;
 
-        private GlobalResolverInterceptorFactory(List<ResolverInterceptor> interceptors) {
-            this.interceptors = interceptors;
+        GlobalResolverInterceptorFactory(List<ResolverInterceptor> earlyInterceptors,
+                                         List<ResolverInterceptor> lateInterceptors) {
+            this.earlyInterceptors = earlyInterceptors;
+            this.lateInterceptors = lateInterceptors;
+        }
+
+        static GlobalResolverInterceptorFactory early(List<ResolverInterceptor> interceptors) {
+            return new GlobalResolverInterceptorFactory(interceptors, Collections.emptyList());
+        }
+
+        static GlobalResolverInterceptorFactory late(List<ResolverInterceptor> interceptors) {
+            return new GlobalResolverInterceptorFactory(Collections.emptyList(), interceptors);
         }
 
         @Override
         public List<ResolverInterceptor> getInterceptors(ResolverInterceptorFactoryParams params) {
-            return interceptors;
+            return earlyInterceptors;
+        }
+
+        @Override
+        public List<ResolverInterceptor> getOuterInterceptors(ResolverInterceptorFactoryParams params) {
+            return lateInterceptors;
         }
     }
 
@@ -1115,6 +1157,13 @@ public class GraphQLSchemaGenerator {
         public List<ResolverInterceptor> getInterceptors(ResolverInterceptorFactoryParams params) {
             return delegates.stream()
                     .flatMap(delegate -> delegate.getInterceptors(params).stream())
+                    .collect(Collectors.toList());
+        }
+
+        @Override
+        public List<ResolverInterceptor> getOuterInterceptors(ResolverInterceptorFactoryParams params) {
+            return delegates.stream()
+                    .flatMap(delegate -> delegate.getOuterInterceptors(params).stream())
                     .collect(Collectors.toList());
         }
     }
