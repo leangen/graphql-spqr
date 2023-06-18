@@ -67,7 +67,7 @@ public class Resolver {
         return operationName;
     }
 
-    private void validateBatching(String executableSignature, AnnotatedType returnType, Set<OperationArgument> contextArguments) {
+    protected void validateBatching(String executableSignature, AnnotatedType returnType, Set<OperationArgument> contextArguments) {
         if (contextArguments.isEmpty()
                 || !contextArguments.stream().map(arg -> arg.getJavaType().getType()).allMatch(type -> GenericTypeReflector.isSuperType(List.class, type))
                 || !(GenericTypeReflector.isSuperType(List.class, returnType.getType()) || isListPromise(returnType))) {

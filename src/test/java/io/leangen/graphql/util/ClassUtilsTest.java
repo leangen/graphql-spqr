@@ -1,9 +1,9 @@
 package io.leangen.graphql.util;
 
+import org.junit.Test;
+
 import java.lang.reflect.Method;
 import java.util.Optional;
-
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -31,10 +31,12 @@ public class ClassUtilsTest {
         assertFalse(fooGetter.isPresent());
     }
 
+    @SuppressWarnings("unused")
     public Object getFoo() {
         return null;
     }
 
+    @SuppressWarnings("unused")
     public boolean isBar() {
         return false;
     }

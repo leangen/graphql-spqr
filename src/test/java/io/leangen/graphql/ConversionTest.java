@@ -318,7 +318,7 @@ public class ConversionTest {
         public Object aroundInvoke(InvocationContext context, ResolverInterceptor.Continuation continuation) throws Exception {
             return DataFetcherResult.newResult()
                     .data(continuation.proceed(context))
-                    .errors(context.getResolutionEnvironment().createErrors("Test error"))
+                    .error(context.getResolutionEnvironment().createError("Test error"))
                     .build();
         }
     }

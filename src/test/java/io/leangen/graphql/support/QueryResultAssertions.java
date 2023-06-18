@@ -2,12 +2,9 @@ package io.leangen.graphql.support;
 
 import graphql.ExecutionResult;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -30,6 +27,13 @@ public class QueryResultAssertions {
         }
     }
 
+    public static void assertErrorPathsEqual(ExecutionResult result, String... paths) {
+        assertEquals(paths.length, result.getErrors().size());
+        for (int i = 0; i < paths.length; i++) {
+            assertEquals(paths[i], toString(result.getErrors().get(i).getPath()));
+        }
+    }
+
     public static void assertValueAtPathEquals(Object expected, ExecutionResult result, String path) {
         Object actual = get(path, result);
         if (expected instanceof Number) {
@@ -49,7 +53,7 @@ public class QueryResultAssertions {
     }
 
     private static Object get(String path, ExecutionResult result) {
-        return get(new LinkedList<>(Arrays.asList(path.split("\\."))), result.getData());
+        return get(new ArrayDeque<>(Arrays.asList(path.split("\\."))), result.getData());
     }
 
     @SuppressWarnings("unchecked")
@@ -64,5 +68,11 @@ public class QueryResultAssertions {
         } catch (NumberFormatException e) {
             return get(path, ((Map<String, Object>) result).get(currentKey));
         }
+    }
+
+    private static String toString(List<Object> path) {
+        return path.stream()
+                .map(Object::toString)
+                .collect(Collectors.joining("."));
     }
 }

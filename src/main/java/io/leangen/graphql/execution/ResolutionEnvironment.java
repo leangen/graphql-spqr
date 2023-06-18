@@ -21,8 +21,10 @@ import org.dataloader.BatchLoaderEnvironment;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -70,16 +72,16 @@ public class ResolutionEnvironment {
     public ResolutionEnvironment(Resolver resolver, List<Object> keys, BatchLoaderEnvironment env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment,
                                  ConverterRegistry converters, DerivedTypeRegistry derivedTypes) {
 
-        DataFetchingEnvironment inner = firstResolutionEnvironment(env.getKeyContextsList());
+        DataFetchingEnvironment inner = dataFetchingEnvironment(env.getKeyContextsList());
         this.context = keys;
-        this.rootContext = inner.getContext();
+        this.rootContext = inner != null ? inner.getContext() : null;
         this.batchContext = env.getContext();
         this.resolver = resolver;
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
-        this.fieldType = inner.getFieldType();
-        this.parentType = (GraphQLNamedType) inner.getParentType();
-        this.graphQLSchema = inner.getGraphQLSchema();
+        this.fieldType = inner != null ? inner.getFieldType() : null;
+        this.parentType = inner != null ? (GraphQLNamedType) inner.getParentType() : null;
+        this.graphQLSchema = inner != null ? inner.getGraphQLSchema() : null;
         this.dataFetchingEnvironment = null;
         this.batchLoaderEnvironment = env;
         this.arguments = new HashMap<>();
@@ -128,21 +130,14 @@ public class ResolutionEnvironment {
     }
 
     public void addError(String message, Object... formatArgs) {
-        this.errors.addAll(createErrors(message, formatArgs));
+        this.errors.add(createError(message, formatArgs));
     }
 
-    public List<GraphQLError> createErrors(String message, Object... formatArgs) {
-        if (dataFetchingEnvironment != null) {
-            return Collections.singletonList(error(dataFetchingEnvironment, message, formatArgs));
-        }
-        return batchLoaderEnvironment.getKeyContextsList().stream()
-                .filter(k -> k instanceof DataFetchingEnvironment)
-                .map(e -> error((DataFetchingEnvironment) e, message, formatArgs))
-                .collect(Collectors.toList());
-    }
-
-    private static GraphQLError error(DataFetchingEnvironment env, String message, Object... formatArgs) {
-        return GraphqlErrorBuilder.newError(env)
+    public GraphQLError createError(String message, Object... formatArgs) {
+        GraphqlErrorBuilder<?> builder = dataFetchingEnvironment != null
+                ? GraphqlErrorBuilder.newError(dataFetchingEnvironment)
+                : GraphqlErrorBuilder.newError();
+        return builder
                 .message(message, formatArgs)
                 .errorType(ErrorType.DataFetchingException)
                 .build();
@@ -160,10 +155,10 @@ public class ResolutionEnvironment {
         return ContextUtils.unwrapContext(rootContext);
     }
 
-    private static DataFetchingEnvironment firstResolutionEnvironment(List<Object> keyContexts) {
+    private static DataFetchingEnvironment dataFetchingEnvironment(List<Object> keyContexts) {
         if (keyContexts == null || keyContexts.isEmpty() || !(keyContexts.get(0) instanceof DataFetchingEnvironment)) {
             return null;
         }
-        return ((DataFetchingEnvironment) keyContexts.get(0));
+        return (DataFetchingEnvironment) keyContexts.get(0);
     }
 }

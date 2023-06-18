@@ -8,6 +8,7 @@ import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimplePerformantInstrumentation;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
+import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.execution.complexity.ComplexityAnalysisInstrumentation;
 import io.leangen.graphql.execution.complexity.ComplexityFunction;
@@ -126,7 +127,8 @@ public class GraphQLRuntime {
             //Init DataLoaders automatically
             DataLoaderOptions defaultOptions = dataLoaderOptions.getOrDefault(null,
                     DataLoaderOptions.newOptions()
-                            .setBatchLoaderContextProvider(input::getContext));
+                            .setBatchLoaderContextProvider(input::getContext)
+                            .setCacheKeyFunction(new CacheKeyFunction()));
             DataLoaderRegistry registry = input.getDataLoaderRegistry() != EMPTY_DATALOADER_REGISTRY
                     ? input.getDataLoaderRegistry()
                     : new DataLoaderRegistry();
@@ -142,6 +144,47 @@ public class GraphQLRuntime {
                 });
             }
             return input.transform(in -> in.dataLoaderRegistry(registry));
+        }
+    }
+
+    public static class CacheKeyFunction implements CacheKey<Object> {
+
+        @Override
+        public Object getKey(Object input) {
+            return input;
+        }
+
+        @Override
+        public Object getKeyWithContext(Object input, Object context) {
+            if (!(context instanceof DataFetchingEnvironment)) {
+                return input;
+            }
+            return new Key(input, ((DataFetchingEnvironment) context).getArguments());
+        }
+    }
+
+    public static class Key {
+        private final Object key;
+        private final Map<String, Object> arguments;
+
+        public Key(Object key, Map<String, Object> arguments) {
+            this.key = Objects.requireNonNull(key);
+            this.arguments = Objects.requireNonNull(arguments);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Key that = (Key) o;
+
+            return key.equals(that.key) && arguments.equals(that.arguments);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(key, arguments);
         }
     }
 }

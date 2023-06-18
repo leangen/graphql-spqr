@@ -1,7 +1,9 @@
 package io.leangen.graphql.generator.mapping.core;
 
 import graphql.GraphQLError;
+import graphql.GraphqlErrorBuilder;
 import graphql.execution.DataFetcherResult;
+import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLInputType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.*;
@@ -13,9 +15,9 @@ import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 public class DataFetcherResultAdapter<T> extends AbstractTypeSubstitutingMapper<T> implements
         DelegatingOutputConverter<DataFetcherResult<T>, DataFetcherResult<?>>, ResolverInterceptorFactory {
@@ -71,19 +73,51 @@ public class DataFetcherResultAdapter<T> extends AbstractTypeSubstitutingMapper<
 
     private static class ErrorAppender implements ResolverInterceptor {
         @Override
+        @SuppressWarnings("unchecked")
         public Object aroundInvoke(InvocationContext context, Continuation continuation) throws Exception {
             Object result = continuation.proceed(context);
-            List<GraphQLError> errors = context.getResolutionEnvironment().errors;
-            if (!errors.isEmpty()) {
-                if (result == null) {
-                    return DataFetcherResult.newResult().errors(errors).build();
-                }
-                if (result.getClass() == DataFetcherResult.class) {
-                    return ((DataFetcherResult<?>) result).transform(res -> res.errors(errors));
-                }
-                return DataFetcherResult.newResult().data(result).errors(errors).build();
+            ResolutionEnvironment env = context.getResolutionEnvironment();
+            List<GraphQLError> errors = env.errors;
+            if (errors.isEmpty()) {
+                return result;
             }
-            return result;
+            if (env.resolver.isBatched()) {
+                Objects.requireNonNull(env.batchLoaderEnvironment, "Batch loader invoked in a non-batched environment");
+                return ((CompletionStage<List<Object>>) result).thenApply(list -> {
+                            List<Object> remapped = new ArrayList<>(list.size());
+                            for (int i = 0; i < list.size(); i++) {
+                                Object keyContext = env.batchLoaderEnvironment.getKeyContextsList().get(i);
+                                if (keyContext instanceof DataFetchingEnvironment) {
+                                    remapped.add(appendErrors(list.get(i), bindErrors(errors, (DataFetchingEnvironment) keyContext)));
+                                } else {
+                                    remapped.add(appendErrors(list.get(i), errors));
+                                }
+                            }
+                            return remapped;
+                        }
+                );
+            }
+            return appendErrors(result, errors);
         }
+    }
+
+    private static List<GraphQLError> bindErrors(List<GraphQLError> errors, DataFetchingEnvironment env) {
+        return errors.stream()
+                .map(e -> GraphqlErrorBuilder.newError(env)
+                        .errorType(e.getErrorType())
+                        .message(e.getMessage())
+                        .extensions(e.getExtensions())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private static Object appendErrors(Object result, List<GraphQLError> errors) {
+        if (result == null) {
+            return DataFetcherResult.newResult().errors(errors).build();
+        }
+        if (result.getClass() == DataFetcherResult.class) {
+            return ((DataFetcherResult<?>) result).transform(res -> res.errors(errors));
+        }
+        return DataFetcherResult.newResult().data(result).errors(errors).build();
     }
 }

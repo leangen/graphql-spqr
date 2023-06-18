@@ -2,9 +2,6 @@ package io.leangen.graphql.domain;
 
 import io.leangen.graphql.annotations.GraphQLQuery;
 
-/**
- * Created by bojan.tomic on 6/24/16.
- */
 public class SimpleUser {
 
     private String fullName;

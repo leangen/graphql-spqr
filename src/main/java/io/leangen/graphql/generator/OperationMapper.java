@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.util.*;
-import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,7 +35,6 @@ import static graphql.schema.GraphQLInputObjectType.newInputObject;
 import static graphql.schema.GraphQLObjectType.newObject;
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
 import static io.leangen.graphql.util.GraphQLUtils.name;
-import static io.leangen.graphql.util.Utils.failedFuture;
 
 /**
  * <p>Drives the work of mapping Java structures into their GraphQL representations.</p>
@@ -54,6 +52,7 @@ public class OperationMapper {
     private final Map<String, GraphQLDirective> discoveredDirectives = new HashMap<>();
     private final List<GraphQLAppliedDirective> schemaDirectives; //The list of directives applied to the schema itself
     private final Map<String, BatchLoaderWithContext<?, ?>> batchResolvers = new HashMap<>();
+    private final BatchLoaderFactory batchloaderFactory = new BatchLoaderFactory();
 
     private static final Logger log = LoggerFactory.getLogger(OperationMapper.class);
 
@@ -410,23 +409,12 @@ public class OperationMapper {
         OperationExecutor executor = new OperationExecutor(operation, valueMapper, buildContext.globalEnvironment, buildContext.interceptorFactory);
         if (operation.isBatched()) {
             String loaderName = parentType + ':' + operation.getName();
-            BatchLoaderWithContext<?, ?> batchLoader = createBatchLoader(executor);
+            BatchLoaderWithContext<?, ?> batchLoader = batchloaderFactory.createBatchLoader(executor);
             this.batchResolvers.put(loaderName, batchLoader);
             //TODO Investigate whether it makes sense to support interceptors for data loader dispatchers
             return env -> env.getDataLoader(loaderName).load(env.getSource(), env);
         }
         return executor;
-    }
-
-    @SuppressWarnings("unchecked")
-    private BatchLoaderWithContext<?, ?> createBatchLoader(OperationExecutor executor) {
-        return (keys, env) -> {
-            try {
-                return (CompletionStage<List<Object>>) executor.execute(keys, env);
-            } catch (Exception e) {
-                return failedFuture(e);
-            }
-        };
     }
 
     /**

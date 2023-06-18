@@ -31,8 +31,8 @@ public class OperationExecutor implements DataFetcher<Object> {
     private final GlobalEnvironment globalEnvironment;
     private final ConverterRegistry converterRegistry;
     private final DerivedTypeRegistry derivedTypes;
-    private final Map<Resolver, List<ResolverInterceptor>> interceptors;
-    private final Map<Resolver, List<ResolverInterceptor>> lateInterceptors;
+    private final Map<Resolver, List<ResolverInterceptor>> innerInterceptors;
+    private final Map<Resolver, List<ResolverInterceptor>> outerInterceptors;
 
     public OperationExecutor(Operation operation, ValueMapper valueMapper, GlobalEnvironment globalEnvironment, ResolverInterceptorFactory interceptorFactory) {
         this.operation = operation;
@@ -40,9 +40,9 @@ public class OperationExecutor implements DataFetcher<Object> {
         this.globalEnvironment = globalEnvironment;
         this.converterRegistry = optimizeConverters(operation.getResolvers(), globalEnvironment.converters);
         this.derivedTypes = deriveTypes(operation.getResolvers(), converterRegistry);
-        this.interceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(),
+        this.innerInterceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(),
                 res -> interceptorFactory.getInterceptors(new ResolverInterceptorFactoryParams(res))));
-        this.lateInterceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(),
+        this.outerInterceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(),
                 res -> interceptorFactory.getOuterInterceptors(new ResolverInterceptorFactoryParams(res))));
     }
 
@@ -60,13 +60,13 @@ public class OperationExecutor implements DataFetcher<Object> {
         return execute(resolver, resolutionEnvironment, arguments);
     }
 
-    public Object execute(List<Object> keys, BatchLoaderEnvironment env) throws Exception {
-        Resolver resolver = this.operation.getApplicableResolver(Collections.emptySet());
+    public Object execute(List<Object> keys, Map<String, Object> arguments, BatchLoaderEnvironment env) throws Exception {
+        Resolver resolver = this.operation.getApplicableResolver(arguments.keySet());
         if (resolver == null) {
             throw new GraphQLException("Batch loader for operation " + operation.getName() + " not implemented");
         }
         ResolutionEnvironment resolutionEnvironment = new ResolutionEnvironment(resolver, keys, env, this.valueMapper, this.globalEnvironment, this.converterRegistry, this.derivedTypes);
-        return execute(resolver, resolutionEnvironment, Collections.emptyMap());
+        return execute(resolver, resolutionEnvironment, arguments);
     }
 
     /**
@@ -97,9 +97,9 @@ public class OperationExecutor implements DataFetcher<Object> {
             return DataFetcherResult.newResult().errors(resolutionEnvironment.errors).build();
         }
         InvocationContext invocationContext = new InvocationContext(operation, resolver, resolutionEnvironment, args);
-        Queue<ResolverInterceptor> interceptors = new LinkedList<>(this.lateInterceptors.get(resolver));
+        Queue<ResolverInterceptor> interceptors = new ArrayDeque<>(this.outerInterceptors.get(resolver));
         interceptors.add((ctx, cont) -> resolutionEnvironment.convertOutput(cont.proceed(ctx), resolver.getTypedElement(), resolver.getReturnType()));
-        interceptors.addAll(this.interceptors.get(resolver));
+        interceptors.addAll(this.innerInterceptors.get(resolver));
         interceptors.add((ctx, cont) -> {
             try {
                 return resolver.resolve(ctx.getResolutionEnvironment().context, ctx.getArguments());
