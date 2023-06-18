@@ -4,10 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [0.12.3] - 2023-06-18
 
 ### Added
 
+- Support arguments in batch loaders [#464](https://github.com/leangen/graphql-spqr/issues/464)
+- Enable ResolverInterceptors to optionally run after output conversion [#463](https://github.com/leangen/graphql-spqr/issues/463)
 - Enable easier exclusion of static members [#460](https://github.com/leangen/graphql-spqr/issues/460)
 
 ### Fixed
