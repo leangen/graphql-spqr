@@ -37,14 +37,19 @@ import java.util.Set;
 public class NonNullMapper implements TypeMapper, SchemaTransformer {
 
     private final Set<Class<? extends Annotation>> nonNullAnnotations;
+    private final Set<GroupAnnotationSupport> groupAnnotationSupports;
 
     private static final Logger log = LoggerFactory.getLogger(NonNullMapper.class);
 
     private static final String[] COMMON_NON_NULL_ANNOTATIONS = {
             "javax.annotation.Nonnull",
+            "jakarta.annotation.Nonnull",
             "javax.validation.constraints.NotNull",
+            "jakarta.validation.constraints.NotNull",
             "javax.validation.constraints.NotEmpty",
+            "jakarta.validation.constraints.NotEmpty",
             "javax.validation.constraints.NotBlank",
+            "jakarta.validation.constraints.NotBlank",
             "org.eclipse.microprofile.graphql.NonNull"
     };
 
@@ -60,6 +65,21 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
             }
         }
         this.nonNullAnnotations = Collections.unmodifiableSet(annotations);
+
+        Set<GroupAnnotationSupport> groupAnnotationSupports = new HashSet<>();
+        try {
+            ClassUtils.forName("javax.validation.constraints.NotNull");
+            groupAnnotationSupports.add(new JavaxGroupAnnotationSupport());
+        } catch (ClassNotFoundException e) {
+            /*no-op*/
+        }
+        try {
+            ClassUtils.forName("jakarta.validation.constraints.NotNull");
+            groupAnnotationSupports.add(new JakartaGroupAnnotationSupport());
+        } catch (ClassNotFoundException e) {
+            /*no-op*/
+        }
+        this.groupAnnotationSupports = Collections.unmodifiableSet(groupAnnotationSupports);
     }
 
     @Override
@@ -126,13 +146,19 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
         return argument;
     }
 
+    private boolean supportsGroupAnnotation(AnnotatedType type) {
+        return groupAnnotationSupports.stream().allMatch(nonNullAnnotationSupport -> nonNullAnnotationSupport.support(type));
+    }
+
     @Override
     public boolean supports(AnnotatedElement element, AnnotatedType type) {
-        return nonNullAnnotations.stream().anyMatch(type::isAnnotationPresent) || ClassUtils.getRawType(type.getType()).isPrimitive();
+        return (nonNullAnnotations.stream().anyMatch(type::isAnnotationPresent) && supportsGroupAnnotation(type))
+                || ClassUtils.getRawType(type.getType()).isPrimitive();
     }
 
     private boolean shouldWrap(GraphQLType type, TypedElement typedElement) {
-        return !(type instanceof GraphQLNonNull) && nonNullAnnotations.stream().anyMatch(typedElement::isAnnotationPresent);
+        return !(type instanceof GraphQLNonNull) && nonNullAnnotations.stream().anyMatch(typedElement::isAnnotationPresent)
+                && supportsGroupAnnotation(typedElement.getJavaType());
     }
 
     //TODO Make this use hasSetDefaultValue once https://github.com/graphql-java/graphql-java/issues/1958 is fixed
