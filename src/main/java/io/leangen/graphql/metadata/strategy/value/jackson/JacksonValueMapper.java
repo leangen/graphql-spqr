@@ -116,7 +116,8 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
     private InputField toInputField(TypedElement element, BeanPropertyDefinition prop, ObjectMapper objectMapper, GlobalEnvironment environment) {
         AnnotatedType deserializableType = resolveDeserializableType(prop.getPrimaryMember(), element.getJavaType(), prop.getPrimaryType(), objectMapper);
         DefaultValue defaultValue = inputInfoGen.defaultValue(element.getElements(), element.getJavaType(), environment);
-        return new InputField(prop.getName(), prop.getMetadata().getDescription(), element, deserializableType, defaultValue);
+        String description = inputInfoGen.getDescription(element.getElements(), environment.messageBundle).orElse(null);
+        return new InputField(prop.getName(), description, element, deserializableType, defaultValue);
     }
 
     @Override
