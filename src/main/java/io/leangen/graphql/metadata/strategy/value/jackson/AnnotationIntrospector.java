@@ -4,12 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.introspect.AnnotatedField;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-import com.fasterxml.jackson.databind.introspect.AnnotatedParameter;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.introspect.*;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
@@ -29,18 +24,14 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
 
     private final MessageBundle messageBundle;
-    private Map<Type, List<NamedType>> typeMap;
+    private final Map<Type, List<NamedType>> typeMap;
     private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
-    private static TypeResolverBuilder<?> typeResolverBuilder;
+    private static final TypeResolverBuilder<?> typeResolverBuilder;
 
     private static final Logger log = LoggerFactory.getLogger(AnnotationIntrospector.class);
 
@@ -82,7 +73,6 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
      *
      * @implNote Only provides a {@link TypeResolverBuilder} if Jackson can't already construct one,
      * this way if Jackson annotations are used (e.g. {@link JsonTypeInfo}) they will still be respected.
-     *
      * {@inheritDoc}
      */
     @Override
@@ -145,6 +135,7 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
                         .filter(prop -> setter.equals(prop.getWriteMethod()))
                         .findFirst()
                         .ifPresent(prop -> addPropertyMethods(propertyElements, prop));
+                ClassUtils.findFieldBySetter(setter).ifPresent(propertyElements::add);
             } catch (IntrospectionException e) {
                 log.warn("Introspection of {} failed. GraphQL input fields might be incorrectly mapped.",
                         setter.getDeclaringClass());

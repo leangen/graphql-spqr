@@ -2,12 +2,7 @@ package io.leangen.graphql;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.leangen.geantyref.GenericTypeReflector;
-import io.leangen.graphql.annotations.GraphQLId;
-import io.leangen.graphql.annotations.GraphQLIgnore;
-import io.leangen.graphql.annotations.GraphQLInputField;
-import io.leangen.graphql.annotations.GraphQLNonNull;
-import io.leangen.graphql.annotations.GraphQLQuery;
-import io.leangen.graphql.annotations.GraphQLScalar;
+import io.leangen.graphql.annotations.*;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.DefaultValue;
 import io.leangen.graphql.metadata.InputField;
@@ -18,17 +13,15 @@ import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapper;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapper;
 import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
+import lombok.Getter;
+import lombok.Setter;
 import org.junit.Test;
 
 import java.beans.ConstructorProperties;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedParameterizedType;
 import java.lang.reflect.AnnotatedType;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static io.leangen.graphql.metadata.DefaultValue.EMPTY;
 import static org.junit.Assert.assertEquals;
@@ -77,6 +70,11 @@ public class InputFieldDiscoveryTest {
     @Test
     public void explicitFieldsTest() {
         assertFieldNamesEqual(ExplicitFields.class, expectedExplicitFields);
+    }
+
+    @Test
+    public void explicitPrivateFieldsTest() {
+        assertFieldNamesEqual(ExplicitPrivateFields.class, expectedExplicitFields);
     }
 
     @Test
@@ -165,14 +163,14 @@ public class InputFieldDiscoveryTest {
         assertFieldNamesEqual(jackson, Delegator.class, expectedDefaultFields);
     }
 
-    private void assertFieldNamesEqual(Class typeToScan, InputField... expectedFields) {
+    private void assertFieldNamesEqual(Class<?> typeToScan, InputField... expectedFields) {
         Set<InputField> jFields = assertFieldNamesEqual(jackson, typeToScan, expectedFields);
         Set<InputField> gFields = assertFieldNamesEqual(gson, typeToScan, expectedFields);
 
         assertAllFieldsEqual(jFields, gFields);
     }
 
-    private Set<InputField> assertFieldNamesEqual(InputFieldBuilder mapper, Class typeToScan, InputField... templates) {
+    private Set<InputField> assertFieldNamesEqual(InputFieldBuilder mapper, Class<?> typeToScan, InputField... templates) {
         Set<InputField> fields = getInputFields(mapper, typeToScan);
         assertEquals(templates.length, fields.size());
         for (InputField template : templates) {
@@ -199,7 +197,7 @@ public class InputFieldDiscoveryTest {
         assertTrue(type31.isAnnotationPresent(GraphQLNonNull.class) && type31.isAnnotationPresent(GraphQLScalar.class));
     }
 
-    private Set<InputField> getInputFields(InputFieldBuilder mapper, Class typeToScan) {
+    private Set<InputField> getInputFields(InputFieldBuilder mapper, Class<?> typeToScan) {
         return mapper.getInputFields(
                 InputFieldBuilderParams.builder()
                         .withType(GenericTypeReflector.annotate(typeToScan))
@@ -216,12 +214,14 @@ public class InputFieldDiscoveryTest {
                         && Objects.equals(f1.getDefaultValue(), f2.getDefaultValue()))));
     }
 
+    @SuppressWarnings("unused")
     private static class FieldsOnly {
         public String field1;
         public int field2;
         public Object field3;
     }
 
+    @SuppressWarnings("unused")
     private static class GettersOnly {
         private String field1;
         private int field2;
@@ -240,6 +240,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private static class SettersOnly {
         private String field1;
         private int field2;
@@ -267,6 +268,18 @@ public class InputFieldDiscoveryTest {
         public Object field3;
     }
 
+    @Getter
+    @Setter
+    private static class ExplicitPrivateFields {
+        @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
+        private String field1;
+        @GraphQLInputField(name = "bbb", description = "BBB", defaultValue = "2222")
+        private int field2;
+        @GraphQLInputField(name = "ccc", description = "CCC", defaultValue = "3333")
+        private Object field3;
+    }
+
+    @SuppressWarnings("unused")
     private static class ExplicitGetters {
         private String field1;
         private int field2;
@@ -288,6 +301,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private static class ExplicitSetters {
         private String field1;
         private int field2;
@@ -318,6 +332,7 @@ public class InputFieldDiscoveryTest {
         public Object field3;
     }
 
+    @SuppressWarnings("unused")
     private static class QueryGetters {
         private String field1;
         private int field2;
@@ -339,6 +354,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private static class QuerySetters {
         private String field1;
         private int field2;
@@ -360,6 +376,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings("unused")
     private static class MixedFieldsWin {
         @GraphQLInputField(name = "aaa", description = "AAA", defaultValue = "AAAA")
         private String field1;
@@ -383,7 +400,8 @@ public class InputFieldDiscoveryTest {
             return field3;
         }
     }
-    
+
+    @SuppressWarnings("unused")
     private static class MixedGettersWin {
         @GraphQLQuery(name = "xxx")
         private String field1;
@@ -408,6 +426,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings("FieldCanBeLocal")
     private static class MixedSettersWin {
         @GraphQLQuery(name = "xxx")
         private String field1;
@@ -432,6 +451,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings("unused")
     private static class ConflictingGettersWin {
         @GraphQLInputField(name = "xxx", description = "XXX", defaultValue = "XXXX")
         private String field1;
@@ -556,6 +576,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     public static class HiddenCtorParams {
         private final String field1;
         private final int field2;
@@ -569,6 +590,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings("unused")
     private static class MergedTypes {
         private @GraphQLNonNull String field1;
         private RelayTest.Book field2;
@@ -612,6 +634,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings("unused")
     private interface Abstract {
         @GraphQLInputField(name = "field1")
         String getFieldX();
@@ -654,6 +677,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private static class Concrete2 implements Abstract {
 
         private String field3;
@@ -688,6 +712,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings("unused")
     private static class Delegate {
 
         private final String field1;
@@ -714,6 +739,7 @@ public class InputFieldDiscoveryTest {
         }
     }
 
+    @SuppressWarnings("unused")
     private static class Delegator {
 
         private final String field4;
