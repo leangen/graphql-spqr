@@ -192,16 +192,16 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
 
     protected TypedElement reduce(AnnotatedType declaringType, Field field, TypeTransformer transformer) {
         Optional<TypedElement> fld = Optional.of(element(ClassUtils.getFieldType(field, declaringType), field, declaringType, transformer));
-        Optional<TypedElement> setter = ClassUtils.findSetter(field.getDeclaringClass(), field.getName(), field.getType())
+        Optional<TypedElement> setter = ClassUtils.findSetter(field)
                 .map(mutator -> element(ClassUtils.getParameterTypes(mutator, declaringType)[0], mutator, declaringType, transformer));
-        Optional<TypedElement> getter = ClassUtils.findGetter(field.getDeclaringClass(), field.getName())
+        Optional<TypedElement> getter = ClassUtils.findGetter(field)
                 .filter(accessor -> accessor.isAnnotationPresent(GraphQLInputField.class))
                 .map(accessor -> element(ClassUtils.getReturnType(accessor, declaringType), accessor, declaringType, transformer));
         return new TypedElement(Utils.flatten(getter, setter, fld).collect(Collectors.toList()));
     }
 
     protected TypedElement reduce(AnnotatedType declaringType, Method getter, TypeTransformer transformer) {
-        Optional<TypedElement> setter = ClassUtils.findSetter(getter.getDeclaringClass(), ClassUtils.getFieldNameFromGetter(getter), getter.getReturnType())
+        Optional<TypedElement> setter = ClassUtils.findSetter(getter)
                 .map(mutator -> element(ClassUtils.getParameterTypes(mutator, declaringType)[0], mutator, declaringType, transformer));
         Optional<TypedElement> gtr = Optional.of(getter)
                 .map(accessor -> element(ClassUtils.getReturnType(accessor, declaringType), accessor, declaringType, transformer));

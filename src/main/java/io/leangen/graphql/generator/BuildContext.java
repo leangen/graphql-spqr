@@ -1,11 +1,7 @@
 package io.leangen.graphql.generator;
 
 import graphql.relay.Relay;
-import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLNamedType;
-import graphql.schema.GraphqlTypeComparatorRegistry;
-import graphql.schema.TypeResolver;
+import graphql.schema.*;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.execution.ResolverInterceptorFactory;
 import io.leangen.graphql.generator.mapping.SchemaTransformerRegistry;
@@ -28,12 +24,7 @@ import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
 
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -54,7 +45,7 @@ public class BuildContext {
     public final InterfaceMappingStrategy interfaceStrategy;
     public final String[] basePackages;
     public final MessageBundle messageBundle;
-    public final ValueMapperFactory valueMapperFactory;
+    public final ValueMapperFactory<?> valueMapperFactory;
     public final InputFieldBuilder inputFieldBuilder;
     public final InclusionStrategy inclusionStrategy;
     public final ScalarDeserializationStrategy scalarStrategy;
@@ -90,7 +81,7 @@ public class BuildContext {
      * @param knownTypes The cache of known type names
      */
     public BuildContext(String[] basePackages, GlobalEnvironment environment, OperationRegistry operationRegistry,
-                        TypeMapperRegistry typeMappers, SchemaTransformerRegistry transformers, ValueMapperFactory valueMapperFactory,
+                        TypeMapperRegistry typeMappers, SchemaTransformerRegistry transformers, ValueMapperFactory<?> valueMapperFactory,
                         InterfaceMappingStrategy interfaceStrategy, ScalarDeserializationStrategy scalarStrategy,
                         TypeTransformer typeTransformer, AbstractInputHandler abstractInputHandler,
                         InputFieldBuilder inputFieldBuilder, ResolverInterceptorFactory interceptorFactory,
@@ -136,7 +127,7 @@ public class BuildContext {
 
     @SuppressWarnings("rawtypes")
     ValueMapper createValueMapper(Stream<AnnotatedType> inputTypes) {
-        List<Class> abstractTypes = inputTypes
+        List<Class<?>> abstractTypes = inputTypes
                 .flatMap(input -> abstractInputHandler.findConstituentAbstractTypes(input, this).stream().map(ClassUtils::getRawType))
                 .distinct()
                 .collect(Collectors.toList());

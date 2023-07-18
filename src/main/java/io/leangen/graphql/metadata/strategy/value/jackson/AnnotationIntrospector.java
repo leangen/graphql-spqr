@@ -14,17 +14,11 @@ import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Executable;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.*;
+import java.lang.reflect.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
 
@@ -32,8 +26,6 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     private final Map<Type, List<NamedType>> typeMap;
     private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
     private static final TypeResolverBuilder<?> typeResolverBuilder;
-
-    private static final Logger log = LoggerFactory.getLogger(AnnotationIntrospector.class);
 
     static {
         typeResolverBuilder = new StdTypeResolverBuilder()
@@ -50,14 +42,14 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     @Override
     public PropertyName findNameForDeserialization(Annotated annotated) {
         return inputInfoGen.getName(getAnnotatedCandidates(annotated), messageBundle)
-                .map(PropertyName::new)
+                .map(PropertyName::construct)
                 .orElse(super.findNameForDeserialization(annotated));
     }
 
     @Override
     public PropertyName findNameForSerialization(Annotated annotated) {
         return inputInfoGen.getName(getAnnotatedCandidates(annotated), messageBundle)
-                .map(PropertyName::new)
+                .map(PropertyName::construct)
                 .orElse(super.findNameForSerialization(annotated));
     }
 
@@ -111,48 +103,19 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     }
 
     private List<AnnotatedElement> getAnnotatedCandidates(Annotated annotated) {
-        List<AnnotatedElement> propertyElements = new ArrayList<>(3);
         if (annotated instanceof AnnotatedParameter) {
             AnnotatedParameter parameter = (AnnotatedParameter) annotated;
             Executable owner = (Executable) parameter.getOwner().getAnnotated();
-            propertyElements.add(owner.getParameters()[parameter.getIndex()]);
-        } else if (annotated instanceof AnnotatedField) {
-            AnnotatedField field = ((AnnotatedField) annotated);
-            try {
-                Arrays.stream(Introspector.getBeanInfo(field.getDeclaringClass()).getPropertyDescriptors())
-                        .filter(prop -> field.getName().equals(prop.getName()))
-                        .findFirst()
-                        .ifPresent(prop -> addPropertyMethods(propertyElements, prop));
-            } catch (IntrospectionException e) {
-                log.warn("Introspection of {} failed. GraphQL input fields might be incorrectly mapped.",
-                        field.getDeclaringClass());
-            }
-            propertyElements.add(annotated.getAnnotated());
-        } else if (annotated instanceof AnnotatedMethod) {
-            Method setter = (Method) annotated.getAnnotated();
-            try {
-                Arrays.stream(Introspector.getBeanInfo(setter.getDeclaringClass()).getPropertyDescriptors())
-                        .filter(prop -> setter.equals(prop.getWriteMethod()))
-                        .findFirst()
-                        .ifPresent(prop -> addPropertyMethods(propertyElements, prop));
-                ClassUtils.findFieldBySetter(setter).ifPresent(propertyElements::add);
-            } catch (IntrospectionException e) {
-                log.warn("Introspection of {} failed. GraphQL input fields might be incorrectly mapped.",
-                        setter.getDeclaringClass());
-            }
-            if (propertyElements.isEmpty()) {
-                propertyElements.add(setter);
-            }
+            return Collections.singletonList(owner.getParameters()[parameter.getIndex()]);
         }
-        return propertyElements;
-    }
-
-    private void addPropertyMethods(List<AnnotatedElement> propertyElements, PropertyDescriptor prop) {
-        if (prop.getWriteMethod() != null) {
-            propertyElements.add(prop.getWriteMethod());
+        if (annotated instanceof AnnotatedField) {
+            Field field = ((AnnotatedField) annotated).getAnnotated();
+            return ClassUtils.getPropertyMembers(field);
         }
-        if (prop.getReadMethod() != null) {
-            propertyElements.add(prop.getReadMethod());
+        if (annotated instanceof AnnotatedMethod) {
+            Method setter = ((AnnotatedMethod) annotated).getAnnotated();
+            return ClassUtils.getPropertyMembers(setter);
         }
+        return Collections.emptyList();
     }
 }

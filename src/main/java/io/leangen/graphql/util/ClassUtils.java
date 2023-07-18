@@ -89,7 +89,6 @@ public class ClassUtils {
                 .map(getter -> findFieldByGetter(getter)
                         .filter(ClassUtils::isReal)
                         .map(field -> new Property(field, getter))
-                        .filter(ClassUtils::isMembershipConsistent)
                         .filter(prop -> prop.getField().getType().equals(prop.getGetter().getReturnType()))
                         .filter(prop -> !Modifier.isPublic(prop.getField().getModifiers()))
                         .filter(prop -> !Modifier.isAbstract(prop.getGetter().getModifiers())))
@@ -313,26 +312,42 @@ public class ClassUtils {
         return Introspector.decapitalize(setter.getName().replaceAll("^set", ""));
     }
 
+    /**
+     * Finds the setter, getter and field (if they exist and strictly in that order) corresponding to the given member
+     * @param member The member to search the other members by
+     * @return The list of found property members (setter, getter and field, in that order) corresponding to the given member
+     * @param <T> The type representing fields and methods
+     */
     public static <T extends Member & AnnotatedElement> List<AnnotatedElement> getPropertyMembers(T member) {
         List<AnnotatedElement> propertyElements = new ArrayList<>(3);
         if (member instanceof Field) {
-            findSetter(member.getDeclaringClass(), member.getName(), ((Field) member).getType()).ifPresent(propertyElements::add);
-            findGetter(member.getDeclaringClass(), member.getName()).ifPresent(propertyElements::add);
+            findSetter((Field) member).ifPresent(propertyElements::add);
+            findGetter((Field) member).ifPresent(propertyElements::add);
             propertyElements.add(member);
         }
         if (member instanceof Method && isGetter((Method) member)) {
             Method getter = (Method) member;
-            findSetter(getter.getDeclaringClass(), getFieldNameFromGetter(getter), getter.getReturnType()).ifPresent(propertyElements::add);
+            findSetter(getter).ifPresent(propertyElements::add);
             propertyElements.add(getter);
             findFieldByGetter(getter).ifPresent(propertyElements::add);
         }
         if (member instanceof Method && isSetter((Method) member)) {
             Method setter = (Method) member;
             propertyElements.add(setter);
-            findGetter(setter.getDeclaringClass(), getFieldNameFromSetter(setter)).ifPresent(propertyElements::add);
+            findGetter(setter).ifPresent(propertyElements::add);
             findFieldBySetter(setter).ifPresent(propertyElements::add);
         }
         return propertyElements;
+    }
+
+    public static Optional<Method> findGetter(Field field) {
+        return findGetter(field.getDeclaringClass(), field.getName())
+                .filter(getter -> isMembershipConsistent(field, getter));
+    }
+
+    public static Optional<Method> findGetter(Method setter) {
+        return findGetter(setter.getDeclaringClass(), getFieldNameFromSetter(setter))
+                .filter(getter -> isMembershipConsistent(getter, setter));
     }
 
     public static Optional<Method> findGetter(Class<?> type, String fieldName) {
@@ -344,16 +359,28 @@ public class ClassUtils {
         return findMethod(type, "is" + propertyName);
     }
 
+    public static Optional<Method> findSetter(Field field) {
+        return findSetter(field.getDeclaringClass(), field.getName(), field.getType())
+                .filter(setter -> isMembershipConsistent(field, setter));
+    }
+
+    public static Optional<Method> findSetter(Method getter) {
+        return findSetter(getter.getDeclaringClass(), getFieldNameFromGetter(getter), getter.getReturnType())
+                .filter(setter -> isMembershipConsistent(getter, setter));
+    }
+
     public static Optional<Method> findSetter(Class<?> type, String fieldName, Class<?> fieldType) {
         return findMethod(type, "set" + Utils.capitalize(fieldName), fieldType);
     }
 
     public static Optional<Field> findFieldByGetter(Method getter) {
-        return findField(getter.getDeclaringClass(), getFieldNameFromGetter(getter));
+        return findField(getter.getDeclaringClass(), getFieldNameFromGetter(getter))
+                .filter(f -> isMembershipConsistent(f, getter));
     }
 
     public static Optional<Field> findFieldBySetter(Method setter) {
-        return findField(setter.getDeclaringClass(), getFieldNameFromSetter(setter));
+        return findField(setter.getDeclaringClass(), getFieldNameFromSetter(setter))
+                .filter(f -> isMembershipConsistent(f, setter));
     }
 
     public static Optional<Field> findField(Class<?> type, String fieldName) {
@@ -415,10 +442,9 @@ public class ClassUtils {
         return Modifier.isStatic(member.getModifiers());
     }
 
-    //Checks whether the field and the getter are either both instance or both static members
-    private static boolean isMembershipConsistent(Property p) {
-        return (isStatic(p.getField()) && isStatic(p.getGetter()))
-                || (!isStatic(p.getField()) && !isStatic(p.getGetter()));
+    //Checks whether the given members are either both static or both instance members
+    private static boolean isMembershipConsistent(Member m1, Member m2) {
+        return (!isStatic(m1) && !isStatic(m2)) || (isStatic(m1) && isStatic(m2));
     }
 
     public static boolean isAbstract(AnnotatedType type) {
@@ -856,6 +882,7 @@ public class ClassUtils {
     private static class TypeComparator implements Comparator<Class<?>> {
 
         @Override
+        @SuppressWarnings("ComparatorMethodParameterNotUsed")
         public int compare(Class<?> c1, Class<?> c2) {
             if (c2 == Cloneable.class || c2 == Serializable.class) {
                 return -1;
