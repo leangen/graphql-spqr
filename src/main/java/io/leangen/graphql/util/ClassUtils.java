@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -444,7 +445,7 @@ public class ClassUtils {
 
     //Checks whether the given members are either both static or both instance members
     private static boolean isMembershipConsistent(Member m1, Member m2) {
-        return (!isStatic(m1) && !isStatic(m2)) || (isStatic(m1) && isStatic(m2));
+        return isStatic(m1) == isStatic(m2);
     }
 
     public static boolean isAbstract(AnnotatedType type) {
@@ -841,6 +842,14 @@ public class ClassUtils {
 
     public static Class<?> forName(String className) throws ClassNotFoundException {
         return Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+    }
+
+    public static void ifClassPresent(String className, Consumer<Class<?>> consumer) {
+        try {
+            consumer.accept(forName(className));
+        } catch (ClassNotFoundException e) {
+            /*no-op*/
+        }
     }
 
     public static Object getDefaultValueForType(Class<?> type) {

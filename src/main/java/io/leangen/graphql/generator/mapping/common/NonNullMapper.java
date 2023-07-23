@@ -1,23 +1,13 @@
 package io.leangen.graphql.generator.mapping.common;
 
-import graphql.schema.GraphQLArgument;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLInputObjectField;
-import graphql.schema.GraphQLInputType;
-import graphql.schema.GraphQLNonNull;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLType;
+import graphql.schema.*;
 import io.leangen.graphql.annotations.GraphQLIgnore;
 import io.leangen.graphql.generator.BuildContext;
 import io.leangen.graphql.generator.OperationMapper;
 import io.leangen.graphql.generator.mapping.SchemaTransformer;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;
-import io.leangen.graphql.metadata.DirectiveArgument;
-import io.leangen.graphql.metadata.InputField;
-import io.leangen.graphql.metadata.Operation;
-import io.leangen.graphql.metadata.OperationArgument;
-import io.leangen.graphql.metadata.TypedElement;
+import io.leangen.graphql.metadata.*;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.GraphQLUtils;
 import org.slf4j.Logger;
@@ -26,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -37,7 +28,7 @@ import java.util.Set;
 public class NonNullMapper implements TypeMapper, SchemaTransformer {
 
     private final Set<Class<? extends Annotation>> nonNullAnnotations;
-    private final Set<GroupAnnotationSupport> groupAnnotationSupports;
+    private final Set<BeanValidationGroupSupport> beanValidationGroups;
 
     private static final Logger log = LoggerFactory.getLogger(NonNullMapper.class);
 
@@ -53,33 +44,29 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
             "org.eclipse.microprofile.graphql.NonNull"
     };
 
-    @SuppressWarnings("unchecked")
     public NonNullMapper() {
+        this(Collections.singleton(BeanValidationGroupSupport.GraphQL.class));
+    }
+
+    public NonNullMapper(Class<?>... activeValidationGroups) {
+        this(new HashSet<>(Arrays.asList(activeValidationGroups)));
+    }
+
+    public NonNullMapper(Set<Class<?>> activeValidationGroups) {
         Set<Class<? extends Annotation>> annotations = new HashSet<>();
         annotations.add(io.leangen.graphql.annotations.GraphQLNonNull.class);
         for (String additional : COMMON_NON_NULL_ANNOTATIONS) {
-            try {
-                annotations.add((Class<? extends Annotation>) ClassUtils.forName(additional));
-            } catch (ClassNotFoundException e) {
-                /*no-op*/
-            }
+            //noinspection unchecked
+            ClassUtils.ifClassPresent(additional, clazz -> annotations.add((Class<? extends Annotation>) clazz));
         }
         this.nonNullAnnotations = Collections.unmodifiableSet(annotations);
 
-        Set<GroupAnnotationSupport> groupAnnotationSupports = new HashSet<>();
-        try {
-            ClassUtils.forName("javax.validation.constraints.NotNull");
-            groupAnnotationSupports.add(new JavaxGroupAnnotationSupport());
-        } catch (ClassNotFoundException e) {
-            /*no-op*/
-        }
-        try {
-            ClassUtils.forName("jakarta.validation.constraints.NotNull");
-            groupAnnotationSupports.add(new JakartaGroupAnnotationSupport());
-        } catch (ClassNotFoundException e) {
-            /*no-op*/
-        }
-        this.groupAnnotationSupports = Collections.unmodifiableSet(groupAnnotationSupports);
+        Set<BeanValidationGroupSupport> beanValidationGroups = new HashSet<>();
+        ClassUtils.ifClassPresent("javax.validation.constraints.NotNull", clazz ->
+                beanValidationGroups.add(new JavaxValidationGroupSupport(activeValidationGroups)));
+        ClassUtils.ifClassPresent("jakarta.validation.constraints.NotNull", clazz ->
+                beanValidationGroups.add(new JakartaValidationGroupSupport(activeValidationGroups)));
+        this.beanValidationGroups = Collections.unmodifiableSet(beanValidationGroups);
     }
 
     @Override
@@ -147,7 +134,7 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
     }
 
     private boolean supportsGroupAnnotation(AnnotatedType type) {
-        return groupAnnotationSupports.stream().allMatch(nonNullAnnotationSupport -> nonNullAnnotationSupport.support(type));
+        return beanValidationGroups.stream().allMatch(nonNullAnnotationSupport -> nonNullAnnotationSupport.supports(type));
     }
 
     @Override
@@ -161,9 +148,8 @@ public class NonNullMapper implements TypeMapper, SchemaTransformer {
                 && supportsGroupAnnotation(typedElement.getJavaType());
     }
 
-    //TODO Make this use hasSetDefaultValue once https://github.com/graphql-java/graphql-java/issues/1958 is fixed
     private boolean shouldUnwrap(GraphQLInputObjectField field) {
-        return field.getInputFieldDefaultValue().getValue() != null && field.getType() instanceof GraphQLNonNull;
+        return field.hasSetDefaultValue() && field.getType() instanceof GraphQLNonNull;
     }
 
     private boolean shouldUnwrap(GraphQLArgument argument) {

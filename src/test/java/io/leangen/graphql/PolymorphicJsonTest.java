@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 public class PolymorphicJsonTest {
 
     @Parameterized.Parameter
-    public ValueMapperFactory valueMapperFactory;
+    public ValueMapperFactory<?> valueMapperFactory;
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Object[] data() {
@@ -75,6 +75,7 @@ public class PolymorphicJsonTest {
         assertValueAtPathEquals("flying", result, "vehicle.mode");
     }
 
+    @SuppressWarnings("unused")
     public static abstract class Vehicle {
 
         String mode;
@@ -84,6 +85,7 @@ public class PolymorphicJsonTest {
         public abstract void setMode(String mode);
     }
 
+    @SuppressWarnings("unused")
     public static class Plane extends Vehicle {
 
         @Override
@@ -105,6 +107,7 @@ public class PolymorphicJsonTest {
         }
     }
 
+    @SuppressWarnings("unused")
     public static abstract class Parent<T> {
         String item;
         
@@ -160,6 +163,7 @@ public class PolymorphicJsonTest {
         Abstract<String> item;
     }
 
+    @SuppressWarnings("unused")
     public interface Abstract<T> {
         T getItem();
         void setItem(T t);

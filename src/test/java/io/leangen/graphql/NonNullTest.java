@@ -45,11 +45,23 @@ public class NonNullTest {
     }
 
     @Test
-    public void testJsr380GroupNonNull() {
+    public void testJsr380SkippedGroupNonNull() {
         GraphQLSchema schema = new TestSchemaGenerator().withOperationsFromSingleton(new Jsr380Group()).generate();
         GraphQLFieldDefinition field = schema.getQueryType().getFieldDefinition("nonNull");
         assertEquals(field.getType(), Scalars.GraphQLString);
         assertEquals(field.getArgument("in").getType(), Scalars.GraphQLString);
+    }
+
+    @Test
+    public void testJsr380EnabledGroupNonNull() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new Jsr380Group())
+                .withTypeMappers((config, mappers) -> mappers.replace(
+                        NonNullMapper.class, __ -> new NonNullMapper(Jsr380Group.class)))
+                .generate();
+        GraphQLFieldDefinition field = schema.getQueryType().getFieldDefinition("nonNull");
+        assertNonNull(field.getType(), Scalars.GraphQLString);
+        assertNonNull(field.getArgument("in").getType(), Scalars.GraphQLString);
     }
 
     @Test
@@ -61,11 +73,23 @@ public class NonNullTest {
     }
 
     @Test
-    public void testJsr380JakartaGroupNonNull() {
+    public void testJsr380JakartaSkippedGroupNonNull() {
         GraphQLSchema schema = new TestSchemaGenerator().withOperationsFromSingleton(new Jsr380JakartaGroup()).generate();
         GraphQLFieldDefinition field = schema.getQueryType().getFieldDefinition("nonNull");
         assertEquals(field.getType(), Scalars.GraphQLString);
         assertEquals(field.getArgument("in").getType(), Scalars.GraphQLString);
+    }
+
+    @Test
+    public void testJsr380JakartaEnabledGroupNonNull() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new Jsr380JakartaGroup())
+                .withTypeMappers((config, mappers) -> mappers.replace(
+                        NonNullMapper.class, __ -> new NonNullMapper(Jsr380JakartaGroup.class)))
+                .generate();
+        GraphQLFieldDefinition field = schema.getQueryType().getFieldDefinition("nonNull");
+        assertNonNull(field.getType(), Scalars.GraphQLString);
+        assertNonNull(field.getArgument("in").getType(), Scalars.GraphQLString);
     }
 
     private static class Service {
