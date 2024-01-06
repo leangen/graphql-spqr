@@ -155,6 +155,11 @@ public class ResolutionEnvironment {
         return ContextUtils.unwrapContext(rootContext);
     }
 
+    public boolean isSubscription() {
+        return dataFetchingEnvironment != null
+               && dataFetchingEnvironment.getParentType() == dataFetchingEnvironment.getGraphQLSchema().getSubscriptionType();
+    }
+
     private static DataFetchingEnvironment dataFetchingEnvironment(List<Object> keyContexts) {
         if (keyContexts == null || keyContexts.isEmpty() || !(keyContexts.get(0) instanceof DataFetchingEnvironment)) {
             return null;

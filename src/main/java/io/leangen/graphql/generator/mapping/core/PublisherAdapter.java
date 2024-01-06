@@ -66,7 +66,7 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper<Object> 
     @Override
     public Object convertOutput(Publisher<T> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
         //Subscriptions are expected to return a Publisher directly, so no conversion needed
-        if (resolutionEnvironment.dataFetchingEnvironment.getParentType() == resolutionEnvironment.dataFetchingEnvironment.getGraphQLSchema().getSubscriptionType()) {
+        if (resolutionEnvironment.isSubscription()) {
             return original;
         }
         //Otherwise, convert the Publisher into a CompletableFuture

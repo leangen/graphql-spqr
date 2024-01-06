@@ -1,7 +1,6 @@
 package io.leangen.graphql.generator;
 
 import graphql.GraphQLContext;
-import graphql.cachecontrol.CacheControl;
 import graphql.execution.ExecutionId;
 import graphql.execution.ExecutionStepInfo;
 import graphql.execution.MergedField;
@@ -10,12 +9,7 @@ import graphql.language.Document;
 import graphql.language.Field;
 import graphql.language.FragmentDefinition;
 import graphql.language.OperationDefinition;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.DataFetchingFieldSelectionSet;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLType;
+import graphql.schema.*;
 import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
 
@@ -150,12 +144,6 @@ class RelayDataFetchingEnvironmentDecorator implements DataFetchingEnvironment {
     @Override
     public DataLoaderRegistry getDataLoaderRegistry() {
         return delegate.getDataLoaderRegistry();
-    }
-
-    @Override
-    @Deprecated
-    public CacheControl getCacheControl() {
-        return delegate.getCacheControl();
     }
 
     @Override
