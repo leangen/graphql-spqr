@@ -39,13 +39,11 @@ public class DefaultOperationBuilder implements OperationBuilder {
      * <p><b>Example:</b></p>
      *
      * <pre>
-     * {@code
-     * @GraphQLQuery(name = "numbers")
+     * {@literal @}GraphQLQuery(name = "numbers")
      * public ArrayList<Long> getLongs(String paramOne) {...}
      *
-     * @GraphQLQuery(name = "numbers")
-     * public LinkedList<Double> getDoubles(String paramTwo) {...}
-     * }
+     * {@literal @}GraphQLQuery(name = "numbers")
+     * {@code public LinkedList<Double> getDoubles(String paramTwo) {...}}
      * </pre>
      *
      * The situation shown above would cause an exception without type inference enabled.

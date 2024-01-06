@@ -8,8 +8,8 @@ import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.annotations.GraphQLQuery;
 import io.leangen.graphql.annotations.GraphQLSubscription;
-import io.reactivex.BackpressureStrategy;
-import io.reactivex.Observable;
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Observable;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -53,7 +53,7 @@ public class SubscriptionTest {
         //doesn't actually need to be atomic, but needs to be effectively final yet mutable
         AtomicInteger counter = new AtomicInteger(0);
         AtomicBoolean complete = new AtomicBoolean(false);
-        stream.subscribe(new Subscriber<ExecutionResult>() {
+        stream.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription subscription) {
                 subscription.request(10);

@@ -80,14 +80,13 @@ public class GsonValueMapper implements ValueMapper, InputFieldBuilder {
 
     /**
      * Unlike Jackson, Gson doesn't expose any of its metadata, so this method is more or less a
-     * reimplementation of {@link com.google.gson.internal.bind.ReflectiveTypeAdapterFactory#getBoundFields(Gson, com.google.gson.reflect.TypeToken, Class)}
+     * reimplementation of {@code com.google.gson.internal.bind.ReflectiveTypeAdapterFactory#getBoundFields(Gson, com.google.gson.reflect.TypeToken, Class)}
      *
      * @param params The parameters available to the discovery strategy
      *
      * @return All deserializable fields that could be discovered from this {@link AnnotatedType}
      */
     @Override
-    @SuppressWarnings("JavadocReference")
     public Set<InputField> getInputFields(InputFieldBuilderParams params) {
         Map<String, InputField> explicit = fromFields(params);
         Map<String, InputField> implicit = fromGetters(params);

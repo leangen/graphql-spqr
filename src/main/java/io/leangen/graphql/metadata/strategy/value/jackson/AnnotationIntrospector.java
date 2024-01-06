@@ -91,8 +91,9 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     }
 
     @Override
-    public String[] findEnumValues(Class<?> enumType, Enum<?>[] enumValues, String[] defaultNames) {
-        String[] jacksonNames = super.findEnumValues(enumType, enumValues, defaultNames);
+    public String[] findEnumValues(MapperConfig<?> config, AnnotatedClass annotatedClass,
+                                   Enum<?>[] enumValues, String[] names) {
+        String[] jacksonNames = super.findEnumValues(config, annotatedClass, enumValues, names);
         for (int i = 0; i < enumValues.length; i++) {
             GraphQLEnumValue annotation = ClassUtils.getEnumConstantField(enumValues[i]).getAnnotation(GraphQLEnumValue.class);
             if (annotation != null && Utils.isNotEmpty(annotation.name())) {
