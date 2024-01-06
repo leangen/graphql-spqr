@@ -86,7 +86,7 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper<Object> 
     private <R> CompletableFuture<DataFetcherResult<List<R>>> collect(Publisher<R> publisher, ExecutionStepInfo step) {
         CompletableFuture<DataFetcherResult<List<R>>> promise = new CompletableFuture<>();
 
-        executor.execute(() -> publisher.subscribe(new Subscriber<R>() {
+        executor.execute(() -> publisher.subscribe(new Subscriber<>() {
 
             private final List<R> buffer = new ArrayList<>();
 
