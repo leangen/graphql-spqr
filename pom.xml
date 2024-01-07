@@ -24,6 +24,16 @@
         <url>https://github.com/leangen/GraphQL-SPQR</url>
         <tag>HEAD</tag>
     </scm>
+    <distributionManagement>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
     <issueManagement>
         <system>GitHub Issue Tracking</system>
         <url>https://github.com/leangen/GraphQL-SPQR/issues</url>
