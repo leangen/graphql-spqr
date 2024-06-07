@@ -2,14 +2,7 @@ package io.leangen.graphql;
 
 import graphql.ExecutionResult;
 import graphql.GraphQL;
-import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLFieldsContainer;
-import graphql.schema.GraphQLInterfaceType;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLSchema;
-import graphql.schema.GraphQLType;
-import graphql.schema.GraphQLUnionType;
+import graphql.schema.*;
 import io.leangen.graphql.annotations.GraphQLEnvironment;
 import io.leangen.graphql.annotations.GraphQLId;
 import io.leangen.graphql.annotations.GraphQLQuery;
@@ -134,7 +127,7 @@ public class TypeRegistryTest {
         if (t1 instanceof GraphQLFieldsContainer) {
             GraphQLFieldsContainer c = (GraphQLFieldsContainer) t1;
             c.getFieldDefinitions().forEach(fieldDef ->
-                    assertSame(code1.getDataFetcher(c, fieldDef), code2.getDataFetcher(c, fieldDef)));
+                    assertSame(code1.getDataFetcher(FieldCoordinates.coordinates(c, fieldDef), fieldDef), code2.getDataFetcher(FieldCoordinates.coordinates(c, fieldDef), fieldDef)));
         }
     }
 

@@ -6,7 +6,7 @@ import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.InstrumentationState;
 import graphql.execution.instrumentation.SimplePerformantInstrumentation;
-import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
+import graphql.execution.instrumentation.dataloader.EmptyDataLoaderRegistryInstance;
 import graphql.execution.instrumentation.parameters.InstrumentationExecutionParameters;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLSchema;
@@ -19,7 +19,6 @@ import org.dataloader.*;
 
 import java.util.*;
 
-import static graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationState.EMPTY_DATALOADER_REGISTRY;
 
 /**
  * Wrapper around GraphQL builder that allows easy instrumentation chaining, limiting query complexity and context wrapping
@@ -94,9 +93,6 @@ public class GraphQLRuntime {
         public GraphQL build() {
             List<Instrumentation> instrumentations = new ArrayList<>();
             instrumentations.add(new InputTransformer(batchLoaders, dataLoaderOptions));
-            if (!batchLoaders.isEmpty() && this.instrumentations.stream().noneMatch(inst -> inst instanceof DataLoaderDispatcherInstrumentation)) {
-                instrumentations.add(new DataLoaderDispatcherInstrumentation());
-            }
             instrumentations.addAll(this.instrumentations);
             if (instrumentations.size() == 1) {
                 super.instrumentation(instrumentations.get(0));
@@ -129,7 +125,7 @@ public class GraphQLRuntime {
                     DataLoaderOptions.newOptions()
                             .setBatchLoaderContextProvider(input::getContext)
                             .setCacheKeyFunction(new CacheKeyFunction()));
-            DataLoaderRegistry registry = input.getDataLoaderRegistry() != EMPTY_DATALOADER_REGISTRY
+            DataLoaderRegistry registry = input.getDataLoaderRegistry() != EmptyDataLoaderRegistryInstance.EMPTY_DATALOADER_REGISTRY
                     ? input.getDataLoaderRegistry()
                     : new DataLoaderRegistry();
 
