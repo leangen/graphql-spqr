@@ -75,7 +75,7 @@ public class PublisherAdapter<T> extends AbstractTypeSubstitutingMapper<Object> 
 
     @SuppressWarnings("WeakerAccess")
     protected Object convertOutputForNonSubscription(Publisher<T> original, AnnotatedType type, ResolutionEnvironment resolutionEnvironment) {
-        return collect(original, resolutionEnvironment.dataFetchingEnvironment.getExecutionStepInfo());
+        return collect(original, resolutionEnvironment.getDataFetchingEnvironment().getExecutionStepInfo());
     }
 
     @Override
