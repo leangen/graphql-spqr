@@ -2,6 +2,7 @@ package io.leangen.graphql.util;
 
 import graphql.ExecutionInput;
 import graphql.GraphQLContext;
+import java.util.function.UnaryOperator;
 
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
 
@@ -10,8 +11,8 @@ public class ContextUtils {
     public static ExecutionInput wrapContext(ExecutionInput executionInput) {
         return isDefault(executionInput.getContext())
                 ? executionInput
-                : executionInput.transform(input -> input.context(ctx ->
-                ctx.of(ContextKey.class, executionInput.getContext())));
+                : executionInput.transform(input -> input.context(createContext(ctx ->
+                ctx.of(ContextKey.class, executionInput.getContext()))));
     }
 
     @SuppressWarnings("unchecked")
@@ -42,6 +43,12 @@ public class ContextUtils {
                 ((GraphQLContext) context).put(CLIENT_MUTATION_ID, clientMutationId);
             }
         }
+    }
+
+    private static Object createContext(UnaryOperator<GraphQLContext.Builder> contextBuilderFunction) {
+        GraphQLContext.Builder builder = GraphQLContext.newContext();
+        builder = contextBuilderFunction.apply(builder);
+        return builder.build();
     }
 
     private static class ContextKey {}

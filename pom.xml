@@ -91,12 +91,12 @@
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java</artifactId>
-            <version>21.3</version>
+            <version>22.0</version>
         </dependency>
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java-extended-scalars</artifactId>
-            <version>21.0</version>
+            <version>22.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.classgraph</groupId>
@@ -292,4 +292,11 @@
             <organizationUrl>http://leangen.io</organizationUrl>
         </developer>
     </developers>
+    <repositories>
+        <repository>
+            <id>maven_central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2/</url>
+        </repository>
+    </repositories>
 </project>

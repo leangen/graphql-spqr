@@ -1090,7 +1090,7 @@ public class GraphQLSchemaGenerator {
 
         @Override
         public DataFetcher<?> getDataFetcher(GraphQLFieldsContainer parentType, GraphQLFieldDefinition fieldDef) {
-            return codeRegistry.getDataFetcher(parentType, fieldDef);
+            return codeRegistry.getDataFetcher(FieldCoordinates.coordinates(parentType, fieldDef), fieldDef);
         }
     }
 
