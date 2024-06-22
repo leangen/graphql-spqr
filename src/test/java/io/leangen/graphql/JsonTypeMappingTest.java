@@ -1,14 +1,8 @@
 package io.leangen.graphql;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.BigIntegerNode;
-import com.fasterxml.jackson.databind.node.BinaryNode;
-import com.fasterxml.jackson.databind.node.DoubleNode;
-import com.fasterxml.jackson.databind.node.IntNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.POJONode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.node.*;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -95,19 +89,26 @@ public class JsonTypeMappingTest {
         }
     }
 
+    @SuppressWarnings("unused")
     public static class JacksonContainer {
 
-        private ObjectNode obj;
-        private JsonNode any;
-        private BinaryNode binary;
-        private TextNode text;
-        private IntNode integer;
-        private DoubleNode dbl;
-        private BigIntegerNode bigInt;
-        private ArrayNode array;
+        private final ObjectNode obj;
+        private final JsonNode any;
+        private final BinaryNode binary;
+        private final TextNode text;
+        private final IntNode integer;
+        private final DoubleNode dbl;
+        private final BigIntegerNode bigInt;
+        private final ArrayNode array;
 
-        public JacksonContainer(ObjectNode obj, JsonNode any, BinaryNode binary, TextNode text, IntNode integer,
-                                DoubleNode dbl, BigIntegerNode bigInt, ArrayNode array) {
+        public JacksonContainer(@JsonProperty("obj") ObjectNode obj,
+                                @JsonProperty("any") JsonNode any,
+                                @JsonProperty("binary") BinaryNode binary,
+                                @JsonProperty("text") TextNode text,
+                                @JsonProperty("integer") IntNode integer,
+                                @JsonProperty("dbl") DoubleNode dbl,
+                                @JsonProperty("bigInt") BigIntegerNode bigInt,
+                                @JsonProperty("array") ArrayNode array) {
             this.obj = obj;
             this.any = any;
             this.text = text;
@@ -163,6 +164,7 @@ public class JsonTypeMappingTest {
         }
     }
 
+    @SuppressWarnings("unused")
     public static class GsonContainer {
 
         private JsonPrimitive primitive;
