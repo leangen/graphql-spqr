@@ -11,8 +11,9 @@ import io.leangen.graphql.metadata.Operation;
 import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.Utils;
-import jdk.jshell.spi.ExecutionControl;
 import org.dataloader.BatchLoaderEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
  */
 public class LightOperationExecutor extends OperationExecutor implements LightDataFetcher<Object> {
 
+    private static final Logger log = LoggerFactory.getLogger(LightOperationExecutor.class);
     private final Operation operation;
     private final ValueMapper valueMapper;
     private final GlobalEnvironment globalEnvironment;
@@ -77,8 +79,9 @@ public class LightOperationExecutor extends OperationExecutor implements LightDa
 
     @Override
     public Object get(DataFetchingEnvironment env) throws Exception {
-        throw new ExecutionControl.NotImplementedException(
-                "LightOperationExecutor does not require materialised DataFetchingEnvironment and so does not implement it. Use OperationExecutor instead.");
+        log.warn(
+                "LightDataFetcher should not be called with materialised dfe. \nThis should be marked as not implemented. However using DataLoaderDispatcherInstrumentation causes problem with the `instance of LightDataFetcher` check in ExecutionStrategy in GraphQL-Java");
+        return super.get(env);
     }
 
     public Object execute(List<Object> keys, Map<String, Object> arguments, BatchLoaderEnvironment env) throws Exception {
