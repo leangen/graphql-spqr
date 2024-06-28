@@ -11,20 +11,11 @@ import io.leangen.graphql.util.Utils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Parameter;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static graphql.introspection.Introspection.DirectiveLocation.FIELD;
-import static graphql.introspection.Introspection.DirectiveLocation.FRAGMENT_DEFINITION;
-import static graphql.introspection.Introspection.DirectiveLocation.FRAGMENT_SPREAD;
-import static graphql.introspection.Introspection.DirectiveLocation.INLINE_FRAGMENT;
-import static graphql.introspection.Introspection.DirectiveLocation.MUTATION;
-import static graphql.introspection.Introspection.DirectiveLocation.QUERY;
+import static graphql.introspection.Introspection.DirectiveLocation.*;
 
 public class DirectiveValueDeserializer implements ArgumentInjector {
 
@@ -33,7 +24,7 @@ public class DirectiveValueDeserializer implements ArgumentInjector {
     @Override
     public Object getArgumentValue(ArgumentInjectorParams params) {
         //Can happen inside BatchLoader
-        if (params.getResolutionEnvironment().dataFetchingEnvironment == null) {
+        if (params.getResolutionEnvironment().getDataFetchingEnvironment() == null) {
             //TODO Can this be supported? Since DataFetchingEnvs are saved as key contexts, it sounds possible.
           throw new IllegalArgumentException("Directive injection isn't supported in BatchLoaders");
         }
@@ -44,7 +35,12 @@ public class DirectiveValueDeserializer implements ArgumentInjector {
         String directiveName = Utils.coalesce(descriptor.name(), fallBackDirectiveName);
         Stream<Introspection.DirectiveLocation> locations = descriptor.locations().length != 0
                 ? Arrays.stream(descriptor.locations())
-                : sortedLocations(params.getResolutionEnvironment().dataFetchingEnvironment.getGraphQLSchema().getDirective(directiveName).validLocations());
+                :
+                                                            sortedLocations(params.getResolutionEnvironment()
+                                                                    .getDataFetchingEnvironment()
+                                                                    .getGraphQLSchema()
+                                                                    .getDirective(directiveName)
+                                                                    .validLocations());
         Directives directives = env.getDirectives();
         Stream<Map<String, Object>> rawValues = locations
                 .map(loc -> directives.find(loc, directiveName))
