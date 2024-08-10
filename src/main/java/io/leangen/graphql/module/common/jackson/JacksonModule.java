@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.generator.mapping.OutputConverter;
-import io.leangen.graphql.generator.mapping.SynonymBaseTypeComparator;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.module.SimpleModule;
 
@@ -15,8 +14,8 @@ import java.util.List;
 
 public class JacksonModule implements SimpleModule {
 
-    private static JsonNodeAdapter jsonNodeAdapter = new JsonNodeAdapter();
-    private static JsonArrayAdapter jsonArrayAdapter = new JsonArrayAdapter();
+    private static final JsonNodeAdapter jsonNodeAdapter = new JsonNodeAdapter();
+    private static final JsonArrayAdapter jsonArrayAdapter = new JsonArrayAdapter();
 
     @Override
     public List<TypeMapper> getTypeMappers() {
@@ -36,15 +35,15 @@ public class JacksonModule implements SimpleModule {
     @Override
     public void setUp(SetupContext context) {
         if (!getTypeMappers().isEmpty()) {
-            context.getSchemaGenerator().withTypeMappersPrepended(getTypeMappers().toArray(new TypeMapper[0]));
+            context.withTypeMappers(getTypeMappers().toArray(new TypeMapper[0]));
         }
         if (!getOutputConverters().isEmpty()) {
-            context.getSchemaGenerator().withOutputConvertersPrepended(getOutputConverters().toArray(new OutputConverter[0]));
+            context.withOutputConverters(getOutputConverters().toArray(new OutputConverter[0]));
         }
         if (!getInputConverters().isEmpty()) {
-            context.getSchemaGenerator().withInputConvertersPrepended(getInputConverters().toArray(new InputConverter[0]));
+            context.withInputConverters(getInputConverters().toArray(new InputConverter[0]));
         }
-        context.getSchemaGenerator().withTypeComparators(new SynonymBaseTypeComparator(ObjectNode.class, POJONode.class));
-        context.getSchemaGenerator().withTypeComparators(new SynonymBaseTypeComparator(DecimalNode.class, NumericNode.class));
+        context.withTypeComparator(ObjectNode.class, POJONode.class);
+        context.withTypeComparator(DecimalNode.class, NumericNode.class);
     }
 }

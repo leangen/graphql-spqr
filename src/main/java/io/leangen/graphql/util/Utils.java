@@ -146,4 +146,18 @@ public class Utils {
         fresh.put(k, v);
         return fresh;
     }
+
+    public static <T> boolean anyMatch(T[] array, Predicate<T> condition) {
+        for (T a : array) {
+            if (condition.test(a)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends Throwable> void sneakyThrow(Throwable t) throws T {
+        throw (T) t;
+    }
 }

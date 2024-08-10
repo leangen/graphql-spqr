@@ -20,6 +20,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
+import static io.leangen.graphql.util.Utils.sneakyThrow;
 
 /**
  * Created by bojan.tomic on 1/29/17.
@@ -132,11 +133,6 @@ public class OperationExecutor implements DataFetcher<Object> {
             return cause;
         }
         return e;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T extends Throwable> void sneakyThrow(Throwable t) throws T {
-        throw (T) t;
     }
 
     public Operation getOperation() {

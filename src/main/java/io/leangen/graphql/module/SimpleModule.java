@@ -44,25 +44,25 @@ public interface SimpleModule extends Module {
     @Override
     default void setUp(SetupContext context) {
         if (!getResolverBuilders().isEmpty()) {
-            context.getSchemaGenerator().withResolverBuilders(getResolverBuilders().toArray(new ResolverBuilder[0]));
+            context.withResolverBuilders(getResolverBuilders().toArray(new ResolverBuilder[0]));
         }
         if (!getNestedResolverBuilders().isEmpty()) {
-            context.getSchemaGenerator().withNestedResolverBuilders(getNestedResolverBuilders().toArray(new ResolverBuilder[0]));
+            context.withNestedResolverBuilders(getNestedResolverBuilders().toArray(new ResolverBuilder[0]));
         }
         if (!getTypeMappers().isEmpty()) {
-            context.getSchemaGenerator().withTypeMappers(getTypeMappers().toArray(new TypeMapper[0]));
+            context.withTypeMappers(getTypeMappers().toArray(new TypeMapper[0]));
         }
         if (!getOutputConverters().isEmpty()) {
-            context.getSchemaGenerator().withOutputConverters(getOutputConverters().toArray(new OutputConverter[0]));
+            context.withOutputConverters(getOutputConverters().toArray(new OutputConverter[0]));
         }
         if (!getInputConverters().isEmpty()) {
-            context.getSchemaGenerator().withInputConverters(getInputConverters().toArray(new InputConverter[0]));
+            context.withInputConverters(getInputConverters().toArray(new InputConverter[0]));
         }
         if (!getArgumentInjectors().isEmpty()) {
-            context.getSchemaGenerator().withArgumentInjectors(getArgumentInjectors().toArray(new ArgumentInjector[0]));
+            context.withArgumentInjectors(getArgumentInjectors().toArray(new ArgumentInjector[0]));
         }
         if (getTypeInfoGenerator().isPresent()) {
-            context.getSchemaGenerator().withTypeInfoGenerator(getTypeInfoGenerator().get());
+            context.withTypeInfoGenerator(getTypeInfoGenerator().get());
         }
     }
 }

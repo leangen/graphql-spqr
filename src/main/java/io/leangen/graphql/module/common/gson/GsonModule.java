@@ -25,10 +25,10 @@ public class GsonModule implements SimpleModule {
     @Override
     public void setUp(SetupContext context) {
         if (!getTypeMappers().isEmpty()) {
-            context.getSchemaGenerator().withTypeMappersPrepended(getTypeMappers().toArray(new TypeMapper[0]));
+            context.withTypeMappers(getTypeMappers().toArray(new TypeMapper[0]));
         }
         if (!getOutputConverters().isEmpty()) {
-            context.getSchemaGenerator().withOutputConvertersPrepended(getOutputConverters().toArray(new OutputConverter[0]));
+            context.withOutputConverters(getOutputConverters().toArray(new OutputConverter[0]));
         }
     }
 }

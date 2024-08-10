@@ -35,7 +35,9 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static graphql.schema.GraphQLObjectType.newObject;
@@ -64,11 +66,11 @@ import static java.util.Collections.addAll;
  * <pre>
  * {@code
  * UserService userService = new UserService(); //could also be injected by a framework
- * GraphQLSchema schema = new GraphQLSchemaGenerator()
+ * ExecutableSchema schema = new GraphQLSchemaGenerator()
  *      .withOperationsFromSingletons(userService) //register an operations source and use the default strategy
  *      .withNestedResolverBuildersForType(User.class, new BeanResolverBuilder()) //customize how queries are extracted from User.class
- *      .generate();
- * GraphQL graphQL = new GraphQL(schema);
+ *      .generateExecutable();
+ * GraphQL graphQL = GraphQLRuntime.newGraphQL(schema).build();
  *
  * //keep the reference to GraphQL instance and execute queries against it.
  * //this query selects a user by ID and requests name and regDate fields only
@@ -81,7 +83,7 @@ import static java.util.Collections.addAll;
  * </pre>
  */
 @SuppressWarnings({"WeakerAccess", "rawtypes", "UnusedReturnValue", "unused"})
-public class GraphQLSchemaGenerator {
+public class GraphQLSchemaGenerator implements GeneratorConfigurer<GraphQLSchemaGenerator> {
 
     private InterfaceMappingStrategy interfaceStrategy = new AnnotatedInterfaceStrategy();
     private ScalarDeserializationStrategy scalarStrategy;
@@ -245,7 +247,7 @@ public class GraphQLSchemaGenerator {
      * Analyzes {@code beanType} using the provided {@link ResolverBuilder}s to look for methods to be exposed
      * or the globally registered {@link ResolverBuilder}s if none are provided, and uses {@code serviceSupplier}
      * to obtain an instance on which query/mutation methods are invoked at runtime.
-     * Container managed beans (of any scope) are commonly registered this way..
+     * Container managed beans (of any scope) are commonly registered this way.
      *
      * @param serviceSupplier The supplier that will be used to obtain an instance on which the exposed methods
      *                        will be invoked when resolving queries/mutations/subscriptions.
@@ -338,42 +340,19 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
-    /**
-     * Globally registers {@link ResolverBuilder}s to be used for sources that don't have explicitly assigned builders.
-     *
-     * @param resolverBuilders builders to be globally registered
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withResolverBuilders(ResolverBuilder... resolverBuilders) {
-        return withResolverBuilders((config, defaults) -> Arrays.asList(resolverBuilders));
-    }
-
+    @Override
     public GraphQLSchemaGenerator withResolverBuilders(ExtensionProvider<GeneratorConfiguration, ResolverBuilder> provider) {
         this.resolverBuilderProviders.add(provider);
         return this;
     }
 
-    /**
-     * Globally registers {@link ResolverBuilder}s to be used for sources that don't have explicitly assigned builders.
-     *
-     * @param resolverBuilders builders to be globally registered
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withNestedResolverBuilders(ResolverBuilder... resolverBuilders) {
-        return withNestedResolverBuilders((config, defaults) -> Arrays.asList(resolverBuilders));
-    }
-
+    @Override
     public GraphQLSchemaGenerator withNestedResolverBuilders(ExtensionProvider<GeneratorConfiguration, ResolverBuilder> provider) {
         this.nestedResolverBuilderProviders.add(provider);
         return this;
     }
 
-    public GraphQLSchemaGenerator withInputFieldBuilders(InputFieldBuilder... inputFieldBuilders) {
-        return withInputFieldBuilders((env, defaults) -> defaults.prepend(inputFieldBuilders));
-    }
-
+    @Override
     public GraphQLSchemaGenerator withInputFieldBuilders(ExtensionProvider<ExtendedGeneratorConfiguration, InputFieldBuilder> provider) {
         this.inputFieldBuilderProviders.add(provider);
         return this;
@@ -409,6 +388,7 @@ public class GraphQLSchemaGenerator {
         return this;
     }
 
+    @Override
     public GraphQLSchemaGenerator withTypeInfoGenerator(TypeInfoGenerator typeInfoGenerator) {
         this.typeInfoGenerator = typeInfoGenerator;
         return this;
@@ -450,131 +430,35 @@ public class GraphQLSchemaGenerator {
      * will be used for mapping it.</b></p>
      * <p>See {@link TypeMapper#supports(java.lang.reflect.AnnotatedElement, AnnotatedType)}</p>
      *
-     * @param typeMappers Custom type mappers to register with the builder
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withTypeMappers(TypeMapper... typeMappers) {
-        return withTypeMappers((conf, current) -> current.insertAfterOrAppend(IdAdapter.class, typeMappers));
-    }
-
-    public GraphQLSchemaGenerator withTypeMappersPrepended(TypeMapper... typeMappers) {
-        this.typeMapperProviders.add(0, (conf, current) -> current.insertAfterOrAppend(IdAdapter.class, typeMappers));
-        return this;
-    }
-
-    public GraphQLSchemaGenerator withTypeMappersPrepended(ExtensionProvider<GeneratorConfiguration, TypeMapper> provider) {
-        this.typeMapperProviders.add(0, provider);
-        return this;
-    }
-
-    /**
-     * Registers custom {@link TypeMapper}s to be used for mapping Java type to GraphQL types.
-     * <p><b>Ordering of mappers is strictly important as the first {@link TypeMapper} that supports the given Java type
-     * will be used for mapping it.</b></p>
-     * <p>See {@link TypeMapper#supports(java.lang.reflect.AnnotatedElement, AnnotatedType)}</p>
-     *
      * @param provider Provides the customized list of TypeMappers to use
      *
      * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
      */
+    @Override
     public GraphQLSchemaGenerator withTypeMappers(ExtensionProvider<GeneratorConfiguration, TypeMapper> provider) {
         this.typeMapperProviders.add(provider);
         return this;
     }
 
-    public GraphQLSchemaGenerator withSchemaTransformers(SchemaTransformer... transformers) {
-        return withSchemaTransformers((conf, current) -> current.append(transformers));
-    }
-
+    @Override
     public GraphQLSchemaGenerator withSchemaTransformers(ExtensionProvider<GeneratorConfiguration, SchemaTransformer> provider) {
         this.schemaTransformerProviders.add(provider);
         return this;
     }
 
-    /**
-     * Registers custom {@link InputConverter}s to be used for converting values provided by the GraphQL client
-     * into those expected by the corresponding Java method. Only needed in some specific cases when usual deserialization
-     * isn't enough, for example, when a client-provided {@link java.util.List} should be repackaged into a {@link java.util.Map},
-     * which is normally done because GraphQL type system has no direct support for maps.
-     * <p><b>Ordering of converters is strictly important as the first {@link InputConverter} that supports the given Java type
-     * will be used for converting it.</b></p>
-     * <p>See {@link InputConverter#supports(AnnotatedType)}</p>
-     *
-     * @param inputConverters Custom input converters to register with the builder
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withInputConverters(InputConverter<?,?>... inputConverters) {
-        return withInputConverters((config, current) -> current.insert(0, inputConverters));
-    }
-
-    public GraphQLSchemaGenerator withInputConvertersPrepended(InputConverter<?,?>... inputConverters) {
-        this.inputConverterProviders.add(0, (config, current) -> current.insert(0, inputConverters));
-        return this;
-    }
-
+    @Override
     public GraphQLSchemaGenerator withInputConverters(ExtensionProvider<GeneratorConfiguration, InputConverter> provider) {
         this.inputConverterProviders.add(provider);
         return this;
     }
 
-    /**
-     * Registers custom {@link OutputConverter}s to be used for converting values returned by the exposed Java method
-     * into those expected by the GraphQL client. Only needed in some specific cases when usual serialization isn't enough,
-     * for example, when an instance of {@link java.util.Map} should be repackaged into a {@link java.util.List}, which
-     * is normally done because GraphQL type system has no direct support for maps.
-     * <p><b>Ordering of converters is strictly important as the first {@link OutputConverter} that supports the given Java type
-     * will be used for converting it.</b></p>
-     * <p>See {@link OutputConverter#supports(java.lang.reflect.AnnotatedElement, AnnotatedType)}</p>
-     *
-     * @param outputConverters Custom output converters to register with the builder
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withOutputConverters(OutputConverter<?,?>... outputConverters) {
-        return withOutputConverters((config, current) -> current.insertAfterOrAppend(IdAdapter.class, outputConverters));
-    }
-
-    public GraphQLSchemaGenerator withOutputConvertersPrepended(OutputConverter<?,?>... outputConverters) {
-        this.outputConverterProviders.add(0, (config, current) -> current.insertAfterOrAppend(IdAdapter.class, outputConverters));
-        return this;
-    }
-
+    @Override
     public GraphQLSchemaGenerator withOutputConverters(ExtensionProvider<GeneratorConfiguration, OutputConverter> provider) {
         this.outputConverterProviders.add(provider);
         return this;
     }
 
-    /**
-     * Type adapters (instances of {@link AbstractTypeAdapter}) are both type mappers and bi-directional converters,
-     * implementing {@link TypeMapper}, {@link InputConverter} and {@link OutputConverter}.
-     * They're used in the same way as mappers/converters individually, and exist solely because it can sometimes
-     * be convenient to group the logic for mapping and converting to/from the same Java type in one place.
-     * For example, because GraphQL type system has no notion of maps, {@link java.util.Map}s require special logic
-     * both when mapping them to a GraphQL type and when converting them before and after invoking a Java method.
-     * For this reason, all code dealing with translating {@link java.util.Map}s is kept in one place in
-     * {@link io.leangen.graphql.generator.mapping.common.MapToListTypeAdapter}.
-     * <p><b>Ordering of mappers/converters is strictly important as the first one supporting the given Java type
-     * will be used to map/convert it.</b></p>
-     * <p>See {@link #withTypeMappers(ExtensionProvider)}</p>
-     * <p>See {@link #withInputConverters(ExtensionProvider)}</p>
-     * <p>See {@link #withOutputConverters(ExtensionProvider)}</p>
-     *
-     * @param typeAdapters Custom type adapters to register with the builder
-     *
-     * @return This {@link GraphQLSchemaGenerator} instance, to allow method chaining
-     */
-    public GraphQLSchemaGenerator withTypeAdapters(AbstractTypeAdapter<?,?>... typeAdapters) {
-        withInputConverters(typeAdapters);
-        withOutputConverters(typeAdapters);
-        return withTypeMappers((conf, defaults) -> defaults.insertAfter(ScalarMapper.class, typeAdapters));
-    }
-
-    public GraphQLSchemaGenerator withArgumentInjectors(ArgumentInjector... argumentInjectors) {
-        return withArgumentInjectors((config, current) -> current.insert(0, argumentInjectors));
-    }
-
+    @Override
     public GraphQLSchemaGenerator withArgumentInjectors(ExtensionProvider<GeneratorConfiguration, ArgumentInjector> provider) {
         this.argumentInjectorProviders.add(provider);
         return this;
@@ -600,7 +484,7 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withResolverInterceptors(List<ResolverInterceptor> interceptors) {
-        return withResolverInterceptorFactories((config, current) -> current.append(GlobalResolverInterceptorFactory.early(interceptors)));
+        return withResolverInterceptorFactories((config, current) -> current.append(GlobalResolverInterceptorFactory.inner(interceptors)));
     }
 
     public GraphQLSchemaGenerator withOuterResolverInterceptors(ResolverInterceptor... interceptors) {
@@ -608,9 +492,10 @@ public class GraphQLSchemaGenerator {
     }
 
     public GraphQLSchemaGenerator withOuterResolverInterceptors(List<ResolverInterceptor> interceptors) {
-        return withResolverInterceptorFactories((config, current) -> current.append(GlobalResolverInterceptorFactory.late(interceptors)));
+        return withResolverInterceptorFactories((config, current) -> current.append(GlobalResolverInterceptorFactory.outer(interceptors)));
     }
 
+    @Override
     public GraphQLSchemaGenerator withResolverInterceptorFactories(ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory> provider) {
         this.interceptorFactoryProviders.add(provider);
         return this;
@@ -710,6 +595,7 @@ public class GraphQLSchemaGenerator {
         return withTypeComparators((config, current) -> current.append(comparators));
     }
 
+    @Override
     public GraphQLSchemaGenerator withTypeComparators(ExtensionProvider<GeneratorConfiguration, Comparator<AnnotatedType>> provider) {
         this.typeComparatorProviders.add(provider);
         return this;
@@ -796,7 +682,8 @@ public class GraphQLSchemaGenerator {
             modules = provider.getExtensions(configuration, new ExtensionList<>(modules));
         }
         checkForDuplicates("modules", modules);
-        modules.forEach(module -> module.setUp(() -> this));
+        Module.SetupContext setupContext = new ModuleConfigurer();
+        modules.forEach(module -> module.setUp(setupContext));
 
         if (operationSourceRegistry.isEmpty()) {
             throw new IllegalStateException("At least one top-level operation source must be registered");
@@ -922,6 +809,7 @@ public class GraphQLSchemaGenerator {
             typeComparators = provider.getExtensions(configuration, new ExtensionList<>(typeComparators));
         }
         List<Comparator<AnnotatedType>> finalTypeComparators = typeComparators;
+        //noinspection ComparatorMethodParameterNotUsed
         typeComparator = (t1, t2) -> finalTypeComparators.stream().anyMatch(comparator -> comparator.compare(t1, t2) == 0) ? 0 : -1;
     }
 
@@ -1090,7 +978,11 @@ public class GraphQLSchemaGenerator {
 
         @Override
         public DataFetcher<?> getDataFetcher(GraphQLFieldsContainer parentType, GraphQLFieldDefinition fieldDef) {
-            return codeRegistry.getDataFetcher(FieldCoordinates.coordinates(parentType, fieldDef), fieldDef);
+            if (parentType instanceof GraphQLObjectType) {
+                return codeRegistry.getDataFetcher((GraphQLObjectType) parentType, fieldDef);
+            } else {
+                return null;
+            }
         }
     }
 
@@ -1126,11 +1018,11 @@ public class GraphQLSchemaGenerator {
             this.lateInterceptors = lateInterceptors;
         }
 
-        static GlobalResolverInterceptorFactory early(List<ResolverInterceptor> interceptors) {
+        static GlobalResolverInterceptorFactory inner(List<ResolverInterceptor> interceptors) {
             return new GlobalResolverInterceptorFactory(interceptors, Collections.emptyList());
         }
 
-        static GlobalResolverInterceptorFactory late(List<ResolverInterceptor> interceptors) {
+        static GlobalResolverInterceptorFactory outer(List<ResolverInterceptor> interceptors) {
             return new GlobalResolverInterceptorFactory(Collections.emptyList(), interceptors);
         }
 
@@ -1165,6 +1057,92 @@ public class GraphQLSchemaGenerator {
             return delegates.stream()
                     .flatMap(delegate -> delegate.getOuterInterceptors(params).stream())
                     .collect(Collectors.toList());
+        }
+    }
+
+    private class ModuleConfigurer implements Module.SetupContext {
+
+        @Override
+        public Module.SetupContext withTypeMappers(ExtensionProvider<GeneratorConfiguration, TypeMapper> provider) {
+            typeMapperProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withInputConverters(ExtensionProvider<GeneratorConfiguration, InputConverter> provider) {
+            inputConverterProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withOutputConverters(ExtensionProvider<GeneratorConfiguration, OutputConverter> provider) {
+            outputConverterProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withArgumentInjectors(ExtensionProvider<GeneratorConfiguration, ArgumentInjector> provider) {
+            argumentInjectorProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withResolverBuilders(ExtensionProvider<GeneratorConfiguration, ResolverBuilder> provider) {
+            resolverBuilderProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withNestedResolverBuilders(ExtensionProvider<GeneratorConfiguration, ResolverBuilder> provider) {
+            nestedResolverBuilderProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withInputFieldBuilders(ExtensionProvider<ExtendedGeneratorConfiguration, InputFieldBuilder> provider) {
+            inputFieldBuilderProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withResolverInterceptorFactories(ExtensionProvider<GeneratorConfiguration, ResolverInterceptorFactory> provider) {
+            interceptorFactoryProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withSchemaTransformers(ExtensionProvider<GeneratorConfiguration, SchemaTransformer> provider) {
+            schemaTransformerProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withTypeInfoGenerator(TypeInfoGenerator typeInfoGenerator) {
+            GraphQLSchemaGenerator.this.withTypeInfoGenerator(typeInfoGenerator);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withTypeComparators(ExtensionProvider<GeneratorConfiguration, Comparator<AnnotatedType>> provider) {
+            typeComparatorProviders.add(0, provider);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withInclusionStrategy(UnaryOperator<InclusionStrategy> strategy) {
+            inclusionStrategy = strategy.apply(inclusionStrategy);
+            return this;
+        }
+
+        @Override
+        public Module.SetupContext withRelayMappingConfig(Consumer<RelayMappingConfig> configurer) {
+            configurer.accept(relayMappingConfig);
+            return this;
+        }
+
+        @Override
+        public GraphQLSchemaGenerator getSchemaGenerator() {
+            return GraphQLSchemaGenerator.this;
         }
     }
 }
