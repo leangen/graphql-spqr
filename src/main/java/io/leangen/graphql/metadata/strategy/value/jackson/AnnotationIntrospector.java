@@ -10,12 +10,16 @@ import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
 import io.leangen.graphql.metadata.messages.MessageBundle;
+import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
 
-import java.lang.reflect.*;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Member;
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +28,8 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
 
     private final MessageBundle messageBundle;
     private final Map<Type, List<NamedType>> typeMap;
-    private final InputFieldInfoGenerator inputInfoGen = new InputFieldInfoGenerator();
+    private final InputFieldInfoGenerator inputInfoGen;
+    private final InclusionStrategy inclusionStrategy;
     private static final TypeResolverBuilder<?> typeResolverBuilder;
 
     static {
@@ -34,8 +39,10 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
                 .typeProperty(ValueMapper.TYPE_METADATA_FIELD_NAME);
     }
 
-    AnnotationIntrospector(Map<Type, List<NamedType>> typeMap, MessageBundle messageBundle) {
+    AnnotationIntrospector(Map<Type, List<NamedType>> typeMap, InputFieldInfoGenerator inputInfoGen, InclusionStrategy inclusionStrategy, MessageBundle messageBundle) {
         this.typeMap = typeMap == null ? Collections.emptyMap() : Collections.unmodifiableMap(typeMap);
+        this.inputInfoGen = inputInfoGen;
+        this.inclusionStrategy = inclusionStrategy;
         this.messageBundle = messageBundle;
     }
 
@@ -57,6 +64,11 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     public String findPropertyDescription(Annotated annotated) {
         return inputInfoGen.getDescription(getAnnotatedCandidates(annotated), messageBundle)
                 .orElse(super.findPropertyDescription(annotated));
+    }
+
+    @Override
+    public boolean hasIgnoreMarker(AnnotatedMember m) {
+        return super.hasIgnoreMarker(m) || !inclusionStrategy.includeInputField(m.getAnnotated());
     }
 
     /**
@@ -107,16 +119,10 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
         if (annotated instanceof AnnotatedParameter) {
             AnnotatedParameter parameter = (AnnotatedParameter) annotated;
             Executable owner = (Executable) parameter.getOwner().getAnnotated();
-            return Collections.singletonList(owner.getParameters()[parameter.getIndex()]);
+            return List.of(owner.getParameters()[parameter.getIndex()]);
+        } else {
+            List<AnnotatedElement> propertyMembers = ClassUtils.getPropertyMembers((Member & AnnotatedElement) annotated.getAnnotated());
+            return !propertyMembers.isEmpty() ? propertyMembers : List.of(annotated.getAnnotated());
         }
-        if (annotated instanceof AnnotatedField) {
-            Field field = ((AnnotatedField) annotated).getAnnotated();
-            return ClassUtils.getPropertyMembers(field);
-        }
-        if (annotated instanceof AnnotatedMethod) {
-            Method setter = ((AnnotatedMethod) annotated).getAnnotated();
-            return ClassUtils.getPropertyMembers(setter);
-        }
-        return Collections.emptyList();
     }
 }

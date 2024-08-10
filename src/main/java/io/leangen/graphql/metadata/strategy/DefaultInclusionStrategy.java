@@ -36,6 +36,11 @@ public class DefaultInclusionStrategy implements InclusionStrategy {
     }
 
     @Override
+    public boolean includeInputField(AnnotatedElement element) {
+        return !isIgnored(element);
+    }
+
+    @Override
     public boolean includeInputField(InputFieldInclusionParams params) {
         return params.getElements().stream().noneMatch(this::isIgnored)
                 && (params.isDirectlyDeserializable() || params.isDeserializableInSubType()) //is ever deserializable

@@ -1,8 +1,17 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
+
+## [unreleased]
+
+### Changed
+
+- [Breaking] Upgraded to graphql-java v22.1
+
+### Fixed
+
+- [Breaking] `@GraphQLIgnore`'d elements can still cause conflicts [#486](https://github.com/leangen/graphql-spqr/pull/486)
 
 ## [0.12.4] - 2024-01-07
 

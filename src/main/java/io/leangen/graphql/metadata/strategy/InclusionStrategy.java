@@ -13,5 +13,7 @@ public interface InclusionStrategy {
 
     boolean includeArgumentForMapping(Parameter parameter, AnnotatedType parameterType, AnnotatedType declaringType);
 
+    boolean includeInputField(AnnotatedElement element);
+
     boolean includeInputField(InputFieldInclusionParams params);
 }

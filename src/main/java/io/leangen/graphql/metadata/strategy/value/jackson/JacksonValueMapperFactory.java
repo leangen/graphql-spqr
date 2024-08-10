@@ -9,21 +9,17 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.messages.MessageBundle;
+import io.leangen.graphql.metadata.strategy.InclusionStrategy;
 import io.leangen.graphql.metadata.strategy.type.DefaultTypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
+import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -34,17 +30,20 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
     private final ObjectMapper prototype;
     private final List<Configurer> configurers;
     private final TypeInfoGenerator typeInfoGenerator;
+    private final InputFieldInfoGenerator inputInfoGenerator;
 
     private static final Configurer IMPLICIT_MODULES = new ImplicitModuleConfigurer();
 
     public JacksonValueMapperFactory() {
-        this(null, new DefaultTypeInfoGenerator(), defaultConfigurers());
+        this(null, new DefaultTypeInfoGenerator(), new InputFieldInfoGenerator(), defaultConfigurers());
     }
 
-    private JacksonValueMapperFactory(ObjectMapper prototype, TypeInfoGenerator typeInfoGenerator, List<Configurer> configurers) {
+    private JacksonValueMapperFactory(ObjectMapper prototype, TypeInfoGenerator typeInfoGenerator,
+                                      InputFieldInfoGenerator inputFieldInfoGenerator, List<Configurer> configurers) {
         this.prototype = prototype;
         this.configurers = Objects.requireNonNull(configurers);
         this.typeInfoGenerator = Objects.requireNonNull(typeInfoGenerator);
+        this.inputInfoGenerator = inputFieldInfoGenerator;
     }
 
     @Override
@@ -54,8 +53,8 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
     private ObjectMapper initBuilder(Map<Class, List<Class<?>>> concreteSubTypes, GlobalEnvironment environment) {
         ObjectMapper objectMapper = prototype != null ? prototype.copy() : new ObjectMapper();
-        return this.configurers.stream().reduce(objectMapper, (mapper, configurer) ->
-                configurer.configure(new ConfigurerParams(mapper, concreteSubTypes, this.typeInfoGenerator, environment)), (b1, b2) -> b2);
+        return this.configurers.stream().reduce(objectMapper, (mapper, configurer) -> configurer.configure(
+                new ConfigurerParams(mapper, concreteSubTypes, this.typeInfoGenerator, this.inputInfoGenerator, environment)), (b1, b2) -> b2);
     }
 
     @Override
@@ -83,6 +82,8 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
                     .registerModule(getAnnotationIntrospectorModule(
                             unambiguousSubtypes(params.concreteSubTypes),
                             ambiguousSubtypes(params.concreteSubTypes, params.metaDataGen, params.environment.messageBundle),
+                            params.inputInfoGen,
+                            params.environment.inclusionStrategy,
                             params.environment.messageBundle));
             if (!params.environment.getInputConverters().isEmpty()) {
                 mapper.registerModule(getDeserializersModule(params.environment, params.objectMapper));
@@ -130,12 +131,16 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
             };
         }
 
-        private Module getAnnotationIntrospectorModule(Map<Class, Class> unambiguousTypes, Map<Type, List<NamedType>> ambiguousTypes, MessageBundle messageBundle) {
+        private Module getAnnotationIntrospectorModule(Map<Class, Class> unambiguousTypes,
+                                                       Map<Type, List<NamedType>> ambiguousTypes,
+                                                       InputFieldInfoGenerator inputInfoGen,
+                                                       InclusionStrategy inclusionStrategy,
+                                                       MessageBundle messageBundle) {
             SimpleModule module = new SimpleModule("graphql-spqr-annotation-introspector") {
                 @Override
                 public void setupModule(SetupContext context) {
                     super.setupModule(context);
-                    context.insertAnnotationIntrospector(new AnnotationIntrospector(ambiguousTypes, messageBundle));
+                    context.insertAnnotationIntrospector(new AnnotationIntrospector(ambiguousTypes, inputInfoGen, inclusionStrategy, messageBundle));
                 }
             };
             unambiguousTypes.forEach(module::addAbstractTypeMapping);
@@ -153,12 +158,15 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         final ObjectMapper objectMapper;
         final Map<Class, List<Class<?>>> concreteSubTypes;
         final TypeInfoGenerator metaDataGen;
+        final InputFieldInfoGenerator inputInfoGen;
         final GlobalEnvironment environment;
 
-        ConfigurerParams(ObjectMapper objectMapper, Map<Class, List<Class<?>>> concreteSubTypes, TypeInfoGenerator metaDataGen, GlobalEnvironment environment) {
+        ConfigurerParams(ObjectMapper objectMapper, Map<Class, List<Class<?>>> concreteSubTypes,
+                         TypeInfoGenerator metaDataGen, InputFieldInfoGenerator inputInfoGen, GlobalEnvironment environment) {
             this.objectMapper = objectMapper;
             this.concreteSubTypes = concreteSubTypes;
             this.metaDataGen = metaDataGen;
+            this.inputInfoGen = inputInfoGen;
             this.environment = environment;
         }
 
@@ -172,6 +180,10 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
         public TypeInfoGenerator getMetaDataGen() {
             return metaDataGen;
+        }
+
+        public InputFieldInfoGenerator getInputInfoGenerator() {
+            return inputInfoGen;
         }
 
         public GlobalEnvironment getEnvironment() {
@@ -188,6 +200,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
         private final List<Configurer> configurers = defaultConfigurers();
         private TypeInfoGenerator typeInfoGenerator = new DefaultTypeInfoGenerator();
+        private InputFieldInfoGenerator inputInfoGenerator = new InputFieldInfoGenerator();
         private ObjectMapper prototype;
 
         public Builder withConfigurers(Configurer... configurer) {
@@ -197,6 +210,11 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
         public Builder withTypeInfoGenerator(TypeInfoGenerator typeInfoGenerator) {
             this.typeInfoGenerator = typeInfoGenerator;
+            return this;
+        }
+
+        public Builder withInputFieldInfoGenerator(InputFieldInfoGenerator inputFieldInfoGenerator) {
+            this.inputInfoGenerator = inputFieldInfoGenerator;
             return this;
         }
 
@@ -211,7 +229,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         }
 
         public JacksonValueMapperFactory build() {
-            return new JacksonValueMapperFactory(prototype, typeInfoGenerator, configurers);
+            return new JacksonValueMapperFactory(prototype, typeInfoGenerator, inputInfoGenerator, configurers);
         }
     }
 

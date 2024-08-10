@@ -15,8 +15,9 @@ public class ExtensionList<E> extends ArrayList<E> {
         super(c);
     }
 
-    public E getFirstOfType(Class<? extends E> extensionType) {
-        return get(firstIndexOfTypeStrict(extensionType));
+    @SuppressWarnings("unchecked")
+    public <T extends E> T getFirstOfType(Class<T> extensionType) {
+        return (T) get(firstIndexOfTypeStrict(extensionType));
     }
 
     @SafeVarargs
