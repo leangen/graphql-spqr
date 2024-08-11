@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 /**
  * @author Bojan Tomic (kaqqao)
  */
+@SuppressWarnings("rawtypes")
 public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValueMapper>, ScalarDeserializationStrategy {
 
     private final ObjectMapper prototype;
@@ -74,6 +75,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public static class AbstractClassAdapterConfigurer implements Configurer {
 
         @Override
@@ -153,6 +155,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         ObjectMapper configure(ConfigurerParams params);
     }
 
+    @SuppressWarnings({"unused", "rawtypes"})
     public static class ConfigurerParams {
 
         final ObjectMapper objectMapper;
@@ -178,6 +181,14 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
             return concreteSubTypes;
         }
 
+        public TypeInfoGenerator getTypeInfoGenerator() {
+            return metaDataGen;
+        }
+
+        /**
+         * @deprecated Renamed to {@link ConfigurerParams#getTypeInfoGenerator()}
+         */
+        @Deprecated
         public TypeInfoGenerator getMetaDataGen() {
             return metaDataGen;
         }
@@ -196,6 +207,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
         return this.getClass().getSimpleName();
     }
 
+    @SuppressWarnings("unused")
     public static class Builder {
 
         private final List<Configurer> configurers = defaultConfigurers();

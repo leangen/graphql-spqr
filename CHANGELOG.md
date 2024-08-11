@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - Enhance RootContextInjector [#508](https://github.com/leangen/graphql-spqr/pull/508)
+- Separate the configuration API from GraphQLSchemaGenerator [#507](https://github.com/leangen/graphql-spqr/pull/507)
 
 ### Changed
 

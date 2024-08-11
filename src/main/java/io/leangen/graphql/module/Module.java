@@ -12,6 +12,7 @@ public interface Module {
 
     void setUp(SetupContext context);
 
+    @SuppressWarnings("unused")
     interface SetupContext extends GeneratorConfigurer<SetupContext> {
 
         SetupContext withInclusionStrategy(UnaryOperator<InclusionStrategy> strategy);
