@@ -27,7 +27,25 @@ public class RootContextInjector implements ArgumentInjector {
         } else {
             rootContext = ContextUtils.unwrapContext(env.rootContext);
         }
-        return injectionExpression.isEmpty() ? rootContext : extract(rootContext, injectionExpression);
+        if (injectionExpression.isEmpty()) {
+            if (rootContext == null || params.getType().getType().equals(rootContext.getClass())) {
+                return rootContext;
+            }
+            if (ContextUtils.isDefault(rootContext)) {
+                GraphQLContext ctx = (GraphQLContext) rootContext;
+                Object result = ctx.get(params.getType().getType());
+                if (result != null) {
+                    return result;
+                }
+                result = ctx.get(params.getArgument().getName());
+                if (result != null) {
+                    return result;
+                }
+                result = ctx.get(params.getType().getType().getTypeName());
+                return result;
+            }
+        }
+        return extract(rootContext, injectionExpression);
     }
 
     @Override

@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [unreleased]
 
+### Added
+
+- Enhance RootContextInjector [#508](https://github.com/leangen/graphql-spqr/pull/508)
+
 ### Changed
 
 - [Breaking] Upgraded to graphql-java v22.1
