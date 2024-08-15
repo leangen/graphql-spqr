@@ -5,9 +5,6 @@ import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.execution.ExecutionStepInfo;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.GraphQLNamedType;
-import graphql.schema.GraphQLOutputType;
-import graphql.schema.GraphQLSchema;
 import io.leangen.graphql.generator.mapping.ArgumentInjectorParams;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
@@ -25,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * @author Bojan Tomic (kaqqao)
@@ -38,10 +36,11 @@ public class ResolutionEnvironment {
     public final Resolver resolver;
     public final ValueMapper valueMapper;
     public final GlobalEnvironment globalEnvironment;
-    public final GraphQLOutputType fieldType;
-    public final GraphQLNamedType parentType;
-    public final GraphQLSchema graphQLSchema;
-    public final DataFetchingEnvironment dataFetchingEnvironment;
+
+    private final DataFetchingEnvironment dataFetchingEnvironment;
+    private final Supplier<DataFetchingEnvironment> dataFetchingEnvironmentSupplier;
+    private final boolean isDataFetchingEnvironmentSupplied;
+
     public final BatchLoaderEnvironment batchLoaderEnvironment;
     public final Map<String, Object> arguments;
     public final List<GraphQLError> errors;
@@ -58,10 +57,11 @@ public class ResolutionEnvironment {
         this.resolver = resolver;
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
-        this.fieldType = env.getFieldType();
-        this.parentType = (GraphQLNamedType) env.getParentType();
-        this.graphQLSchema = env.getGraphQLSchema();
+
         this.dataFetchingEnvironment = env;
+        this.dataFetchingEnvironmentSupplier = null;
+        this.isDataFetchingEnvironmentSupplied = false;
+
         this.batchLoaderEnvironment = null;
         this.arguments = new HashMap<>();
         this.errors = new ArrayList<>();
@@ -79,15 +79,41 @@ public class ResolutionEnvironment {
         this.resolver = resolver;
         this.valueMapper = valueMapper;
         this.globalEnvironment = globalEnvironment;
-        this.fieldType = inner != null ? inner.getFieldType() : null;
-        this.parentType = inner != null ? (GraphQLNamedType) inner.getParentType() : null;
-        this.graphQLSchema = inner != null ? inner.getGraphQLSchema() : null;
+
         this.dataFetchingEnvironment = null;
+        this.dataFetchingEnvironmentSupplier = null;
+        this.isDataFetchingEnvironmentSupplied = false;
+
         this.batchLoaderEnvironment = env;
         this.arguments = new HashMap<>();
         this.errors = new ArrayList<>();
         this.converters = converters;
         this.derivedTypes = derivedTypes;
+    }
+
+    public ResolutionEnvironment(Resolver resolver, Supplier<DataFetchingEnvironment> env, ValueMapper valueMapper, GlobalEnvironment globalEnvironment,
+                                 ConverterRegistry converters, DerivedTypeRegistry derivedTypes) {
+
+        this.context = null;
+        this.rootContext = null;
+        this.batchContext = null;
+        this.resolver = resolver;
+        this.valueMapper = valueMapper;
+        this.globalEnvironment = globalEnvironment;
+
+        this.dataFetchingEnvironment = null;
+        this.dataFetchingEnvironmentSupplier = env;
+        this.isDataFetchingEnvironmentSupplied = true;
+
+        this.batchLoaderEnvironment = null;
+        this.arguments = new HashMap<>();
+        this.errors = new ArrayList<>();
+        this.converters = converters;
+        this.derivedTypes = derivedTypes;
+    }
+
+    public final DataFetchingEnvironment getDataFetchingEnvironment() {
+        return isDataFetchingEnvironmentSupplied ? dataFetchingEnvironmentSupplier.get() : dataFetchingEnvironment;
     }
 
     public <T, S> S convertOutput(T output, AnnotatedElement element, AnnotatedType type) {
@@ -120,7 +146,7 @@ public class ResolutionEnvironment {
     }
 
     public Object getInputValue(Object input, OperationArgument argument) {
-        boolean argValuePresent = dataFetchingEnvironment != null && dataFetchingEnvironment.containsArgument(argument.getName());
+        boolean argValuePresent = getDataFetchingEnvironment() != null && getDataFetchingEnvironment().containsArgument(argument.getName());
         ArgumentInjectorParams params = new ArgumentInjectorParams(input, argValuePresent, argument, this);
         Object value = this.globalEnvironment.injectors.getInjector(argument.getJavaType(), argument.getParameter()).getArgumentValue(params);
         if (argValuePresent) {
@@ -134,8 +160,8 @@ public class ResolutionEnvironment {
     }
 
     public GraphQLError createError(String message, Object... formatArgs) {
-        GraphqlErrorBuilder<?> builder = dataFetchingEnvironment != null
-                ? GraphqlErrorBuilder.newError(dataFetchingEnvironment)
+        GraphqlErrorBuilder<?> builder = getDataFetchingEnvironment() != null
+                                         ? GraphqlErrorBuilder.newError(getDataFetchingEnvironment())
                 : GraphqlErrorBuilder.newError();
         return builder
                 .message(message, formatArgs)
@@ -144,7 +170,7 @@ public class ResolutionEnvironment {
     }
 
     public Directives getDirectives(ExecutionStepInfo step) {
-        return new Directives(dataFetchingEnvironment, step);
+        return new Directives(getDataFetchingEnvironment(), step);
     }
 
     public Directives getDirectives() {
@@ -156,8 +182,8 @@ public class ResolutionEnvironment {
     }
 
     public boolean isSubscription() {
-        return dataFetchingEnvironment != null
-               && dataFetchingEnvironment.getParentType() == dataFetchingEnvironment.getGraphQLSchema().getSubscriptionType();
+        return getDataFetchingEnvironment() != null
+                && getDataFetchingEnvironment().getParentType() == getDataFetchingEnvironment().getGraphQLSchema().getSubscriptionType();
     }
 
     private static DataFetchingEnvironment dataFetchingEnvironment(List<Object> keyContexts) {

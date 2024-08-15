@@ -27,11 +27,11 @@ public class EnvironmentInjector implements ArgumentInjector {
             return params.getResolutionEnvironment();
         }
         if (GenericTypeReflector.isSuperType(setOfStrings, params.getType().getType())) {
-            return params.getResolutionEnvironment().dataFetchingEnvironment.getSelectionSet().getImmediateFields()
+            return params.getResolutionEnvironment().getDataFetchingEnvironment().getSelectionSet().getImmediateFields()
                     .stream().map(SelectedField::getName).collect(Collectors.toSet());
         }
         if (MergedField.class.equals(raw)) {
-            return params.getResolutionEnvironment().dataFetchingEnvironment.getMergedField();
+            return params.getResolutionEnvironment().getDataFetchingEnvironment().getMergedField();
         }
         if (ValueMapper.class.isAssignableFrom(raw)) {
             return params.getResolutionEnvironment().valueMapper;

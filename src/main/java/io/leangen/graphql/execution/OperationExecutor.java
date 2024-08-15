@@ -4,6 +4,7 @@ import graphql.GraphQLException;
 import graphql.execution.DataFetcherResult;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.GraphQLFieldDefinition;
 import io.leangen.graphql.generator.mapping.ArgumentInjector;
 import io.leangen.graphql.generator.mapping.ConverterRegistry;
 import io.leangen.graphql.generator.mapping.DelegatingOutputConverter;
@@ -13,10 +14,12 @@ import io.leangen.graphql.metadata.Resolver;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ContextUtils;
 import io.leangen.graphql.util.Utils;
+import jdk.jshell.spi.ExecutionControl;
 import org.dataloader.BatchLoaderEnvironment;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.leangen.graphql.util.GraphQLUtils.CLIENT_MUTATION_ID;
@@ -45,6 +48,11 @@ public class OperationExecutor implements DataFetcher<Object> {
                 res -> interceptorFactory.getInterceptors(new ResolverInterceptorFactoryParams(res))));
         this.outerInterceptors = operation.getResolvers().stream().collect(Collectors.toMap(Function.identity(),
                 res -> interceptorFactory.getOuterInterceptors(new ResolverInterceptorFactoryParams(res))));
+    }
+
+    public Object get(GraphQLFieldDefinition fieldDefinition, Object sourceObject, Supplier<DataFetchingEnvironment> env) throws Exception {
+        throw new ExecutionControl.NotImplementedException(
+                "OperationExecutor does not implement fetching DataFetchingEnvironment using a Supplier. Use LightOperationExecutor instead.");
     }
 
     @Override

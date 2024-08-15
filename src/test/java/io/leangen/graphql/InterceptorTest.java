@@ -28,9 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static io.leangen.graphql.support.LogAssertions.assertWarningsLogged;
-import static io.leangen.graphql.support.QueryResultAssertions.assertErrorsEqual;
-import static io.leangen.graphql.support.QueryResultAssertions.assertNoErrors;
-import static io.leangen.graphql.support.QueryResultAssertions.assertValueAtPathEquals;
+import static io.leangen.graphql.support.QueryResultAssertions.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -146,7 +144,7 @@ public class InterceptorTest {
         @Override
         public Object aroundInvoke(InvocationContext context, Continuation continuation) throws Exception {
             Auth auth = context.getResolver().getExecutable().getDelegate().getAnnotation(Auth.class);
-            User currentUser = context.getResolutionEnvironment().dataFetchingEnvironment.getContext();
+            User currentUser = context.getResolutionEnvironment().getDataFetchingEnvironment().getContext();
             if (auth != null && !currentUser.getRoles().containsAll(Arrays.asList(auth.rolesRequired()))) {
                 throw new IllegalAccessException("Access denied"); // or return null
             }
