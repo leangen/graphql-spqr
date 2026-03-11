@@ -1,5 +1,15 @@
 package io.leangen.graphql.generator;
 
+import graphql.language.ArrayValue;
+import graphql.language.BooleanValue;
+import graphql.language.EnumValue;
+import graphql.language.FloatValue;
+import graphql.language.IntValue;
+import graphql.language.NullValue;
+import graphql.language.ObjectField;
+import graphql.language.ObjectValue;
+import graphql.language.StringValue;
+import graphql.language.Value;
 import graphql.relay.Relay;
 import graphql.schema.*;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -313,12 +323,45 @@ public class OperationMapper {
     }
 
     private GraphQLAppliedDirectiveArgument toGraphQLAppliedDirectiveArgument(DirectiveArgument directiveArgument, BuildContext buildContext) {
+        GraphQLInputType inputType = toGraphQLInputType(directiveArgument.getJavaType(), new TypeMappingEnvironment(directiveArgument.getTypedElement(), this, buildContext));
         GraphQLAppliedDirectiveArgument.Builder builder = GraphQLAppliedDirectiveArgument.newArgument()
                 .name(directiveArgument.getName())
                 .description(directiveArgument.getDescription())
-                .type(toGraphQLInputType(directiveArgument.getJavaType(), new TypeMappingEnvironment(directiveArgument.getTypedElement(), this, buildContext)))
-                .valueProgrammatic(directiveArgument.getValue());
+                .type(inputType)
+                .valueLiteral(toAstValue(directiveArgument.getValue()));
         return buildContext.transformers.transform(builder.build(), directiveArgument, this, buildContext);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Value<?> toAstValue(Object value) {
+        if (value == null) {
+            return NullValue.newNullValue().build();
+        } else if (value instanceof String) {
+            return StringValue.of((String) value);
+        } else if (value instanceof Boolean) {
+            return BooleanValue.of((Boolean) value);
+        } else if (value instanceof Integer) {
+            return IntValue.of((Integer) value);
+        } else if (value instanceof Long) {
+            return IntValue.newIntValue(java.math.BigInteger.valueOf((Long) value)).build();
+        } else if (value instanceof Number) {
+            return FloatValue.newFloatValue(new java.math.BigDecimal(value.toString())).build();
+        } else if (value instanceof Enum<?>) {
+            return EnumValue.of(((Enum<?>) value).name());
+        } else if (value instanceof Object[]) {
+            List<Value> values = new ArrayList<>();
+            for (Object element : (Object[]) value) {
+                values.add(toAstValue(element));
+            }
+            return ArrayValue.newArrayValue().values(values).build();
+        } else if (value instanceof Map) {
+            List<ObjectField> fields = new ArrayList<>();
+            for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
+                fields.add(ObjectField.newObjectField().name(entry.getKey()).value(toAstValue(entry.getValue())).build());
+            }
+            return ObjectValue.newObjectValue().objectFields(fields).build();
+        }
+        return StringValue.of(value.toString());
     }
 
     private GraphQLFieldDefinition toRelayMutation(String parentType, GraphQLFieldDefinition mutation, DataFetcher<?> resolver, BuildContext buildContext) {

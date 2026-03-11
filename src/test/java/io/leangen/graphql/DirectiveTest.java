@@ -4,6 +4,12 @@ import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.Scalars;
+import graphql.language.ArrayValue;
+import graphql.language.BooleanValue;
+import graphql.language.FloatValue;
+import graphql.language.IntValue;
+import graphql.language.ObjectValue;
+import graphql.language.StringValue;
 import graphql.schema.GraphQLAppliedDirective;
 import graphql.schema.GraphQLAppliedDirectiveArgument;
 import graphql.schema.GraphQLDirectiveContainer;
@@ -65,7 +71,7 @@ public class DirectiveTest {
         assertNotNull(metaDir);
         GraphQLAppliedDirectiveArgument metaArg = metaDir.getArgument("value");
         assertNotNull(metaArg);
-        assertEquals("meta", metaArg.getArgumentValue().getValue());
+        assertEquals("meta", ((graphql.language.StringValue) metaArg.getArgumentValue().getValue()).getValue());
 
         GraphQLInputObjectField inputField = inputType.getField("value");
         assertDirective(inputField, "inputFieldDef", "inputField");
@@ -147,9 +153,11 @@ public class DirectiveTest {
         assertEquals("WrapperInput", argType.getName());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("name").getType());
         assertSame(Scalars.GraphQLString, argType.getFieldDefinition("value").getType());
-        Map<String, Object> wrapperRawValue = (Map<String, Object>) argument.getArgumentValue().getValue();
-        assertEquals(innerName, wrapperRawValue.get("name"));
-        assertEquals("test", wrapperRawValue.get("value"));
+        graphql.language.ObjectValue wrapperAstValue = (graphql.language.ObjectValue) argument.getArgumentValue().getValue();
+        java.util.function.Function<String, String> getField = name -> ((graphql.language.StringValue) wrapperAstValue.getObjectFields().stream()
+                .filter(f -> f.getName().equals(name)).findFirst().orElseThrow().getValue()).getValue();
+        assertEquals(innerName, getField.apply("name"));
+        assertEquals("test", getField.apply("value"));
     }
 
     private void assertClientDirectiveMapping(GraphQLSchema schema, String directiveName, String argumentName, DirectiveLocation... validLocations) {
@@ -335,5 +343,73 @@ public class DirectiveTest {
     @GraphQLDirective(locations = {DirectiveLocation.QUERY, DirectiveLocation.MUTATION})
     public static class Operation {
         public boolean enabled;
+    }
+
+    public enum Importance { LOW, HIGH }
+
+    @GraphQLDirective
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    public @interface AllTypes {
+        String  stringArg();
+        boolean boolArg();
+        int     intArg();
+        long    longArg();
+        double  doubleArg();
+        Importance enumArg();
+        String[] arrayArg();
+    }
+
+    @AllTypes(
+            stringArg = "hello",
+            boolArg   = true,
+            intArg    = 42,
+            longArg   = 100L,
+            doubleArg = 3.14,
+            enumArg   = Importance.HIGH,
+            arrayArg  = {"x", "y"})
+    private static class TypeWithAllTypesDirective {
+        @GraphQLQuery
+        public String id() { return "1"; }
+    }
+
+    private static class ServiceWithAllTypesDirective {
+        @GraphQLQuery
+        public TypeWithAllTypesDirective get() { return null; }
+    }
+
+    @Test
+    public void testDirectiveArgumentAstConversionCoversAllValueTypes() {
+        GraphQLSchema schema = new TestSchemaGenerator()
+                .withOperationsFromSingleton(new ServiceWithAllTypesDirective())
+                .generate();
+
+        GraphQLObjectType type = schema.getObjectType("TypeWithAllTypesDirective");
+        assertNotNull(type);
+        GraphQLAppliedDirective directive = type.getAppliedDirective("allTypes");
+        assertNotNull(directive);
+
+        assertEquals("hello",
+                ((StringValue) directive.getArgument("stringArg").getArgumentValue().getValue()).getValue());
+
+        assertEquals(true,
+                ((BooleanValue) directive.getArgument("boolArg").getArgumentValue().getValue()).isValue());
+
+        assertEquals(42,
+                ((IntValue) directive.getArgument("intArg").getArgumentValue().getValue()).getValue().intValue());
+
+        assertEquals(100L,
+                ((IntValue) directive.getArgument("longArg").getArgumentValue().getValue()).getValue().longValue());
+
+        assertEquals(3.14,
+                ((FloatValue) directive.getArgument("doubleArg").getArgumentValue().getValue()).getValue().doubleValue(), 0.001);
+
+        assertEquals("HIGH",
+                ((graphql.language.EnumValue) directive.getArgument("enumArg").getArgumentValue().getValue()).getName());
+
+        ArrayValue array = (ArrayValue) directive.getArgument("arrayArg").getArgumentValue().getValue();
+        assertEquals(2, array.getValues().size());
+        assertEquals("x", ((StringValue) array.getValues().get(0)).getValue());
+        assertEquals("y", ((StringValue) array.getValues().get(1)).getValue());
     }
 }
