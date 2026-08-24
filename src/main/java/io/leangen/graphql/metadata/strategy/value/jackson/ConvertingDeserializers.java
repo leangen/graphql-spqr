@@ -1,23 +1,12 @@
 package io.leangen.graphql.metadata.strategy.value.jackson;
 
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.KeyDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.Deserializers;
-import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
-import com.fasterxml.jackson.databind.type.ArrayType;
-import com.fasterxml.jackson.databind.type.CollectionLikeType;
-import com.fasterxml.jackson.databind.type.CollectionType;
-import com.fasterxml.jackson.databind.type.MapLikeType;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.ReferenceType;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.mapping.InputConverter;
+import tools.jackson.databind.*;
+import tools.jackson.databind.deser.Deserializers;
+import tools.jackson.databind.jsontype.TypeDeserializer;
+import tools.jackson.databind.type.*;
 
 import java.lang.reflect.AnnotatedType;
 import java.util.Map;
@@ -26,7 +15,7 @@ import java.util.stream.Collectors;
 
 class ConvertingDeserializers extends Deserializers.Base {
 
-    private final Map<InputConverter, JsonDeserializer> deserializers;
+    private final Map<InputConverter, ValueDeserializer> deserializers;
 
     ConvertingDeserializers(GlobalEnvironment environment, ObjectMapper mapper) {
         this.deserializers = environment.getInputConverters().stream()
@@ -34,58 +23,81 @@ class ConvertingDeserializers extends Deserializers.Base {
     }
 
     @Override
-    public JsonDeserializer<?> findMapDeserializer(MapType type, DeserializationConfig config,
-                                                   BeanDescription beanDesc, KeyDeserializer keyDeserializer,
-                                                   TypeDeserializer elementTypeDeserializer, JsonDeserializer<?> elementDeserializer) {
+    public ValueDeserializer<?> findMapDeserializer(MapType type, DeserializationConfig config,
+                                                   BeanDescription.Supplier beanDesc, KeyDeserializer keyDeserializer,
+                                                   TypeDeserializer elementTypeDeserializer, ValueDeserializer<?> elementDeserializer) {
 
         return forJavaType(type);
     }
 
     @Override
-    public JsonDeserializer<?> findEnumDeserializer(Class<?> type, DeserializationConfig config, BeanDescription beanDesc) {
-        return forType(GenericTypeReflector.annotate(type));
+    public ValueDeserializer<?> findEnumDeserializer(JavaType type, DeserializationConfig config, BeanDescription.Supplier beanDesc) {
+        try {
+            return forType(GenericTypeReflector.annotate(type));
+        } catch (IllegalArgumentException e) {
+            if (type instanceof SimpleType) {
+                SimpleType simpleType = (SimpleType) type;
+                return forType(GenericTypeReflector.annotate(simpleType.getRawClass()));
+            }
+            throw e;
+        }
     }
 
     @Override
-    public JsonDeserializer<?> findTreeNodeDeserializer(Class<? extends JsonNode> nodeType, DeserializationConfig config, BeanDescription beanDesc) {
-        return forType(GenericTypeReflector.annotate(nodeType));
+    public ValueDeserializer<?> findTreeNodeDeserializer(JavaType nodeType, DeserializationConfig config, BeanDescription.Supplier beanDesc) {
+        try {
+            return forType(GenericTypeReflector.annotate(nodeType));
+        } catch (IllegalArgumentException e) {
+            if (nodeType instanceof SimpleType) {
+                SimpleType simpleType = (SimpleType) nodeType;
+                return forType(GenericTypeReflector.annotate(simpleType.getRawClass()));
+            }
+            throw e;
+        }
     }
 
     @Override
-    public JsonDeserializer<?> findReferenceDeserializer(ReferenceType refType, DeserializationConfig config, BeanDescription beanDesc, TypeDeserializer contentTypeDeserializer, JsonDeserializer<?> contentDeserializer) {
+    public ValueDeserializer<?> findReferenceDeserializer(ReferenceType refType, DeserializationConfig config, BeanDescription.Supplier beanDesc, TypeDeserializer contentTypeDeserializer, ValueDeserializer<?> contentDeserializer) {
         return forJavaType(refType);
     }
 
     @Override
-    public JsonDeserializer<?> findBeanDeserializer(JavaType type, DeserializationConfig config, BeanDescription beanDesc) {
+    public ValueDeserializer<?> findBeanDeserializer(JavaType type, DeserializationConfig config, BeanDescription.Supplier beanDesc) {
         return forJavaType(type);
     }
 
     @Override
-    public JsonDeserializer<?> findArrayDeserializer(ArrayType type, DeserializationConfig config, BeanDescription beanDesc, TypeDeserializer elementTypeDeserializer, JsonDeserializer<?> elementDeserializer) {
+    public ValueDeserializer<?> findArrayDeserializer(ArrayType type, DeserializationConfig config, BeanDescription.Supplier beanDesc, TypeDeserializer elementTypeDeserializer, ValueDeserializer<?> elementDeserializer) {
         return forJavaType(type);
     }
 
     @Override
-    public JsonDeserializer<?> findCollectionDeserializer(CollectionType type, DeserializationConfig config, BeanDescription beanDesc, TypeDeserializer elementTypeDeserializer, JsonDeserializer<?> elementDeserializer) {
+    public ValueDeserializer<?> findCollectionDeserializer(CollectionType type, DeserializationConfig config, BeanDescription.Supplier beanDesc, TypeDeserializer elementTypeDeserializer, ValueDeserializer<?> elementDeserializer) {
         return forJavaType(type);
     }
 
     @Override
-    public JsonDeserializer<?> findCollectionLikeDeserializer(CollectionLikeType type, DeserializationConfig config, BeanDescription beanDesc, TypeDeserializer elementTypeDeserializer, JsonDeserializer<?> elementDeserializer) {
+    public ValueDeserializer<?> findCollectionLikeDeserializer(CollectionLikeType type, DeserializationConfig config, BeanDescription.Supplier beanDesc, TypeDeserializer elementTypeDeserializer, ValueDeserializer<?> elementDeserializer) {
         return forJavaType(type);
     }
 
     @Override
-    public JsonDeserializer<?> findMapLikeDeserializer(MapLikeType type, DeserializationConfig config, BeanDescription beanDesc, KeyDeserializer keyDeserializer, TypeDeserializer elementTypeDeserializer, JsonDeserializer<?> elementDeserializer) {
+    public ValueDeserializer<?> findMapLikeDeserializer(MapLikeType type, DeserializationConfig config, BeanDescription.Supplier beanDesc, KeyDeserializer keyDeserializer, TypeDeserializer elementTypeDeserializer, ValueDeserializer<?> elementDeserializer) {
         return forJavaType(type);
     }
 
-    private JsonDeserializer forType(AnnotatedType type) {
+    @Override
+    public boolean hasDeserializerFor(DeserializationConfig config, Class<?> valueType) {
+        TypeFactory typeFactory = TypeFactory.createDefaultInstance();
+        JavaType javaType = typeFactory.constructType(valueType);
+        return forJavaType(javaType) != null;
+    }
+
+    private ValueDeserializer forType(AnnotatedType type) {
         return deserializers.keySet().stream().filter(c -> c.supports(type)).findFirst().map(deserializers::get).orElse(null);
     }
 
-    private JsonDeserializer forJavaType(JavaType type) {
+    private ValueDeserializer forJavaType(JavaType type) {
         return forType(TypeUtils.toJavaType(type));
     }
 }

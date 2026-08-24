@@ -12,7 +12,7 @@ public class JavaScriptEvaluator extends AbstractComplexityFunction {
 
     public JavaScriptEvaluator() {
         ScriptEngineManager manager = new ScriptEngineManager();
-        this.engine = manager.getEngineByName("JavaScript");
+        this.engine = manager.getEngineByName("graal.js");
     }
 
     @Override

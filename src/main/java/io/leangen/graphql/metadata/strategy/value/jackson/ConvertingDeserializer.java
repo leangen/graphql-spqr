@@ -1,26 +1,18 @@
 package io.leangen.graphql.metadata.strategy.value.jackson;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.generator.mapping.InputConverter;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.*;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.AnnotatedMethod;
 
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedType;
-import java.util.ArrayList;
-import java.util.List;
 
-public class ConvertingDeserializer extends JsonDeserializer implements ContextualDeserializer {
+public class ConvertingDeserializer extends ValueDeserializer {
 
     private final AnnotatedType detectedType;
     private final JavaType substituteType;
@@ -48,7 +40,7 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
     }
 
     @Override
-    public JsonDeserializer<?> createContextual(DeserializationContext deserializationContext, BeanProperty beanProperty) {
+    public ValueDeserializer<?> createContextual(DeserializationContext deserializationContext, BeanProperty beanProperty) {
         JavaType javaType = deserializationContext.getContextualType() != null ? deserializationContext.getContextualType() : extractType(beanProperty.getMember());
         Annotation[] annotations = annotations(beanProperty);
         AnnotatedType detectedType = environment.typeTransformer.transform(ClassUtils.addAnnotations(TypeUtils.toJavaType(javaType), annotations));
@@ -64,14 +56,12 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
         if (beanProperty == null) {
             return new Annotation[0];
         }
-        List<Annotation> annotations = new ArrayList<>();
-        beanProperty.getMember().getAllAnnotations().annotations().forEach(annotations::add);
-        return annotations.toArray(new Annotation[0]);
+        return beanProperty.getMember().annotations().toArray(Annotation[]::new);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+    public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) {
         Object substitute = deserializationContext.readValue(jsonParser, substituteType);
         return inputConverter.convertInput(substitute, detectedType, environment, valueMapper);
     }
@@ -87,7 +77,7 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
         return annotated.getType();
     }
 
-    private static class DefaultDeserializer extends JsonDeserializer {
+    private static class DefaultDeserializer extends ValueDeserializer {
 
         private final JavaType javaType;
 
@@ -96,7 +86,7 @@ public class ConvertingDeserializer extends JsonDeserializer implements Contextu
         }
 
         @Override
-        public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+        public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) {
             return deserializationContext.readValue(jsonParser, javaType);
         }
     }

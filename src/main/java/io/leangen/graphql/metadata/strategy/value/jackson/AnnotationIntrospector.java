@@ -1,16 +1,6 @@
 package io.leangen.graphql.metadata.strategy.value.jackson;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.PropertyName;
-import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.introspect.AnnotatedParameter;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import com.fasterxml.jackson.databind.jsontype.NamedType;
-import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
-import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import io.leangen.graphql.annotations.GraphQLEnumValue;
 import io.leangen.graphql.metadata.messages.MessageBundle;
 import io.leangen.graphql.metadata.strategy.InclusionStrategy;
@@ -18,6 +8,15 @@ import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapper;
 import io.leangen.graphql.util.ClassUtils;
 import io.leangen.graphql.util.Utils;
+import tools.jackson.databind.PropertyName;
+import tools.jackson.databind.cfg.MapperConfig;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.AnnotatedClass;
+import tools.jackson.databind.introspect.AnnotatedParameter;
+import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import tools.jackson.databind.jsontype.NamedType;
+import tools.jackson.databind.jsontype.TypeResolverBuilder;
+import tools.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Executable;
@@ -36,10 +35,8 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     private static final TypeResolverBuilder<?> typeResolverBuilder;
 
     static {
-        typeResolverBuilder = new StdTypeResolverBuilder()
-                .init(JsonTypeInfo.Id.NAME, null)
-                .inclusion(JsonTypeInfo.As.PROPERTY)
-                .typeProperty(ValueMapper.TYPE_METADATA_FIELD_NAME);
+        JsonTypeInfo.Value settings = JsonTypeInfo.Value.construct(JsonTypeInfo.Id.NAME, JsonTypeInfo.As.PROPERTY, ValueMapper.TYPE_METADATA_FIELD_NAME, null, false, null);
+        typeResolverBuilder = new StdTypeResolverBuilder().init(settings, null);
     }
 
     AnnotationIntrospector(Map<Type, List<NamedType>> typeMap, InputFieldInfoGenerator inputInfoGen, InclusionStrategy inclusionStrategy, MessageBundle messageBundle) {
@@ -50,23 +47,23 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     }
 
     @Override
-    public PropertyName findNameForDeserialization(Annotated annotated) {
+    public PropertyName findNameForDeserialization(MapperConfig<?> config, Annotated annotated) {
         return inputInfoGen.getName(getAnnotatedCandidates(annotated), messageBundle)
                 .map(PropertyName::construct)
-                .orElse(super.findNameForDeserialization(annotated));
+                .orElse(super.findNameForDeserialization(config, annotated));
     }
 
     @Override
-    public PropertyName findNameForSerialization(Annotated annotated) {
+    public PropertyName findNameForSerialization(MapperConfig<?> config, Annotated annotated) {
         return inputInfoGen.getName(getAnnotatedCandidates(annotated), messageBundle)
                 .map(PropertyName::construct)
-                .orElse(super.findNameForSerialization(annotated));
+                .orElse(super.findNameForSerialization(config, annotated));
     }
 
     @Override
-    public String findPropertyDescription(Annotated annotated) {
+    public String findPropertyDescription(MapperConfig<?> config, Annotated annotated) {
         return inputInfoGen.getDescription(getAnnotatedCandidates(annotated), messageBundle)
-                .orElse(super.findPropertyDescription(annotated));
+                .orElse(super.findPropertyDescription(config, annotated));
     }
 
     //@Override
@@ -74,29 +71,25 @@ public class AnnotationIntrospector extends JacksonAnnotationIntrospector {
     //    return super.hasIgnoreMarker(m) || !inclusionStrategy.includeInputField(m.getAnnotated());
     //}
 
-    /**
-     * Provides a {@link TypeResolverBuilder} configured the same way as if the given {@link AnnotatedClass}
-     * was annotated with {@code @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY}
-     *
-     * @implNote Only provides a {@link TypeResolverBuilder} if Jackson can't already construct one,
-     * this way if Jackson annotations are used (e.g. {@link JsonTypeInfo}) they will still be respected.
-     * {@inheritDoc}
-     */
     @Override
-    public TypeResolverBuilder<?> findTypeResolver(MapperConfig<?> config, AnnotatedClass ac, JavaType baseType) {
-        TypeResolverBuilder<?> original = super.findTypeResolver(config, ac, baseType);
+    public Object findTypeResolverBuilder(MapperConfig<?> config, Annotated ann) {
+        Object original = super.findTypeResolverBuilder(config, ann);
         if (original != null) {
             return original;
         }
-        if (typeMap.containsKey(ac.getRawType()) || (typeMap.isEmpty() && Utils.isNotEmpty(super.findSubtypes(ac)))) {
+        JsonTypeInfo.Value typeInfo = super.findPolymorphicTypeInfo(config, ann);
+        if (typeInfo != null && typeInfo.getIdType() != JsonTypeInfo.Id.NONE) {
+            return new StdTypeResolverBuilder(typeInfo);
+        }
+        if (typeMap.containsKey(ann.getRawType()) || (typeMap.isEmpty() && Utils.isNotEmpty(super.findSubtypes(config, ann)))) {
             return typeResolverBuilder;
         }
         return null;
     }
 
     @Override
-    public List<NamedType> findSubtypes(Annotated a) {
-        List<NamedType> original = super.findSubtypes(a);
+    public List<NamedType> findSubtypes(MapperConfig<?> config, Annotated a) {
+        List<NamedType> original = super.findSubtypes(config, a);
         if ((original == null || original.isEmpty()) && typeMap.containsKey(a.getRawType())) {
             return typeMap.get(a.getRawType());
         }

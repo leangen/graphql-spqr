@@ -1,12 +1,12 @@
 package io.leangen.graphql.metadata.strategy.value.jackson;
 
-import com.fasterxml.jackson.databind.JavaType;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedType;
 
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.geantyref.TypeFactory;
+import tools.jackson.databind.JavaType;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedType;
 
 public class TypeUtils {
 

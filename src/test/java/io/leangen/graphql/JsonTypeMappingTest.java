@@ -1,8 +1,8 @@
 package io.leangen.graphql;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.*;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.*;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -95,7 +95,7 @@ public class JsonTypeMappingTest {
         private final ObjectNode obj;
         private final JsonNode any;
         private final BinaryNode binary;
-        private final TextNode text;
+        private final StringNode text;
         private final IntNode integer;
         private final DoubleNode dbl;
         private final BigIntegerNode bigInt;
@@ -104,7 +104,7 @@ public class JsonTypeMappingTest {
         public JacksonContainer(@JsonProperty("obj") ObjectNode obj,
                                 @JsonProperty("any") JsonNode any,
                                 @JsonProperty("binary") BinaryNode binary,
-                                @JsonProperty("text") TextNode text,
+                                @JsonProperty("text") StringNode text,
                                 @JsonProperty("integer") IntNode integer,
                                 @JsonProperty("dbl") DoubleNode dbl,
                                 @JsonProperty("bigInt") BigIntegerNode bigInt,
@@ -131,7 +131,7 @@ public class JsonTypeMappingTest {
             return binary;
         }
 
-        public TextNode getText() {
+        public StringNode getText() {
             return text;
         }
 

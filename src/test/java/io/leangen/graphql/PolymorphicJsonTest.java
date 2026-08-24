@@ -1,6 +1,6 @@
 package io.leangen.graphql;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.schema.GraphQLInputObjectType;

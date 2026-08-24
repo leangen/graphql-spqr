@@ -18,7 +18,7 @@ public class Defaults {
                     + "must be available or a custom ValueMapperFactory must be provided");
 
     private enum JsonLib {
-        JACKSON("com.fasterxml.jackson.databind.ObjectMapper"), GSON("com.google.gson.Gson");
+        JACKSON("tools.jackson.databind.ObjectMapper"), GSON("com.google.gson.Gson");
 
         public final String requiredClass;
 
