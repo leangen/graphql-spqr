@@ -28,7 +28,7 @@ public class PolymorphicJsonTest {
 
     @Parameterized.Parameters(name = "{index}: {0}")
     public static Object[] data() {
-        return new Object[] { new JacksonValueMapperFactory(), new GsonValueMapperFactory() };
+        return new Object[] { new JacksonValueMapperFactory(), new io.leangen.graphql.metadata.strategy.value.jackson2.JacksonValueMapperFactory(), new GsonValueMapperFactory() };
     }
     
     @Test
@@ -51,9 +51,12 @@ public class PolymorphicJsonTest {
 
     @Test
     public void testExplicitDeserializableType() {
-        //Only test with Jackson as the feature is Jackson specific
+        if (valueMapperFactory instanceof GsonValueMapperFactory) {
+            return;
+        }
         GraphQLSchema schema = new TestSchemaGenerator()
-                .withOperationsFromSingleton(new Service())
+                .withValueMapperFactory(valueMapperFactory)
+                .withOperationsFromSingleton(valueMapperFactory instanceof JacksonValueMapperFactory ? new Service() : new Jackson2Service())
                 .generate();
         GraphQL exe = GraphQL.newGraphQL(schema).build();
         ExecutionResult result = exe.execute("{ item (in: { item: {}})}");
@@ -158,8 +161,20 @@ public class PolymorphicJsonTest {
         }
     }
 
+    public static class Jackson2Service {
+        @GraphQLQuery
+        public String item(Jackson2Wrapper in) {
+            return in.item.getItem();
+        }
+    }
+
     public static class Wrapper {
         @JsonDeserialize(as = Concrete.class)
+        Abstract<String> item;
+    }
+
+    public static class Jackson2Wrapper {
+        @com.fasterxml.jackson.databind.annotation.JsonDeserialize(as = Concrete.class)
         Abstract<String> item;
     }
 

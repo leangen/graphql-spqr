@@ -6,6 +6,7 @@ import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.module.common.jackson.JacksonScalarTypeMapper;
 import io.leangen.graphql.util.ClassUtils;
 import org.junit.Test;
 
@@ -239,6 +240,28 @@ public class TypeInferenceTest {
         AnnotatedType inferred = removeInternalAnnotations(inferredRaw);
 
         assertTrue(GenericTypeReflector.equals(expected, inferred));
+    }
+
+    @Test
+    public void testJackson2And3ProduceTheSameScalarTypes() {
+        JacksonScalarTypeMapper jackson3 = new JacksonScalarTypeMapper();
+        io.leangen.graphql.module.common.jackson2.JacksonScalarTypeMapper jackson2 = new io.leangen.graphql.module.common.jackson2.JacksonScalarTypeMapper();
+
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.TextNode.class, tools.jackson.databind.node.StringNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.BooleanNode.class, tools.jackson.databind.node.BooleanNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.BinaryNode.class, tools.jackson.databind.node.BinaryNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.BigIntegerNode.class, tools.jackson.databind.node.BigIntegerNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.IntNode.class, tools.jackson.databind.node.IntNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.ShortNode.class, tools.jackson.databind.node.ShortNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.DecimalNode.class, tools.jackson.databind.node.DecimalNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.FloatNode.class, tools.jackson.databind.node.FloatNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.DoubleNode.class, tools.jackson.databind.node.DoubleNode.class);
+    }
+
+    private void assertSameScalar(io.leangen.graphql.module.common.jackson2.JacksonScalarTypeMapper jackson2,
+                                  JacksonScalarTypeMapper jackson3, Class<?> jackson2Type, Class<?> jackson3Type) {
+        assertEquals(jackson2.toGraphQLType(GenericTypeReflector.annotate(jackson2Type), Collections.emptySet(), null).getName(),
+                jackson3.toGraphQLType(GenericTypeReflector.annotate(jackson3Type), Collections.emptySet(), null).getName());
     }
 
     // Healer to string out internal JDK value-based annotations from the component types
