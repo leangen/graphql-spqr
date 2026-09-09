@@ -26,34 +26,17 @@ class ConvertingDeserializers extends Deserializers.Base {
     public ValueDeserializer<?> findMapDeserializer(MapType type, DeserializationConfig config,
                                                    BeanDescription.Supplier beanDesc, KeyDeserializer keyDeserializer,
                                                    TypeDeserializer elementTypeDeserializer, ValueDeserializer<?> elementDeserializer) {
-
         return forJavaType(type);
     }
 
     @Override
     public ValueDeserializer<?> findEnumDeserializer(JavaType type, DeserializationConfig config, BeanDescription.Supplier beanDesc) {
-        try {
-            return forType(GenericTypeReflector.annotate(type));
-        } catch (IllegalArgumentException e) {
-            if (type instanceof SimpleType) {
-                SimpleType simpleType = (SimpleType) type;
-                return forType(GenericTypeReflector.annotate(simpleType.getRawClass()));
-            }
-            throw e;
-        }
+        return forJavaType(type);
     }
 
     @Override
     public ValueDeserializer<?> findTreeNodeDeserializer(JavaType nodeType, DeserializationConfig config, BeanDescription.Supplier beanDesc) {
-        try {
-            return forType(GenericTypeReflector.annotate(nodeType));
-        } catch (IllegalArgumentException e) {
-            if (nodeType instanceof SimpleType) {
-                SimpleType simpleType = (SimpleType) nodeType;
-                return forType(GenericTypeReflector.annotate(simpleType.getRawClass()));
-            }
-            throw e;
-        }
+        return forJavaType(nodeType);
     }
 
     @Override
