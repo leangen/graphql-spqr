@@ -3,10 +3,8 @@ package io.leangen.graphql.util;
 import io.leangen.graphql.metadata.strategy.type.TypeInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.metadata.strategy.value.gson.GsonValueMapperFactory;
-import io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory;
 import io.leangen.graphql.module.Module;
 import io.leangen.graphql.module.common.gson.GsonModule;
-import io.leangen.graphql.module.common.jackson.JacksonModule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,18 +15,25 @@ public class Defaults {
             "No JSON deserialization library found on classpath. A compatible version of either Jackson or Gson "
                     + "must be available or a custom ValueMapperFactory must be provided");
 
-    private enum JsonLib {
-        JACKSON("com.fasterxml.jackson.databind.ObjectMapper"), GSON("com.google.gson.Gson");
+    /**
+     * JSON libraries supported by the built-in defaults. Jackson 3 is preferred when
+     * more than one supported library is present, so that implicit defaults remain
+     * deterministic during a Jackson 2 to 3 migration.
+     */
+    public enum JsonLibrary {
+        JACKSON_3("tools.jackson.databind.ObjectMapper"),
+        JACKSON_2("com.fasterxml.jackson.databind.ObjectMapper"),
+        GSON("com.google.gson.Gson");
 
         public final String requiredClass;
 
-        JsonLib(String requiredClass) {
+        JsonLibrary(String requiredClass) {
             this.requiredClass = requiredClass;
         }
     }
 
-    private static JsonLib jsonLibrary() {
-        for (JsonLib jsonLib : JsonLib.values()) {
+    private static JsonLibrary jsonLibrary() {
+        for (JsonLibrary jsonLib : JsonLibrary.values()) {
             if (isAvailable(jsonLib)) {
                 return jsonLib;
             }
@@ -36,7 +41,7 @@ public class Defaults {
         throw noJsonLib;
     }
 
-    private static boolean isAvailable(JsonLib jsonLib) {
+    private static boolean isAvailable(JsonLibrary jsonLib) {
         try {
             ClassUtils.forName(jsonLib.requiredClass);
             return true;
@@ -46,19 +51,31 @@ public class Defaults {
     }
 
     public static ValueMapperFactory<?> valueMapperFactory() {
-        switch (jsonLibrary()) {
+        return valueMapperFactory(jsonLibrary());
+    }
+
+    public static ValueMapperFactory<?> valueMapperFactory(JsonLibrary jsonLibrary) {
+        switch (jsonLibrary) {
             case GSON: return GsonValueMapperFactory.builder().build();
-            case JACKSON: return JacksonValueMapperFactory.builder().build();
+            case JACKSON_2: return io.leangen.graphql.metadata.strategy.value.jackson2.JacksonValueMapperFactory.builder().build();
+            case JACKSON_3: return io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory.builder().build();
             default: throw noJsonLib;
         }
     }
 
     public static ValueMapperFactory<?> valueMapperFactory(TypeInfoGenerator typeInfoGenerator) {
-        switch (jsonLibrary()) {
+        return valueMapperFactory(jsonLibrary(), typeInfoGenerator);
+    }
+
+    public static ValueMapperFactory<?> valueMapperFactory(JsonLibrary jsonLibrary, TypeInfoGenerator typeInfoGenerator) {
+        switch (jsonLibrary) {
             case GSON: return GsonValueMapperFactory.builder()
                     .withTypeInfoGenerator(typeInfoGenerator)
                     .build();
-            case JACKSON: return JacksonValueMapperFactory.builder()
+            case JACKSON_2: return io.leangen.graphql.metadata.strategy.value.jackson2.JacksonValueMapperFactory.builder()
+                    .withTypeInfoGenerator(typeInfoGenerator)
+                    .build();
+            case JACKSON_3: return io.leangen.graphql.metadata.strategy.value.jackson.JacksonValueMapperFactory.builder()
                     .withTypeInfoGenerator(typeInfoGenerator)
                     .build();
             default: throw noJsonLib;
@@ -66,11 +83,25 @@ public class Defaults {
     }
 
     public static List<Module> modules() {
+        return modules(jsonLibrary());
+    }
+
+    public static List<Module> modules(JsonLibrary jsonLibrary) {
         List<Module> defaultModules = new ArrayList<>(2);
-        if (isAvailable(JsonLib.JACKSON)) {
-            defaultModules.add(new JacksonModule());
+        switch (jsonLibrary) {
+            case JACKSON_3:
+                defaultModules.add(new io.leangen.graphql.module.common.jackson.JacksonModule());
+                break;
+            case JACKSON_2:
+                defaultModules.add(new io.leangen.graphql.module.common.jackson2.JacksonModule());
+                break;
+            case GSON:
+                defaultModules.add(new GsonModule());
+                break;
+            default:
+                throw noJsonLib;
         }
-        if (isAvailable(JsonLib.GSON)) {
+        if (jsonLibrary != JsonLibrary.GSON && isAvailable(JsonLibrary.GSON)) {
             defaultModules.add(new GsonModule());
         }
         return defaultModules;

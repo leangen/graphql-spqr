@@ -1,6 +1,13 @@
-package io.leangen.graphql.metadata.strategy.value.jackson;
+package io.leangen.graphql.metadata.strategy.value.jackson2;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.AnnotationIntrospector;
+import com.fasterxml.jackson.databind.introspect.*;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
+import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import graphql.GraphQLContext;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.annotations.GraphQLInputField;
@@ -19,16 +26,9 @@ import io.leangen.graphql.util.Scalars;
 import io.leangen.graphql.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.BeanDescription;
-import tools.jackson.databind.DeserializationConfig;
-import tools.jackson.databind.JavaType;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.introspect.*;
-import tools.jackson.databind.jsontype.NamedType;
-import tools.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
-import tools.jackson.databind.AnnotationIntrospector;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -69,7 +69,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
                 return (T) Scalars.toGraphQLScalarType(type.getType()).getCoercing().parseValue(json);
             }
             return objectMapper.readValue(json, objectMapper.getTypeFactory().constructType(type.getType()));
-        } catch (JacksonException e) {
+        } catch (IOException e) {
             throw new InputParsingException(json, type.getType(), e);
         }
     }
@@ -82,20 +82,21 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
         if (output == null || output instanceof String) {
             return (String) output;
         }
-        return objectMapper.writeValueAsString(output);
+        try {
+            return objectMapper.writeValueAsString(output);
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
     public Set<InputField> getInputFields(InputFieldBuilderParams params) {
         JavaType javaType = objectMapper.getTypeFactory().constructType(params.getType().getType());
-        DeserializationConfig deserializationConfig = objectMapper.deserializationConfig();
-        AnnotatedClass clazz = AnnotatedClassResolver.resolve(deserializationConfig, javaType, deserializationConfig);
-        BeanDescription originalDesc = deserializationConfig.classIntrospectorInstance().introspectForDeserialization(javaType, clazz);
+        BeanDescription originalDesc = objectMapper.getDeserializationConfig().introspect(javaType);
         BeanDescription desc = originalDesc;
         JavaType refined = objectMapper.getTypeFactory().constructType(resolveDeserializableType(desc.getClassInfo(), params.getType(), javaType, objectMapper).getType());
         if (mapDeserializableType) {
-            AnnotatedClass clazzRefined = AnnotatedClassResolver.resolve(deserializationConfig, refined, deserializationConfig);
-            desc = deserializationConfig.classIntrospectorInstance().introspectForDeserialization(refined, clazzRefined);
+            desc = objectMapper.getDeserializationConfig().introspect(refined);
         }
         BeanDescription delegateDesc = findDelegate(desc);
         AnnotatedType type = delegateDesc == originalDesc ? params.getType() : TypeUtils.toJavaType(delegateDesc.getType());
@@ -119,39 +120,23 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
     @Override
     public TypeDiscriminatorField getTypeDiscriminatorField(InputFieldBuilderParams params) {
         JavaType javaType = objectMapper.constructType(params.getType().getType());
-        DeserializationConfig deserializationConfig = objectMapper.deserializationConfig();
+        DeserializationConfig deserializationConfig = objectMapper.getDeserializationConfig();
         AnnotatedClass clazz = AnnotatedClassResolver.resolve(deserializationConfig, javaType, deserializationConfig);
         AnnotationIntrospector annotationIntrospector = deserializationConfig.getAnnotationIntrospector();
 
-        Object typeResolver = annotationIntrospector.findTypeResolverBuilder(deserializationConfig, clazz);
+        TypeResolverBuilder<?> typeResolver = annotationIntrospector.findTypeResolver(deserializationConfig, clazz, javaType);
         String discriminatorFieldName = typeResolver instanceof StdTypeResolverBuilder
                 ? ((StdTypeResolverBuilder) typeResolver).getTypeProperty()
                 : ValueMapper.TYPE_METADATA_FIELD_NAME;
 
-        List<NamedType> rawSubtypes = annotationIntrospector.findSubtypes(deserializationConfig, clazz);
-        if (rawSubtypes != null && !rawSubtypes.isEmpty()) {
-            List<String> explicitSubtypes = new ArrayList<>();
-            for (NamedType subtype : rawSubtypes) {
-                String name = subtype.getName();
-
-                // if the name is blank or missing, introspect the child class for @JsonTypeName
-                if (name == null || name.isEmpty()) {
-                    JavaType javaTypeOfSubtype = deserializationConfig.constructType(subtype.getType());
-                    AnnotatedClass childAc = deserializationConfig.classIntrospectorInstance().introspectClassAnnotations(javaTypeOfSubtype);
-                    name = annotationIntrospector.findTypeName(deserializationConfig, childAc);
-                }
-
-                // fallback - get Class Simple Name if no annotation is present
-                if (name == null || name.isEmpty()) {
-                    name = subtype.getType().getSimpleName();
-                }
-
-                explicitSubtypes.add(name);
-            }
-
-            return new TypeDiscriminatorField(discriminatorFieldName, "Input type discriminator", explicitSubtypes.toArray(new String[0]));
+        String[] explicitSubTypes = Utils.stream(objectMapper.getSubtypeResolver().collectAndResolveSubtypesByClass(deserializationConfig, clazz))
+                .map(NamedType::getName)
+                .filter(Utils::isNotEmpty)
+                .toArray(String[]::new);
+        //Explicit subtypes are always mapped
+        if (Utils.isNotEmpty(explicitSubTypes)) {
+            return new TypeDiscriminatorField(discriminatorFieldName, "Input type discriminator", explicitSubTypes);
         }
-
         String[] discoveredSubTypes = params.getConcreteSubTypes().stream()
                 .map(GenericTypeReflector::annotate)
                 .map(impl -> params.getEnvironment().typeInfoGenerator.generateTypeName(impl, params.getEnvironment().messageBundle))
@@ -164,10 +149,10 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
     }
 
     private AnnotatedType resolveDeserializableType(Annotated accessor, AnnotatedType realType, JavaType baseType, ObjectMapper objectMapper) {
-        AnnotationIntrospector introspector = objectMapper.deserializationConfig().getAnnotationIntrospector();
+        AnnotationIntrospector introspector = objectMapper.getDeserializationConfig().getAnnotationIntrospector();
         try {
-            JavaType mapped = objectMapper.deserializationConfig().mapAbstractType(baseType);
-            JavaType refined = introspector.refineDeserializationType(objectMapper.deserializationConfig(), accessor, mapped);
+            JavaType mapped = objectMapper.getDeserializationContext().getFactory().mapAbstractType(objectMapper.getDeserializationConfig(), baseType);
+            JavaType refined = introspector.refineDeserializationType(objectMapper.getDeserializationConfig(), accessor, mapped);
             Class<?> raw = ClassUtils.getRawType(realType.getType());
             if (!refined.getRawClass().equals(raw)) {
                 if (ClassUtils.isSuperClass(realType, refined.getRawClass())) {
@@ -178,7 +163,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
                 }
                 return GenericTypeReflector.updateAnnotations(TypeUtils.toJavaType(refined), realType.getAnnotations());
             }
-        } catch (JacksonException e) {
+        } catch (JsonMappingException e) {
             /*no-op*/
         } catch (Exception e) {
             log.warn("Failed to determine the deserializable type for " + GenericTypeReflector.getTypeName(realType.getType())
@@ -206,23 +191,18 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
     }
 
     private BeanDescription findDelegate(BeanDescription beanDesc) {
-        DeserializationConfig deserializationConfig = objectMapper.deserializationConfig();
-        AnnotationIntrospector introspector = deserializationConfig.getAnnotationIntrospector();
+        AnnotationIntrospector introspector = objectMapper.getDeserializationConfig().getAnnotationIntrospector();
         for (AnnotatedMethod ctor : beanDesc.getFactoryMethods()) {
-            JsonCreator.Mode creatorMode = introspector.findCreatorAnnotation(deserializationConfig, ctor);
+            JsonCreator.Mode creatorMode = introspector.findCreatorAnnotation(objectMapper.getDeserializationConfig(), ctor);
             if (creatorMode == JsonCreator.Mode.DELEGATING) {
-                JavaType javaType = ctor.getParameterType(0);
-                AnnotatedClass clazz = AnnotatedClassResolver.resolve(deserializationConfig, javaType, deserializationConfig);
-                return deserializationConfig.classIntrospectorInstance().introspectForCreation(javaType, clazz);
+                return objectMapper.getDeserializationConfig().introspect(ctor.getParameterType(0));
             }
         }
 
         for (AnnotatedConstructor ctor : beanDesc.getConstructors()) {
-            JsonCreator.Mode creatorMode = introspector.findCreatorAnnotation(objectMapper.deserializationConfig(), ctor);
+            JsonCreator.Mode creatorMode = introspector.findCreatorAnnotation(objectMapper.getDeserializationConfig(), ctor);
             if (creatorMode == JsonCreator.Mode.DELEGATING) {
-                JavaType javaType = ctor.getParameterType(0);
-                AnnotatedClass clazz = AnnotatedClassResolver.resolve(deserializationConfig, javaType, deserializationConfig);
-                return deserializationConfig.classIntrospectorInstance().introspectForCreation(javaType, clazz);
+                return objectMapper.getDeserializationConfig().introspect(ctor.getParameterType(0));
             }
         }
         return beanDesc;
@@ -235,9 +215,7 @@ public class JacksonValueMapper implements ValueMapper, InputFieldBuilder {
 
     private boolean isPropertyDeserializable(BeanPropertyDefinition prop, Class<?> type) {
         JavaType javaType = objectMapper.getTypeFactory().constructType(type);
-        DeserializationConfig deserializationConfig = objectMapper.deserializationConfig();
-        AnnotatedClass clazz = AnnotatedClassResolver.resolve(deserializationConfig, javaType, deserializationConfig);
-        BeanDescription desc = deserializationConfig.classIntrospectorInstance().introspectForDeserialization(javaType, clazz);
+        BeanDescription desc = objectMapper.getDeserializationConfig().introspect(javaType);
         return desc.findProperties().stream()
                 .anyMatch(p -> p.getName().equals(prop.getName()) && p.couldDeserialize());
     }

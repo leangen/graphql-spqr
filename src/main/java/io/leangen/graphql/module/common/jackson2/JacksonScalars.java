@@ -1,16 +1,16 @@
-package io.leangen.graphql.module.common.jackson;
+package io.leangen.graphql.module.common.jackson2;
 
-import tools.jackson.databind.node.BigIntegerNode;
-import tools.jackson.databind.node.BinaryNode;
-import tools.jackson.databind.node.BooleanNode;
-import tools.jackson.databind.node.DecimalNode;
-import tools.jackson.databind.node.DoubleNode;
-import tools.jackson.databind.node.FloatNode;
-import tools.jackson.databind.node.IntNode;
-import tools.jackson.databind.node.JsonNodeFactory;
-import tools.jackson.databind.node.NumericNode;
-import tools.jackson.databind.node.ShortNode;
-import tools.jackson.databind.node.StringNode;
+import com.fasterxml.jackson.databind.node.BigIntegerNode;
+import com.fasterxml.jackson.databind.node.BinaryNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.DecimalNode;
+import com.fasterxml.jackson.databind.node.DoubleNode;
+import com.fasterxml.jackson.databind.node.FloatNode;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.NumericNode;
+import com.fasterxml.jackson.databind.node.ShortNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import graphql.language.BooleanValue;
 import graphql.language.FloatValue;
 import graphql.language.IntValue;
@@ -39,32 +39,32 @@ public class JacksonScalars {
     public static final GraphQLScalarType JsonTextNode = GraphQLScalarType.newScalar()
             .name("JsonText")
             .description("Text JSON node")
-            .coercing(new Coercing<StringNode, String>() {
+            .coercing(new Coercing<TextNode, String>() {
                 @Override
                 public String serialize(Object dataFetcherResult) {
                     if (dataFetcherResult instanceof String) {
                         return (String) dataFetcherResult;
-                    } if (dataFetcherResult instanceof StringNode) {
-                        return ((StringNode) dataFetcherResult).textValue();
+                    } if (dataFetcherResult instanceof TextNode) {
+                        return ((TextNode) dataFetcherResult).textValue();
                     } else {
-                        throw serializationException(dataFetcherResult, String.class, StringNode.class);
+                        throw serializationException(dataFetcherResult, String.class, TextNode.class);
                     }
                 }
 
                 @Override
-                public StringNode parseValue(Object input) {
+                public TextNode parseValue(Object input) {
                     if (input instanceof String) {
-                        return StringNode.valueOf((String) input);
+                        return TextNode.valueOf((String) input);
                     }
-                    if (input instanceof StringNode) {
-                        return (StringNode) input;
+                    if (input instanceof TextNode) {
+                        return (TextNode) input;
                     }
-                    throw valueParsingException(input, String.class, StringNode.class);
+                    throw valueParsingException(input, String.class, TextNode.class);
                 }
 
                 @Override
-                public StringNode parseLiteral(Object input) {
-                    return StringNode.valueOf(literalOrException(input, StringValue.class).getValue());
+                public TextNode parseLiteral(Object input) {
+                    return TextNode.valueOf(literalOrException(input, StringValue.class).getValue());
                 }
             }).build();
 
@@ -379,7 +379,7 @@ public class JacksonScalars {
 
     private static Map<Type, GraphQLScalarType> getScalarMapping() {
         Map<Type, GraphQLScalarType> scalarMapping = new HashMap<>();
-        scalarMapping.put(StringNode.class, JsonTextNode);
+        scalarMapping.put(TextNode.class, JsonTextNode);
         scalarMapping.put(BooleanNode.class, JsonBooleanNode);
         scalarMapping.put(BinaryNode.class, JsonBinaryNode);
         scalarMapping.put(BigIntegerNode.class, JsonBigIntegerNode);

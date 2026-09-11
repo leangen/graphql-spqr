@@ -1,6 +1,6 @@
-package io.leangen.graphql.module.common.jackson;
+package io.leangen.graphql.module.common.jackson2;
 
-import tools.jackson.databind.node.POJONode;
+import com.fasterxml.jackson.databind.node.POJONode;
 import graphql.schema.GraphQLScalarType;
 import io.leangen.graphql.generator.mapping.TypeMapper;
 import io.leangen.graphql.generator.mapping.TypeMappingEnvironment;

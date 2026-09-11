@@ -4,8 +4,8 @@ import io.leangen.graphql.domain.Person;
 import io.leangen.graphql.domain.User;
 import io.leangen.graphql.util.ClassUtils;
 import javassist.util.proxy.ProxyFactory;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.FixedValue;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import org.junit.Test;
 
 import java.lang.reflect.Proxy;
@@ -24,12 +24,13 @@ public class ProxyDetectionTest {
     }
     
     @Test
-    public void testCglibProxy() {
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(Person.class);
-        enhancer.setCallback((FixedValue) () -> null);
-        Person proxyObject = (Person) enhancer.create();
-        assertTrue(ClassUtils.isProxy(proxyObject.getClass()));
+    public void testByteBuddyProxy() {
+        Class<? extends Person> proxyObject = new ByteBuddy()
+                .subclass(Person.class)
+                .make()
+                .load(Person.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                .getLoaded();
+        assertTrue(ClassUtils.isProxy(proxyObject));
     }
     
     @Test

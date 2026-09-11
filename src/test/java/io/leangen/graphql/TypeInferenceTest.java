@@ -6,13 +6,13 @@ import io.leangen.geantyref.TypeFactory;
 import io.leangen.geantyref.TypeToken;
 import io.leangen.graphql.annotations.GraphQLNonNull;
 import io.leangen.graphql.metadata.exceptions.TypeMappingException;
+import io.leangen.graphql.module.common.jackson.JacksonScalarTypeMapper;
 import io.leangen.graphql.util.ClassUtils;
 import org.junit.Test;
 
 import javax.annotation.Nonnull;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -192,9 +192,13 @@ public class TypeInferenceTest {
         AnnotatedType doubleType = GenericTypeReflector.annotate(Double.class);
         AnnotatedType nonNullNumberType = TypeFactory.parameterizedAnnotatedClass(Number.class, annotations);
         AnnotatedType expected = TypeFactory.parameterizedAnnotatedClass(AbstractList.class, annotations, nonNullNumberType);
+
         AnnotatedType list1 = TypeFactory.parameterizedAnnotatedClass(ArrayList.class, annotations, nonNullLongType);
         AnnotatedType list2 = TypeFactory.parameterizedAnnotatedClass(LinkedList.class, new Annotation[0], doubleType);
-        AnnotatedType inferred = ClassUtils.getCommonSuperType(Arrays.asList(list1, list2));
+
+        AnnotatedType inferredRaw = ClassUtils.getCommonSuperType(Arrays.asList(list1, list2));
+        AnnotatedType inferred = removeInternalAnnotations(inferredRaw);
+
         assertTrue(GenericTypeReflector.equals(expected, inferred));
     }
 
@@ -204,13 +208,19 @@ public class TypeInferenceTest {
         AnnotatedType nonNullLongType = GenericTypeReflector.annotate(Long.class, annotations);
         AnnotatedType doubleType = GenericTypeReflector.annotate(Double.class);
         AnnotatedType nonNullNumberType = TypeFactory.parameterizedAnnotatedClass(Number.class, annotations);
-        AnnotatedType i1Type = GenericTypeReflector.annotate(I1.class);
-        AnnotatedType i2Type = GenericTypeReflector.annotate(I2.class, annotations);
+
         AnnotatedType iType = GenericTypeReflector.annotate(I.class, annotations);
         AnnotatedType expected = TypeFactory.parameterizedAnnotatedClass(Map.class, annotations, nonNullNumberType, iType);
+
+        AnnotatedType i1Type = GenericTypeReflector.annotate(I1.class);
+        AnnotatedType i2Type = GenericTypeReflector.annotate(I2.class, annotations);
+
         AnnotatedType map1 = TypeFactory.parameterizedAnnotatedClass(Map.class, annotations, nonNullLongType, i1Type);
         AnnotatedType map2 = TypeFactory.parameterizedAnnotatedClass(Map.class, new Annotation[0], doubleType, i2Type);
-        AnnotatedType inferred = ClassUtils.getCommonSuperType(Arrays.asList(map1, map2));
+
+        AnnotatedType inferredRaw = ClassUtils.getCommonSuperType(Arrays.asList(map1, map2));
+        AnnotatedType inferred = removeInternalAnnotations(inferredRaw);
+
         assertTrue(GenericTypeReflector.equals(expected, inferred));
     }
 
@@ -218,14 +228,82 @@ public class TypeInferenceTest {
     public void testArrays() throws AnnotationFormatException {
         Annotation[] graphQlNonNull = new Annotation[] {TypeFactory.annotation(GraphQLNonNull.class, Collections.emptyMap())};
         Annotation[] nonNull = new Annotation[] {TypeFactory.annotation(Nonnull.class, Collections.emptyMap())};
+
+        AnnotatedType nonNullNumberType = TypeFactory.parameterizedAnnotatedClass(Number.class, graphQlNonNull);
+        AnnotatedType expected = TypeFactory.arrayOf(nonNullNumberType, nonNull);
+
         Annotation[] empty = new Annotation[0];
         AnnotatedType a1 = TypeFactory.arrayOf(GenericTypeReflector.annotate(Long.class, graphQlNonNull), nonNull);
         AnnotatedType a2 = TypeFactory.arrayOf(GenericTypeReflector.annotate(Double.class, empty), empty);
-        AnnotatedType nonNullNumberType = TypeFactory.parameterizedAnnotatedClass(Number.class, graphQlNonNull);
-        AnnotatedType expected = TypeFactory.arrayOf(nonNullNumberType, nonNull);
-        AnnotatedType inferred = ClassUtils.getCommonSuperType(Arrays.asList(a1, a2));
+
+        AnnotatedType inferredRaw = ClassUtils.getCommonSuperType(Arrays.asList(a1, a2));
+        AnnotatedType inferred = removeInternalAnnotations(inferredRaw);
+
         assertTrue(GenericTypeReflector.equals(expected, inferred));
     }
+
+    @Test
+    public void testJackson2And3ProduceTheSameScalarTypes() {
+        JacksonScalarTypeMapper jackson3 = new JacksonScalarTypeMapper();
+        io.leangen.graphql.module.common.jackson2.JacksonScalarTypeMapper jackson2 = new io.leangen.graphql.module.common.jackson2.JacksonScalarTypeMapper();
+
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.TextNode.class, tools.jackson.databind.node.StringNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.BooleanNode.class, tools.jackson.databind.node.BooleanNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.BinaryNode.class, tools.jackson.databind.node.BinaryNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.BigIntegerNode.class, tools.jackson.databind.node.BigIntegerNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.IntNode.class, tools.jackson.databind.node.IntNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.ShortNode.class, tools.jackson.databind.node.ShortNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.DecimalNode.class, tools.jackson.databind.node.DecimalNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.FloatNode.class, tools.jackson.databind.node.FloatNode.class);
+        assertSameScalar(jackson2, jackson3, com.fasterxml.jackson.databind.node.DoubleNode.class, tools.jackson.databind.node.DoubleNode.class);
+    }
+
+    private void assertSameScalar(io.leangen.graphql.module.common.jackson2.JacksonScalarTypeMapper jackson2,
+                                  JacksonScalarTypeMapper jackson3, Class<?> jackson2Type, Class<?> jackson3Type) {
+        assertEquals(jackson2.toGraphQLType(GenericTypeReflector.annotate(jackson2Type), Collections.emptySet(), null).getName(),
+                jackson3.toGraphQLType(GenericTypeReflector.annotate(jackson3Type), Collections.emptySet(), null).getName());
+    }
+
+    // Healer to string out internal JDK value-based annotations from the component types
+    private AnnotatedType removeInternalAnnotations(AnnotatedType type) {
+        if (type == null) {
+            return null;
+        }
+
+        // Clear out the top-layer annotations for this current type
+        Annotation[] cleanAnnotations = Arrays.stream(type.getAnnotations())
+                .filter(anno -> !anno.annotationType().getName().startsWith("jdk.internal"))
+                .toArray(Annotation[]::new);
+
+        // Handle MultidimensionalArrays
+        if (type instanceof AnnotatedArrayType) {
+            AnnotatedArrayType arrayType = (AnnotatedArrayType) type;
+            AnnotatedType componentType = removeInternalAnnotations(arrayType.getAnnotatedGenericComponentType());
+            return TypeFactory.arrayOf(componentType, cleanAnnotations);
+        }
+
+        // Handle nested generics (e.g. List<Number>, Map<String, List<Number>>)
+        if (type instanceof AnnotatedParameterizedType) {
+            AnnotatedParameterizedType paramType = (AnnotatedParameterizedType) type;
+            ParameterizedType rawType = (ParameterizedType) paramType.getType();
+            Class<?> rawClass = (Class<?>) rawType.getRawType();
+
+            // Recursively clean all generic arguments
+            AnnotatedType[] cleanedTypeArguments = Arrays.stream(paramType.getAnnotatedActualTypeArguments())
+                    .map(this::removeInternalAnnotations)
+                    .toArray(AnnotatedType[]::new);
+
+            return TypeFactory.parameterizedAnnotatedClass(rawClass, cleanAnnotations, cleanedTypeArguments);
+        }
+
+        // Fallback for standard types (e.g. Java.lang.Number, java.lang.Integer)
+        if (type.getType() instanceof Class) {
+            return TypeFactory.annotatedClass((Class<?>) type.getType(), cleanAnnotations);
+        }
+
+        return type;
+    }
+
     
     private interface I {}
     private interface II {}

@@ -1,17 +1,17 @@
-package io.leangen.graphql.module.common.jackson;
+package io.leangen.graphql.module.common.jackson2;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.node.BigIntegerNode;
-import tools.jackson.databind.node.BinaryNode;
-import tools.jackson.databind.node.BooleanNode;
-import tools.jackson.databind.node.DecimalNode;
-import tools.jackson.databind.node.DoubleNode;
-import tools.jackson.databind.node.FloatNode;
-import tools.jackson.databind.node.IntNode;
-import tools.jackson.databind.node.JsonNodeFactory;
-import tools.jackson.databind.node.NumericNode;
-import tools.jackson.databind.node.ShortNode;
-import tools.jackson.databind.node.StringNode;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.BigIntegerNode;
+import com.fasterxml.jackson.databind.node.BinaryNode;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.DecimalNode;
+import com.fasterxml.jackson.databind.node.DoubleNode;
+import com.fasterxml.jackson.databind.node.FloatNode;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.NumericNode;
+import com.fasterxml.jackson.databind.node.ShortNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLOutputType;
 import io.leangen.geantyref.GenericTypeReflector;
@@ -79,7 +79,7 @@ public class JsonNodeAdapter implements TypeMapper, InputConverter<JsonNode, Obj
 
     static {
         Map<Class<?>, JsonNodeDescriptor<?, ?>> typeMapping = new HashMap<>();
-        typeMapping.put(StringNode.class, new JsonNodeDescriptor<>(String.class, JsonNodeFactory.instance::stringNode, StringNode::stringValue));
+        typeMapping.put(TextNode.class, new JsonNodeDescriptor<>(String.class, JsonNodeFactory.instance::textNode, TextNode::textValue));
         typeMapping.put(BooleanNode.class, new JsonNodeDescriptor<>(Boolean.class, JsonNodeFactory.instance::booleanNode, BooleanNode::booleanValue));
         typeMapping.put(BinaryNode.class, new JsonNodeDescriptor<>(byte[].class, BinaryNode::new, BinaryNode::binaryValue));
         typeMapping.put(DecimalNode.class, new JsonNodeDescriptor<>(BigDecimal.class, DecimalNode::new, DecimalNode::decimalValue));

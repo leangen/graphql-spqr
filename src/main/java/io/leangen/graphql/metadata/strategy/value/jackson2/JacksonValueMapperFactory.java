@@ -1,5 +1,11 @@
-package io.leangen.graphql.metadata.strategy.value.jackson;
+package io.leangen.graphql.metadata.strategy.value.jackson2;
 
+import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.leangen.geantyref.GenericTypeReflector;
 import io.leangen.graphql.execution.GlobalEnvironment;
 import io.leangen.graphql.metadata.messages.MessageBundle;
@@ -10,16 +16,6 @@ import io.leangen.graphql.metadata.strategy.value.InputFieldInfoGenerator;
 import io.leangen.graphql.metadata.strategy.value.ScalarDeserializationStrategy;
 import io.leangen.graphql.metadata.strategy.value.ValueMapperFactory;
 import io.leangen.graphql.util.ClassUtils;
-import tools.jackson.core.TreeNode;
-import tools.jackson.core.Version;
-import tools.jackson.databind.JacksonModule;
-import tools.jackson.databind.MapperFeature;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.cfg.EnumFeature;
-import tools.jackson.databind.cfg.MapperBuilder;
-import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.jsontype.NamedType;
-import tools.jackson.databind.module.SimpleModule;
 
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Type;
@@ -57,16 +53,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
     }
 
     private ObjectMapper initBuilder(Map<Class, List<Class<?>>> concreteSubTypes, GlobalEnvironment environment) {
-        ObjectMapper objectMapper = null;
-        if (prototype != null) {
-            objectMapper = prototype.rebuild().build();
-        } else {
-            objectMapper = JsonMapper.builder()
-                    .configure(EnumFeature.WRITE_ENUMS_USING_TO_STRING, false)
-                    .configure(EnumFeature.READ_ENUMS_USING_TO_STRING, false)
-                    .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-                    .build();
-        }
+        ObjectMapper objectMapper = prototype != null ? prototype.copy() : new ObjectMapper();
         return this.configurers.stream().reduce(objectMapper, (mapper, configurer) -> configurer.configure(
                 new ConfigurerParams(mapper, concreteSubTypes, this.typeInfoGenerator, this.inputInfoGenerator, environment)), (b1, b2) -> b2);
     }
@@ -84,7 +71,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
         @Override
         public ObjectMapper configure(ConfigurerParams params) {
-            return params.objectMapper.rebuild().findAndAddModules().build();
+            return params.objectMapper.findAndRegisterModules();
         }
     }
 
@@ -93,21 +80,17 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
 
         @Override
         public ObjectMapper configure(ConfigurerParams params) {
-            MapperBuilder builder = params.objectMapper.rebuild()
-                    .configure(EnumFeature.WRITE_ENUMS_USING_TO_STRING, false)
-                    .configure(EnumFeature.READ_ENUMS_USING_TO_STRING, false)
-                    .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-                    .addModule(getAnnotationIntrospectorModule(
+            ObjectMapper mapper = params.objectMapper
+                    .registerModule(getAnnotationIntrospectorModule(
                             unambiguousSubtypes(params.concreteSubTypes),
                             ambiguousSubtypes(params.concreteSubTypes, params.metaDataGen, params.environment.messageBundle),
                             params.inputInfoGen,
                             params.environment.inclusionStrategy,
                             params.environment.messageBundle));
-
             if (!params.environment.getInputConverters().isEmpty()) {
-                builder.addModule(getDeserializersModule(params.environment, params.objectMapper));
+                mapper.registerModule(getDeserializersModule(params.environment, params.objectMapper));
             }
-            return builder.build();
+            return mapper;
         }
 
         private Map<Class, Class> unambiguousSubtypes(Map<Class, List<Class<?>>> concreteSubTypes) {
@@ -131,8 +114,8 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
             return types;
         }
 
-        private JacksonModule getDeserializersModule(GlobalEnvironment environment, ObjectMapper mapper) {
-            return new JacksonModule() {
+        private Module getDeserializersModule(GlobalEnvironment environment, ObjectMapper mapper) {
+            return new Module() {
                 @Override
                 public String getModuleName() {
                     return "graphql-spqr-deserializers";
@@ -150,7 +133,7 @@ public class JacksonValueMapperFactory implements ValueMapperFactory<JacksonValu
             };
         }
 
-        private JacksonModule getAnnotationIntrospectorModule(Map<Class, Class> unambiguousTypes,
+        private Module getAnnotationIntrospectorModule(Map<Class, Class> unambiguousTypes,
                                                        Map<Type, List<NamedType>> ambiguousTypes,
                                                        InputFieldInfoGenerator inputInfoGen,
                                                        InclusionStrategy inclusionStrategy,
